@@ -87,6 +87,9 @@ type Parser struct {
 
 	// Emit receives the elements of the #stream repetition when parsing a stream.
 	Emit func(*value.Node) error
+	// StreamID is the ID of the start rule of a stream parse, the one rule whose #stream repetition
+	// streams.
+	StreamID int
 	// Depth is the rule call depth (1 for the start rule). The parse is aborted when it exceeds
 	// MaxDepth.
 	Depth    int
@@ -767,13 +770,14 @@ func (p *Parser) InvokePlain(r *Rule, min int) (*value.Node, bool) {
 	start, rec, trail, missing := p.Pos, len(p.Recovered), len(p.Trail), p.missingMark()
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.Fail("nesting too deep: more than %d rule calls", p.MaxDepth)
+	if r.Rec {
+		p.Enter()
 	}
 	p.Stats.Evaluated++
 	v, ok := r.Body(p, min)
-	p.Depth--
+	if r.Rec {
+		p.Depth--
+	}
 	p.Cut = prevCut
 	p.Trail = p.Trail[:Min2(trail, len(p.Trail))]
 	if ok {
@@ -803,16 +807,17 @@ func (p *Parser) InvokeBegin(r *Rule) InvokeState {
 	p.Spend()
 	st := InvokeState{f: p.NewFrame(len(r.Scope.Names)), prevFrame: p.Frame, PrevEnv: p.Env, PrevCut: p.Cut, Trail: len(p.Trail), Start: p.Pos}
 	p.Frame, p.Cut = st.f, false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.Fail("nesting too deep: more than %d rule calls", p.MaxDepth)
+	if r.Rec {
+		p.Enter()
 	}
 	p.Stats.Evaluated++
 	return st
 }
 
 func (p *Parser) InvokeEnd(r *Rule, st *InvokeState, v *value.Node, ok bool) (*value.Node, bool) {
-	p.Depth--
+	if r.Rec {
+		p.Depth--
+	}
 	p.Frame, p.Cut = st.prevFrame, st.PrevCut
 	p.Trail = p.Trail[:Min2(st.Trail, len(p.Trail))]
 	if ok {
@@ -918,6 +923,27 @@ type Fatal struct{ Err error }
 
 func (p *Parser) Fail(format string, args ...any) {
 	panic(Fatal{fmt.Errorf(format, args...)})
+}
+
+// Enter counts one more nested entry of a recursive rule and fails the parse beyond the nesting
+// limit.
+func (p *Parser) Enter() {
+	p.Depth++
+	if p.Depth > p.MaxDepth {
+		p.tooDeep()
+	}
+}
+
+// StreamsIn reports whether the #stream repetition of the rule id streams: the parse is a stream
+// parse, the rule is its start rule, and the rule runs at the top (a recursive rule counts its
+// entries, so its outermost entry is the first; any other rule is entered once).
+func (p *Parser) StreamsIn(id int, rec bool) bool {
+	return p.Emit != nil && p.StreamID == id && (!rec || p.Depth == 1)
+}
+
+//go:noinline
+func (p *Parser) tooDeep() {
+	p.Fail("nesting too deep: more than %d nested recursive rule calls", p.MaxDepth)
 }
 
 // SyntaxError reports that the input did not match the grammar.

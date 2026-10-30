@@ -46,7 +46,7 @@ type ExprBuilder[M any] interface {
 	// ownScope). stream passes the elements of a #stream on; site, if not 0, is the number of a
 	// repetition that a Document can resume, whose elements' values move past an edit when
 	// shiftable.
-	Repeat(e *grammar.Repeat, elem M, elemScope *Scope, ownScope, build, stream bool, site int, shiftable bool) M
+	Repeat(e *grammar.Repeat, elem M, elemScope *Scope, ownScope, build, stream bool, site int, shiftable bool, in *Rule) M
 	// ProjectRepeat gathers the values of the capture slot of the elements of e (project.go),
 	// which share one frame of n slots.
 	ProjectRepeat(e *grammar.Repeat, elem M, slot, n int) M
@@ -288,7 +288,7 @@ func (c *Walker[M]) repeat(e *grammar.Repeat, s *Scope, build, stream bool) M {
 		c.runSites++
 		site, shiftable = c.runSites, !c.positional(e.Expr)
 	}
-	return c.Builder.Repeat(e, m, elemScope, elemScope != s, build, stream, site, shiftable)
+	return c.Builder.Repeat(e, m, elemScope, elemScope != s, build, stream, site, shiftable, c.rule)
 }
 
 // ProjectRepeat walks a repetition that gathers the values of the capture field of its elements

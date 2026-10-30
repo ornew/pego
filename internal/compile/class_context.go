@@ -41,7 +41,7 @@ func FirstTerminalControlled(prog *Program, e grammar.Expr, depth int, seen map[
 			break
 		}
 		seen[e.Name] = true
-		return FirstTerminalControlled(prog, r.Def.Expr, depth+1, seen, control)
+		return FirstTerminalControlled(prog, r.Def.Expr, depth+r.EntryDepth(), seen, control)
 	}
 	return nil, 0
 }

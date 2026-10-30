@@ -197,7 +197,7 @@ func TestSnapshotRecoveredAndDepthOutcomes(t *testing.T) {
 		{`rule main = x* $$
 rule x = "b" #recover(skip="a")`, "a", 0, true},
 		{`rule main = x
-rule x = "a"`, "a", 1, false},
+rule x = "(" x ")" / "a"`, "((a))", 1, false},
 	} {
 		prog := mustCompile(t, fixture.grammar)
 		snapshotVariants(t, func(t *testing.T, o ParseOptions) {

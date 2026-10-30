@@ -601,14 +601,24 @@ input are all bounded by it.
 
 ## Limits
 
-An implementation MAY limit the nesting depth of rule calls, so that input of
-unbounded nesting cannot exhaust the memory of the host. When the limit is
-exceeded, the parse fails with a run-time error and no value. In the reference
-implementation the error is `nesting too deep: more than N rule calls`; the
-default limit is 100,000 nested calls (10,000,000 for the iterative bytecode
-VM), and the Go API changes it with `pego.WithMaxDepth`. The operand of a prefix
-operator and the right operand of an infix operator of an Operators Rule nest
-like rule calls; chains of left-associative operators do not nest.
+An implementation MAY limit the nesting depth of recursion, so that input of
+unbounded nesting cannot exhaust the memory of the host. A rule is
+**recursive** if it is on a cycle of the call graph: it can reach itself through
+rule references, directly or through other rules (a rule that references only
+itself is on a cycle). The nesting depth is the number of entries of recursive
+rules that are active at once; the entry of any other rule does not count. A
+rule outside every cycle appears at most once on the call stack of a parse, so
+the rules that do not count add a bounded depth that depends only on the
+grammar. The value-free twin of a rule is as recursive as the rule.
+
+The operand of a prefix operator and the right operand of an infix operator of
+an Operators Rule nest like entries of recursive rules, and so does the entry of
+an Operators Rule; chains of left-associative operators do not nest. When the
+limit is exceeded, the parse fails with a run-time error and no value. In the
+reference implementation the error is `nesting too deep: more than N nested
+recursive rule calls`; the default limit is 100,000 (10,000,000 for the iterative
+bytecode VM), and the Go API changes it with `pego.WithMaxDepth`. Every backend
+reaches the limit at the same nesting of the same input.
 
 ## Cancellation and Budget Limits
 

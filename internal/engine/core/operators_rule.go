@@ -122,14 +122,11 @@ func (p *Parser) applyRecovered(a *OperatorsRuleAttempt) {
 
 // OperatorsRuleParse parses an expression, absorbing only operators that bind tighter than binding level
 // min. The operand of a prefix operator and the right operand of an infix operator are parsed by
-// recursion, so each level counts as a rule call against the nesting limit: a chain of prefix or
+// recursion, so each level, and the entry, counts as a recursive rule call against the nesting limit: a chain of prefix or
 // right-associative operators would otherwise nest without bound on the goroutine stack.
 func (p *Parser) OperatorsRuleParse(r *Rule, min int) (*value.Node, bool) {
 	p.Spend()
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.Fail("nesting too deep: more than %d rule calls", p.MaxDepth)
-	}
+	p.Enter()
 	v, ok := p.operatorsRuleExpr(r, min)
 	p.Depth--
 	return v, ok

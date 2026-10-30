@@ -62,6 +62,7 @@ The finish of a rule selects how it makes its value.
 
 | Flag | Meaning |
 |:--|:--|
+| Rec | The rule is on a cycle of calls; only its entries count against the nesting limit. A pass may remove a call and so a cycle, so Rec may mark a rule that is no longer on one, but never misses one |
 | Memo, Transient | Ordinary parses memoize the rule; with Transient, only Documents do |
 | Plain | The rule is never memoized outside Documents and has no captures |
 | Leader | The rule is a left-recursion leader; the runtime owns its growth |

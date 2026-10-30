@@ -105,6 +105,9 @@ type Policy struct {
 	Memo, Transient bool
 	// Plain reports that the rule is never memoized outside Documents and has no captures.
 	Plain bool
+	// Rec reports that the rule is on a cycle of the call graph: its entries count against the
+	// nesting limit.
+	Rec bool
 	// Leader reports a left-recursion leader, whose growth the runtime owns.
 	Leader bool
 	// Splice reports a rule that makes no node of its own.

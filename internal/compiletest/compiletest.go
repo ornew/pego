@@ -80,7 +80,7 @@ func (NoExprs) Fail() struct{}                                            { retu
 func (NoExprs) Anchor(e grammar.Expr, desc compile.ExpID) struct{}        { return struct{}{} }
 func (NoExprs) Predicate(e *grammar.Predicate, s *compile.Scope) struct{} { return struct{}{} }
 func (NoExprs) ScanRepeat(e *grammar.Repeat, desc compile.ExpID) struct{} { return struct{}{} }
-func (NoExprs) Repeat(e *grammar.Repeat, elem struct{}, elemScope *compile.Scope, ownScope, build, stream bool, site int, shiftable bool) struct{} {
+func (NoExprs) Repeat(e *grammar.Repeat, elem struct{}, elemScope *compile.Scope, ownScope, build, stream bool, site int, shiftable bool, in *compile.Rule) struct{} {
 	return struct{}{}
 }
 func (NoExprs) ProjectRepeat(e *grammar.Repeat, elem struct{}, slot, n int) struct{} {

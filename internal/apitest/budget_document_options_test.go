@@ -16,7 +16,7 @@ func TestBudgetDocumentPublicDefaultsAndOptionsOnce(t *testing.T) {
 	p, err := pego.CompileSource(`@start
 rule main = inner $$
 
-rule inner = "a"`, "main")
+rule inner = "(" inner ")" / "a"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +24,7 @@ rule inner = "a"`, "main")
 		t.Run(backend.String(), func(t *testing.T) {
 			constructCalls, parseCalls := 0, 0
 			var order []string
-			d, err := p.NewDocument("a", pego.WithBackend(backend), pego.WithMaxDepth(1),
+			d, err := p.NewDocument("((a))", pego.WithBackend(backend), pego.WithMaxDepth(1),
 				func(o *engine.ParseOptions) { constructCalls++ },
 				pego.WithTrace(func(e pego.TraceEvent) {
 					if e.Rule == "main" && e.Kind == pego.TraceEnter {
@@ -52,7 +52,7 @@ rule inner = "a"`, "main")
 			}
 			// Override depth must not replace defaults; clear successful memo so
 			// the next invocation genuinely evaluates the nested rule again.
-			if err := d.Edit(0, 1, "a"); err != nil {
+			if err := d.Edit(0, 5, "((a))"); err != nil {
 				t.Fatal(err)
 			}
 			if n, err := d.Parse(); n != nil || err == nil {

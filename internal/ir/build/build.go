@@ -212,7 +212,7 @@ func (b *coreBuilder) rule(r *compile.Rule) (*core.Rule, error) {
 			cr.Type = t
 		}
 	}
-	cr.Policy = core.Policy{Memo: r.Memo, Transient: r.Transient, Plain: r.Plain, Leader: r.Leader, Splice: r.Splice,
+	cr.Policy = core.Policy{Memo: r.Memo, Transient: r.Transient, Plain: r.Plain, Rec: r.Rec, Leader: r.Leader, Splice: r.Splice,
 		NoValue: r.Novalue, Seen: r.Seen, Vars: r.Vars}
 	if o, ok := r.Def.Expr.(*grammar.OperatorsRule); ok {
 		b.proj = nil

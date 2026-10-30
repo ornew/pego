@@ -474,7 +474,7 @@ func (b *Builder) ScanRepeat(e *grammar.Repeat, desc core.ExpID) core.Matcher {
 	}
 }
 
-func (b *Builder) Repeat(e *grammar.Repeat, m core.Matcher, elemScope *compile.Scope, ownScope, build, stream bool, site int, shiftable bool) core.Matcher {
+func (b *Builder) Repeat(e *grammar.Repeat, m core.Matcher, elemScope *compile.Scope, ownScope, build, stream bool, site int, shiftable bool, in *compile.Rule) core.Matcher {
 	min, max := e.Min, e.Max
 	elemValue := scopeValueOf(b.prog, e.Expr)
 	var rs *core.RunSite
@@ -482,13 +482,14 @@ func (b *Builder) Repeat(e *grammar.Repeat, m core.Matcher, elemScope *compile.S
 		rs = &core.RunSite{Id: site, M: m, Scope: elemScope, OwnScope: ownScope, Build: build, Min: min, Max: max, Shiftable: shiftable, Value: elemValue}
 	}
 	charge := b.charges()
+	inID, inRec := in.ID, in.Rec
 	return func(p *core.Parser) (*value.Node, bool) {
 		if rs != nil && p.Runs != nil && p.Silent == 0 {
 			return p.ResumeRepeat(rs)
 		}
 		start := p.Pos
 		base := len(p.KidStack) // collect the element values
-		if core.StreamPrefixIsolation && stream && p.Emit != nil && p.Depth == 1 {
+		if core.StreamPrefixIsolation && stream && p.StreamsIn(inID, inRec) {
 			p.StartStreamChunks()
 		}
 		count := 0
@@ -522,7 +523,7 @@ func (b *Builder) Repeat(e *grammar.Repeat, m core.Matcher, elemScope *compile.S
 				}
 			}
 			count++
-			if stream && p.Emit != nil && p.Depth == 1 {
+			if stream && p.StreamsIn(inID, inRec) {
 				// Elements of the start rule's #stream are passed on without being retained, and committed.
 				if v != nil {
 					value.D(v).Fresh = false

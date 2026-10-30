@@ -136,13 +136,14 @@ rule e = #operators {
 			depth int
 			ok    bool
 		}{
-			{"x;", 2, false}, {"x;", 3, true},
-			{"-x;", 3, false}, {"-x;", 4, true}, {"--x;", 4, false}, {"--x;", 5, true},
-			{"x^x;", 3, false}, {"x^x;", 4, true}, {"x^x^x;", 4, false}, {"x^x^x;", 5, true},
-			{strings.Repeat("x+", 128) + "x;", 4, true},
-			{"x" + strings.Repeat("!", 128) + ";", 3, true},
-			{strings.Repeat("-x;", 128), 4, true},      // completed frames must release depth
-			{strings.Repeat("-;x^;-x;", 128), 4, true}, // failed child frames must also release depth
+			// Only the levels of the Operators Rule count: neither main nor the call of e does.
+			{"x;", 1, true},
+			{"-x;", 1, false}, {"-x;", 2, true}, {"--x;", 2, false}, {"--x;", 3, true},
+			{"x^x;", 1, false}, {"x^x;", 2, true}, {"x^x^x;", 2, false}, {"x^x^x;", 3, true},
+			{strings.Repeat("x+", 128) + "x;", 2, true},
+			{"x" + strings.Repeat("!", 128) + ";", 1, true},
+			{strings.Repeat("-x;", 128), 2, true},      // completed frames must release depth
+			{strings.Repeat("-;x^;-x;", 128), 2, true}, // failed child frames must also release depth
 		} {
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -152,7 +153,7 @@ rule e = #operators {
 						if (err == nil) != tc.ok {
 							t.Errorf("memo disabled %v, %s/%s, recognize %v depth %d input %.20q: %v, %v", disableMemo, backend, unit, recognize, tc.depth, tc.input, n, err)
 						}
-						if !tc.ok && (err == nil || !strings.Contains(err.Error(), fmt.Sprintf("nesting too deep: more than %d rule calls", tc.depth))) {
+						if !tc.ok && (err == nil || !strings.Contains(err.Error(), fmt.Sprintf("nesting too deep: more than %d nested recursive rule calls", tc.depth))) {
 							t.Errorf("%s depth %d input %.20q: want depth error, got %v", backend, tc.depth, tc.input, err)
 						}
 					}
@@ -185,7 +186,7 @@ rule e = #operators {
 				err := prog.ParseStreamWith("main", strings.NewReader(tc.input), func(*value.Node) error {
 					count++
 					return nil
-				}, ParseOptions{Backend: backend, Unit: unit, MaxDepth: 4})
+				}, ParseOptions{Backend: backend, Unit: unit, MaxDepth: 2})
 				if count != tc.count || (err == nil) != tc.ok {
 					t.Errorf("%s/%s input %.20q: emitted %d, err %v; want %d, success %v", backend, unit, tc.input, count, err, tc.count, tc.ok)
 				}

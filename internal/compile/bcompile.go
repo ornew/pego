@@ -142,7 +142,7 @@ func (c *bcompiler) compile() {
 	all := append(append([]*Rule(nil), c.prog.RuleList...), c.prog.Twins...)
 	for _, r := range all {
 		ri := bytecode.RuleInfo{Name: int(c.str(r.Name)), Entry: -1, Action: -1, NodeType: -1, OperatorsRule: -1,
-			Memo: r.Memo, Leader: r.Leader, Positional: r.Positional, NoValue: r.Novalue, Transient: r.Transient, Where: -1, Splice: r.Splice, Vars: c.strs2(r.Vars)}
+			Memo: r.Memo, Leader: r.Leader, Positional: r.Positional, NoValue: r.Novalue, Transient: r.Transient, Rec: r.Rec, Where: -1, Splice: r.Splice, Vars: c.strs2(r.Vars)}
 		if r.Where != "" && r.Where != r.Name {
 			ri.Where = int(c.str(r.Where))
 		}

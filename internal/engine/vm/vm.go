@@ -156,7 +156,7 @@ func buildVMProgram(m *bytecode.Module, bodies vmBodies) *Program {
 		ri := &m.Rules[i]
 		r := &core.Rule{
 			ID: i, Name: m.Strings[ri.Name], Scope: vm.scope(ri.Scope),
-			Memo: ri.Memo, Leader: ri.Leader, Positional: ri.Positional, Novalue: ri.NoValue, Transient: ri.Transient, Splice: ri.Splice, Vars: vm.names(ri.Vars),
+			Memo: ri.Memo, Leader: ri.Leader, Positional: ri.Positional, Novalue: ri.NoValue, Transient: ri.Transient, Rec: ri.Rec, Splice: ri.Splice, Vars: vm.names(ri.Vars),
 		}
 		if ri.Where >= 0 {
 			r.Where = m.Strings[ri.Where]
@@ -744,7 +744,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 				mc.vals = mc.vals[:len(mc.vals)-1]
 			}
 		case bytecode.OpRepeat, bytecode.OpRepeatWide:
-			if core.StreamPrefixIsolation && p.Emit != nil && p.Depth == 1 && vm.isStreamRepeat(ip) {
+			if core.StreamPrefixIsolation && p.Emit != nil && b.r != nil && p.StreamsIn(b.r.ID, b.r.Rec) && vm.isStreamRepeat(ip) {
 				p.StartStreamChunks()
 			}
 			min, max := int(in.A), int(in.B)
@@ -825,7 +825,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 				}
 				p.EndElem(rep.run, true, v)
 			}
-			if in.B == 2 && p.Emit != nil && p.Depth == 1 {
+			if in.B == 2 && p.Emit != nil && b.r != nil && p.StreamsIn(b.r.ID, b.r.Rec) {
 				// Elements of the start rule's #stream are passed on without being retained, and committed.
 				v := asNodeValue(mc.pop())
 				if v != nil {

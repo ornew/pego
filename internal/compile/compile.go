@@ -143,6 +143,9 @@ type Rule struct {
 	// Plain reports that the rule is never memoized except by Document and has no captures, so
 	// call runs it with invokePlain (the closure backend calls invokePlain directly).
 	Plain bool
+	// Rec reports that the rule is on a cycle of the call graph, or calls itself: only such rules
+	// can nest without bound, so only their entries count against the nesting limit.
+	Rec bool
 	// Novalue reports that this is a value-free twin (its value is always nil).
 	Novalue bool
 	// PredCaps holds, for value-free rules in a program that builds no tree, the names of the
@@ -437,6 +440,7 @@ func CompileProgram[M any](g *grammar.Grammar, opts Options, flags []RuleFlags, 
 	}
 	transient := transientRules(rules, control)
 	vars := ruleVariablesControlled(rules, control)
+	recursive := ruleCycles(rules, prog.defsByName(), control)
 	for i, r := range prog.RuleList {
 		control.poll()
 		twin := false
@@ -448,6 +452,7 @@ func CompileProgram[M any](g *grammar.Grammar, opts Options, flags []RuleFlags, 
 			r.Memo = !opts.DisableMemo && !c.an.cyclic[r.Name]
 		}
 		r.Transient = transient[r.Name]
+		r.Rec = recursive[r.Name] != nil
 		r.Vars = vars[r.Name]
 		if flags == nil {
 			_, isOperatorsRule := r.Def.Expr.(*grammar.OperatorsRule)
@@ -586,12 +591,30 @@ func NumberSeen(lists ...[]*Rule) int {
 	return n
 }
 
+// EntryDepth returns the nesting levels that a call of the rule adds: one for a recursive rule, none
+// for any other.
+func (r *Rule) EntryDepth() int {
+	if r.Rec {
+		return 1
+	}
+	return 0
+}
+
+// defsByName returns the rule definitions of the program by name.
+func (p *Program) defsByName() map[string]*grammar.RuleDef {
+	m := make(map[string]*grammar.RuleDef, len(p.RuleList))
+	for _, r := range p.RuleList {
+		m[r.Name] = r.Def
+	}
+	return m
+}
+
 // twinOf returns the value-free twin of rule r (creating it if needed; it is assembled later).
 func (c *Compiler) twinOf(r *Rule) *Rule {
 	if r.Twin == nil {
 		prog := c.Prog
 		r.Twin = &Rule{ID: len(prog.RuleList) + len(prog.Twins), Name: r.Name, Def: r.Def, Scope: NewScope(),
-			Memo: r.Memo, Missing: r.Missing, Transient: r.Transient, Vars: r.Vars, Positional: r.Positional, Novalue: true}
+			Memo: r.Memo, Missing: r.Missing, Transient: r.Transient, Rec: r.Rec, Vars: r.Vars, Positional: r.Positional, Novalue: true}
 		prog.Twins = append(prog.Twins, r.Twin)
 	}
 	return r.Twin
@@ -840,7 +863,7 @@ func firstTerminal(prog *Program, e grammar.Expr, depth int, seen map[string]boo
 			break
 		}
 		seen[e.Name] = true
-		return firstTerminal(prog, r.Def.Expr, depth+1, seen)
+		return firstTerminal(prog, r.Def.Expr, depth+r.EntryDepth(), seen)
 	}
 	return nil, 0
 }

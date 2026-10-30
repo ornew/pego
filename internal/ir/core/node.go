@@ -31,7 +31,7 @@ func (b *base) Attrs() *Attrs { return &b.attrs }
 
 // First is the terminal a node must match first: if the next character is not the first code
 // point of a literal (Lit) or a member of Class, the node fails at once, recording only Exp at
-// the current position, after entering Depth rule calls (Call and Nest) on the way.
+// the current position, after entering Depth calls of recursive rules on the way.
 type First struct {
 	// Lit reports a literal, whose first code point is Rune; otherwise Class is the class.
 	Lit  bool

@@ -8,7 +8,8 @@ import "unicode/utf8"
 // Nullable and the effects of calls are the least fixed point over the rules. First follows the
 // first item of sequences, the bodies of captures, Text, Drop, Nest and Terminal, the first class
 // of a class run and calls of rules that are neither left-recursion leaders nor Operators Rules,
-// counting one level for each call and Nest on the way.
+// counting one level for each call of a recursive rule on the way (a Nest is of a rule that is not
+// recursive).
 func Analyze(m *Module) {
 	a := &analyzer{m: m, null: make([]bool, len(m.Rules)), eff: make([]Effect, len(m.Rules))}
 	for changed := true; changed; {
@@ -111,13 +112,16 @@ func (a *analyzer) node(n Node) (bool, Effects) {
 	case *FailNode:
 		e.Set = EffFail
 	case *Call:
-		// A call can exceed the nesting limit.
+		// A call of a recursive rule can exceed the nesting limit.
 		null = a.null[n.Rule]
-		e.Set = a.eff[n.Rule] | EffCall | EffRaise
+		e.Set = a.eff[n.Rule] | EffCall
+		if a.m.Rules[n.Rule].Policy.Rec {
+			e.Set |= EffRaise
+		}
 	case *Nest:
 		nn, ee := a.node(n.Body)
 		null = nn
-		e.Set = ee.Set&^local | EffCall | EffRaise
+		e.Set = ee.Set&^local | EffCall
 	case *OperatorsRule:
 		for _, l := range n.Lines() {
 			_, ee := a.node(l.Body)
@@ -245,9 +249,13 @@ func (a *analyzer) head(n Node) *First {
 	case *Drop:
 		return a.head(n.Body)
 	case *Call:
-		return deeper(a.ruleFirst(n.Rule))
+		f := a.ruleFirst(n.Rule)
+		if a.m.Rules[n.Rule].Policy.Rec {
+			f = deeper(f)
+		}
+		return f
 	case *Nest:
-		return deeper(a.head(n.Body))
+		return a.head(n.Body)
 	case *Terminal:
 		return a.head(n.Body)
 	case *ClassRun:

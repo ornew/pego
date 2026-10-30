@@ -217,9 +217,11 @@ func RecognizeOnly() ParseOption {
 	return func(o *engine.ParseOptions) { o.Recognize = true }
 }
 
-// WithMaxDepth limits the nesting of rule calls to n; deeper nesting makes the parse fail with an error.
-// The operand of a prefix operator and the right operand of an infix operator of an Operators Rule expression
-// nest like rule calls.
+// WithMaxDepth limits the nesting of recursive rule calls to n; deeper nesting makes the parse fail with an
+// error. Only the entries of rules that are on a cycle of calls (or call themselves) count; a rule outside
+// every cycle adds a bounded, grammar-constant depth to the stack and does not count. The operand of a
+// prefix operator and the right operand of an infix operator of an Operators Rule expression nest like
+// recursive rule calls, and so does the entry of an Operators Rule.
 // The default is 100,000 (10,000,000 for BytecodeIterative). The limit keeps runaway recursion from
 // exhausting the stack or memory. The Closure and Bytecode backends nest rule calls on the goroutine
 // stack, so raising the limit far above the default can exceed Go's maximum stack size, which aborts

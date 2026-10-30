@@ -10,6 +10,7 @@ import (
 //
 //   - every rule has its index as ID and a body; start rules, calls and Nests name rules; a
 //     twin is value-free;
+//   - a rule on a cycle of calls has Policy.Rec;
 //   - the call graph (Calls, SCC, Cyclic) is that of the rules' bodies, and a Nest of rule r
 //     occurs only in rules outside r's component of the call graph and only inside Nests of
 //     rules outside it;
@@ -137,6 +138,13 @@ func (v *verifier) callGraph() error {
 	scc, cyclic := components(m.Calls)
 	if !slices.Equal(m.SCC, scc) || !slices.Equal(m.Cyclic, cyclic) {
 		return fmt.Errorf("components %v cyclic %v, want %v cyclic %v", m.SCC, m.Cyclic, scc, cyclic)
+	}
+	// A rule on a cycle of calls counts against the nesting limit. A pass may remove a call and so
+	// a cycle, but never add one: Rec may exceed the cycles, and never falls short of them.
+	for i, r := range m.Rules {
+		if r != nil && m.Cyclic[m.SCC[i]] && !r.Policy.Rec {
+			return fmt.Errorf("rule %s is on a cycle of calls but does not count against the nesting limit", r.Name)
+		}
 	}
 	return nil
 }

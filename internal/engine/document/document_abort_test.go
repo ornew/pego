@@ -23,7 +23,7 @@ rule nested = "(" nested ")" / "a"`, "((a))", "a", "nesting too deep", 3},
 rule e = #operators {
     operand "x"
     level { prefix "-" }
-}`, "---x", "x", "nesting too deep", 4},
+}`, "---x", "x", "nesting too deep", 3},
 	} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {

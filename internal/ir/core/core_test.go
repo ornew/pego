@@ -84,6 +84,11 @@ func module(rules ...*Rule) *Module {
 		})
 	}
 	CallGraph(m)
+	for i, r := range m.Rules {
+		if r != nil { // the rules on a cycle of calls count against the nesting limit
+			r.Policy.Rec = m.Cyclic[m.SCC[i]]
+		}
+	}
 	return m
 }
 
@@ -185,16 +190,20 @@ func TestAnalyzeRaises(t *testing.T) {
 	}
 }
 
-// Calls and Nests can exceed the nesting limit, and a missing-token insertion the limit of
-// insertions.
+// Calls of recursive rules can exceed the nesting limit, and a missing-token insertion the limit of
+// insertions. A call of another rule and a Nest do not.
 func TestAnalyzeLimitsRaise(t *testing.T) {
 	call := &Call{Rule: 1}
-	nest := &Nest{Rule: 1, Body: lit("b")}
+	plain := &Call{Rule: 2}
+	nest := &Nest{Rule: 2, Body: lit("c")}
 	missing := &Missing{Lit: lit(";")}
-	analyzed(t, module(rule(0, "a", seq(call, nest, missing)), rule(1, "b", lit("b"))))
-	for _, n := range []Node{call, nest, missing} {
-		if n.Attrs().Eff.Set&EffRaise == 0 {
-			t.Errorf("%T: effects %s, want raise", n, effectString(n.Attrs().Eff))
+	analyzed(t, module(rule(0, "a", seq(call, plain, nest, missing)), rule(1, "b", choice(lit("b"), &Call{Rule: 1})), rule(2, "c", lit("c"))))
+	for _, c := range []struct {
+		n     Node
+		raise bool
+	}{{call, true}, {plain, false}, {nest, false}, {missing, true}} {
+		if got := c.n.Attrs().Eff.Set&EffRaise != 0; got != c.raise {
+			t.Errorf("%T: effects %s, raise %v, want %v", c.n, effectString(c.n.Attrs().Eff), got, c.raise)
 		}
 	}
 }
@@ -245,6 +254,7 @@ func TestAnalyzeFirst(t *testing.T) {
 		rule(6, "n", &Nest{Rule: 1, Body: &Nest{Rule: 2, Body: seq(&Drop{Body: &ClassNode{Class: digit.Class}}, lit("q"))}}),
 	)
 	m.Rules[3].Policy.Leader = true
+	m.Rules[2].Policy.Rec = true // a call of a recursive rule counts a level, a Nest and a call of another rule none
 	analyzed(t, m)
 	for _, c := range []struct {
 		rule       int
@@ -253,7 +263,7 @@ func TestAnalyzeFirst(t *testing.T) {
 		{0, "'a'", `"ab"`},
 		{1, "[0-9]+1", "[0-9]"},
 		{2, "[0-9]", "[0-9]"},
-		{6, "[0-9]+2", "[0-9]"},
+		{6, "[0-9]", "[0-9]"},
 	} {
 		f := m.Rules[c.rule].Body.Attrs().First
 		if f == nil || firstString(m, f) != c.first || expString(m, f.Exp) != c.exp {
@@ -539,6 +549,7 @@ func TestVerifyRejects(t *testing.T) {
 			// would not have read the class itself.
 			c := choice(lit("a"), &Call{Rule: 1})
 			m := module(rule(0, "a", c), rule(1, "b", class('x', 'y')))
+			m.Rules[1].Policy.Rec = true
 			cl := m.Rules[1].Body.(*ClassNode).Class
 			c.Alts[1].Guard = &First{Class: cl, Exp: cl.Exp, Depth: 1}
 			c.Alts[1].GuardedClass = true

@@ -294,7 +294,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value
 	defer p.ReleaseTraceReferences() // after error recovery, including rethrown panics
 	control.Check()
 	p.MaxDepth = core.DepthLimit(o, o.Backend)
-	p.Emit = emit
+	p.Emit, p.StreamID = emit, rule.ID
 	p.Diagnostic = o.DiagnosticCallback
 	p.DiagnosticTail.Limit = o.DiagnosticLimit
 	if (p.Diagnostic != nil || o.DiagnosticLimit > 0) && p.Emit == nil {

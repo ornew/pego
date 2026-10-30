@@ -147,7 +147,9 @@ func (f *bodyFrame) next(mc *ivmMachine, vm *Program, res iresult) (iframe, ires
 	}
 	if f.call { // the end of InvokePlain
 		r := f.b.r
-		p.Depth--
+		if r.Rec {
+			p.Depth--
+		}
 		p.Cut = f.inv.PrevCut
 		p.Trail = p.Trail[:core.Min2(f.inv.Trail, len(p.Trail))]
 		if ok {
@@ -183,9 +185,8 @@ func (mc *ivmMachine) plainCallFrame(r *core.Rule, min int) *bodyFrame {
 	f.inv = core.InvokeState{PrevEnv: p.Env, PrevCut: p.Cut, Trail: len(p.Trail), Start: p.Pos}
 	f.rec = len(p.Recovered)
 	p.Cut = false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.Fail("nesting too deep: more than %d rule calls", p.MaxDepth)
+	if r.Rec {
+		p.Enter()
 	}
 	p.Stats.Evaluated++
 	return f
@@ -236,10 +237,7 @@ func (mc *ivmMachine) nudFrame(r *core.Rule) *nudFrame {
 func (mc *ivmMachine) operatorsRuleFrame(r *core.Rule, min int) *operatorsRuleFrame {
 	p := mc.p
 	p.Spend()
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.Fail("nesting too deep: more than %d rule calls", p.MaxDepth)
-	}
+	p.Enter()
 	f := reuse(&mc.pool.operatorsRules)
 	*f = operatorsRuleFrame{r: r, min: min}
 	return f

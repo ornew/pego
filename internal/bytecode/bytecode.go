@@ -113,6 +113,9 @@ type RuleInfo struct {
 	// Transient reports that the rule is not memoized in ordinary parses (even if Memo is set). In
 	// incremental parsing, Memo applies.
 	Transient bool
+	// Rec reports that the rule is on a cycle of calls (or calls itself): its entries count
+	// against the nesting limit, those of other rules do not.
+	Rec bool
 	// Where is the text that names the rule in the message of a failed action (string table index),
 	// or -1 for the name of the rule. The hidden rule of an inline action names the rule that
 	// holds it.
