@@ -92,7 +92,6 @@ func (NoExprs) ErrorMessage(m struct{}, msg compile.ExpID, missingScope bool) st
 }
 func (NoExprs) Diagnostic(m struct{}, name compile.ExpID) struct{}            { return struct{}{} }
 func (NoExprs) Recover(e grammar.Expr, m, skip struct{}, build bool) struct{} { return struct{}{} }
-func (NoExprs) Step(m struct{}) struct{}                                      { return struct{}{} }
 func (NoExprs) RuleBody(r *compile.Rule, body struct{})                       {}
 func (NoExprs) OperatorsRule(r *compile.Rule, skip struct{}, hasSkip bool, operands, operators []compile.OpLine[struct{}]) {
 }

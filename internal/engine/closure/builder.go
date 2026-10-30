@@ -15,8 +15,8 @@ type Builder struct {
 	prog *compile.Program
 	// control is the budget control of the compilation, or nil.
 	control *compile.Control
-	// plainDispatch leaves out the per-expression budget charge (Options.ControlledDispatch builds
-	// the metered closure graph).
+	// plainDispatch leaves out the budget charge of the loop iterations (Options.ControlledDispatch
+	// builds the metered closure graph).
 	plainDispatch bool
 	// rules holds the rules the parser runs, by ID (staticRule.ID). They are made when a body or a
 	// call needs them and get the facts of their static rules in Finish.
@@ -60,12 +60,9 @@ func (b *Builder) Finish() []*core.Rule {
 	return b.rules
 }
 
-func (b *Builder) Step(m core.Matcher) core.Matcher {
-	if !core.BudgetControlsEnabled || b.plainDispatch {
-		return m
-	}
-	return func(p *core.Parser) (*value.Node, bool) { p.Spend(); return m(p) }
-}
+// charges reports whether the loops charge the budget for each iteration. A rule call charges in
+// core.Parser.Call and InvokePlain, whichever graph runs it.
+func (b *Builder) charges() bool { return core.BudgetControlsEnabled && !b.plainDispatch }
 
 func (b *Builder) RuleBody(sr *compile.Rule, m core.Matcher) {
 	r := b.rule(sr)
@@ -215,7 +212,6 @@ func (b *Builder) Choice(e *grammar.Choice, ms []core.Matcher, firsts []compile.
 						peeked = true
 					}
 					if !(more && g.accept(p, ch)) && p.Depth+g.depth <= p.MaxDepth {
-						p.Spend()               // a skipped matcher still spends budget on dispatch
 						p.Expect(p.Pos, g.desc) // what the alternative would record
 						continue
 					}
@@ -459,9 +455,13 @@ func (b *Builder) ScanRepeat(e *grammar.Repeat, desc core.ExpID) core.Matcher {
 		accept = ClassAcceptControlled(x, b.control)
 	}
 	min, max := e.Min, e.Max
+	charge := b.charges()
 	return func(p *core.Parser) (*value.Node, bool) {
 		count := 0
 		for max < 0 || count < max {
+			if charge {
+				p.Spend()
+			}
 			ch, size, ok := p.Peek()
 			if !ok || !accept(p, ch) {
 				p.Expect(p.Pos, desc)
@@ -481,6 +481,7 @@ func (b *Builder) Repeat(e *grammar.Repeat, m core.Matcher, elemScope *compile.S
 	if site != 0 {
 		rs = &core.RunSite{Id: site, M: m, Scope: elemScope, OwnScope: ownScope, Build: build, Min: min, Max: max, Shiftable: shiftable, Value: elemValue}
 	}
+	charge := b.charges()
 	return func(p *core.Parser) (*value.Node, bool) {
 		if rs != nil && p.Runs != nil && p.Silent == 0 {
 			return p.ResumeRepeat(rs)
@@ -492,6 +493,9 @@ func (b *Builder) Repeat(e *grammar.Repeat, m core.Matcher, elemScope *compile.S
 		}
 		count := 0
 		for n := 0; max < 0 || n < max; n++ {
+			if charge {
+				p.Spend()
+			}
 			m0 := p.Mark()
 			prevCut, prevFrame := p.Cut, p.Frame
 			p.Cut = false
@@ -555,12 +559,16 @@ func (b *Builder) Repeat(e *grammar.Repeat, m core.Matcher, elemScope *compile.S
 // nothing refers to an element's frame once its value is taken.
 func (b *Builder) ProjectRepeat(e *grammar.Repeat, m core.Matcher, slot, n int) core.Matcher {
 	min, max := e.Min, e.Max
+	charge := b.charges()
 	return func(p *core.Parser) (*value.Node, bool) {
 		start := p.Pos
 		base := len(p.KidStack)
 		f := p.NewFrame(n)
 		count := 0
 		for i := 0; max < 0 || i < max; i++ {
+			if charge {
+				p.Spend()
+			}
 			core.ClearSpend(p, f.Vals)
 			m0 := p.Mark()
 			prevCut, prevFrame := p.Cut, p.Frame

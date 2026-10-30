@@ -59,8 +59,6 @@ type ExprBuilder[M any] interface {
 	Diagnostic(m M, name ExpID) M
 	// Recover recovers a failure of m, the form of e, by skipping the input skip matches.
 	Recover(e grammar.Expr, m, skip M, build bool) M
-	// Step charges the budget for running m once, if the forms charge it per expression.
-	Step(m M) M
 	// RuleBody completes the rule r with its body.
 	RuleBody(r *Rule, body M)
 	// OperatorsRule completes the Operators Rule r with its trivia skip (if hasSkip), operand
@@ -126,12 +124,6 @@ func (c *Walker[M]) compileRule(r *Rule) {
 // Expr walks the expression. If build is false, its form only matches without building values.
 func (c *Walker[M]) Expr(e grammar.Expr, s *Scope, build bool) M {
 	c.Control.poll()
-	return c.Builder.Step(c.ExprForm(e, s, build))
-}
-
-// ExprForm walks the expression like Expr, without the step charge that Expr adds
-// (ExprBuilder.Step).
-func (c *Walker[M]) ExprForm(e grammar.Expr, s *Scope, build bool) M {
 	control := c.Control
 	switch e := e.(type) {
 	case *grammar.Literal:

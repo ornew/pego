@@ -98,7 +98,6 @@ func (noExprs) Missing(m struct{}, site int, expected string, build bool) struct
 func (noExprs) ErrorMessage(m struct{}, msg ExpID, missingScope bool) struct{}     { return struct{}{} }
 func (noExprs) Diagnostic(m struct{}, name ExpID) struct{}                         { return struct{}{} }
 func (noExprs) Recover(e grammar.Expr, m, skip struct{}, build bool) struct{}      { return struct{}{} }
-func (noExprs) Step(m struct{}) struct{}                                           { return struct{}{} }
 func (noExprs) RuleBody(r *Rule, body struct{})                                    {}
 func (noExprs) OperatorsRule(r *Rule, skip struct{}, hasSkip bool, operands, operators []OpLine[struct{}]) {
 }

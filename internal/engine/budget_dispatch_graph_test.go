@@ -65,17 +65,22 @@ rule expr = #operators {
 	}
 }
 
-// Zero-width matching still consumes expression-dispatch spend. Recognition
-// discards CST construction so input and value spend cannot mask a missing
-// dispatch charge on the controlled graph.
+// Rule calls consume budget even when they match no input, and the zero-width terms of one rule
+// consume none beyond the call: between two charges only the straight-line code of a rule body
+// runs, whose length the grammar bounds. Recognition discards CST construction so input and value
+// spend cannot mask a missing call charge on the controlled graph.
 func TestBudgetClosureDispatchMetersZeroWidthExpressions(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, "rule main = "+strings.Repeat("^ ", 64)+"$$")
+	prog := mustCompile(t, "rule a = ^\n"+"rule main = "+strings.Repeat("a ", 64)+"$$")
+	straight := mustCompile(t, "rule main = "+strings.Repeat("^ ", 64)+"$$")
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		opts := ParseOptions{Unit: unit, Recognize: true, Limits: limits.Limits{Budget: 16}}
 		n, err := prog.ParseWith("main", "", opts)
 		if n != nil || !errors.Is(err, limits.ErrLimit) {
-			t.Fatalf("zero-width dispatch bypassed budget: node=%v error=%v", n, err)
+			t.Fatalf("zero-width calls bypassed budget: node=%v error=%v", n, err)
+		}
+		if _, err := straight.ParseWith("main", "", opts); err != nil {
+			t.Fatalf("straight-line zero-width terms were charged: %v", err)
 		}
 		opts.Limits = limits.Limits{}
 		if _, err := prog.ParseWith("main", "", opts); err != nil {

@@ -590,7 +590,6 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 		}
 	}
 	for {
-		p.Spend()
 		in := &code[ip]
 		switch in.Op {
 		case bytecode.OpStr:
@@ -632,6 +631,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 			}
 			count := 0
 			for max < 0 || count < max {
+				p.Spend()
 				ch, size, ok := p.Peek()
 				if !ok || in.A >= 0 && !vm.has(p, in.A, ch) {
 					if in.A >= 0 {
@@ -772,6 +772,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 				}
 			}
 		case bytecode.OpIter:
+			p.Spend()
 			rep := &mc.reps[len(mc.reps)-1]
 			if rep.max >= 0 && rep.count >= rep.max {
 				ip = int(in.A)
@@ -1164,7 +1165,6 @@ func (vm *Program) eval(ctx *core.EvalCtx, ip int, locals []any) (v any, err err
 		}
 	}()
 	for {
-		p.Spend()
 		in := &m.Exprs[ip]
 		switch in.Op {
 		case bytecode.EInt:

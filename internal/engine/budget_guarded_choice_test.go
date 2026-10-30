@@ -69,22 +69,23 @@ func budgetGuardedChoiceSnapshot(n *value.Node) *value.Node {
 	return &copy
 }
 
+// A guarded choice is straight-line code: skipping its alternatives charges nothing, and the one
+// peek that reads the input is its only charge. The size of the grammar bounds the skips between two
+// charges, as it bounds the straight-line code of a generated rule.
 func TestBudgetGuardedChoiceSilentSkipLoopBudgetAndCancellation(t *testing.T) {
 	t.Parallel()
 	prog, choice := budgetGuardedChoiceProgram(t)
 	c := newClosureWalker(&compile.Compiler{Prog: prog.Static()}, false)
-	m := c.ExprForm(choice, compile.NewScope(), true)
+	m := c.Expr(choice, compile.NewScope(), true)
 
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(unit.String()+"/budget", func(t *testing.T) {
 			p := core.NewParser(&prog.sharedProgram, "z", unit, false)
-			p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: budgetGuardedChoiceAlternatives})
+			p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 1})
 			p.Silent = 1
 			p.MaxDepth = budgetGuardedChoiceAlternatives + 1
-			err := catchFatal(t, func() { _, _ = m(p) })
-			var limit *limits.LimitError
-			if !errors.As(err, &limit) || limit.Kind != limits.LimitBudget || limit.Used != budgetGuardedChoiceAlternatives || limit.Requested != 1 {
-				t.Fatalf("direct silent choice error=%#v, want rejected step after one charged peek and %d guard iterations", err, budgetGuardedChoiceAlternatives-1)
+			if n, ok := m(p); n != nil || ok || p.Control.Used != 1 {
+				t.Fatalf("direct silent choice node=%v ok=%v spent=%d, want one charged peek and no charge for %d skipped alternatives", n, ok, p.Control.Used, budgetGuardedChoiceAlternatives)
 			}
 		})
 
@@ -94,9 +95,8 @@ func TestBudgetGuardedChoiceSilentSkipLoopBudgetAndCancellation(t *testing.T) {
 			p.Control = core.NewBudgetControl(ctx, limits.Limits{})
 			p.Silent = 1
 			p.MaxDepth = budgetGuardedChoiceAlternatives + 1
-			err := catchFatal(t, func() { _, _ = m(p) })
-			if !errors.Is(err, context.Canceled) || p.Control.Used < core.BudgetCheckInterval/2 || p.Control.Used >= core.BudgetCheckInterval {
-				t.Fatalf("direct silent choice cancellation err=%v steps=%d, want cancellation at a bounded step poll", err, p.Control.Used)
+			if err := catchFatal(t, func() { _, _ = m(p) }); err != nil || p.Control.Used != 1 {
+				t.Fatalf("direct silent choice err=%v steps=%d, want no poll between the charges of straight-line code", err, p.Control.Used)
 			}
 		})
 	}
@@ -106,13 +106,13 @@ func TestBudgetGuardedChoiceExactSkipBudget(t *testing.T) {
 	t.Parallel()
 	prog, choice := budgetGuardedChoiceProgram(t)
 	c := newClosureWalker(&compile.Compiler{Prog: prog.Static()}, false)
-	m := c.ExprForm(choice, compile.NewScope(), false)
+	m := c.Expr(choice, compile.NewScope(), false)
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		for _, text := range []string{"z", ""} {
 			for _, silent := range []bool{true, false} {
 				t.Run(unit.String()+"/input="+strconv.Quote(text)+"/silent="+strconv.FormatBool(silent), func(t *testing.T) {
 					p := core.NewParser(&prog.sharedProgram, text, unit, false)
-					p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: budgetGuardedChoiceAlternatives + 1})
+					p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 1})
 					p.MaxDepth = budgetGuardedChoiceAlternatives + 1
 					if silent {
 						p.Silent = 1
@@ -123,14 +123,9 @@ func TestBudgetGuardedChoiceExactSkipBudget(t *testing.T) {
 					if n, ok := m(p); n != nil || ok {
 						t.Fatalf("rejected choice returned %v, %v", n, ok)
 					}
-					if p.Control.Used != budgetGuardedChoiceAlternatives+1 || len(p.Exp) != 0 || p.Pos != 0 {
+					// The peek is the choice's only charge, whatever the number of alternatives skipped.
+					if p.Control.Used != 1 || len(p.Exp) != 0 || p.Pos != 0 {
 						t.Fatalf("choice state spent=%d expectations=%v pos=%d", p.Control.Used, p.Exp, p.Pos)
-					}
-					p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: budgetGuardedChoiceAlternatives})
-					err := catchFatal(t, func() { _, _ = m(p) })
-					var limit *limits.LimitError
-					if !errors.As(err, &limit) || limit.Kind != limits.LimitBudget || limit.Used != budgetGuardedChoiceAlternatives || limit.Requested != 1 || p.Control.Used != budgetGuardedChoiceAlternatives || len(p.Exp) != 0 {
-						t.Fatalf("one-short choice error=%#v spent=%d expectations=%v", err, p.Control.Used, p.Exp)
 					}
 				})
 			}
@@ -145,13 +140,12 @@ func TestBudgetGuardedChoicePassingMatcherCharge(t *testing.T) {
 		for _, skip := range []bool{false, true} {
 			t.Run(unit.String()+"/skip="+strconv.FormatBool(skip), func(t *testing.T) {
 				alts := []grammar.Expr{&grammar.Literal{Value: "z"}}
-				steps := uint64(3) // one peek, matcher dispatch, and literal probe, one unit each
+				steps := uint64(2) // one peek and the literal probe, one unit each; a skipped alternative is free
 				if skip {
 					alts = append([]grammar.Expr{&grammar.Literal{Value: "x"}}, alts...)
-					steps++
 				}
 				c := newClosureWalker(&compile.Compiler{Prog: prog.Static()}, false)
-				m := c.ExprForm(&grammar.Choice{Alts: alts}, compile.NewScope(), false)
+				m := c.Expr(&grammar.Choice{Alts: alts}, compile.NewScope(), false)
 				p := core.NewParser(&prog.sharedProgram, "z", unit, false)
 				p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: steps})
 				p.Silent = 1
@@ -222,7 +216,7 @@ func budgetGuardedChoiceFatalAndRetry(t *testing.T, prog *Program, backend Backe
 					if cancel {
 						core.TraceParser(e).Control.Ctx = newPollingContext(2)
 					} else {
-						core.TraceParser(e).Control.Limits.Budget = core.TraceParser(e).Control.Used + 32
+						core.TraceParser(e).Control.Limits.Budget = core.TraceParser(e).Control.Used + 1
 					}
 				}
 				if e.Kind == TraceEnter && e.Rule == "fallback" {

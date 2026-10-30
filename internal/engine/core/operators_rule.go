@@ -125,6 +125,7 @@ func (p *Parser) applyRecovered(a *OperatorsRuleAttempt) {
 // recursion, so each level counts as a rule call against the nesting limit: a chain of prefix or
 // right-associative operators would otherwise nest without bound on the goroutine stack.
 func (p *Parser) OperatorsRuleParse(r *Rule, min int) (*value.Node, bool) {
+	p.Spend()
 	p.Depth++
 	if p.Depth > p.MaxDepth {
 		p.Fail("nesting too deep: more than %d rule calls", p.MaxDepth)
@@ -143,6 +144,7 @@ func (p *Parser) operatorsRuleExpr(r *Rule, min int) (*value.Node, bool) {
 	}
 	lastNone := -1
 	for {
+		p.Spend()
 		m0 := p.Mark()
 		p.skipTrivia(pr)
 		at, cutFailed := p.Longest(pr.Led)

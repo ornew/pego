@@ -43,7 +43,7 @@ func TestClassConstructionContextCancellation(t *testing.T) {
 		{"bitmap", func(c *compile.Control) { compile.ClassASCII(cl.Ranges, false, c) }},
 		{"accept-construction", func(c *compile.Control) { closure.ClassAcceptControlled(cl, c) }},
 		{"matcher", func(c *compile.Control) {
-			newClosureWalker(&compile.Compiler{Control: c}, false).ExprForm(cl, compile.NewScope(), true)
+			newClosureWalker(&compile.Compiler{Control: c}, false).Expr(cl, compile.NewScope(), true)
 		}},
 		{"choice-guard", func(c *compile.Control) {
 			closure.NewBuilder(&compile.Compiler{Control: c}, false).Guard(compile.First{Term: cl})

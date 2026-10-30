@@ -96,7 +96,6 @@ func (cm *Machine) convert(c *core.EvalCtx, t *grammar.New) (any, error) {
 }
 
 func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
-	c.P.Spend()
 	switch t := t.(type) {
 	case *grammar.IntLit:
 		return t.Value, nil
@@ -145,7 +144,6 @@ func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		p := c.P
 		base := len(p.Estack)
 		for _, fi := range t.Fields {
-			p.Spend()
 			v, err := cm.Eval(c, fi.Value)
 			if err != nil {
 				p.Estack = p.Estack[:base]
@@ -155,7 +153,6 @@ func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		}
 		cm.names = cm.names[:0]
 		for _, fi := range t.Fields {
-			p.Spend()
 			cm.names = append(cm.names, fi.Name)
 		}
 		n, err := c.NewStruct(t.Type, cm.names, p.Estack[base:])
@@ -182,7 +179,6 @@ func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		if t.Func == "concat" && c.P.Fusable(t) {
 			base := len(c.P.KidStack)
 			for _, a := range t.Args {
-				c.P.Spend()
 				if err := cm.pushConcatArg(c, a); err != nil {
 					c.P.DropKids(base)
 					return nil, err
@@ -195,7 +191,6 @@ func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		p := c.P
 		base := len(p.Estack)
 		for _, a := range t.Args {
-			c.P.Spend()
 			v, err := cm.Eval(c, a)
 			if err != nil {
 				p.Estack = p.Estack[:base]
@@ -342,7 +337,6 @@ func (cm *Machine) textOf(c *core.EvalCtx, x grammar.Term) (string, error) {
 
 // pushConcatArg pushes onto KidStack the elements of t, an argument of a fusable concat call.
 func (cm *Machine) pushConcatArg(c *core.EvalCtx, t grammar.Term) error {
-	c.P.Spend()
 	if call, ok := t.(*grammar.Call); ok && c.P.Prog.Projected[call] {
 		v, err := cm.Eval(c, call.Args[0])
 		if err != nil {
@@ -354,7 +348,6 @@ func (cm *Machine) pushConcatArg(c *core.EvalCtx, t grammar.Term) error {
 		p := c.P
 		base := len(p.Estack)
 		for _, a := range call.Args {
-			c.P.Spend()
 			v, err := cm.Eval(c, a)
 			if err != nil {
 				p.Estack = p.Estack[:base]
@@ -368,7 +361,6 @@ func (cm *Machine) pushConcatArg(c *core.EvalCtx, t grammar.Term) error {
 	}
 	if call, ok := t.(*grammar.Call); ok && call.Func == "concat" {
 		for _, a := range call.Args {
-			c.P.Spend()
 			if err := cm.pushConcatArg(c, a); err != nil {
 				return err
 			}

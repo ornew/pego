@@ -80,11 +80,9 @@ type iframe interface {
 
 // iterate puts root at the bottom of the stack and runs until it finishes.
 func (mc *ivmMachine) iterate(vm *Program, root iframe) iresult {
-	p := mc.p
 	stack := []iframe{root}
 	var res iresult
 	for {
-		p.Spend()
 		child, out, done := stack[len(stack)-1].next(mc, vm, res)
 		if !done {
 			stack = append(stack, child)
@@ -179,6 +177,7 @@ func (mc *ivmMachine) callChild(r *core.Rule, min int) iframe {
 // and returns the frame that runs its body.
 func (mc *ivmMachine) plainCallFrame(r *core.Rule, min int) *bodyFrame {
 	p := mc.p
+	p.Spend()
 	f := mc.bodyFrame(r.Entry, r, min, false)
 	f.call = true
 	f.inv = core.InvokeState{PrevEnv: p.Env, PrevCut: p.Cut, Trail: len(p.Trail), Start: p.Pos}
@@ -236,6 +235,7 @@ func (mc *ivmMachine) nudFrame(r *core.Rule) *nudFrame {
 
 func (mc *ivmMachine) operatorsRuleFrame(r *core.Rule, min int) *operatorsRuleFrame {
 	p := mc.p
+	p.Spend()
 	p.Depth++
 	if p.Depth > p.MaxDepth {
 		p.Fail("nesting too deep: more than %d rule calls", p.MaxDepth)
@@ -315,6 +315,7 @@ func (f *callFrame) next(mc *ivmMachine, vm *Program, res iresult) (iframe, ires
 	r := f.r
 	switch f.state {
 	case cBegin:
+		p.Spend() // the charge of Parser.Call
 		if !f.memoized {
 			f.start, f.rec = p.Pos, len(p.Recovered)
 			return f.invoke(mc), iresult{}, false
@@ -551,6 +552,7 @@ func (f *operatorsRuleFrame) next(mc *ivmMachine, vm *Program, res iresult) (ifr
 			f.lhs, f.lastNone = res.v, -1
 			f.state = pLoop
 		case pLoop:
+			p.Spend()
 			f.m0 = p.Mark()
 			f.state = pSkipped
 			if pr.SkipEntry >= 0 {
