@@ -160,3 +160,104 @@ func quoteAll(ss []string) string {
 	}
 	return b.String()
 }
+
+// WithExpectations passed through the runtime to a parser generated without expectations is
+// rejected with an error on every entry point, instead of recording into a parser that has no
+// descriptions of the expectations.
+func TestGeneratedRejectsExpectationsOption(t *testing.T) {
+	t.Parallel()
+	gentest.EachMode(t, testGeneratedRejectsExpectationsOption)
+}
+
+func testGeneratedRejectsExpectationsOption(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated code")
+	}
+	const src = `type N = node[string]
+rule main N = ("a" "b") #atomic`
+	g, err := parseTest(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("gentest")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	gentest.GeneratePackageRaw(t, dir, "off", g, gen.GenOptions{Start: "main", Types: true, Document: true})
+	gs, err := parseTest("rule main = ^^ items:item* #stream $$\nrule item = \"a\\n\"")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gentest.GeneratePackageRaw(t, dir, "offs", gs, gen.GenOptions{Start: "main", Stream: true})
+	gentest.GeneratePackageRaw(t, dir, "avail", g, gen.GenOptions{Start: "main", Types: true, Document: true, Expectations: true})
+	main := `package main
+
+import (
+	"fmt"
+	"strings"
+
+	avail "gentest/avail"
+	off "gentest/off"
+	offs "gentest/offs"
+	rt "github.com/ornew/pego/runtime"
+)
+
+func try(name string, f func() error) {
+	defer func() {
+		if x := recover(); x != nil {
+			fmt.Printf("%s\tPANIC %v\n", name, x)
+		}
+	}()
+	err := f()
+	if err == nil {
+		fmt.Printf("%s\tnil\n", name)
+		return
+	}
+	fmt.Printf("%s\t%v\n", name, err)
+}
+
+func main() {
+	ask := rt.WithExpectations()
+	try("parse", func() error { _, err := off.Parse("a", ask); return err })
+	try("ast", func() error { _, err := off.ParseAST("a", ask); return err })
+	try("stream", func() error { return offs.ParseStream(strings.NewReader("a\n"), func(*offs.Node) error { return nil }, ask) })
+	try("document", func() error { _, err := off.NewDocument("a", ask); return err })
+	d, err := off.NewDocument("a")
+	if err != nil {
+		panic(err)
+	}
+	try("document-parse", func() error { _, err := d.Parse(ask); return err })
+	try("document-ast", func() error { _, err := d.ParseAST(ask); return err })
+	try("avail-parse", func() error { _, err := avail.Parse("a", avail.WithExpectations()); return err })
+	try("avail-ast", func() error { _, err := avail.ParseAST("a", avail.WithExpectations()); return err })
+}
+`
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte(main), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command("go", "run", ".")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("go run: %v\n%s", err, out)
+	}
+	seen := 0
+	for _, line := range strings.Split(strings.TrimSuffix(string(out), "\n"), "\n") {
+		name, res, _ := strings.Cut(line, "\t")
+		seen++
+		if strings.HasPrefix(name, "avail-") {
+			if strings.Contains(res, "PANIC") || strings.Contains(res, "without expectations") {
+				t.Errorf("%s: %s", name, res)
+			}
+			continue
+		}
+		// A Document parse reports the mode mismatch, the Document having been built without them.
+		if !strings.Contains(res, "generated without expectations") && !(strings.HasPrefix(name, "document-") && strings.Contains(res, "cannot change expectations")) {
+			t.Errorf("%s: %s", name, res)
+		}
+	}
+	if seen != 8 {
+		t.Errorf("got %d results\n%s", seen, out)
+	}
+}

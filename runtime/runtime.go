@@ -1088,8 +1088,8 @@ type parseOptions struct {
 	limits   Limits
 	control  *BudgetControl
 	prepared bool
-	// expectations selects the recording of expectations; only a parser generated with them can
-	// record (WithExpectations, grammar.Expectations).
+	// expectations selects the recording of expectations; ResolveOptions rejects it for a parser
+	// generated without them (WithExpectations, grammar.Expectations).
 	expectations bool
 	// maxInput is the resolved MaxInput of a stream, in units; zero sets no bound.
 	maxInput int
@@ -1111,7 +1111,8 @@ func WithUnit(unit PositionUnit) ParseOption { return func(o *parseOptions) { o.
 
 // WithExpectations makes the parse record what a syntax error expects and the messages of @error,
 // which the SyntaxError then lists. Without it the error carries the farthest failure position only.
-// A parser generated without expectations has no WithExpectations.
+// A parser generated without expectations has no WithExpectations, and a parse that passes the
+// option through the runtime returns an error.
 func WithExpectations() ParseOption { return func(o *parseOptions) { o.expectations = true } }
 
 // WithMaxDepth limits nested recursive rule calls (rules on a cycle of calls). Zero selects the generated default;
@@ -1148,6 +1149,9 @@ func ResolveOptions(g *grammar, opts []ParseOption) (parseOptions, error) {
 	}
 	if g.NoBudgetControls && (o.context != nil || !o.limits.disabled()) {
 		return o, fmt.Errorf("this parser was generated without budget controls (generate with -budget-controls to use WithContext and WithLimits)")
+	}
+	if o.expectations && !g.Expectations {
+		return o, fmt.Errorf("this parser was generated without expectations (generate with -expectations to use WithExpectations)")
 	}
 	if err := o.validateDiagnostics(); err != nil {
 		return o, err
