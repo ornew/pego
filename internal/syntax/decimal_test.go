@@ -73,15 +73,19 @@ func TestDecimalTokenBoundaries(t *testing.T) {
 }
 
 func BenchmarkDecimalSource(b *testing.B) {
-	for _, tc := range []struct{ name, source string }{
-		{"Plain", `rule main = "a"`},
-		{"Integers", "rule main = \"a\" => " + strings.Repeat("123 + ", 100) + "0"},
-		{"Indices", "rule main = \"a\" => " + strings.Repeat("$1 + ", 100) + "$0"},
+	// Positional indices are accepted only by the legacy syntax.
+	for _, tc := range []struct {
+		name, source string
+		parse        func(string) (*grammar.Grammar, error)
+	}{
+		{"Plain", `rule main = "a"`, Parse},
+		{"Integers", "rule main = \"a\" => " + strings.Repeat("123 + ", 100) + "0", Parse},
+		{"Indices", "rule main = \"a\" => " + strings.Repeat("$1 + ", 100) + "$0", ParseLegacy},
 	} {
 		b.Run(tc.name, func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := Parse(tc.source); err != nil {
+				if _, err := tc.parse(tc.source); err != nil {
 					b.Fatal(err)
 				}
 			}
