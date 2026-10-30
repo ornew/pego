@@ -208,7 +208,7 @@ The guides show how to test a grammar in an application. The repository uses the
 | Reference-implementation and conformance tests with fuzz targets | Each parser module's tests, for example [`parsers/json/json_test.go`](../parsers/json/json_test.go) |
 | Generated inputs and backend comparisons | [`sample/example_test.go`](../sample/example_test.go) |
 | Compiled grammars, Documents and backend equivalence | `internal/engine/` tests such as `compiled_test.go` and `document_test.go`, and the tests of `internal/engine/document/` |
-| Generated Go against the engine and regression freezes of what the engine cannot say (observation, Documents, work, streams, lowering decisions) | `internal/engine/` tests `gogen_flow_*_test.go` and `core_*_test.go` with `internal/engine/testdata/*.golden`, and `internal/gen/gogen/` tests with `internal/gen/gogen/testdata/*.golden`; a change of what a golden freezes is rewritten with `go test <package> -run <test> -update` and its diff reviewed |
+| Generated Go against the engine and regression freezes of what the engine cannot say (observation, Documents, work, streams, lowering decisions) | `internal/gen/gogen/` tests such as `gogen_flow_*_test.go` with `internal/gen/gogen/testdata/*.golden`, and `internal/engine/` tests `core_*_test.go` with `internal/engine/testdata/*.golden`; a change of what a golden freezes is rewritten with `go test <package> -run <test> -update` and its diff reviewed |
 
 Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/test.sh) to vet and test all standalone parser modules; `cd site && go test ./...` covers the site module.
 

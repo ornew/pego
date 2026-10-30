@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"fmt"
@@ -10,16 +10,6 @@ import (
 	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/gentest"
 )
-
-// The rules whose bodies cut print from Flow IR in the Node and recognizer tables, as the framed bodies of
-// the other rules do (flowFrameExprOK). Flow IR lowers a cut as in the typed table: a flag per backtracking
-// point, which the function reads from and publishes to the runtime's cut flag at its outermost scope. The
-// runtime keeps the frame, memo, depth and finish of the rule, so a cut changes no runtime semantics. Leaders
-// and recovery take the Flow route as well (gogen_flow_leaders_test.go and gogen_flow_recovery_test.go). The
-// generated parsers of the corpus run as the engine's, in both forms and with observation, documents and work
-// controls (the corpus cases "cuts in every scope" and "cut with captures and a projected repetition" fail near
-// and after cuts, so that the errors show whether the alternatives after a cut were tried); the tests here
-// assert the route.
 
 // hasCut reports a cut in e.
 func hasCut(e grammar.Expr) (found bool) {

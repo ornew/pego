@@ -3,8 +3,6 @@ package engine
 import (
 	"bytes"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -125,15 +123,6 @@ rule main = {x := 1; len(true)} "a"`,
 			t.Fatalf("unsupported boundary %s: %v", source, err)
 		}
 	}
-}
-
-func TestPredicateBlocksGeneratedGoParity(t *testing.T) {
-	t.Parallel()
-	gentest.EachMode(t, testPredicateBlocksGeneratedGoParity)
-}
-
-func testPredicateBlocksGeneratedGoParity(t *testing.T) {
-	gentest.GeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), gentest.PredicateBlockGeneratedCases(), gen.GenOptions{})
 }
 
 func TestPredicateBlocksGeneratedTypeScriptParity(t *testing.T) {

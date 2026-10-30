@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -283,18 +281,6 @@ func TestTopBottomSchema(t *testing.T) {
 	if data, _ := json.Marshal(schema); !strings.Contains(string(data), `{"name":"A","shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}}`) {
 		t.Fatalf("bottom union schema:\n%s", data)
 	}
-}
-
-func TestTopBottomGeneratedGoParity(t *testing.T) {
-	t.Parallel()
-	gentest.EachMode(t, testTopBottomGeneratedGoParity)
-}
-
-func testTopBottomGeneratedGoParity(t *testing.T) {
-	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	gentest.GeneratedParsersCorpus(t, goBin, gentest.TopBottomCases(), gen.GenOptions{})
-	// A field of type _, like one of type any, keeps the reference runtime.
-	gentest.GeneratedTypesCorpus(t, goBin, gentest.TopBottomCases(), gen.GenOptions{ConvertTypes: true}, 2)
 }
 
 func TestTopBottomGeneratedTypeScriptParity(t *testing.T) {

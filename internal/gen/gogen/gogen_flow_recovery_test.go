@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"fmt"
@@ -11,18 +11,6 @@ import (
 	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/gentest"
 )
-
-// The bodies with recovery (#recover) print from Flow IR in the Node and recognizer tables, in the lines of
-// Operators Rules and in the stream body of a start rule, as the other framed bodies do (flowFrameExprOK). Flow IR
-// lowers a recovery inline, as the typed table does: the expectations of the body are isolated, and when it fails
-// the state goes back to the mark, the skip must consume at least one character, and the error is recorded and is
-// the value. The Node runtime's value is the error node that RecoverAttr builds (NewErrorNode, which RecoverAttr
-// calls as well). No cut flag is saved around the body or the skip, as RecoverAttr saves none, so a cut inside
-// them reaches the enclosing scope. The generated
-// parsers of the corpus (recovery after a cut, of a leader, nested and with a skip that fails after consuming, with
-// inputs that recover, make no progress and fail after a recovered error) run as the engine's, with observation,
-// Documents and work controls, and ParseStream delivers the same elements and errors; the tests here assert the
-// route.
 
 // hasRecovery reports a recovery in e, read from the expression itself.
 func hasRecovery(e grammar.Expr) (found bool) {

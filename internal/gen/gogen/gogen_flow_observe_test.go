@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"crypto/sha256"
@@ -15,21 +15,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 )
-
-// The Node tables of an observability build are printed from Flow IR. What the build observes (the events of
-// WithTrace and the counters of WithProfile) is checked three ways:
-//   - against the engine: the rule calls of a parse, with their rules, levels, depths, positions, results,
-//     memo flags and evaluations, are those of the engine's trace, except that a call the generated code does
-//     not make because the next character cannot start the rule is reported as a skipped event instead of as
-//     a call (the engine's backends skip such calls too, but not always the same ones);
-//   - against itself: the counters of every rule in the profile are what the events of the same parse add up
-//     to;
-//   - against a golden, testdata/observation.golden, which holds a digest of the reports of every case. It
-//     freezes what the engine cannot say: the skipped events, and the observations of the checked-in
-//     grammars on damaged inputs. Rewrite it with -update after reviewing a change of what is observed.
 
 // observeProbeMain is the consumer of the generated packages with the prefix PREFIX: for each input and entry
 // it prints the number of trace events, the hash of the events and of the profile (without times), and the
@@ -330,7 +319,7 @@ func profileMismatch(r *observedReport) string {
 // engineTraceMismatch compares the calls of a generated parse (the events of got, skipped events set aside)
 // with the engine's trace eng of the same input and entry, and returns the first difference. An engine call
 // that fails having looked at no more than its first character may be missing from the generated trace.
-func engineTraceMismatch(eng []TraceEvent, got []observedEvent, in string) string {
+func engineTraceMismatch(eng []engine.TraceEvent, got []observedEvent, in string) string {
 	var g []observedEvent
 	for _, e := range got {
 		if e.kind != 2 {
@@ -340,7 +329,7 @@ func engineTraceMismatch(eng []TraceEvent, got []observedEvent, in string) strin
 	subtreeEnd := func(ei int) int {
 		depth := 0
 		for k := ei; k < len(eng); k++ {
-			if eng[k].Kind == TraceEnter {
+			if eng[k].Kind == engine.TraceEnter {
 				depth++
 			} else if depth--; depth == 0 {
 				return k + 1
@@ -351,7 +340,7 @@ func engineTraceMismatch(eng []TraceEvent, got []observedEvent, in string) strin
 	gi := 0
 	for ei := 0; ei < len(eng); {
 		e := eng[ei]
-		if e.Kind == TraceExit {
+		if e.Kind == engine.TraceExit {
 			if gi >= len(g) {
 				return "the generated trace ends before the exit of " + e.Rule
 			}
@@ -369,7 +358,7 @@ func engineTraceMismatch(eng []TraceEvent, got []observedEvent, in string) strin
 			continue
 		}
 		end := subtreeEnd(ei)
-		if exit := eng[end-1]; !exit.Matched && exit.Examined <= firstCharEnd(in, e.Pos, CodePoints) {
+		if exit := eng[end-1]; !exit.Matched && exit.Examined <= firstCharEnd(in, e.Pos, engine.CodePoints) {
 			ei = end
 			continue
 		}
@@ -410,9 +399,9 @@ func checkObservations(t *testing.T, group string, cases []gentest.Case, start s
 				}
 				checked++
 				events += len(r.events)
-				var eng []TraceEvent
-				o := ParseOptions{Backend: Closure, Unit: CodePoints, Recognize: entry == "recognize"}
-				o.Trace = func(e TraceEvent) { eng = append(eng, e) }
+				var eng []engine.TraceEvent
+				o := engine.ParseOptions{Backend: engine.Closure, Unit: engine.CodePoints, Recognize: entry == "recognize"}
+				o.Trace = func(e engine.TraceEvent) { eng = append(eng, e) }
 				prog.ParseWith(start, c.Inputs[j], o)
 				if msg := engineTraceMismatch(eng, r.events, c.Inputs[j]); msg != "" {
 					t.Errorf("%s %q %s: %s", c.Name, c.Inputs[j], entry, msg)

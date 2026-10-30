@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 	"hash/crc32"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -150,17 +148,6 @@ func TestCaptureAccessSyntax(t *testing.T) {
 	if _, _, err := LoadProgram(data); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 		t.Fatalf("under-declared capture access ISA accepted: %v", err)
 	}
-}
-
-func TestCaptureAccessGeneratedGoParity(t *testing.T) {
-	t.Parallel()
-	gentest.EachMode(t, testCaptureAccessGeneratedGoParity)
-}
-
-func testCaptureAccessGeneratedGoParity(t *testing.T) {
-	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	gentest.GeneratedParsersCorpus(t, goBin, gentest.CaptureAccessCases(), gen.GenOptions{})
-	gentest.GeneratedTypesCorpus(t, goBin, gentest.CaptureAccessCases(), gen.GenOptions{})
 }
 
 func TestCaptureAccessGeneratedTypeScriptParity(t *testing.T) {

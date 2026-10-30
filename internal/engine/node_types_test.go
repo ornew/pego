@@ -2,8 +2,6 @@ package engine
 
 import (
 	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -69,18 +67,6 @@ func TestNodeTypesCheckedAtCompileTime(t *testing.T) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.static)
 		}
 	}
-}
-
-func TestNodeTypesGeneratedGoParity(t *testing.T) {
-	t.Parallel()
-	gentest.EachMode(t, testNodeTypesGeneratedGoParity)
-}
-
-func testNodeTypesGeneratedGoParity(t *testing.T) {
-	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	gentest.GeneratedParsersCorpus(t, goBin, gentest.NodeTypeCases(), gen.GenOptions{})
-	gentest.GeneratedTypesCorpus(t, goBin, gentest.NodeTypeCases(), gen.GenOptions{})
-	gentest.GeneratedTypesCorpus(t, goBin, gentest.NodeTypeCases(), gen.GenOptions{ConvertTypes: true})
 }
 
 func TestNodeTypesGeneratedTypeScriptParity(t *testing.T) {

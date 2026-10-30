@@ -6,12 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/compiletest"
 	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -117,4 +119,94 @@ func TestMain(m *testing.M) {
 		code = 1
 	}
 	os.Exit(code)
+}
+
+// compileMessage compiles src and returns the error message, or "" if it compiles.
+func compileMessage(t *testing.T, src string, opts ...compile.Options) string {
+	t.Helper()
+	g, err := parseTest(src)
+	if err != nil {
+		t.Fatalf("%q: %v", src, err)
+	}
+	var o compile.Options
+	if len(opts) > 0 {
+		o = opts[0]
+	}
+	_, err = engine.Compile(g, o)
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+func resultWith(prog *engine.Program, input string, o engine.ParseOptions) string {
+	n, err := prog.ParseWith("main", input, o)
+	if err != nil {
+		return "error: " + err.Error()
+	}
+	return n.String()
+}
+
+func mustParse(src string) *grammar.Grammar {
+	g, err := parseTest(src)
+	if err != nil {
+		panic(err)
+	}
+	return g
+}
+
+// compileStarts compiles source as written, without marking start rules for the test.
+func compileStarts(t *testing.T, src string) (*engine.Program, error) {
+	t.Helper()
+	g, err := syntax.Parse(src)
+	if err != nil {
+		t.Fatalf("syntax error: %v\n%s", err, src)
+	}
+	return engine.Compile(g, compile.Options{})
+}
+
+// startEntryWant is what the interpreter reports for each of gentest.StartEntryNames, one line each.
+func startEntryWant(t *testing.T) string {
+	t.Helper()
+	prog, err := compileStarts(t, gentest.StartRestrictionSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var b strings.Builder
+	for _, name := range gentest.StartEntryNames {
+		if err := prog.CheckStart(name); err != nil {
+			fmt.Fprintf(&b, "%s: %v\n", name, err)
+		} else {
+			fmt.Fprintf(&b, "%s: ok\n", name)
+		}
+	}
+	return b.String()
+}
+
+// ignoreCaseLines is the expected output of a program that parses each input and prints "ok" with
+// the consumed input, or "error".
+func ignoreCaseLines(t *testing.T, src string, inputs []string) string {
+	t.Helper()
+	prog := mustCompile(t, src)
+	var b strings.Builder
+	for _, in := range inputs {
+		n, err := prog.ParseWith("main", in, engine.ParseOptions{Backend: engine.Closure})
+		if err != nil {
+			b.WriteString("error\n")
+			continue
+		}
+		r := []rune(in)
+		fmt.Fprintf(&b, "ok %s\n", string(r[n.Start():n.End()]))
+	}
+	return b.String()
+}
+
+// firstCharEnd returns the position after the character at pos in the unit u: what a call that
+// looks at that character only has examined, which is pos+1 at the end of the input.
+func firstCharEnd(input string, pos int, u engine.PositionUnit) int {
+	if u == engine.Bytes && pos < len(input) {
+		_, size := utf8.DecodeRuneInString(input[pos:])
+		return pos + size
+	}
+	return pos + 1
 }

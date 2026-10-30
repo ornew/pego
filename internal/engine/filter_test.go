@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 	"hash/crc32"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -130,17 +128,6 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 		}
 	}
 	t.Fatal("fixture emitted no filter call")
-}
-
-func TestFilterGeneratedGoParity(t *testing.T) {
-	t.Parallel()
-	gentest.EachMode(t, testFilterGeneratedGoParity)
-}
-
-func testFilterGeneratedGoParity(t *testing.T) {
-	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	gentest.GeneratedParsersCorpus(t, goBin, gentest.FilterCases(), gen.GenOptions{})
-	gentest.GeneratedTypesCorpus(t, goBin, gentest.FilterCases(), gen.GenOptions{})
 }
 
 func TestFilterGeneratedTypeScriptParity(t *testing.T) {

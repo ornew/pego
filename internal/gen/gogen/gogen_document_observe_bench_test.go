@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 // Exported by TestGeneratedDocumentBenchmarkFixture. Observation modes are
 // generated only when the measured package includes their declarations.

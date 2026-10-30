@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 	"hash/crc32"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -140,18 +138,6 @@ func TestCastSyntax(t *testing.T) {
 	if err != nil || data[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("cast to any ISA: %v %d", err, data[isaOffset])
 	}
-}
-
-func TestCastGeneratedGoParity(t *testing.T) {
-	t.Parallel()
-	gentest.EachMode(t, testCastGeneratedGoParity)
-}
-
-func testCastGeneratedGoParity(t *testing.T) {
-	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	gentest.GeneratedParsersCorpus(t, goBin, gentest.CastCases(), gen.GenOptions{})
-	gentest.GeneratedParsersCorpus(t, goBin, gentest.CastCases(), gen.GenOptions{SourceInfo: true})
-	gentest.GeneratedTypesCorpus(t, goBin, gentest.CastCases(), gen.GenOptions{ConvertTypes: true})
 }
 
 func TestCastGeneratedTypeScriptParity(t *testing.T) {

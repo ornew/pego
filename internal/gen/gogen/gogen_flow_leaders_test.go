@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"fmt"
@@ -9,17 +9,6 @@ import (
 	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/gentest"
 )
-
-// The bodies of left-recursion leaders print from Flow IR in the Node and recognizer tables, and in the stream
-// body of a start rule that is a leader, as the framed bodies of the other rules do (flowFrameExprOK). The
-// runtime owns the growth of a leader's seed (Call, GrowBegin, GrowStep and GrowEnd around the body, the memo
-// entry that a left-recursive call reads as the seed, the dependency counts of the seed reads, and the merging of
-// the expected sets of the iterations); the generated code supplies the body that the runtime evaluates for each
-// iteration. A left-recursive alternative has no first set (ruleFirst gives none for a leader), so it is never
-// guarded and always reads the seed; the other alternatives are guarded as in any rule. The generated parsers of the corpus (the leader cases
-// of gentest.GenCorpus: memoized callers, lookaheads, nesting, cuts and captures, with inputs that fail after a seed)
-// run as the engine's, with observation, Documents (statistics included) and work controls, and ParseStream
-// delivers the same elements and errors; the tests here assert the route.
 
 // TestFlowLeadersPrintFromFlow checks that every leader takes the Flow route in the Node and
 // recognizer tables, over the corpus and the ten grammars in both forms (a rule Flow IR does not

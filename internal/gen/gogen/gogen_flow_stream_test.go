@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"crypto/sha256"
@@ -32,12 +32,12 @@ func streamCases(t *testing.T) []gentest.Case {
 		}
 	}
 	for _, name := range []string{"csv"} {
-		src, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
+		src, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".pego"))
 		if err != nil {
 			t.Fatal(err)
 		}
 		c := gentest.Case{Name: name, Src: string(src), Inputs: []string{"", "\ufeffa,b\r\n", "a,\"x\"\"y\"\n\n", "a,\"unterminated", "a\rb\r\n"}}
-		files, _ := filepath.Glob(filepath.Join("..", "..", "parsers", name, "testdata", "*.txt"))
+		files, _ := filepath.Glob(filepath.Join("..", "..", "..", "parsers", name, "testdata", "*.txt"))
 		for _, f := range files {
 			in, err := os.ReadFile(f)
 			if err != nil {

@@ -2,8 +2,6 @@ package engine
 
 import (
 	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -61,17 +59,6 @@ func TestValueResults(t *testing.T) {
 			t.Errorf("%q: accepted", src)
 		}
 	}
-}
-
-func TestValueResultsGeneratedGoParity(t *testing.T) {
-	t.Parallel()
-	gentest.EachMode(t, testValueResultsGeneratedGoParity)
-}
-
-func testValueResultsGeneratedGoParity(t *testing.T) {
-	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	gentest.GeneratedParsersCorpus(t, goBin, gentest.ValueResultCases(), gen.GenOptions{})
-	gentest.GeneratedTypesCorpus(t, goBin, gentest.ValueResultCases(), gen.GenOptions{ConvertTypes: true})
 }
 
 func TestValueResultsGeneratedTypeScriptParity(t *testing.T) {

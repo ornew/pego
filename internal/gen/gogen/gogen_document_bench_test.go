@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"os"

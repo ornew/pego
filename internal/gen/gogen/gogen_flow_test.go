@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"bytes"
@@ -14,9 +14,6 @@ import (
 	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/gentest"
 )
-
-// The tests here check the typed rules printed from Flow IR (internal/gen/gogen/flow.go), generating every corpus
-// grammar in the modes of flowModes. The engine oracle of the corpus tests checks their values.
 
 // flowModes are the generator options under which the default prints rules from Flow IR, lean and
 // with work controls; frames reports that it also prints the bodies and lines under runtime-owned

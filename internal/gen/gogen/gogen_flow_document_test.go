@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"crypto/sha256"
@@ -16,20 +16,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/flow"
 )
-
-// The Node tables of a Documents build are printed from Flow IR (Options.Document). A Document parse records how
-// far it examined the input in the primitives that read it, and reuses a result after an edit only if the edit
-// lies outside that range; a read in place that bypasses the primitive makes a Document return a stale result.
-// The tests run the same random edit sequences on a Document of each generated parser and check, after every
-// edit, that
-//   - the result and the error are those of a parse from scratch of the same text;
-//   - over the corpus, parses after an edit reuse results (an edit leaves regions untouched);
-//
-// and compare a digest of everything observed (the results, the errors, and the evaluation and reuse counts
-// of every parse, which depend on the ranges recorded) with testdata/document.golden, which freezes what
-// the first two checks cannot say. Rewrite it with -update after reviewing a change.
 
 // documentProbeMain is the consumer of the generated packages with the prefix PREFIX. For each input it creates a
 // Document, applies the edits of a generator seeded by the input, parses after each edit twice (the second parse
@@ -446,5 +433,3 @@ func TestFlowNodeDocumentMutants(t *testing.T) {
 		})
 	}
 }
-
-var _ = flow.Verify

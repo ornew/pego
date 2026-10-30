@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -106,20 +105,6 @@ rule a = ("é" / "ab")+ #atomic`)
 			}
 		})
 	}
-}
-
-func TestGeneratedUnsharedParsersMatchEngine(t *testing.T) {
-	t.Parallel()
-	gentest.EachMode(t, testGeneratedUnsharedParsersMatchEngine)
-}
-
-func testGeneratedUnsharedParsersMatchEngine(t *testing.T) {
-	if testing.Short() {
-		t.Skip("builds generated code")
-	}
-	opts := gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true}
-	gentest.GeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), gentest.GenCorpus(t), opts)
-	gentest.GeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), gentest.GenCorpus(t), opts)
 }
 
 func TestGeneratedUnsharedTSParsersMatchEngine(t *testing.T) {
