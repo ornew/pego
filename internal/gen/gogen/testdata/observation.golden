@@ -1,5 +1,5 @@
 # Digests of the observations (trace and profile) of the generated Node parsers, by group, mode and case
-# (see gogen_flow_observe_test.go). Rewrite with: go test ./internal/engine -run Observation -update
+# (see gogen_flow_observe_test.go). Rewrite with: go test ./internal/gen/gogen -run Observation -update
 # A run checks every entry of its scope: an entry that is missing, stale or different fails. -update replaces the
 # entries of the scope, drops stale ones and logs a summary per case. Review the diff: it is a regression freeze.
 corpus/0/../../examples/calculator/calc.pego	events=220 0a6705e3db1b15d5a05a29df

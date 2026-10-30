@@ -258,7 +258,7 @@ const documentGolden = "testdata/document.golden"
 
 const documentGoldenHeader = "# Digests of the Document parses of the generated Node parsers (results, errors, evaluation and reuse counts after\n" +
 	"# every edit of a seeded sequence), by group, mode and case (see gogen_flow_document_test.go).\n" +
-	"# Rewrite with: go test ./internal/engine -run Document -update\n" + gentest.GoldenRules
+	"# Rewrite with: go test ./internal/gen/gogen -run Document -update\n" + gentest.GoldenRules
 
 var documentGoldenFile = gentest.GoldenFile{Path: documentGolden, Header: documentGoldenHeader}
 

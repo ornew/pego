@@ -419,7 +419,7 @@ func checkObservations(t *testing.T, group string, cases []gentest.Case, start s
 }
 
 const observationGoldenHeader = "# Digests of the observations (trace and profile) of the generated Node parsers, by group, mode and case\n" +
-	"# (see gogen_flow_observe_test.go). Rewrite with: go test ./internal/engine -run Observation -update\n" + gentest.GoldenRules
+	"# (see gogen_flow_observe_test.go). Rewrite with: go test ./internal/gen/gogen -run Observation -update\n" + gentest.GoldenRules
 
 var observationGoldenFile = gentest.GoldenFile{Path: observationGolden, Header: observationGoldenHeader}
 
