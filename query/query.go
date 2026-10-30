@@ -79,7 +79,7 @@ func WithContext(ctx context.Context) Option {
 }
 
 // WithLimits bounds the budget a query may spend. Budget is charged for traversal, matching, paths and
-// results. A zero limit means an unlimited budget.
+// results. A zero or Unlimited limit means an unlimited budget.
 func WithLimits(limits pego.Limits) Option {
 	return func(o *options) { o.limits = limits }
 }

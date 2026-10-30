@@ -25,7 +25,10 @@ func TestCompiledCorpusBudgetParity(t *testing.T) {
 					for _, active := range []bool{false, true} {
 						opts := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit)}
 						if active {
-							opts = append(opts, pego.WithLimits(pego.Limits{Budget: ^uint64(0)}))
+							// The largest finite budget: ^uint64(0) is Unlimited, which runs without a control.
+							opts = append(opts, pego.WithLimits(pego.Limits{Budget: ^uint64(0) - 1}))
+						} else {
+							opts = append(opts, pego.WithLimits(pego.Limits{Budget: pego.Unlimited}))
 						}
 						n, err := p.Parse(input, opts...)
 						if err != nil {

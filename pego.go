@@ -129,13 +129,18 @@ const (
 // ParseOption configures a single parse.
 type ParseOption func(*engine.ParseOptions)
 
-// Limits bounds one parse invocation. A zero limit is unlimited.
+// Limits bounds one parse invocation. A zero limit selects the default of that limit, and
+// Unlimited disables it.
 //
 // Budget bounds the cumulative spend of the parse: every input unit
 // inspected, every rule call and loop iteration, and every unit of value
-// construction adds to one counter. Counts depend on backend, input unit and
-// version.
+// construction adds to one counter. The default is the larger of 2^20 and 1024
+// units for each unit of input in the position unit of the parse. Counts depend
+// on backend, input unit and version.
 type Limits = limits.Limits
+
+// Unlimited is the value of a limit that disables it: Limits{Budget: pego.Unlimited}.
+const Unlimited = limits.Unlimited
 
 // LimitError describes a reservation that would exceed a limit.
 type LimitError = limits.LimitError
@@ -156,7 +161,8 @@ func WithContext(ctx context.Context) ParseOption {
 	return func(o *engine.ParseOptions) { o.Context = ctx }
 }
 
-// WithLimits sets the invocation-local limits. Zero means unlimited.
+// WithLimits sets the invocation-local limits. A zero limit selects its default and Unlimited
+// disables it.
 func WithLimits(limits Limits) ParseOption {
 	return func(o *engine.ParseOptions) { o.Limits = limits }
 }

@@ -138,7 +138,8 @@ func (d *Document) parseWithCapture(o core.ParseOptions, capture func(*core.Pars
 			}
 		}
 	}()
-	c := core.NewBudgetControl(o.Context, o.Limits)
+	lim, _ := core.ResolveLimits(o.Limits, uint64(d.in.Loaded()), false)
+	c := core.NewBudgetControl(o.Context, lim)
 	if !core.BudgetControlsEnabled && c != nil {
 		return nil, fmt.Errorf("budget controls are unavailable in the reference build")
 	}

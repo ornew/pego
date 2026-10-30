@@ -162,7 +162,10 @@ func TestBudgetMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
 	input := "a"
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
-			opts := ParseOptions{Backend: backend, Unit: unit}
+			// The memo keys of 280 variables cost more than the default budget of a one-character
+			// input: the fixture's cost comes from the grammar, so the setup parse disables the
+			// budget.
+			opts := ParseOptions{Backend: backend, Unit: unit, Limits: limits.Limits{Budget: limits.Unlimited}}
 			retained, err := prog.ParseWith("main", input, opts)
 			if err != nil || retained == nil {
 				t.Fatalf("%v/%v setup parse: node=%v err=%v", backend, unit, retained, err)

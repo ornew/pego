@@ -37,7 +37,11 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gjson.ParseOption{gjson.WithUnit(u)}
 			if c {
-				o = append(o, gjson.WithLimits(gjson.Limits{Budget: ^uint64(0)}))
+				// The largest finite budget: ^uint64(0) is Unlimited, which runs without a control.
+				o = append(o, gjson.WithLimits(gjson.Limits{Budget: ^uint64(0) - 1}))
+			} else {
+				// A zero budget selects the default counter; the uncontrolled form needs Unlimited.
+				o = append(o, gjson.WithLimits(gjson.Limits{Budget: gjson.Unlimited}))
 			}
 			return o
 		}),
@@ -48,7 +52,10 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gcsv.ParseOption{gcsv.WithUnit(u)}
 			if c {
-				o = append(o, gcsv.WithLimits(gcsv.Limits{Budget: ^uint64(0)}))
+				o = append(o, gcsv.WithLimits(gcsv.Limits{Budget: ^uint64(0) - 1}))
+			} else {
+				// A zero budget selects the default counter; the uncontrolled form needs Unlimited.
+				o = append(o, gcsv.WithLimits(gcsv.Limits{Budget: gcsv.Unlimited}))
 			}
 			return o
 		}),
@@ -59,7 +66,10 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gxml.ParseOption{gxml.WithUnit(u)}
 			if c {
-				o = append(o, gxml.WithLimits(gxml.Limits{Budget: ^uint64(0)}))
+				o = append(o, gxml.WithLimits(gxml.Limits{Budget: ^uint64(0) - 1}))
+			} else {
+				// A zero budget selects the default counter; the uncontrolled form needs Unlimited.
+				o = append(o, gxml.WithLimits(gxml.Limits{Budget: gxml.Unlimited}))
 			}
 			return o
 		}),
@@ -70,7 +80,10 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gcalc.ParseOption{gcalc.WithUnit(u)}
 			if c {
-				o = append(o, gcalc.WithLimits(gcalc.Limits{Budget: ^uint64(0)}))
+				o = append(o, gcalc.WithLimits(gcalc.Limits{Budget: ^uint64(0) - 1}))
+			} else {
+				// A zero budget selects the default counter; the uncontrolled form needs Unlimited.
+				o = append(o, gcalc.WithLimits(gcalc.Limits{Budget: gcalc.Unlimited}))
 			}
 			return o
 		}),
@@ -81,7 +94,10 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gcalclr.ParseOption{gcalclr.WithUnit(u)}
 			if c {
-				o = append(o, gcalclr.WithLimits(gcalclr.Limits{Budget: ^uint64(0)}))
+				o = append(o, gcalclr.WithLimits(gcalclr.Limits{Budget: ^uint64(0) - 1}))
+			} else {
+				// A zero budget selects the default counter; the uncontrolled form needs Unlimited.
+				o = append(o, gcalclr.WithLimits(gcalclr.Limits{Budget: gcalclr.Unlimited}))
 			}
 			return o
 		}),
@@ -92,7 +108,10 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gminilang.ParseOption{gminilang.WithUnit(u)}
 			if c {
-				o = append(o, gminilang.WithLimits(gminilang.Limits{Budget: ^uint64(0)}))
+				o = append(o, gminilang.WithLimits(gminilang.Limits{Budget: ^uint64(0) - 1}))
+			} else {
+				// A zero budget selects the default counter; the uncontrolled form needs Unlimited.
+				o = append(o, gminilang.WithLimits(gminilang.Limits{Budget: gminilang.Unlimited}))
 			}
 			return o
 		}),
@@ -103,7 +122,10 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gminilang.ParseOption{gminilang.WithUnit(u)}
 			if c {
-				o = append(o, gminilang.WithLimits(gminilang.Limits{Budget: ^uint64(0)}))
+				o = append(o, gminilang.WithLimits(gminilang.Limits{Budget: ^uint64(0) - 1}))
+			} else {
+				// A zero budget selects the default counter; the uncontrolled form needs Unlimited.
+				o = append(o, gminilang.WithLimits(gminilang.Limits{Budget: gminilang.Unlimited}))
 			}
 			return o
 		}),
@@ -114,7 +136,10 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []goutline.ParseOption{goutline.WithUnit(u)}
 			if c {
-				o = append(o, goutline.WithLimits(goutline.Limits{Budget: ^uint64(0)}))
+				o = append(o, goutline.WithLimits(goutline.Limits{Budget: ^uint64(0) - 1}))
+			} else {
+				// A zero budget selects the default counter; the uncontrolled form needs Unlimited.
+				o = append(o, goutline.WithLimits(goutline.Limits{Budget: goutline.Unlimited}))
 			}
 			return o
 		}),
@@ -167,13 +192,14 @@ func TestControlledFullWorkloads(t *testing.T) {
 			for _, be := range backends {
 				for _, u := range units {
 					t.Run(be.name+"/"+u.name, func(t *testing.T) {
-						opts := []pego.ParseOption{pego.WithBackend(be.b), pego.WithUnit(u.u)}
+						// Unlimited keeps the plain parse uncontrolled: a zero budget selects the default counter.
+						opts := []pego.ParseOption{pego.WithBackend(be.b), pego.WithUnit(u.u), pego.WithLimits(pego.Limits{Budget: pego.Unlimited})}
 						plain, plainErr := p.Parse(input, opts...)
 						want := check(plain, plainErr)
 						for _, mode := range []string{"budget", "context", "combined"} {
 							active := append([]pego.ParseOption{}, opts...)
 							if mode != "context" {
-								active = append(active, pego.WithLimits(pego.Limits{Budget: ^uint64(0)}))
+								active = append(active, pego.WithLimits(pego.Limits{Budget: ^uint64(0) - 1}))
 							}
 							if mode != "budget" {
 								ctx, cancel := context.WithCancel(context.Background())

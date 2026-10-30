@@ -42,7 +42,7 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.No
 	if err := prog.checkMode(o, false); err != nil {
 		return nil, err
 	}
-	active, _, control, err := prog.admitParse(start, o, false)
+	active, _, control, err := prog.admitParse(start, o, false, core.InputUnits(input, o.Unit))
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (prog *Program) Recognizer() (*Program, error) {
 		for i, r := range prog.RuleList {
 			flags[i] = compile.RuleFlags{Memo: r.Memo, Leader: r.Leader, Positional: r.Positional, Twin: r.TwinOK}
 		}
-		prog.rec, prog.recErr = build(prog.Grammar, compile.Options{Recognize: true, Recognizer: true, SourceInfo: prog.RecordsSourceInfo, DefaultValue: prog.MakesDefaultValue}, flags)
+		prog.rec, prog.recErr = build(prog.SourceGrammar(), compile.Options{Recognize: true, Recognizer: true, SourceInfo: prog.RecordsSourceInfo, DefaultValue: prog.MakesDefaultValue}, flags)
 	})
 	return prog.rec, prog.recErr
 }
@@ -279,7 +279,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value
 	if err := prog.checkMode(o, false); err != nil {
 		return err
 	}
-	_, rule, control, err := prog.admitParse(start, o, true)
+	_, rule, control, err := prog.admitParse(start, o, true, 0)
 	if err != nil {
 		return err
 	}

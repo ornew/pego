@@ -31,7 +31,8 @@ func TestBudgetLazyClosureAdmission(t *testing.T) {
 					return err
 				}
 			}
-			for _, o := range []ParseOptions{{}, {Context: context.Background()}, {Backend: Bytecode, Limits: limits.Limits{Budget: 10000}}} {
+			// An inactive call disables the default budget explicitly.
+			for _, o := range []ParseOptions{{Limits: limits.Limits{Budget: limits.Unlimited}}, {Context: context.Background(), Limits: limits.Limits{Budget: limits.Unlimited}}, {Backend: Bytecode, Limits: limits.Limits{Budget: 10000}}} {
 				if err := call(o); err != nil {
 					t.Fatal(err)
 				}
@@ -182,7 +183,7 @@ func TestBudgetLazyClosureIncompleteInitialization(t *testing.T) {
 	if n != nil || err == nil || !strings.Contains(err.Error(), "initialization did not complete") {
 		t.Fatalf("n=%v error=%v", n, err)
 	}
-	if n, err := prog.Parse("main", "a"); n == nil || err != nil {
+	if n, err := prog.ParseWith("main", "a", ParseOptions{Limits: limits.Limits{Budget: limits.Unlimited}}); n == nil || err != nil {
 		t.Fatal("plain graph affected", err)
 	}
 }

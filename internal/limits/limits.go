@@ -17,8 +17,28 @@ const (
 	DefaultMaxDepthIterative = 10_000_000
 )
 
-// Limits bounds one parse invocation. A zero limit leaves that limit
-// unlimited.
+// Unlimited is the value of a limit that disables it. Every field of Limits is a uint64 and
+// takes it, so one constant serves them all.
+const Unlimited = math.MaxUint64
+
+// The default budget of a parse is DefaultBudgetPerUnit for each unit of input, and at least
+// DefaultBudgetFloor.
+const (
+	DefaultBudgetFloor   = 1 << 20
+	DefaultBudgetPerUnit = 1024
+)
+
+// DefaultBudget returns the budget of a parse whose Budget is zero, for an input of n units of the
+// position unit of the parse.
+func DefaultBudget(n uint64) uint64 {
+	if n > math.MaxUint64/DefaultBudgetPerUnit {
+		return math.MaxUint64 - 1
+	}
+	return max(DefaultBudgetFloor, n*DefaultBudgetPerUnit)
+}
+
+// Limits bounds one parse invocation. A zero limit selects the default of that limit, and
+// Unlimited disables it.
 //
 // Budget bounds the cumulative spend of the parse: every input unit
 // inspected, every rule call and loop iteration, and every unit of value

@@ -1,7 +1,11 @@
 package core
 
-import "github.com/ornew/pego/internal/limits"
-import "context"
+import (
+	"context"
+	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/limits"
+)
 
 // BudgetCheckInterval is the spend between two observations of cancellation.
 const BudgetCheckInterval = uint64(256)
@@ -17,15 +21,54 @@ type BudgetControl struct {
 	// last observation of cancellation.
 	Used       uint64
 	SinceCheck uint64
+
+	// Adaptive is set for a stream whose budget is the default: the budget follows the units read
+	// (GrowDefault), which are Read.
+	Adaptive bool
+	Read     uint64
+}
+
+// ResolveLimits returns the limits a parse runs under for an input of n units of its position
+// unit: a zero Budget selects the default (limits.DefaultBudget), and Unlimited disables the
+// budget, which the result leaves zero. A stream does not know n: its default starts at the floor
+// and grows with the input (BudgetControl.GrowDefault), which adaptive reports. The reference
+// build has no controls to charge, so no default applies there.
+func ResolveLimits(l limits.Limits, n uint64, stream bool) (resolved limits.Limits, adaptive bool) {
+	switch l.Budget {
+	case limits.Unlimited:
+		l.Budget = 0
+	case 0:
+		switch {
+		case !BudgetControlsEnabled:
+		case stream:
+			l.Budget, adaptive = limits.DefaultBudgetFloor, true
+		default:
+			l.Budget = limits.DefaultBudget(n)
+		}
+	}
+	return l, adaptive
+}
+
+// GrowDefault raises the default budget of a stream for k more units read. It does nothing for
+// any other budget, and on a nil receiver.
+func (c *BudgetControl) GrowDefault(k int) {
+	if c == nil || !c.Adaptive || k <= 0 {
+		return
+	}
+	c.Read += uint64(k)
+	if b := limits.DefaultBudget(c.Read); b > c.Limits.Budget {
+		c.Limits.Budget = b
+	}
 }
 
 // NewBudgetControl returns nil when neither cancellation nor a finite budget is
-// active. A nil context is equivalent to context.Background.
+// active. A nil context is equivalent to context.Background. A context that can never be
+// canceled (Done is nil) is never polled.
 func NewBudgetControl(ctx context.Context, limits limits.Limits) *BudgetControl {
-	if ctx == nil {
-		ctx = context.Background()
+	if ctx != nil && ctx.Done() == nil {
+		ctx = nil
 	}
-	if ctx.Done() == nil && limits.Budget == 0 {
+	if ctx == nil && limits.Budget == 0 {
 		return nil
 	}
 	return &BudgetControl{Ctx: ctx, Limits: limits}
@@ -94,4 +137,14 @@ func (c *BudgetControl) Charge(n uint64) {
 		return
 	}
 	c.SinceCheck = limits.SaturatingAdd(c.SinceCheck, n)
+}
+
+// InputUnits returns the length of s in units of the position unit. Below the size at which the
+// default budget leaves its floor the byte length stands in for the count of code points, which it
+// bounds from above.
+func InputUnits(s string, unit PositionUnit) uint64 {
+	if unit == Bytes || len(s) <= limits.DefaultBudgetFloor/limits.DefaultBudgetPerUnit {
+		return uint64(len(s))
+	}
+	return uint64(utf8.RuneCountInString(s))
 }

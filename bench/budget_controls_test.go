@@ -23,7 +23,8 @@ func BenchmarkControlledParse(b *testing.B) {
 		b.Run(w.name, func(b *testing.B) {
 			p := load(b, w.grammar)
 			input := w.input(1)
-			limits := pego.Limits{Budget: ^uint64(0)}
+			// The largest finite budget: ^uint64(0) is Unlimited, which runs without a control.
+			limits := pego.Limits{Budget: ^uint64(0) - 1}
 			for _, backend := range backends {
 				for _, unit := range units {
 					b.Run(backend.name+"/"+unit.name, func(b *testing.B) {
@@ -104,7 +105,7 @@ func TestControlledWorkloads(t *testing.T) {
 		t.Run(w.name, func(t *testing.T) {
 			input := w.input(10)
 			p := load(t, w.grammar)
-			limits := pego.Limits{Budget: ^uint64(0)}
+			limits := pego.Limits{Budget: ^uint64(0) - 1}
 			equal := func(plain, controlled any) {
 				t.Helper()
 				a, err := json.Marshal(plain)
@@ -121,12 +122,13 @@ func TestControlledWorkloads(t *testing.T) {
 			}
 			for _, backend := range backends {
 				for _, unit := range units {
-					opts := []pego.ParseOption{pego.WithBackend(backend.b), pego.WithUnit(unit.u)}
+					// Unlimited keeps the plain parse uncontrolled: a zero budget selects the default counter.
+					opts := []pego.ParseOption{pego.WithBackend(backend.b), pego.WithUnit(unit.u), pego.WithLimits(pego.Limits{Budget: pego.Unlimited})}
 					plain, err := p.Parse(input, opts...)
 					if err != nil {
 						t.Fatal(err)
 					}
-					controlled, err := p.Parse(input, append(opts, pego.WithLimits(limits))...)
+					controlled, err := p.Parse(input, append(opts[:len(opts):len(opts)], pego.WithLimits(limits))...)
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -139,7 +141,7 @@ func TestControlledWorkloads(t *testing.T) {
 					if unit.u == pego.Bytes {
 						selected = gjson.Bytes
 					}
-					plain, err := gjson.Parse(input, gjson.WithUnit(selected))
+					plain, err := gjson.Parse(input, gjson.WithUnit(selected), gjson.WithLimits(gjson.Limits{Budget: gjson.Unlimited}))
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -162,7 +164,7 @@ func TestControlledWorkloads(t *testing.T) {
 					if unit.u == pego.Bytes {
 						selected = gxml.Bytes
 					}
-					plain, err := gxml.Parse(input, gxml.WithUnit(selected))
+					plain, err := gxml.Parse(input, gxml.WithUnit(selected), gxml.WithLimits(gxml.Limits{Budget: gxml.Unlimited}))
 					if err != nil {
 						t.Fatal(err)
 					}

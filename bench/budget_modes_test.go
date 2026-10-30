@@ -9,7 +9,8 @@ import (
 	"github.com/ornew/pego"
 )
 
-// BenchmarkBudgetControlModes separates warm context polling from finite counters.
+// BenchmarkBudgetControlModes separates warm context polling from finite counters. The inactive and
+// context modes set Unlimited, so that they measure no counter.
 // Cold controlled-program construction is measured separately.
 func BenchmarkBudgetControlModes(b *testing.B) {
 	for _, w := range workloads {
@@ -29,8 +30,13 @@ func BenchmarkBudgetControlModes(b *testing.B) {
 								defer cancel()
 								opts = append(opts, pego.WithContext(ctx))
 							}
+							if mode == "inactive" || mode == "context" {
+								// A zero budget selects the default, which is a counter; Unlimited leaves only the context.
+								opts = append(opts, pego.WithLimits(pego.Limits{Budget: pego.Unlimited}))
+							}
 							if mode == "budget" || mode == "combined" {
-								opts = append(opts, pego.WithLimits(pego.Limits{Budget: ^uint64(0)}))
+								// The largest finite budget: ^uint64(0) is Unlimited, which runs without a control.
+								opts = append(opts, pego.WithLimits(pego.Limits{Budget: ^uint64(0) - 1}))
 							}
 							if err := parseOK(p, &w, input, opts...); err != nil {
 								b.Fatal(err)

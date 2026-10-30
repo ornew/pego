@@ -8,17 +8,18 @@ import (
 	"github.com/ornew/pego/internal/engine/vm"
 )
 
-// admitParse validates fixed metadata before caller Context methods. Callers
+// admitParse validates fixed metadata and resolves the limits (core.ResolveLimits) for an input of n units before caller Context methods. Callers
 // resolve an empty start to the default start rule first. Lazy setup
 // is not charged, but active calls check immediately around each component.
-func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Program, *core.Rule, *core.BudgetControl, error) {
+func (prog *Program) admitParse(start string, o ParseOptions, stream bool, n uint64) (*Program, *core.Rule, *core.BudgetControl, error) {
 	if err := prog.CheckStart(start); err != nil {
 		return nil, nil, nil, err
 	}
 	if err := prog.admitMissing(o, stream); err != nil {
 		return nil, nil, nil, err
 	}
-	if o.Context == nil && o.Limits.Budget == 0 {
+	lim, adaptive := core.ResolveLimits(o.Limits, n, stream)
+	if o.Context == nil && lim.Budget == 0 {
 		if o.Recognize {
 			if _, err := prog.preflightRule(o.Backend, start, stream); err != nil {
 				return nil, nil, nil, err
@@ -51,9 +52,12 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Pro
 			return nil, nil, nil, err
 		}
 	}
-	c := core.NewBudgetControl(o.Context, o.Limits)
+	c := core.NewBudgetControl(o.Context, lim)
 	if !core.BudgetControlsEnabled && c != nil {
 		return nil, nil, nil, fmt.Errorf("budget controls are unavailable in the reference build")
+	}
+	if c != nil {
+		c.Adaptive = adaptive
 	}
 	c.Check()
 	active := prog
@@ -130,12 +134,15 @@ func (prog *Program) prepareControlledProgram(b Backend, c *core.BudgetControl) 
 		for i, r := range prog.RuleList {
 			flags[i] = compile.RuleFlags{Memo: r.Memo, Leader: r.Leader, Positional: r.Positional, Twin: r.TwinOK}
 		}
-		prog.budgetProgram, prog.budgetErr = build(prog.Grammar, compile.Options{
+		// The grammar as written: lowering its inline actions again names them in messages as
+		// the program that was compiled first does.
+		prog.budgetProgram, prog.budgetErr = build(prog.SourceGrammar(), compile.Options{
 			Recognize:          prog.BudgetRecognize,
 			Recognizer:         prog.BudgetRecognizer,
 			NoProjections:      prog.NoProjections,
 			ControlledDispatch: true,
 			SourceInfo:         prog.RecordsSourceInfo,
+			DefaultValue:       prog.MakesDefaultValue,
 		}, flags)
 	})
 	c.Check()
