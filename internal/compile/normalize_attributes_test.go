@@ -46,8 +46,8 @@ func TestNormalizationAttributeBindingDoesNotMutate(t *testing.T) {
 			key = "skip"
 		}
 		a := &grammar.Attribute{Name: name, Pragma: name == "recover", Args: []any{&grammar.Literal{Value: "x"}}, KwArgs: map[string]any{"custom": []int{1, 2}}}
-		n := &AttributeNormalizer{}
-		bound := n.Bind(n.Attribute(a), key)
+		n := &attributeNormalizer{}
+		bound := n.bind(n.attribute(a), key)
 		if len(a.Args) != 1 || len(a.KwArgs) != 1 || len(bound.Args) != 0 || len(bound.KwArgs) != 2 {
 			t.Fatal("binding mutated source")
 		}
@@ -63,7 +63,7 @@ func TestNormalizationSharesUnchangedNodes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	normalized, err := NormalizeAttributes(g)
+	normalized, err := normalizeAttributes(g)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestNormalizationSharesUnchangedNodes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	normalized, err = NormalizeAttributes(g)
+	normalized, err = normalizeAttributes(g)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -30,11 +30,11 @@ func predicateBlock(e *grammar.Predicate, block *grammar.Block, control *Control
 	}
 }
 
-// ExpandPredicateBlocks splices the predicates of every multi-statement predicate block into the
+// expandPredicateBlocks splices the predicates of every multi-statement predicate block into the
 // list, and reports whether any block was expanded. normalized[i] is the normalized form of
 // source[i], and a normalized block is the sequence of its predicates. It returns normalized
 // itself when no block has more than one statement.
-func ExpandPredicateBlocks(source, normalized []grammar.Expr, control *Control) ([]grammar.Expr, bool) {
+func expandPredicateBlocks(source, normalized []grammar.Expr, control *Control) ([]grammar.Expr, bool) {
 	expanded := 0
 	for _, item := range source {
 		control.poll()

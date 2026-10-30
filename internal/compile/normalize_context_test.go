@@ -118,15 +118,15 @@ func TestNormalizationCopiesObserveCancellation(t *testing.T) {
 			}()
 			switch phase {
 			case "slice":
-				NormalizationClone(values, control)
+				normalizationClone(values, control)
 			case "keywords":
-				CloneAttributeKeywords(keywords, control)
+				cloneAttributeKeywords(keywords, control)
 			case "attribute-append":
-				AppendNormalizedAttribute(attrs, &grammar.Attribute{Name: "other"}, control)
+				appendNormalizedAttribute(attrs, &grammar.Attribute{Name: "other"}, control)
 			case "predicate-flatten":
 				source := []grammar.Expr{&grammar.Predicate{Term: &grammar.Block{Statements: terms}}}
 				normalized := []grammar.Expr{&grammar.Seq{Items: expressions}}
-				ExpandPredicateBlocks(source, normalized, control)
+				expandPredicateBlocks(source, normalized, control)
 			}
 			t.Fatal("copy finished without cancellation")
 		})
