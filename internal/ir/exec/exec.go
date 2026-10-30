@@ -17,7 +17,9 @@
 // has no exceptions: an operation marked NoReturn ends the parse when it does not return (for
 // example when the budget is exhausted).
 //
-// Modules are built with the functions of build.go, checked by Verify and listed by String.
+// Modules are built with the functions of build.go, checked by Verify, listed by String and run by
+// Run, which executes a Func against a Machine that implements the operations. Run is how Go runs
+// conformance cases against reference models and bound implementations.
 package exec
 
 import "fmt"
@@ -251,8 +253,8 @@ func (*Assert) stmt()   {}
 // Expr is an expression.
 type Expr interface{ expr() }
 
-// Const is a constant of a scalar type. Value holds a bool for Bool and an int64 or a uint64
-// (U64) otherwise.
+// Const is a constant of a scalar type. Value holds a bool for KBool, an int64 for KInt, an int32
+// for KI32, a uint32 for KU32 and a uint64 for KU64.
 type Const struct {
 	Type  Type
 	Value any

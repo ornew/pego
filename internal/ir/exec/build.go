@@ -126,6 +126,9 @@ func Int(v int64) Expr { return &Const{Type: TInt, Value: v} }
 // U64 returns a u64 constant.
 func U64(v uint64) Expr { return &Const{Type: TU64, Value: v} }
 
+// U32 returns a u32 constant.
+func U32(v uint32) Expr { return &Const{Type: TU32, Value: v} }
+
 // BoolC returns a bool constant.
 func BoolC(v bool) Expr { return &Const{Type: TBool, Value: v} }
 

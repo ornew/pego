@@ -327,14 +327,18 @@ func (v *verifier) expr(x Expr, s *scope) (Type, bool) {
 				v.errorf("bool constant holds %T", x.Value)
 			}
 			return x.Type, ok
-		case x.Type == TU64:
-			_, ok := x.Value.(uint64)
-			if !ok {
-				v.errorf("u64 constant holds %T", x.Value)
-			}
-			return x.Type, ok
 		case x.Type.integer():
-			_, ok := x.Value.(int64)
+			var ok bool
+			switch x.Type.Kind {
+			case KInt:
+				_, ok = x.Value.(int64)
+			case KI32:
+				_, ok = x.Value.(int32)
+			case KU32:
+				_, ok = x.Value.(uint32)
+			case KU64:
+				_, ok = x.Value.(uint64)
+			}
 			if !ok {
 				v.errorf("%s constant holds %T", x.Type, x.Value)
 			}
