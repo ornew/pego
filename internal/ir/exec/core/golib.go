@@ -194,8 +194,18 @@ func goTarget(typed bool) *execgo.Target {
 // for the commands that inherit them: a tag given to go test as -tags reaches no subprocess
 // otherwise.
 func GoFlags(flags string) string {
-	if Enabled && !strings.Contains(" "+flags+" ", " -tags="+RuntimeTag+" ") {
-		return strings.TrimSpace(flags + " -tags=" + RuntimeTag)
+	if Enabled {
+		return TagFlags(flags)
 	}
 	return flags
+}
+
+// TagFlags returns the GOFLAGS flags with the build tag that selects the printed compositions,
+// whether this build prints them or not, for a test that runs generated Go parsers on the printed
+// runtime without the switch: the generated Go code is the same either way.
+func TagFlags(flags string) string {
+	if strings.Contains(" "+flags+" ", " -tags="+RuntimeTag+" ") {
+		return flags
+	}
+	return strings.TrimSpace(flags + " -tags=" + RuntimeTag)
 }

@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/ornew/pego/internal/ir/exec/core"
@@ -35,4 +36,26 @@ func CheckRuntimeTag(t *testing.T) {
 	if got := slices.Contains(files, "call_exec.go"); got != core.Enabled {
 		t.Errorf("a go command of the test compiles runtime/call_exec.go: %v, want %v (GOFLAGS=%q)", got, core.Enabled, os.Getenv("GOFLAGS"))
 	}
+}
+
+// execRuntimes holds the names of the tests that set UseExecRuntime.
+var execRuntimes sync.Map
+
+// UseExecRuntime makes the generated Go programs that t and its subtests build with the corpus
+// helpers (GeneratedParsersCorpus, GeneratedTypesCorpus) use the runtime with the printed
+// compositions (core.TagFlags), so that a run without the Exec IR switch compares them with the
+// engine too.
+func UseExecRuntime(t testing.TB) {
+	name := t.Name()
+	execRuntimes.Store(name, true)
+	t.Cleanup(func() { execRuntimes.Delete(name) })
+}
+
+// testGoFlags returns the GOFLAGS flags of a go command that builds a generated program of t: with
+// the tag of the printed runtime if the switch is on or t uses it (UseExecRuntime).
+func testGoFlags(t testing.TB, flags string) string {
+	if _, ok := byTest(&execRuntimes, t); ok {
+		return core.TagFlags(flags)
+	}
+	return core.GoFlags(flags)
 }

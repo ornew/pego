@@ -13,7 +13,6 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/compiletest"
 	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/ir/exec/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -227,7 +226,7 @@ func main() {
 	write("inputs.json", string(data))
 	cmd := exec.Command(goBin, "run", ".", "inputs.json")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"), "GOTOOLCHAIN=local")
+	cmd.Env = append(os.Environ(), "GOFLAGS="+testGoFlags(t, "-mod=mod -trimpath"), "GOTOOLCHAIN=local")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("go run: %v\n%s", err, out)
@@ -397,7 +396,7 @@ func main() {
 	write("inputs.json", string(data))
 	cmd := exec.Command(goBin, "run", ".", "inputs.json")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"), "GOTOOLCHAIN=local")
+	cmd.Env = append(os.Environ(), "GOFLAGS="+testGoFlags(t, "-mod=mod -trimpath"), "GOTOOLCHAIN=local")
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
