@@ -70,7 +70,7 @@ func TestManyVariablesBudget(t *testing.T) {
 }
 
 func BenchmarkManyVariables(b *testing.B) {
-	for _, n := range []int{4, 16, 17, 64, 280} {
+	for _, n := range []int{4, 9, 12, 16, 17, 32, 64, 280} {
 		g, err := parseTest(manyVariablesGrammar(n))
 		if err != nil {
 			b.Fatal(err)

@@ -50,8 +50,25 @@ Controls without variables or with few: JSON and Outline parse, recognize, incre
 benchmarks show no slowdown in any backend; Outline (a few `:=` variables) is 6% to 10% faster, and
 JSON is unchanged within noise on closure and generated Go (iterative bytecode -7%).
 
+## Leaf and Fan-Out Cutoff
+
+The flat leaf and the trie fan-out share one width. Width 8, 16 and 32 were swept on the closure and
+iterative bytecode engines with ten interleaved runs of 150 ms each, on a machine with other load
+(the baseline column has a wide spread):
+
+| Benchmark (sec/op, 16 as the base) | Width 8 | Width 32 |
+|:--|--:|--:|
+| 4, 9, 12, 16 variables | ~ | ~ |
+| 17 variables, closure | -5.7% (controlled) | -5.9% to -7.8% |
+| 17 variables, bytecode | ~ | ~ |
+| 32 variables | ~ | ~ |
+| 280 variables | -14% to -16% | ~ |
+| JSON and Outline Parse, closure and iterative | ~ | ~ |
+
+No width is significantly better at small V, and the only gain of width 8 (280 variables) comes from a
+base run with a spread above 100%. Width 16 stays. The generated runtime was not swept.
+
 ## Limits
 
-The 16-variable leaf is the starting cutoff and is not tuned. The TypeScript environment is
-verified by tests but not benchmarked. Generated Go for the five large grammars is slightly
-smaller (about 0.06% of `parser.go`).
+The TypeScript environment is verified by tests but not benchmarked. Generated Go for the five large
+grammars is slightly smaller (about 0.06% of `parser.go`).
