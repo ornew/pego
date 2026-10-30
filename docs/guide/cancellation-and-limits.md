@@ -37,7 +37,8 @@ case node != nil:
 `Budget` counts inspected input elements and backend execution steps in one counter, one unit each; it is neither a
 time nor a memory limit, and backtracking never refunds it. Scanning input, such as a repeated character class,
 charges it in proportion to the elements examined, so one limit bounds the cost of large input, rule calls and
-values that grow. An interruption is fatal to the parse and `#recover` cannot consume it,
+values that grow. The memory a parse allocates, long values included, is at most proportional to the budget it
+spends plus the input, so a smaller budget also bounds memory; there is no separate memory limit. An interruption is fatal to the parse and `#recover` cannot consume it,
 so a batch parse returns no partial result. Cancellation is cooperative: a parser cannot preempt a blocked reader or
 a callback of yours. The exact rules are in
 [Cancellation and Budget Limits](../../spec/runtime/parsing.md#cancellation-and-budget-limits); the
