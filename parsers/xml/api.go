@@ -121,7 +121,8 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error { return 
 
 // WithExpectations makes the parse record what a syntax error expects and the messages of @error,
 // which the SyntaxError then lists. Without it the error carries the farthest failure position only.
-// A parser generated without expectations has no WithExpectations.
+// A parser generated without expectations has no WithExpectations, and a parse that passes the
+// option through the runtime returns an error.
 func WithExpectations() ParseOption { return rt.WithExpectations() }
 
 // WithContext selects cooperative cancellation for one invocation.
