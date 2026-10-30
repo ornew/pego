@@ -114,7 +114,7 @@ Operator kinds are encoded as 0 = prefix, 1 = postfix, 2 = infix. Associativity 
 | Environment | The values of the declared variables, as a persistent vector indexed by variable slot (the position in the variable table). Saved environments are never modified: rebinding a variable copies only the path to its slot. A parse starts from the environment built from the variable table, so every declared variable is bound before the start rule runs. |
 | Recovered errors | Syntax errors recovered by `#recover` |
 | `silent` | While positive, expectations are not recorded |
-| Farthest failure | A position and the set of expectations recorded there |
+| Farthest failure | A position and the set of expectations recorded there. A parse that does not [record expectations](../runtime/parsing.md#recording-expectations) tracks the position only: the set holds at most a placeholder that stands for a failure at the position and describes nothing |
 | Repetition state | For each active repetition: count, value-stack base, maximum, and scope |
 | Memo | (rule, position, level) → result |
 
@@ -305,7 +305,7 @@ Built-in function indices: 0 `len`, 1 `text`, 2 `foldl`, 3 `foldr`, 4 `map`, 5 `
 
 ## Error Messages
 
-A syntax error (see [Syntax errors](../runtime/parsing.md#syntax-errors)) is formatted as `line:column: syntax error: expected A, B` (expectations sorted lexicographically). If `@error` messages apply, it is formatted as `line:column: message` (multiple messages joined with `; `). `@diagnostic` changes ordinary expected-item descriptions but does not replace explicit messages.
+A syntax error (see [Syntax errors](../runtime/parsing.md#syntax-errors)) from a parse that records expectations is formatted as `line:column: syntax error: expected A, B` (expectations sorted lexicographically). If `@error` messages apply, it is formatted as `line:column: message` (multiple messages joined with `; `). `@diagnostic` changes ordinary expected-item descriptions but does not replace explicit messages. A parse that does not record expectations formats it as `line:column: syntax error`.
 Expectation strings are those the compiler placed in the string table: literals in quotes, character classes in `[...]` form, `any character`, and so on.
 
 ## File Format

@@ -31,7 +31,9 @@ declaration instead of an expression; see
 ## `@error`
 
 When an expression fails, `@error("...")` changes the diagnostic at the
-farthest position reached inside it. It does not alter matching, backtracking,
+farthest position reached inside it. A message is part of the
+[recorded expectations](../runtime/parsing.md#recording-expectations): a parse that
+does not record them reports `syntax error` without it. It does not alter matching, backtracking,
 recovery, captures, values, or spans. A named form such as
 `@error(message="...")` is equivalent. When several messages apply at one
 position, they are joined with `; `. If the expression succeeds, expectations
@@ -50,7 +52,9 @@ a non-empty string literal. The value cannot contain CR, LF, U+0085, U+2028 or
 U+2029. Duplicate `@diagnostic` attributes on one expression chain are
 invalid.
 
-The attribute wraps the expression immediately before it. On failure, it
+The attribute wraps the expression immediately before it. It has an effect only
+when the parse [records expectations](../runtime/parsing.md#recording-expectations).
+On failure, it
 replaces ordinary expected-item descriptions contributed by that wrapped
 failure at its farthest position with `name`. It preserves that position,
 expectations recorded at farther positions, and explicit `@error` messages.

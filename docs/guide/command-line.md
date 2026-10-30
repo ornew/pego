@@ -64,6 +64,8 @@ pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-che
 | `-budget` | `0` | `Limits.Budget`: the cost a parse may spend, in budget units. `0` selects the default budget and `unlimited` disables the limit |
 | `-max-input` | `0` | `Limits.MaxInput`: the longest input accepted, in the position unit. `0` and `unlimited` accept any length |
 
+`pego parse`, like `explain`, `trace`, `profile`, `test` and `editfuzz`, records [expectations](error-messages.md#recording-expectations), so a syntax error lists what was expected.
+
 A parse that reaches a limit prints the message of the `*pego.LimitError` (for example `parse budget limit exceeded: limit 1048576, used 1048576, requested 1`) to standard error and exits with status 1, like any other failed parse. See [cancellation-and-limits.md](cancellation-and-limits.md).
 
 ```bash
@@ -308,7 +310,7 @@ writes no output. To save another mode, compile the grammar source.
 
 ```bash
 pego gen -g <grammar> -module <import path> [-pkg <package>] [-runtime embed|import|only] [-s <rule>] [-o <directory>] [-types] [-recognize] [-source-info] [-default-value]
-pego gen -lang ts -g <grammar> -o <directory> [-s <rule>] [-runtime embed|import|only] [-runtime-module <specifier>] [-types] [-recognize] [-observability] [-default-value]
+pego gen -lang ts -g <grammar> -o <directory> [-s <rule>] [-runtime embed|import|only] [-runtime-module <specifier>] [-types] [-recognize] [-expectations] [-observability] [-default-value]
 ```
 
 Generates a standalone Go parser (see [code-generation.md](code-generation.md)) or, with `-lang ts`, a TypeScript

@@ -121,7 +121,7 @@ prints for the same grammar and inputs.
 ## The Command
 
 ```bash
-pego gen -lang ts -g <grammar> -o <directory> [-s <rule>] [-runtime embed|import|only] [-runtime-module <specifier>] [-types] [-recognize] [-observability]
+pego gen -lang ts -g <grammar> -o <directory> [-s <rule>] [-runtime embed|import|only] [-runtime-module <specifier>] [-types] [-recognize] [-expectations] [-observability]
 ```
 
 | Flag | Default | Meaning |
@@ -134,6 +134,7 @@ pego gen -lang ts -g <grammar> -o <directory> [-s <rule>] [-runtime embed|import
 | `-runtime-module` | (required with `-runtime import`) | The module specifier `parser.ts` and `types.ts` import the runtime from, for example `../shared/runtime.ts`. Several parsers share one runtime this way: generate it once with `-runtime only` |
 | `-types` | off | Write `types.ts` with the grammar's interfaces and aliases (also exported from `parser.ts`), and add the configured-start `parseAST`/`parseASTWithOptions` |
 | `-recognize` | off | Also generate `recognize` and `recognizeWithOptions`, which check input without building a tree |
+| `-expectations` | off | Record what a syntax error expects: the `expected` list and the `messages` of `@error` (see [recording expectations](error-messages.md#recording-expectations)). Without it the errors have the farthest position, an empty `expected` and `messages`, and the message `syntax error` |
 | `-observability` | off | Accept the trace and profile options (see [debugging](debugging.md#generated-typescript-traces)); without it they are rejected |
 | `-max-depth` | `0` | Generated nested rule-call default; zero selects 100,000, otherwise a positive safe integer |
 

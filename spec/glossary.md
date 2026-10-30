@@ -26,8 +26,8 @@ definition and the place where the term is defined.
 | Document | A mutable text together with its parse result, updated by edits and reparsed incrementally. See [Incremental Documents](runtime/documents.md). |
 | edit | The replacement of a range of a Document's text; the next parse reuses the results that the edit did not affect. See [Edits](runtime/documents.md#edits). |
 | effect | One thing a Core IR node can do besides succeed or fail, such as consuming input, recording expectations or writing a capture. See [Attributes and Effects](core-ir/attributes.md#effects). |
-| expectation | An item that a syntax error lists as expected at a position: a literal, a character class, `any character` or an anchor. See [Syntax errors](runtime/parsing.md#syntax-errors). |
-| farthest failure | The farthest position at which parsing failed, with the items expected there; the syntax error reports it. See [Syntax errors](runtime/parsing.md#syntax-errors). |
+| expectation | An item that a syntax error lists as expected at a position: a literal, a character class, `any character` or an anchor. A parse records expectations only on request. See [Recording expectations](runtime/parsing.md#recording-expectations). |
+| farthest failure | The farthest position at which parsing failed, with the items expected there when the parse records expectations; the syntax error reports it. See [Syntax errors](runtime/parsing.md#syntax-errors). |
 | generated parser | A standalone Go or TypeScript parser written for one grammar by `pego gen`. See [Generated Parsers](runtime/generated-parsers.md). |
 | grammar | An optional package clause followed by Type and Rule Declaration Statements, normally written in a `.pego` file. See [Grammar Files](language/grammar-files.md). |
 | join type | The join `T \| U` of types: a type whose values are the values of any one of its member types. See [Join Types](language/types.md#join-types). |

@@ -25,6 +25,10 @@ the edited file. Every command and its output below were run as shown, in this o
 
 ## What a Syntax Error Is
 
+Listing what was expected costs time and code at every failed alternative, so a parse lists it only when it is asked to
+([Recording Expectations](#recording-expectations)). The `pego` commands and the playground ask for
+it, which is why the examples below show the lists.
+
 A PEG parser backtracks: when `a / b` fails in `a`, it simply tries `b`, so "where the parse failed" is not a single
 event. PEGO reports the **farthest failure**: the largest input position at which any expression failed to match,
 together with everything that was expected there. If the whole parse fails, that is the error.
@@ -174,10 +178,27 @@ The last row is not subject to backtracking or recovery: it aborts the parse. A 
 |:--|:--|
 | `Pos` | Offset of the error in the position unit, counted from 0 |
 | `Line`, `Col` | 1-based line and column |
-| `Expected` | The expected items, sorted, as shown in the messages (`"\"x\""` for the literal `"x"`) |
-| `Messages` | The messages of [`@error`](#error-labels), if any |
+| `Expected` | The expected items, sorted, as shown in the messages (`"\"x\""` for the literal `"x"`); empty unless [expectations are recorded](#recording-expectations) |
+| `Messages` | The messages of [`@error`](#error-labels), if any; empty unless expectations are recorded |
 
 `Error()` returns `line:col: message`, and `Message()` returns the message without the position.
+
+### Recording Expectations
+
+A parse that is not asked to record expectations still reports where the input stopped matching: `Pos`, `Line` and `Col`
+are the same. `Expected` and `Messages` are empty and `Message()` returns `syntax error`. Trees, recovered errors and
+their positions do not change. A grammar whose authors wrote `@error` messages gets them only when expectations are
+recorded.
+
+| Parse | How to record |
+|:--|:--|
+| `Parser.Parse`, `ParseStream`, `Document` | Pass `pego.WithExpectations()`. A `Document` fixes it when it is created |
+| Generated Go or TypeScript parser | Generate with `-expectations` (`Expectations` in `gen.Go` and `gen.TypeScript`) |
+
+```go
+node, err := p.Parse(input, pego.WithExpectations())
+// err: 1:8: syntax error: expected "(", [0-9]
+```
 
 A complete program that handles all of these outcomes is in [Using the Errors from Go](recovery.md#using-the-errors-from-go).
 
@@ -271,7 +292,8 @@ pego: 1:12: syntax error: expected "(", [0-9], [a-z]
 
 `@error(message="...")` is attached to an expression like a postfix operator. If the expression fails, every expected
 item recorded **inside** it is replaced by the message, which is reported at the farthest position reached inside the
-expression. If the expression succeeds, nothing changes.
+expression. If the expression succeeds, nothing changes. A message is part of the recorded expectations: a parse that
+does not [record them](#recording-expectations) reports `syntax error` instead.
 
 Here are the labels for `toy.pego`. The statement rules are rewritten so that each place a user can go wrong has a
 label, and `term` is split so that its label covers only the "no expression here" case:

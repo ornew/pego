@@ -273,7 +273,7 @@ func main() {
 		"print 1;\n}\n",
 	} {
 		fmt.Printf("--- %q\n", input)
-		node, err := p.Parse(input)
+		node, err := p.Parse(input, pego.WithExpectations())
 
 		var recovered pego.SyntaxErrors
 		var failed *pego.SyntaxError

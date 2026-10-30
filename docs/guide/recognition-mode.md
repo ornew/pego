@@ -22,7 +22,7 @@ benchmarks measure recognition at 1.3–1.6× faster than a full parse on the cl
 ```go
 n, err := p.Parse("abc=12", pego.RecognizeOnly())
 fmt.Println(n, err) // nil <nil>
-n, err = p.Parse("abc=", pego.RecognizeOnly())
+n, err = p.Parse("abc=", pego.RecognizeOnly(), pego.WithExpectations())
 fmt.Println(n, err) // nil 1:5: syntax error: expected [0-9]
 ```
 

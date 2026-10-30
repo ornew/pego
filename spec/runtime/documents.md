@@ -24,7 +24,7 @@ the document is created; see [Positions](parsing.md#positions).
 
 | Operation | Behavior |
 |:--|:--|
-| `p.NewDocument(text, opts...)` | Returns a document holding `text`. `WithUnit` fixes the position unit (also the unit of edits) and `WithBackend` fixes the backend; `WithContext` and `WithLimits` set defaults for initialization and later parses. It fails for `RecognizeOnly`, for an unavailable backend, for an unknown start rule and when initialization is interrupted. Nothing is parsed |
+| `p.NewDocument(text, opts...)` | Returns a document holding `text`. `WithUnit` fixes the position unit (also the unit of edits), `WithBackend` fixes the backend and `WithExpectations` fixes whether syntax errors [record expectations](parsing.md#recording-expectations) (a later `Parse` or `Snapshot` that asks for the other mode is an error); `WithContext` and `WithLimits` set defaults for initialization and later parses. It fails for `RecognizeOnly`, for an unavailable backend, for an unknown start rule and when initialization is interrupted. Nothing is parsed |
 | `doc.Text()` | The current text |
 | `doc.Unit()` | The fixed position unit |
 | `doc.Version()` | A comparable opaque token identifying the current text revision. A new document starts at sequence 1. Parsing does not advance the version. The token does not retain the document, the text or parse caches |

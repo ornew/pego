@@ -65,7 +65,7 @@ reuse.
 
 | | |
 |:--|:--|
-| `p.NewDocument(text, opts...)` | A document holding `text`. `WithUnit` (also the unit of `Edit`) and `WithBackend` fix its mode; `WithContext` and `WithLimits` set defaults for initialization and later parses. Fails for `RecognizeOnly`, an unavailable backend, an unknown start rule, or interrupted initialization. Nothing is parsed yet. |
+| `p.NewDocument(text, opts...)` | A document holding `text`. `WithUnit` (also the unit of `Edit`), `WithBackend` and `WithExpectations` fix its mode; `WithContext` and `WithLimits` set defaults for initialization and later parses. Fails for `RecognizeOnly`, an unavailable backend, an unknown start rule, or interrupted initialization. Nothing is parsed yet. |
 | `doc.Edit(start, end, text)` | Replace `[start, end)` with `text`, in the document's unit. `start == end` inserts, an empty `text` deletes. An error if the range is outside the text, and with `Bytes`, if `start` or `end` is inside a character. Does not parse. |
 | `doc.Parse(opts...)` | Parse the current text using construction defaults plus invocation overrides. Counters reset per call. Results and errors are those of `Parser.Parse`, including recovered `SyntaxErrors`. |
 | `doc.Snapshot(opts...)` | Parse and capture the current revision as an immutable read-only result. Ordinary syntax and recovered errors are stored in the Snapshot; interruption or an option that changes the fixed unit/backend/mode returns no Snapshot. |
@@ -223,7 +223,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	doc, err := p.NewDocument("ab\ncd\nef\n")
+	doc, err := p.NewDocument("ab\ncd\nef\n", pego.WithExpectations())
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -186,9 +186,10 @@ defined in [Incremental Documents](documents.md).
 ## Syntax Errors
 
 When the input does not match the grammar, the parser reports the **farthest
-position** that parsing reached, together with the items that were expected at
-that position: literals, character classes, `any character` (for `.`) and
-anchors (`beginning of input`, `end of input`, `beginning of line`,
+position** that parsing reached. When the parse [records
+expectations](#recording-expectations), the error also lists the items that were
+expected at that position: literals, character classes, `any character` (for `.`)
+and anchors (`beginning of input`, `end of input`, `beginning of line`,
 `end of line`).
 
 ```text
@@ -203,17 +204,44 @@ anchors (`beginning of input`, `end of input`, `beginning of line`,
   and bottom (`_|_`) contribute no expected items.
 - If the start rule matches but input remains, `end of input` is expected at the
   position where the start rule stopped (see [Whole input](#whole-input)).
-- If nothing was expected at the farthest position, the message is just
-  `syntax error`.
+- If nothing was expected at the farthest position, or the parse does not record
+  expectations, the message is just `syntax error`.
 - A [`@error`](../language/attributes.md#error) attribute replaces the expected items inside
   an expression with a message. If a message applies at the farthest position,
-  the message is reported instead of the expected items.
+  the message is reported instead of the expected items. Messages are reported only
+  when expectations are recorded.
+
+### Recording Expectations
+
+Recording what each failed terminal expected costs time and code on every
+alternative, and most parses never show the list. A parse therefore records
+expectations only on request. Without it:
+
+- A syntax error has the same position, line and column, and the parse succeeds
+  or fails exactly when it does with recording. The farthest position is
+  tracked either way.
+- `Expected` is empty, `Messages` is empty and the message is `syntax error`.
+  The messages of [`@error`](../language/attributes.md#error) and the names of
+  [`@diagnostic`](../language/attributes.md#diagnostic) take part in recording,
+  so a grammar that uses them reports them only when expectations are recorded.
+- Errors that [`#recover`](../language/pragmas.md#recover) and `#missing` return
+  as values have the same positions and spans, and the message `syntax error`.
+- Trees, spans and values are identical.
+
+Recording is requested as follows.
+
+| Parse | Request |
+|:--|:--|
+| `Parser.Parse`, `ParseStream`, `ParsePrefix`, `Document` | The option `pego.WithExpectations()`. A `Document` fixes the mode when it is created; a later parse that asks for the other mode is an error |
+| Generated Go and TypeScript parsers | The generation option `Expectations` (`-expectations` in `pego gen`). Without it the generated parser keeps no table of expectations |
+| `pego parse`, `pego debug`, `pego trace`, `pego explain`, `pego profile`, `pego test`, `pego editfuzz` and the playground | Always on |
 
 ### Errors in Go and on the Command Line
 
 In the Go API, a failed parse returns a `*pego.SyntaxError` with the fields `Pos`
 (the position in the position unit), `Line`, `Col`, `Expected` (the sorted expected
-items) and `Messages` (the messages of `@error` attributes), and the methods
+items) and `Messages` (the messages of `@error` attributes), both empty unless
+expectations are recorded, and the methods
 `Error()`, which returns the text above with its position, and `Message()`, which
 returns it without the position. A parse that recovered errors returns the node and
 an error of type `pego.SyntaxErrors`, a list of `*SyntaxError`; `errors.As` tells it
