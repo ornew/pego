@@ -15,7 +15,7 @@ func (in *Input) detachedText(start, end int) string {
 		src := in.Bs[start:end]
 		for off := 0; off < len(src); {
 			n := min(4096, len(src)-off)
-			in.Control.Charge(uint64(n), 1)
+			in.Control.Charge(uint64(n))
 			if off == 0 {
 				out.Grow(len(src))
 			}
@@ -28,7 +28,7 @@ func (in *Input) detachedText(start, end int) string {
 	size := 0
 	for off := 0; off < len(src); {
 		n := min(128, len(src)-off)
-		in.Control.Charge(uint64(n), uint64(n))
+		in.Control.Charge(2 * uint64(n))
 		for _, r := range src[off : off+n] {
 			width := utf8.RuneLen(r)
 			if width < 0 {
@@ -41,7 +41,7 @@ func (in *Input) detachedText(start, end int) string {
 	out.Grow(size)
 	for off := 0; off < len(src); {
 		n := min(128, len(src)-off)
-		in.Control.Charge(uint64(n), uint64(n))
+		in.Control.Charge(2 * uint64(n))
 		for _, r := range src[off : off+n] {
 			out.WriteRune(r)
 		}

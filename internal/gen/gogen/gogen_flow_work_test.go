@@ -47,7 +47,7 @@ IMPORTS)
 type probe struct {
 	// run returns whether the run failed with a work limit, its error text ("" for success) and what is
 	// wrong with the error as a work-limit error ("" if nothing).
-	run func(s string, limits func(*uint64, *uint64), ctx context.Context) (limited bool, msg, bad string)
+	run func(s string, limit func(*uint64), ctx context.Context) (limited bool, msg, bad string)
 }
 
 type countCtx struct {
@@ -63,93 +63,78 @@ func (c *countCtx) Value(key any) any                 { return nil }
 var probes = []struct{ parse, recognize probe }{
 PROBES}
 
-// shape returns what is wrong with err as the error of a run limited to steps and input work, "" if
-// nothing. A work-limit error has the type WorkLimitError of the generated package, found by reflection
-// because every package has a copy of the runtime; its kind says which limit was reached and the
-// reservation that failed must have gone past it.
-func shape(err error, steps, input uint64) string {
+// shape returns what is wrong with err as the error of a run limited to work units, "" if nothing. A
+// work-limit error has the type LimitError of the generated package, found by reflection because every
+// package has a copy of the runtime; its kind must be the work limit and the reservation that failed
+// must have gone past it.
+func shape(err error, work uint64) string {
 	if err == nil || !strings.Contains(err.Error(), "limit exceeded") {
 		return "" // not limited: the run failed or succeeded on its own
 	}
 	for e := err; e != nil; e = errors.Unwrap(e) {
 		v := reflect.ValueOf(e)
-		if v.Kind() != reflect.Ptr || v.IsNil() || v.Elem().Kind() != reflect.Struct || v.Elem().Type().Name() != "WorkLimitError" {
+		if v.Kind() != reflect.Ptr || v.IsNil() || v.Elem().Kind() != reflect.Struct || v.Elem().Type().Name() != "LimitError" {
 			continue
 		}
 		v = v.Elem()
 		kind, limit, used, req := v.FieldByName("Kind").Uint(), v.FieldByName("Limit").Uint(), v.FieldByName("Used").Uint(), v.FieldByName("Requested").Uint()
-		want, wantKind, wantCode := input, "input", uint64(0)
-		if steps != 0 && input == 0 {
-			want, wantKind, wantCode = steps, "steps", 1
-		}
-		if kind != wantCode || limit != want || used > limit || used+req <= limit || req == 0 {
-			return fmt.Sprintf("malformed %s limit error: kind %d limit %d used %d requested %d", wantKind, kind, limit, used, req)
+		if kind != 0 || limit != work || used > limit || used+req <= limit || req == 0 {
+			return fmt.Sprintf("malformed work limit error: kind %d limit %d used %d requested %d", kind, limit, used, req)
 		}
 		return ""
 	}
 	return "not a work-limit error: " + err.Error()
 }
 
-func at(p probe, s string, counter int, n uint64) (bool, string, string) {
-	return p.run(s, func(steps, input *uint64) {
-		if counter == 0 {
-			*steps = n
-		} else {
-			*input = n
-		}
-	}, nil)
+func at(p probe, s string, n uint64) (bool, string, string) {
+	return p.run(s, func(work *uint64) { *work = n }, nil)
 }
 
 func report(p probe, s string) string {
-	var out []string
-	for counter := 0; counter < 2; counter++ {
-		// The least limit that does not fail with a work limit: the failure is monotone in the limit.
-		lo, hi := uint64(1), uint64(1)
-		for {
-			if limited, _, _ := at(p, s, counter, hi); !limited {
-				break
-			}
-			lo, hi = hi+1, hi*2
-			if hi > 1<<40 {
-				return "unbounded"
-			}
+	// The least limit that does not fail with a work limit: the failure is monotone in the limit.
+	lo, hi := uint64(1), uint64(1)
+	for {
+		if limited, _, _ := at(p, s, hi); !limited {
+			break
 		}
-		for lo < hi {
-			mid := (lo + hi) / 2
-			if limited, _, _ := at(p, s, counter, mid); limited {
-				lo = mid + 1
-			} else {
-				hi = mid
-			}
+		lo, hi = hi+1, hi*2
+		if hi > 1<<40 {
+			return "unbounded"
 		}
-		total := lo
-		// A limit below the total fails, in the way a work-limit error is shaped; a limit at the total
-		// does not, whatever the pooled parsers hold.
-		points := map[uint64]bool{total: true}
-		for n := uint64(1); n <= 8 && n < total; n++ {
-			points[n] = true
+	}
+	for lo < hi {
+		mid := (lo + hi) / 2
+		if limited, _, _ := at(p, s, mid); limited {
+			lo = mid + 1
+		} else {
+			hi = mid
 		}
-		for k := uint64(1); k < 16; k++ {
-			points[total*k/16+1] = true
+	}
+	total := lo
+	// A limit below the total fails, in the way a work-limit error is shaped; a limit at the total
+	// does not, whatever the pooled parsers hold.
+	points := map[uint64]bool{total: true}
+	for n := uint64(1); n <= 8 && n < total; n++ {
+		points[n] = true
+	}
+	for k := uint64(1); k < 16; k++ {
+		points[total*k/16+1] = true
+	}
+	points[total-1] = true
+	bad := 0
+	for n := range points {
+		if n < 1 || n > total {
+			continue
 		}
-		points[total-1] = true
-		bad := 0
-		for n := range points {
-			if n < 1 || n > total {
-				continue
-			}
-			limited, msg, shape := at(p, s, counter, n)
-			if n < total && !limited || n == total && limited || shape != "" {
-				bad++
-				fmt.Printf("# counter=%d n=%d total=%d limited=%v %q %q\n", counter, n, total, limited, msg, shape)
-			}
+		limited, msg, shape := at(p, s, n)
+		if n < total && !limited || n == total && limited || shape != "" {
+			bad++
+			fmt.Printf("# n=%d total=%d limited=%v %q %q\n", n, total, limited, msg, shape)
 		}
-		out = append(out, fmt.Sprintf("total=%d bad=%d", total, bad))
 	}
 	ctx := &countCtx{done: make(chan struct{})}
-	_, msg, _ := p.run(s, func(*uint64, *uint64) {}, ctx)
-	out = append(out, fmt.Sprintf("polls=%d result=%q", ctx.polls, msg))
-	return strings.Join(out, " ")
+	_, msg, _ := p.run(s, func(*uint64) {}, ctx)
+	return fmt.Sprintf("total=%d bad=%d polls=%d result=%q", total, bad, ctx.polls, msg)
 }
 
 func main() {
@@ -188,24 +173,24 @@ func workProbeSources(pkg string, n int) string {
 	var imports, probes strings.Builder
 	for i := 0; i < n; i++ {
 		fmt.Fprintf(&imports, "\t%s%d \"wprobe/%s%d\"\n", pkg, i, pkg, i)
-		fmt.Fprintf(&probes, `	{parse: probe{run: func(s string, limits func(*uint64, *uint64), ctx context.Context) (bool, string, string) {
-		var l %[1]s%[2]d.WorkLimits
-		limits(&l.MaxSteps, &l.MaxInputWork)
-		opts := []%[1]s%[2]d.ParseOption{%[1]s%[2]d.WithWorkLimits(l)}
+		fmt.Fprintf(&probes, `	{parse: probe{run: func(s string, limit func(*uint64), ctx context.Context) (bool, string, string) {
+		var l %[1]s%[2]d.Limits
+		limit(&l.MaxWork)
+		opts := []%[1]s%[2]d.ParseOption{%[1]s%[2]d.WithLimits(l)}
 		if ctx != nil {
 			opts = append(opts, %[1]s%[2]d.WithContext(ctx))
 		}
 		_, err := %[1]s%[2]d.Parse(s, opts...)
-		return errors.Is(err, %[1]s%[2]d.ErrWorkLimit), fmt.Sprint(err), shape(err, l.MaxSteps, l.MaxInputWork)
-	}}, recognize: probe{run: func(s string, limits func(*uint64, *uint64), ctx context.Context) (bool, string, string) {
-		var l %[1]s%[2]d.WorkLimits
-		limits(&l.MaxSteps, &l.MaxInputWork)
-		opts := []%[1]s%[2]d.ParseOption{%[1]s%[2]d.WithWorkLimits(l)}
+		return errors.Is(err, %[1]s%[2]d.ErrLimit), fmt.Sprint(err), shape(err, l.MaxWork)
+	}}, recognize: probe{run: func(s string, limit func(*uint64), ctx context.Context) (bool, string, string) {
+		var l %[1]s%[2]d.Limits
+		limit(&l.MaxWork)
+		opts := []%[1]s%[2]d.ParseOption{%[1]s%[2]d.WithLimits(l)}
 		if ctx != nil {
 			opts = append(opts, %[1]s%[2]d.WithContext(ctx))
 		}
 		err := %[1]s%[2]d.Recognize(s, opts...)
-		return errors.Is(err, %[1]s%[2]d.ErrWorkLimit), fmt.Sprint(err), shape(err, l.MaxSteps, l.MaxInputWork)
+		return errors.Is(err, %[1]s%[2]d.ErrLimit), fmt.Sprint(err), shape(err, l.MaxWork)
 	}}},
 `, pkg, i)
 	}
@@ -272,13 +257,13 @@ func runWorkProbes(t *testing.T, cases []gentest.Case, start string, mutate func
 
 // workReport is the report of one input and entry of the consumer.
 type workReport struct {
-	id                  string // case/input and entry
-	steps, input, polls uint64
-	bad                 int
-	result              string
+	id          string // case/input and entry
+	work, polls uint64
+	bad         int
+	result      string
 }
 
-var workLine = regexp.MustCompile(`^(\S+ \S+) total=(\d+) bad=(\d+) total=(\d+) bad=(\d+) polls=(\d+) result=(.*)$`)
+var workLine = regexp.MustCompile(`^(\S+ \S+) total=(\d+) bad=(\d+) polls=(\d+) result=(.*)$`)
 
 func parseWorkReports(t *testing.T, lines []string) []workReport {
 	t.Helper()
@@ -289,20 +274,20 @@ func parseWorkReports(t *testing.T, lines []string) []workReport {
 			t.Fatalf("unexpected report line %q", l)
 		}
 		n := func(s string) uint64 { v, _ := strconv.ParseUint(s, 10, 64); return v }
-		out = append(out, workReport{id: m[1], steps: n(m[2]), input: n(m[4]), polls: n(m[6]), bad: int(n(m[3]) + n(m[5])), result: m[7]})
+		out = append(out, workReport{id: m[1], work: n(m[2]), polls: n(m[4]), bad: int(n(m[3])), result: m[5]})
 	}
 	return out
 }
 
-// workGolden holds the totals of every report: "group/case | input entry" to "steps input polls result".
+// workGolden holds the totals of every report: "group/case | input entry" to "work polls result".
 const (
 	workGolden       = "testdata/work.golden"
-	workGoldenHeader = "# Work totals of the generated parsers with work controls: steps, input work, context polls and result\n" +
+	workGoldenHeader = "# Work totals of the generated parsers with work controls: work, context polls and result\n" +
 		"# of each input and entry, by group, case and input. Not a limit: stage 3 optimizations move the totals.\n" + gentest.GoldenRules
 )
 
 var workGoldenFile = gentest.GoldenFile{
-	Path: workGolden, Header: workGoldenHeader, CaseOf: gentest.GoldenCaseBefore, TotalNames: [2]string{"steps", "input work"},
+	Path: workGolden, Header: workGoldenHeader, CaseOf: gentest.GoldenCaseBefore, TotalNames: [2]string{"work", "polls"},
 	Totals: func(v string) (a, b uint64) {
 		f := strings.Fields(v)
 		a, _ = strconv.ParseUint(f[0], 10, 64)
@@ -314,12 +299,11 @@ var workGoldenFile = gentest.GoldenFile{
 // TestFlowNodeWorkInvariants checks, for the parsers of the generated corpus with work controls built with
 // the rules printed from Flow IR, the invariants every build keeps whichever way it charges steps:
 //
-//   - a limit below the total fails with a work-limit error of the limited counter whose reservation went
+//   - a limit below the total fails with a work-limit error whose reservation went
 //     past the limit, and the least limit that does not fail succeeds (the bad counts of the reports);
-//   - the context is polled every 256 steps and every 4096 units of input work, as the runtime does, so the
-//     polls of a run number at least the larger of steps/256 and input/4096 (less a slack of two);
-//   - a run that charges input work charges steps, and a run that parses the whole input without error
-//     charged at least one unit of input work for each character;
+//   - the context is polled every 256 units of work, as the runtime does, so the polls of a run number at
+//     least work/256 (less a slack of two);
+//   - a run that parses the whole input without error charged at least one unit of work for each character;
 //   - the totals equal those of testdata/work.golden.
 //
 // The engine's input work is not an oracle for the input work of a generated parser: for the same grammar
@@ -363,15 +347,12 @@ func workTotals(t *testing.T, group string, cases []gentest.Case, start string, 
 		if r.bad != 0 {
 			problems = append(problems, fmt.Sprintf("%s: limit errors are malformed (%d; see the log)", r.id, r.bad))
 		}
-		// A poll happens when either counter reaches its interval since the last poll, so the polls number
-		// at least the larger of the two quotients, less the polls the runtime's batched reservations may
-		// shift past the end of the run.
-		min := max(r.steps/workCheckSteps, r.input/workCheckInput)
+		// A poll happens whenever the work since the last poll reaches the interval, so the polls number
+		// at least work/interval, less the polls the runtime's batched reservations may shift past the end
+		// of the run.
+		min := r.work / workCheckInterval
 		if r.polls+workPollSlack < min {
-			problems = append(problems, fmt.Sprintf("%s: %d polls for %d steps and %d input work, at least %d expected", r.id, r.polls, r.steps, r.input, min-workPollSlack))
-		}
-		if r.steps == 0 && r.input != 0 {
-			problems = append(problems, fmt.Sprintf("%s: no step is charged for %d input work", r.id, r.input))
+			problems = append(problems, fmt.Sprintf("%s: %d polls for %d work, at least %d expected", r.id, r.polls, r.work, min-workPollSlack))
 		}
 		// The probe ids number the cases and inputs; the golden names the case, which does not move when
 		// cases are added.
@@ -380,14 +361,14 @@ func workTotals(t *testing.T, group string, cases []gentest.Case, start string, 
 		j, _, _ := strings.Cut(rest, " ")
 		jn, _ := strconv.Atoi(j)
 		entry := strings.Fields(rest)[1]
-		if r.result == "<nil>" && r.input < uint64(utf8.RuneCountInString(cases[n].Inputs[jn])) {
-			problems = append(problems, fmt.Sprintf("%s: %d input work for a parsed input of %d characters", r.id, r.input, utf8.RuneCountInString(cases[n].Inputs[jn])))
+		if r.result == "<nil>" && r.work < uint64(utf8.RuneCountInString(cases[n].Inputs[jn])) {
+			problems = append(problems, fmt.Sprintf("%s: %d work for a parsed input of %d characters", r.id, r.work, utf8.RuneCountInString(cases[n].Inputs[jn])))
 		}
 		key := fmt.Sprintf("%s/%s | %s %s", group, cases[n].Name, j, entry)
 		if _, dup := got[key]; dup {
 			t.Fatalf("two reports under the key %q: case names repeat", key)
 		}
-		got[key] = fmt.Sprintf("%d %d %d %s", r.steps, r.input, r.polls, r.result)
+		got[key] = fmt.Sprintf("%d %d %s", r.work, r.polls, r.result)
 	}
 	return got, problems
 }
@@ -454,12 +435,10 @@ func TestFlowNodeWorkMutants(t *testing.T) {
 	}
 }
 
-// The cadence of the runtime's context polls (runtime/work.go: workCheckStepInterval and
-// workCheckInputInterval).
+// The cadence of the runtime's context polls (runtime/work.go: workCheckInterval).
 const (
-	workCheckSteps = 256
-	workCheckInput = 4096
-	workPollSlack  = 2
+	workCheckInterval = 256
+	workPollSlack     = 2
 )
 
 // TestFlowNodeWorkInvariantsOnGrammars checks the invariants and the golden of TestFlowNodeWorkInvariants for

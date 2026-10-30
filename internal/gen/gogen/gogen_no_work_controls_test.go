@@ -35,7 +35,7 @@ rule num = [0-9]+ ("." [0-9]+)?
 		return string(gentest.MergeGenerated(files))
 	}
 	with, without := gen(true), gen(false)
-	for _, want := range []string{"p.StepWork()", "p.Control == nil", "func WithWorkLimits", "func WithContext"} {
+	for _, want := range []string{"p.StepWork()", "p.Control == nil", "func WithLimits", "func WithContext"} {
 		if !strings.Contains(with, want) {
 			t.Errorf("with work controls: missing %q", want)
 		}
@@ -43,7 +43,7 @@ rule num = [0-9]+ ("." [0-9]+)?
 			t.Errorf("without work controls: found %q", want)
 		}
 	}
-	for _, bad := range []string{"p.Control", "WorkClass", "WorkLimit"} {
+	for _, bad := range []string{"p.Control", "WorkClass", "LimitWork"} {
 		if strings.Contains(without, bad) {
 			t.Errorf("without work controls: found %q", bad)
 		}
@@ -60,7 +60,7 @@ rule num = [0-9]+ ("." [0-9]+)?
 	// With a Document the parser has the form that serves a Document, which has neither work charges
 	// nor control reads when the parser has no controls.
 	documentWith, documentWithout := gen(true, true), gen(false, true)
-	for _, bad := range []string{"p.Control", "StepWork", "InputWork", "WorkClass", "WorkLimit"} {
+	for _, bad := range []string{"p.Control", "StepWork", "InputWork", "WorkClass", "LimitWork"} {
 		if strings.Contains(documentWithout, bad) {
 			t.Errorf("a Document parser without work controls has %q", bad)
 		}
@@ -82,9 +82,9 @@ func TestOptions(t *testing.T) {
  if err:=Recognize("abc 12.5 x"); err!=nil {t.Fatal(err)}
  if _,err:=Parse("abc ("); err==nil {t.Fatal("no error for bad input")}
  if _,err:=ParseAST("abc 12.5 x"); err!=nil {t.Fatal(err)}
- // A zero WorkLimits and a nil context set no control, so they are accepted.
- if _,err:=Parse("abc",pegort.WithWorkLimits(pegort.WorkLimits{}),pegort.WithContext(nil)); err!=nil {t.Fatal(err)}
- for name,opt:=range map[string]pegort.ParseOption{"limits":pegort.WithWorkLimits(pegort.WorkLimits{MaxSteps:1}),"context":pegort.WithContext(context.Background())} {
+ // A zero Limits and a nil context set no control, so they are accepted.
+ if _,err:=Parse("abc",pegort.WithLimits(pegort.Limits{}),pegort.WithContext(nil)); err!=nil {t.Fatal(err)}
+ for name,opt:=range map[string]pegort.ParseOption{"limits":pegort.WithLimits(pegort.Limits{MaxWork:1}),"context":pegort.WithContext(context.Background())} {
   for entry,call:=range map[string]func() error{
    "Parse":func() error {_,err:=Parse("abc",opt);return err},
    "Recognize":func() error {return Recognize("abc",opt)},

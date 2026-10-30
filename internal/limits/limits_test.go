@@ -6,25 +6,24 @@ import (
 	"testing"
 )
 
-func TestWorkLimitError(t *testing.T) {
+func TestLimitError(t *testing.T) {
 	for _, tc := range []struct {
-		err  *WorkLimitError
+		err  *LimitError
 		want string
 	}{
-		{nil, "parse work limit exceeded"},
-		{&WorkLimitError{Kind: InputWorkLimit, Limit: 5, Used: 4, Requested: 2}, "parse input work limit exceeded: limit 5, used 4, requested 2"},
-		{&WorkLimitError{Kind: StepWorkLimit, Limit: 3, Used: 3, Requested: 1}, "parse steps limit exceeded: limit 3, used 3, requested 1"},
+		{nil, "parse limit exceeded"},
+		{&LimitError{Kind: LimitWork, Limit: 5, Used: 4, Requested: 2}, "parse work limit exceeded: limit 5, used 4, requested 2"},
 	} {
 		if got := tc.err.Error(); got != tc.want {
 			t.Errorf("Error() = %q, want %q", got, tc.want)
 		}
 	}
-	var err error = &WorkLimitError{Kind: StepWorkLimit}
-	if !errors.Is(err, ErrWorkLimit) {
-		t.Error("errors.Is(WorkLimitError, ErrWorkLimit) = false")
+	var err error = &LimitError{Kind: LimitWork}
+	if !errors.Is(err, ErrLimit) {
+		t.Error("errors.Is(LimitError, ErrLimit) = false")
 	}
-	if errors.Is(err, errors.New("parse work limit exceeded")) {
-		t.Error("WorkLimitError matched an unrelated error with the same text")
+	if errors.Is(err, errors.New("parse limit exceeded")) {
+		t.Error("LimitError matched an unrelated error with the same text")
 	}
 }
 

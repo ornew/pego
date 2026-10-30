@@ -25,7 +25,7 @@ func TestWorkContextAttributionPreservesVMFaults(t *testing.T) {
 			restore := corruptVMLiteral(t, prog)
 			var observed *core.Parser
 			n, err := prog.ParseWith("main", "z", ParseOptions{
-				Backend: backend, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20},
+				Backend: backend, Limits: limits.Limits{MaxWork: 1 << 20},
 				Trace: func(e TraceEvent) { observed = core.TraceParser(e) },
 			})
 			if n != nil || err == nil || !strings.HasPrefix(err.Error(), "invalid bytecode: ") {
@@ -73,7 +73,7 @@ func TestWorkContextAccessorInterruptionRemainsFatal(t *testing.T) {
 							return
 						}
 						observed = core.TraceParser(e)
-						core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed + 1
+						core.TraceParser(e).Control.Limits.MaxWork = core.TraceParser(e).Control.Used + 1
 						ctx.fn = func() error {
 							// The accessor's own reservation may poll the context.
 							ctx.fn = nil
@@ -85,8 +85,8 @@ func TestWorkContextAccessorInterruptionRemainsFatal(t *testing.T) {
 						core.TraceParser(e).Control.Check()
 					},
 				})
-				var limit *limits.WorkLimitError
-				if n != nil || !accessorEntered || !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit {
+				var limit *limits.LimitError
+				if n != nil || !accessorEntered || !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
 					t.Fatalf("context accessor node=%v entered=%v error=%v", n, accessorEntered, err)
 				}
 				if observed == nil || observed.Scratch != nil || observed.Control != nil {

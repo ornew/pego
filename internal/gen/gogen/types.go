@@ -873,7 +873,7 @@ func (a *astConv) toError(n *Node) *Error {
  a.values[n] = v
 }
 func (a *astConv) stepWork() {
- if a.control != nil { a.control.Charge(0, 1) }
+ if a.control != nil { a.control.Charge(1) }
 }
 func (a *astConv) field(n *Node, name string) any {
  if a.control == nil { return n.RawField(name) }
@@ -1336,7 +1336,7 @@ func (t *TypedGen) typedRuntime(b *strings.Builder) {
 	for _, l := range t.tlistOrder {
 		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))
 	}
-	b.WriteString("}\n\nfunc (a *tslabs) SetWorkControl(c *WorkControl) { a.control = c }\nfunc (a *tslabs) stepWork() { if a.control != nil { a.control.Charge(0, 1) } }\n\n")
+	b.WriteString("}\n\nfunc (a *tslabs) SetWorkControl(c *WorkControl) { a.control = c }\nfunc (a *tslabs) stepWork() { if a.control != nil { a.control.Charge(1) } }\n\n")
 }
 
 // chunkNames rewrites the names of the local chunk helpers (astChunk, astNew, astSlice) to those of the

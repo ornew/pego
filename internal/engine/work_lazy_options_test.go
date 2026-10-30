@@ -28,7 +28,7 @@ rule item = [a-z]+`)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				o := ParseOptions{Unit: unit}
 				plain, plainErr := p.ParseWith("main", "abc,def", o)
-				o.WorkLimits = limits.WorkLimits{MaxSteps: 1000000, MaxInputWork: 1000000}
+				o.Limits = limits.Limits{MaxWork: 1000000}
 				active, activeErr := p.ParseWith("main", "abc,def", o)
 				if gentest.ResultJSON(plain, plainErr) != gentest.ResultJSON(active, activeErr) || activeErr != nil {
 					t.Fatalf("options changed output: %v", activeErr)

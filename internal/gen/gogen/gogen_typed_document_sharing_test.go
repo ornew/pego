@@ -333,14 +333,14 @@ func TestSharedInterruptionDuringPublication(t *testing.T) {
 	}
 	interrupted := 0
 	for limit := uint64(1); ; limit++ {
-		got, err := d.ParseAST(WithWorkLimits(WorkLimits{MaxSteps: limit}))
+		got, err := d.ParseAST(WithLimits(Limits{MaxWork: limit}))
 		if err == nil {
 			if got == nil {
 				t.Fatal("successful parse returned nil")
 			}
 			break
 		}
-		if !errors.Is(err, ErrWorkLimit) {
+		if !errors.Is(err, ErrLimit) {
 			t.Fatalf("limit %d: %v", limit, err)
 		}
 		interrupted++

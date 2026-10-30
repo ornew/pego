@@ -17,7 +17,7 @@ const valueWorkChunk = 128
 
 func (p *Parser) ValueWork(n int) {
 	if WorkControlsEnabled && p.Control != nil {
-		p.Control.Charge(0, uint64(n))
+		p.Control.Charge(uint64(n))
 	}
 }
 

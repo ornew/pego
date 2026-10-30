@@ -206,12 +206,12 @@ func TestInterruptedGrowth(t *testing.T) {
 		limited := 0
 		for steps := uint64(1); ; steps++ {
 			completed, err := interrupt(t, unit, func(context.CancelFunc) []ParseOption {
-				return []ParseOption{WithWorkLimits(WorkLimits{MaxSteps: steps})}
+				return []ParseOption{WithLimits(Limits{MaxWork: steps})}
 			})
 			if completed {
 				break
 			}
-			var limit *WorkLimitError
+			var limit *LimitError
 			if !errors.As(err, &limit) {
 				t.Fatalf("%d steps: %v", steps, err)
 			}

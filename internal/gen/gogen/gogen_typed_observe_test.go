@@ -148,7 +148,7 @@ func checkTypedTrace(t *testing.T, events []TraceEvent){
 func TestTypedTraceParity(t *testing.T){
  for _,unit:=range []PositionUnit{CodePoints,Bytes}{for _,controlled:=range []bool{false,true}{
   opts:=[]ParseOption{WithUnit(unit)};refUnit:=reference.CodePoints;if unit==Bytes{refUnit=reference.Bytes};refOpts:=[]reference.ParseOption{reference.WithUnit(refUnit)}
-  if controlled{opts=append(opts,WithWorkLimits(WorkLimits{MaxSteps:100000}));refOpts=append(refOpts,reference.WithWorkLimits(reference.WorkLimits{MaxSteps:100000}))}
+  if controlled{opts=append(opts,WithLimits(Limits{MaxWork:100000}));refOpts=append(refOpts,reference.WithLimits(reference.Limits{MaxWork:100000}))}
   for _,input:=range []string{INPUT,"",INPUT+"?"}{
    want,werr:=reference.ParseAST(input,refOpts...);var events []TraceEvent
    got,gerr:=ParseAST(input,append(append([]ParseOption{},opts...),WithTrace(func(e TraceEvent){events=append(events,e)}))...)
@@ -180,7 +180,7 @@ func TestTypedTraceLifecycle(t *testing.T){
   parse(WithTrace(func(e TraceEvent){if e.Kind==TraceEnter&&e.Depth>1{panic(marker)}}),WithTraceMaxDepth(1))
   ctx,cancel:=context.WithCancel(context.Background());cancel()
   _,err:=parse(WithContext(ctx),WithTrace(func(TraceEvent){t.Fatal("pre-cancel callback")}));if !errors.Is(err,context.Canceled){t.Fatal(err)}
-  events=nil;_,err=parse(WithWorkLimits(WorkLimits{MaxSteps:1}),WithTrace(func(e TraceEvent){events=append(events,e)}));if !errors.Is(err,ErrWorkLimit){t.Fatal("typed budget",err)};for _,e:=range events{if e.Kind==TraceExit&&e.Rule=="main"{t.Fatal("fabricated typed exit",events)}}
+  events=nil;_,err=parse(WithLimits(Limits{MaxWork:1}),WithTrace(func(e TraceEvent){events=append(events,e)}));if !errors.Is(err,ErrLimit){t.Fatal("typed budget",err)};for _,e:=range events{if e.Kind==TraceExit&&e.Rule=="main"{t.Fatal("fabricated typed exit",events)}}
  }
  var wg sync.WaitGroup;for i:=0;i<4;i++{wg.Go(func(){for j:=0;j<4;j++{ParseAST(INPUT,WithTrace(func(TraceEvent){}))}})};wg.Wait()
  p:=&pegort.TParser{Parser:&pegort.Parser{Observation:&pegort.X_observation{X_trace:func(pegort.TraceEvent){}}}};p.X_recycle();if p.Observation!=nil{t.Fatal("typed pool retained observer")}

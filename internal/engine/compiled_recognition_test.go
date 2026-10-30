@@ -214,7 +214,7 @@ rule other = "é" $$`)
 		if n != nil || !errors.Is(err, context.Canceled) {
 			t.Fatalf("cancel node=%v error=%v", n, err)
 		}
-		n, err = p.ParseWith("main", "abc", ParseOptions{Backend: backend, Recognize: true, WorkLimits: limits.WorkLimits{MaxInputWork: 1}})
+		n, err = p.ParseWith("main", "abc", ParseOptions{Backend: backend, Recognize: true, Limits: limits.Limits{MaxWork: 1}})
 		if n != nil || err == nil {
 			t.Fatalf("budget node=%v error=%v", n, err)
 		}

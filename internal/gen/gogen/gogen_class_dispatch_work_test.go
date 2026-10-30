@@ -93,13 +93,13 @@ func TestClassDispatch(t *testing.T){
    v,e:=r.call(WithUnit(u));if (e==nil)!=tc.valid{t.Fatalf("baseline err=%v",e)}
    if tc.valid&&zero(v){t.Fatal("valid baseline has zero output")}
    want,diag:=jsonValue(t,v),jsonValue(t,e)
-   a,ae:=r.call(WithUnit(u),WithWorkLimits(WorkLimits{MaxSteps:^uint64(0),MaxInputWork:^uint64(0)}))
+   a,ae:=r.call(WithUnit(u),WithLimits(Limits{MaxWork: ^uint64(0)}))
    if tc.valid&&zero(a){t.Fatal("valid controlled output is zero")};if jsonValue(t,a)!=want||jsonValue(t,ae)!=diag{t.Fatal("active outcome differs")}
    // Find the exact boundary for both completed success and syntax failure.
    lo,hi:=uint64(1),uint64(1<<20)
-   for lo<hi {m:=lo+(hi-lo)/2;_,err:=r.call(WithUnit(u),WithWorkLimits(WorkLimits{MaxSteps:m}));if errors.Is(err,ErrWorkLimit){lo=m+1}else{hi=m}}
-   a,ae=r.call(WithUnit(u),WithWorkLimits(WorkLimits{MaxSteps:lo}));if tc.valid&&zero(a){t.Fatal("valid controlled output is zero")};if jsonValue(t,a)!=want||jsonValue(t,ae)!=diag{t.Fatal("exact boundary changed result")}
-   a,ae=r.call(WithUnit(u),WithWorkLimits(WorkLimits{MaxSteps:lo-1}));if lo<=1||!zero(a)||!errors.Is(ae,ErrWorkLimit){t.Fatalf("one short result=%v err=%v",a,ae)}
+   for lo<hi {m:=lo+(hi-lo)/2;_,err:=r.call(WithUnit(u),WithLimits(Limits{MaxWork:m}));if errors.Is(err,ErrLimit){lo=m+1}else{hi=m}}
+   a,ae=r.call(WithUnit(u),WithLimits(Limits{MaxWork:lo}));if tc.valid&&zero(a){t.Fatal("valid controlled output is zero")};if jsonValue(t,a)!=want||jsonValue(t,ae)!=diag{t.Fatal("exact boundary changed result")}
+   a,ae=r.call(WithUnit(u),WithLimits(Limits{MaxWork:lo-1}));if lo<=1||!zero(a)||!errors.Is(ae,ErrLimit){t.Fatalf("one short result=%v err=%v",a,ae)}
    if tc.input==last&&tc.name=="main"&&lo<320{t.Fatal("wide membership is not charged")}
    retry,re:=r.call(WithUnit(u));if tc.valid&&zero(retry){t.Fatal("valid retry output is zero")};if jsonValue(t,retry)!=want||jsonValue(t,re)!=diag{t.Fatal("retry differs")}
   })}

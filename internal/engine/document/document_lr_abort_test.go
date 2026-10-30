@@ -65,7 +65,7 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 						case "cancel":
 							cancel()
 						case "steps":
-							core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed
+							core.TraceParser(e).Control.Limits.MaxWork = core.TraceParser(e).Control.Used
 						case "panic":
 							panic("interrupt growth")
 						}
@@ -88,7 +88,7 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 							t.Fatalf("node=%v err=%v", n, err)
 						}
 					case "steps":
-						if n != nil || !errors.Is(err, limits.ErrWorkLimit) {
+						if n != nil || !errors.Is(err, limits.ErrLimit) {
 							t.Fatalf("node=%v err=%v", n, err)
 						}
 					}

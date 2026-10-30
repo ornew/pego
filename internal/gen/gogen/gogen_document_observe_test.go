@@ -137,10 +137,10 @@ func TestDocumentCalls(t *testing.T){
   if err:=d.Edit(start,end,source[len(source)-size:]);err!=nil{t.Fatal(err)};if err:=ref.Edit(start,end,source[len(source)-size:]);err!=nil{t.Fatal(err)}
   run(false);if PLAIN&&d.Stats().Reused==0{t.Fatal("unchanged prefix not reused")};run(true)
   for _,text:=range []string{"\x00",source}{n:=utf8.RuneCountInString(d.Text());if unit==Bytes{n=len(d.Text())};if err:=d.Edit(0,n,text);err!=nil{t.Fatal(err)};if err:=ref.Edit(0,n,text);err!=nil{t.Fatal(err)};run(false);run(true)}
-  var warmProfile pegort.Profile;var warmEvents []pegort.TraceEvent;parse(d,pegort.WithProfile(&warmProfile),pegort.WithTrace(func(e pegort.TraceEvent){warmEvents=append(warmEvents,e)}),WithWorkLimits(WorkLimits{MaxSteps:100000}));eventStats(t,d,&warmProfile,warmEvents)
+  var warmProfile pegort.Profile;var warmEvents []pegort.TraceEvent;parse(d,pegort.WithProfile(&warmProfile),pegort.WithTrace(func(e pegort.TraceEvent){warmEvents=append(warmEvents,e)}),WithLimits(Limits{MaxWork:100000}));eventStats(t,d,&warmProfile,warmEvents)
   for _,marker:=range []any{new(int),pegort.X_fatal{errors.New("private fatal")},pegort.X_evalError{"private eval"},pegort.X_contextPanic{new(int)},pegort.X_tracePanic{new(int)}}{
   for _,controlled:=range []bool{false,true}{for _,kind:=range []pegort.TraceKind{pegort.TraceEnter,pegort.TraceExit}{
-   var interrupted pegort.Profile;opts:=[]ParseOption{pegort.WithProfile(&interrupted),pegort.WithTrace(func(e pegort.TraceEvent){if e.Kind==kind{panic(marker)}})};if controlled{opts=append(opts,WithWorkLimits(WorkLimits{MaxSteps:100000}))}
+   var interrupted pegort.Profile;opts:=[]ParseOption{pegort.WithProfile(&interrupted),pegort.WithTrace(func(e pegort.TraceEvent){if e.Kind==kind{panic(marker)}})};if controlled{opts=append(opts,WithLimits(Limits{MaxWork:100000}))}
    func(){defer func(){if recover()!=marker{t.Fatal("callback panic changed")}}();parse(d,opts...);t.Fatal("callback did not panic")}();a:=interrupted.Snapshot();if a.Entered!=1||kind==pegort.TraceEnter&&a.Calls!=0||kind==pegort.TraceExit&&a.Calls!=1{t.Fatal("aborted counters",a)};released(t)
    var retry pegort.Profile;var events []pegort.TraceEvent;parse(d,pegort.WithProfile(&retry),pegort.WithTrace(func(e pegort.TraceEvent){events=append(events,e)}));eventStats(t,d,&retry,events);if events[len(events)-1].Memo{t.Fatal("panic retained root memo",events)}
   }}}
@@ -149,7 +149,7 @@ func TestDocumentCalls(t *testing.T){
   before:=d.Stats();ctx,cancel=context.WithCancel(context.Background());cancel();parse(d,WithContext(ctx),pegort.WithTrace(func(pegort.TraceEvent){t.Fatal("pre-canceled event")}));if d.Stats()!=before{t.Fatal("pre-admission canceled invocation changed stats")}
   released(t)
   length:=utf8.RuneCountInString(d.Text());if unit==Bytes{length=len(d.Text())};if err:=d.Edit(0,length,d.Text());err!=nil{t.Fatal(err)}
-  v,err=parse(d,WithWorkLimits(WorkLimits{MaxSteps:1}),pegort.WithTrace(func(pegort.TraceEvent){}));var interrupted *WorkLimitError;if v!=nil&&!reflect.ValueOf(v).IsZero()||!errors.As(err,&interrupted)||interrupted.Kind!=StepWorkLimit{t.Fatal("work budget result",v,err)};released(t)
+  v,err=parse(d,WithLimits(Limits{MaxWork:1}),pegort.WithTrace(func(pegort.TraceEvent){}));var interrupted *LimitError;if v!=nil&&!reflect.ValueOf(v).IsZero()||!errors.As(err,&interrupted)||interrupted.Kind!=LimitWork{t.Fatal("work budget result",v,err)};released(t)
   retry=pegort.Profile{};events=nil;parse(d,pegort.WithProfile(&retry),pegort.WithTrace(func(e pegort.TraceEvent){events=append(events,e)}));eventStats(t,d,&retry,events);if events[len(events)-1].Memo{t.Fatal("work interruption retained root memo",events)};released(t)
  }}
  if checkedFrontiers==0{t.Fatal("no memo frontier checked")}
@@ -197,7 +197,7 @@ func TestDocumentReentryRejected(t *testing.T){
   if err:=d.Edit(0,0,"");err!=nil{t.Fatal("edit after parse",err)}
   func(){defer func(){recover()}();parse(d,pegort.WithTrace(func(pegort.TraceEvent){panic("stop")}))}()
   if _,err:=parse(d);errors.Is(err,ErrDocumentBusy){t.Fatal("callback panic left the Document busy")}
-  if err:=d.Edit(0,0,"");err!=nil{t.Fatal(err)};parse(d,WithWorkLimits(WorkLimits{MaxSteps:1}))
+  if err:=d.Edit(0,0,"");err!=nil{t.Fatal(err)};parse(d,WithLimits(Limits{MaxWork:1}))
   if _,err:=parse(d);errors.Is(err,ErrDocumentBusy){t.Fatal("work interruption left the Document busy")}
   }
  }

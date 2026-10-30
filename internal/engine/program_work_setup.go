@@ -18,7 +18,7 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Pro
 	if err := prog.admitMissing(o, stream); err != nil {
 		return nil, nil, nil, err
 	}
-	if o.Context == nil && o.WorkLimits.MaxInputWork == 0 && o.WorkLimits.MaxSteps == 0 {
+	if o.Context == nil && o.Limits.MaxWork == 0 {
 		if o.Recognize {
 			if _, err := prog.preflightRule(o.Backend, start, stream); err != nil {
 				return nil, nil, nil, err
@@ -51,7 +51,7 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Pro
 			return nil, nil, nil, err
 		}
 	}
-	c := core.NewWorkControl(o.Context, o.WorkLimits)
+	c := core.NewWorkControl(o.Context, o.Limits)
 	if !core.WorkControlsEnabled && c != nil {
 		return nil, nil, nil, fmt.Errorf("work controls are unavailable in the reference build")
 	}

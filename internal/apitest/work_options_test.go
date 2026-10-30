@@ -20,7 +20,7 @@ rule main = "abc" $$`, "main")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	n, err := p.Parse("abc", pego.WithContext(ctx), pego.WithContext(nil), pego.WithWorkLimits(pego.WorkLimits{MaxSteps: 1}), pego.WithWorkLimits(pego.WorkLimits{}))
+	n, err := p.Parse("abc", pego.WithContext(ctx), pego.WithContext(nil), pego.WithLimits(pego.Limits{MaxWork: 1}), pego.WithLimits(pego.Limits{}))
 	if n == nil || err != nil {
 		t.Fatalf("last option did not win: node=%v err=%v", n, err)
 	}
@@ -42,7 +42,7 @@ rule main = "a"* #stream $$`, "main")
 	cancel()
 	options, emits := 0, 0
 	err = p.ParseStream(strings.NewReader("aaa"), func(*pego.Node) error { emits++; return nil },
-		pego.WithContext(ctx), pego.WithContext(nil), pego.WithWorkLimits(pego.WorkLimits{MaxSteps: 1}), pego.WithWorkLimits(pego.WorkLimits{}),
+		pego.WithContext(ctx), pego.WithContext(nil), pego.WithLimits(pego.Limits{MaxWork: 1}), pego.WithLimits(pego.Limits{}),
 		func(o *engine.ParseOptions) { options++ })
 	if err != nil || emits != 3 || options != 1 {
 		t.Fatalf("error=%v emits=%d options=%d", err, emits, options)

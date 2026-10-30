@@ -18,8 +18,8 @@ func TestWorkDocumentPieceLineTableRetry(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		o.WorkLimits.MaxInputWork = 100
-		if _, err = d.ParseWith(o); !errors.Is(err, limits.ErrWorkLimit) {
+		o.Limits.MaxWork = 100
+		if _, err = d.ParseWith(o); !errors.Is(err, limits.ErrLimit) {
 			t.Fatalf("line table interruption: %v", err)
 		}
 		if d.Input().Lines != nil {
@@ -37,8 +37,8 @@ func TestWorkDocumentPieceLiteralRetry(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		o.WorkLimits.MaxInputWork = 100
-		if _, err = d.ParseWith(o); !errors.Is(err, limits.ErrWorkLimit) {
+		o.Limits.MaxWork = 100
+		if _, err = d.ParseWith(o); !errors.Is(err, limits.ErrLimit) {
 			t.Fatalf("piece literal bypassed the limit: %v", err)
 		}
 		workDocumentAssertRetry(t, d)

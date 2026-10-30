@@ -70,7 +70,7 @@ rule main = "a" $$`, "main")
 	}
 	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 		ctx, cancel := context.WithCancel(context.Background())
-		d, err := p.NewDocument("a", pego.WithBackend(backend), pego.WithContext(ctx), pego.WithWorkLimits(pego.WorkLimits{MaxInputWork: 10000, MaxSteps: 10000}))
+		d, err := p.NewDocument("a", pego.WithBackend(backend), pego.WithContext(ctx), pego.WithLimits(pego.Limits{MaxWork: 10000}))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -78,7 +78,7 @@ rule main = "a" $$`, "main")
 		if n, err := d.Parse(); n != nil || !errors.Is(err, context.Canceled) {
 			t.Fatalf("%s defaults: node=%v error=%v", backend, n, err)
 		}
-		if n, err := d.Parse(pego.WithContext(nil), pego.WithWorkLimits(pego.WorkLimits{})); n == nil || err != nil {
+		if n, err := d.Parse(pego.WithContext(nil), pego.WithLimits(pego.Limits{})); n == nil || err != nil {
 			t.Fatalf("%s override: node=%v error=%v", backend, n, err)
 		}
 		if n, err := d.Parse(); n != nil || !errors.Is(err, context.Canceled) {

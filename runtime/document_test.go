@@ -127,8 +127,8 @@ func TestPrivateDocumentInterruptionDiscardsMemo(t *testing.T) {
 	if err := d.edit(2, 2, "a"); err != nil {
 		t.Fatal(err)
 	}
-	main.Body = func(*Parser, int) (*Node, bool) { panic(fatal{err: ErrWorkLimit}) }
-	if _, err := d.parse(o); !errors.Is(err, ErrWorkLimit) {
+	main.Body = func(*Parser, int) (*Node, bool) { panic(fatal{err: ErrLimit}) }
+	if _, err := d.parse(o); !errors.Is(err, ErrLimit) {
 		t.Fatalf("interruption = %v", err)
 	}
 	if len(d.memo.slots) != 0 {
@@ -184,8 +184,8 @@ func TestDocumentDiagnosticPublicationBudget(t *testing.T) {
 		t.Fatalf("initial evaluations: %d", calls)
 	}
 	limited := normal
-	limited.limits = WorkLimits{MaxSteps: 64}
-	if out, err := d.parse(limited); out != nil || !errors.Is(err, ErrWorkLimit) {
+	limited.limits = Limits{MaxWork: 64}
+	if out, err := d.parse(limited); out != nil || !errors.Is(err, ErrLimit) {
 		t.Fatalf("diagnostic budget: %v %v", out, err)
 	}
 	if calls != 1 {

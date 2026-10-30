@@ -15,10 +15,10 @@ func TestWorkControls(t *testing.T) {
 	if _, err := yaml.Parse(input); err != nil {
 		t.Fatal(err)
 	}
-	_, err := yaml.Parse(input, yaml.WithWorkLimits(yaml.WorkLimits{MaxSteps: 1}))
-	var limit *yaml.WorkLimitError
-	if !errors.Is(err, yaml.ErrWorkLimit) || !errors.As(err, &limit) || limit.Kind != yaml.StepWorkLimit {
-		t.Fatalf("step limit: got %v", err)
+	_, err := yaml.Parse(input, yaml.WithLimits(yaml.Limits{MaxWork: 1}))
+	var limit *yaml.LimitError
+	if !errors.Is(err, yaml.ErrLimit) || !errors.As(err, &limit) || limit.Kind != yaml.LimitWork {
+		t.Fatalf("work limit: got %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

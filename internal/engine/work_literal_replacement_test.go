@@ -20,18 +20,18 @@ func TestWorkLiteralReplacementMismatchBudget(t *testing.T) {
 	for _, streaming := range []bool{false, true} {
 		for _, suffix := range []string{"", string(utf8.RuneError)} {
 			literal := strings.Repeat("a", 4096) + suffix
-			c := core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 32})
+			c := core.NewWorkControl(nil, limits.Limits{MaxWork: 32})
 			p := &core.Parser{Input: core.Input{Unit: Bytes, Bs: []byte("b"), Eof: !streaming, Control: c}}
 			if streaming {
 				p.Reader = bufio.NewReader(strings.NewReader(""))
 			}
 			err := catchFatal(t, func() { p.MatchLiteral([]rune(literal), []byte(literal)) })
-			var limit *limits.WorkLimitError
-			if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit || limit.Used != 32 || limit.Requested != 1 {
+			var limit *limits.LimitError
+			if !errors.As(err, &limit) || limit.Kind != limits.LimitWork || limit.Used != 32 || limit.Requested != 1 {
 				t.Fatalf("streaming=%v replacement=%v error=%v, want one-step reservation at limit", streaming, suffix != "", err)
 			}
-			if c.InputUsed != 1 || p.Pos != 0 {
-				t.Fatalf("streaming=%v input=%d pos=%d, want only initial byte mismatch", streaming, c.InputUsed, p.Pos)
+			if c.Used != 32 || p.Pos != 0 {
+				t.Fatalf("streaming=%v work=%d pos=%d, want work only up to the limit and the initial byte mismatch", streaming, c.Used, p.Pos)
 			}
 		}
 	}
@@ -47,12 +47,12 @@ func TestWorkLiteralReplacementPublicLookahead(t *testing.T) {
 			if _, err := prog.ParseWith("main", "b", opts); err != nil {
 				t.Fatalf("baseline %v/%v: %v", backend, recognize, err)
 			}
-			opts.WorkLimits = limits.WorkLimits{MaxSteps: 256}
+			opts.Limits = limits.Limits{MaxWork: 256}
 			n, err := prog.ParseWith("main", "b", opts)
-			if n != nil || !errors.Is(err, limits.ErrWorkLimit) {
+			if n != nil || !errors.Is(err, limits.ErrLimit) {
 				t.Fatalf("%v/recognize=%v node=%v error=%v, want fatal lookahead interruption", backend, recognize, n, err)
 			}
-			opts.WorkLimits = limits.WorkLimits{MaxSteps: 1 << 20}
+			opts.Limits = limits.Limits{MaxWork: 1 << 20}
 			if _, err := prog.ParseWith("main", "b", opts); err != nil {
 				t.Fatalf("retry %v/%v: %v", backend, recognize, err)
 			}
@@ -73,19 +73,19 @@ func TestWorkLiteralReplacementSentinelBoundaries(t *testing.T) {
 		{"absent", "aaaaa", 5, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			c := core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: tc.visits})
+			c := core.NewWorkControl(nil, limits.Limits{MaxWork: tc.visits})
 			p := &core.Parser{Input: core.Input{Control: c}}
 			got := p.LiteralHasReplacement([]rune(tc.literal))
-			if got != tc.found || c.StepsUsed != tc.visits || c.InputUsed != 0 {
-				t.Fatalf("found=%v steps/input=%d/%d, want %v/%d/0", got, c.StepsUsed, c.InputUsed, tc.found, tc.visits)
+			if got != tc.found || c.Used != tc.visits {
+				t.Fatalf("found=%v work=%d, want %v/%d", got, c.Used, tc.found, tc.visits)
 			}
 			if tc.visits > 1 {
-				c = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: tc.visits - 1})
+				c = core.NewWorkControl(nil, limits.Limits{MaxWork: tc.visits - 1})
 				p.Control = c
 				err := catchFatal(t, func() { p.LiteralHasReplacement([]rune(tc.literal)) })
-				var limit *limits.WorkLimitError
-				if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit || limit.Used != tc.visits-1 || limit.Requested != 1 || c.InputUsed != 0 {
-					t.Fatalf("one-short error=%v input=%d", err, c.InputUsed)
+				var limit *limits.LimitError
+				if !errors.As(err, &limit) || limit.Kind != limits.LimitWork || limit.Used != tc.visits-1 || limit.Requested != 1 || c.Used != tc.visits-1 {
+					t.Fatalf("one-short error=%v work=%d", err, c.Used)
 				}
 			}
 			p.Control = nil
@@ -99,10 +99,10 @@ func TestWorkLiteralReplacementSentinelBoundaries(t *testing.T) {
 func TestWorkLiteralReplacementSentinelCancellation(t *testing.T) {
 	t.Parallel()
 	ctx := newPollingContext(1)
-	c := core.NewWorkControl(ctx, limits.WorkLimits{MaxSteps: 1 << 20})
+	c := core.NewWorkControl(ctx, limits.Limits{MaxWork: 1 << 20})
 	p := &core.Parser{Input: core.Input{Control: c}}
 	err := catchFatal(t, func() { p.LiteralHasReplacement([]rune(strings.Repeat("a", 4096) + string(utf8.RuneError))) })
-	if !errors.Is(err, context.Canceled) || c.StepsUsed != core.WorkCheckStepInterval-1 || c.InputUsed != 0 {
-		t.Fatalf("error=%v steps/input=%d/%d, want cancellation before first 256-step poll reservation", err, c.StepsUsed, c.InputUsed)
+	if !errors.Is(err, context.Canceled) || c.Used != core.WorkCheckInterval-1 {
+		t.Fatalf("error=%v work=%d, want cancellation before first 256-unit poll reservation", err, c.Used)
 	}
 }

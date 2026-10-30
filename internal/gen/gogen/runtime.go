@@ -405,7 +405,7 @@ func apiNames(opts gen.GenOptions) []string {
 		"WalkRoot", "WalkChild", "WalkField", "WalkListElement", "Walk",
 	}
 	if opts.WorkControls {
-		names = append(names, "WithContext", "WithWorkLimits", "WorkLimits", "WorkLimitKind", "WorkLimitError", "ErrWorkLimit", "InputWorkLimit", "StepWorkLimit")
+		names = append(names, "WithContext", "WithLimits", "Limits", "LimitKind", "LimitError", "ErrLimit", "LimitWork")
 	}
 	if opts.Observability {
 		names = append(names, "TraceKind", "TraceEnter", "TraceExit", "TraceSkipped", "TraceEvent", "WithTrace", "WithTraceFilter", "WithTraceMaxDepth",

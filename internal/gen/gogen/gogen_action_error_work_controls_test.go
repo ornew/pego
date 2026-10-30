@@ -79,8 +79,8 @@ func TestPublicActionErrorAccounting(t *testing.T){
  modes:=[]int{0,1};if recognize{modes=append(modes,2)}
  for _,mode:=range modes{
   n,e:=actionCall(mode);if wantError==""{if e!=nil || mode!=2 && actionZero(n){t.Fatal("predicate fallback baseline",n,e)}}else if e==nil || e.Error()!=wantError || !actionZero(n) || errors.Unwrap(e)!=nil{t.Fatal("baseline error contract",n,e)}
-  _,large:=actionCall(mode,WithWorkLimits(WorkLimits{MaxSteps:1<<50}));if (large==nil)!=(e==nil) || large!=nil && large.Error()!=e.Error(){t.Fatal("generous controls changed error",large,e)}
-  partial,limited:=actionCall(mode,WithWorkLimits(WorkLimits{MaxSteps:256}));if !errors.Is(limited,ErrWorkLimit) || !actionZero(partial){t.Errorf("long action message bypassed budget mode=%d result=%T error=%v",mode,partial,limited)}
+  _,large:=actionCall(mode,WithLimits(Limits{MaxWork:1<<50}));if (large==nil)!=(e==nil) || large!=nil && large.Error()!=e.Error(){t.Fatal("generous controls changed error",large,e)}
+  partial,limited:=actionCall(mode,WithLimits(Limits{MaxWork:256}));if !errors.Is(limited,ErrLimit) || !actionZero(partial){t.Errorf("long action message bypassed budget mode=%d result=%T error=%v",mode,partial,limited)}
   ctx,cancel:=context.WithCancel(context.Background());cancel();partial,cancelled:=actionCall(mode,WithContext(ctx));if !errors.Is(cancelled,context.Canceled) || !actionZero(partial){t.Fatal("cancelled result",partial,cancelled)}
   retry,retryErr:=actionCall(mode);if (retryErr==nil)!=(e==nil) || retryErr!=nil && retryErr.Error()!=e.Error() || !reflect.DeepEqual(retry,n){t.Fatal("action error retry changed output",retryErr)}
  }
@@ -88,16 +88,16 @@ func TestPublicActionErrorAccounting(t *testing.T){
 func catchActionText(f func())(text string,err error){defer func(){if x:=recover();x!=nil{switch x:=x.(type){case pegort.X_evalError:text=x.X_msg;case pegort.X_fatal:err=x.X_err;default:panic(x)}}}();f();return}
 func TestActionTextFragmentsAndFlatPrefix(t *testing.T){
  for _,parts:=range [][]string{{""},{"","",""},{"a","","λ\xff"},{strings.Repeat("n",8192)}}{
-  want:=strings.Join(parts,"");steps:=uint64(len(want)+2*len(parts));p:=&pegort.Parser{Control:pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:steps})}
-  retained:=p.X_actionErrorText(parts...);if retained!=want || p.Control.X_stepsUsed()!=steps || p.Control.X_inputUsed()!=0{t.Fatal("fragment text/counters")}
-  p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:steps-1});var partial string
-  _,e:=catchActionText(func(){partial=p.X_actionErrorText(parts...)});if !errors.Is(e,ErrWorkLimit) || partial!=""{t.Fatal("one-short message",e)}
-  p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:100});if p.X_actionErrorText("retry")!="retry" || retained!=want{t.Fatal("retained message changed")}
+  want:=strings.Join(parts,"");steps:=uint64(len(want)+2*len(parts));p:=&pegort.Parser{Control:pegort.X_newWorkControl(nil,Limits{MaxWork:steps})}
+  retained:=p.X_actionErrorText(parts...);if retained!=want || p.Control.X_workUsed()!=steps{t.Fatal("fragment text/counters")}
+  p.Control=pegort.X_newWorkControl(nil,Limits{MaxWork:steps-1});var partial string
+  _,e:=catchActionText(func(){partial=p.X_actionErrorText(parts...)});if !errors.Is(e,ErrLimit) || partial!=""{t.Fatal("one-short message",e)}
+  p.Control=pegort.X_newWorkControl(nil,Limits{MaxWork:100});if p.X_actionErrorText("retry")!="retry" || retained!=want{t.Fatal("retained message changed")}
  }
  where:=strings.Repeat("rule",512);message:="division by zero";want:="action in "+where+": "+message
- p:=&pegort.Parser{Control:pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+8)})};e:=p.X_wrapEvalError(where,message)
- if e.Error()!=want || errors.Unwrap(e)!=nil || p.Control.X_stepsUsed()!=uint64(len(want)+8){t.Fatal("flat wrapper contract",e)}
- p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+7)});_,e=catchActionText(func(){p.X_wrapEvalError(where,message)});if !errors.Is(e,ErrWorkLimit){t.Fatal("one-short wrapper",e)}
+ p:=&pegort.Parser{Control:pegort.X_newWorkControl(nil,Limits{MaxWork:uint64(len(want)+8)})};e:=p.X_wrapEvalError(where,message)
+ if e.Error()!=want || errors.Unwrap(e)!=nil || p.Control.X_workUsed()!=uint64(len(want)+8){t.Fatal("flat wrapper contract",e)}
+ p.Control=pegort.X_newWorkControl(nil,Limits{MaxWork:uint64(len(want)+7)});_,e=catchActionText(func(){p.X_wrapEvalError(where,message)});if !errors.Is(e,ErrLimit){t.Fatal("one-short wrapper",e)}
 }
 func TestActionHelperErrorsAndShortCircuit(t *testing.T){
  long:=strings.Repeat("Kind",2048);n:=&Node{RawKind:pegort.KindOf(long,"")};tn:=&pegort.TSeq{Typ:"tuple",Kids:make([]any,2048)}
@@ -113,11 +113,11 @@ func TestActionHelperErrorsAndShortCircuit(t *testing.T){
   }
   for _,run:=range cases{
    p.Control=nil;ordinary,e:=catchActionText(run);if e!=nil || ordinary==""{t.Fatal("ordinary helper error",e)}
-   p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:1<<50});active,e:=catchActionText(run);if e!=nil || active!=ordinary{t.Fatal("active helper error changed",e)}
-   p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:256});partial,e:=catchActionText(run);if partial!="" || !errors.Is(e,ErrWorkLimit) || p.Control.X_inputUsed()!=0{t.Fatal("helper error unbounded",e)}
+   p.Control=pegort.X_newWorkControl(nil,Limits{MaxWork:1<<50});active,e:=catchActionText(run);if e!=nil || active!=ordinary{t.Fatal("active helper error changed",e)}
+   p.Control=pegort.X_newWorkControl(nil,Limits{MaxWork:256});partial,e:=catchActionText(run);if partial!="" || !errors.Is(e,ErrLimit){t.Fatal("helper error unbounded",e)}
   }
   if called!=0{t.Fatal("invalid boolean operand evaluated RHS")}
-  p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:1<<50});called=0
+  p.Control=pegort.X_newWorkControl(nil,Limits{MaxWork:1<<50});called=0
   right:=func()any{called++;return true};var and,or any
   if typed{c:=&pegort.TActCtx{P:tp};and=c.And(false,right);or=c.Or(true,right)}else{c:=&pegort.ActCtx{P:p};and=c.And(false,right);or=c.Or(true,right)}
   if and!=false || or!=true || called!=0{t.Fatal("valid short circuit changed")}

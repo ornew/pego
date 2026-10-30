@@ -149,12 +149,12 @@ func TestStructuralQueryAllOrError(t *testing.T) {
 		t.Fatalf("cancel: %v %v", got, err)
 	}
 	// A leaf costs one visit, one pattern, one capture and one match.
-	got, err = q.Matches(root, WithWorkLimits(limits.WorkLimits{MaxSteps: 4}))
+	got, err = q.Matches(root, WithLimits(limits.Limits{MaxWork: 4}))
 	if err != nil || len(got) != 1 {
 		t.Fatalf("exact limit: %v %v", got, err)
 	}
-	got, err = q.Matches(root, WithWorkLimits(limits.WorkLimits{MaxSteps: 3}))
-	if got != nil || !errors.Is(err, limits.ErrWorkLimit) {
+	got, err = q.Matches(root, WithLimits(limits.Limits{MaxWork: 3}))
+	if got != nil || !errors.Is(err, limits.ErrLimit) {
 		t.Fatalf("limit: %v %v", got, err)
 	}
 }
@@ -168,7 +168,7 @@ func TestStructuralQueryCycleThroughValues(t *testing.T) {
 	list := value.Ptr(value.Data{Kind: value.ListValueKind, Children: []*value.Node{root}})
 	value.D(root).Children = []*value.Node{list}
 	// The repeated node is rejected before its contents are reserved.
-	budget := &budget{limits: limits.WorkLimits{MaxSteps: 100}}
+	budget := &budget{limits: limits.Limits{MaxWork: 100}}
 	visits := 0
 	err = visitGraph(root, budget, func(graphVisit) error {
 		visits++
@@ -177,7 +177,7 @@ func TestStructuralQueryCycleThroughValues(t *testing.T) {
 	if !errors.Is(err, ErrCycle) || visits != 2 {
 		t.Fatalf("first back edge: visits=%d steps=%d err=%v", visits, budget.steps, err)
 	}
-	results, err := q.Matches(root, WithWorkLimits(limits.WorkLimits{MaxSteps: 100}))
+	results, err := q.Matches(root, WithLimits(limits.Limits{MaxWork: 100}))
 	if results != nil || !errors.Is(err, ErrCycle) {
 		t.Fatalf("value cycle: %+v, %v", results, err)
 	}

@@ -68,13 +68,13 @@ func (in *Input) controlledPieceText(start, end int) string {
 	}
 	var out strings.Builder
 	for pos := start; pos < end; i++ {
-		in.Control.Charge(0, 1)
+		in.Control.Charge(1)
 		piece := d.Parts[i]
 		until := min(end, piece.start+piece.length(d.unit))
 		text := piece.Substring(pos-piece.start, until-piece.start, d.unit)
 		for offset := 0; offset < len(text); {
 			n := min(4096, len(text)-offset)
-			in.Control.Charge(uint64(n), 1)
+			in.Control.Charge(uint64(n))
 			out.WriteString(text[offset : offset+n])
 			offset += n
 		}

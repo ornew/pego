@@ -62,7 +62,7 @@ func TestWorkStreamRawReaderAdmission(t *testing.T) {
 	cancel()
 	caller := &workCancelledRefillReader{cancel: func() {}}
 	var returned error
-	observer := &core.StreamReaderObserver{Reader: caller, Result: &returned, Control: core.NewWorkControl(ctx, limits.WorkLimits{})}
+	observer := &core.StreamReaderObserver{Reader: caller, Result: &returned, Control: core.NewWorkControl(ctx, limits.Limits{})}
 	err := catchFatal(t, func() { _, _ = observer.Read(make([]byte, 4)) })
 	if !errors.Is(err, context.Canceled) || caller.calls != 0 || returned != nil {
 		t.Fatalf("error=%v calls=%d returned=%v", err, caller.calls, returned)

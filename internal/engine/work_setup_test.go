@@ -203,7 +203,7 @@ func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
 					ctx, cancel := context.WithCancel(context.Background())
 					cancel()
 					traceCalls := 0
-					n, err := p.ParseWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: backend, Recognize: recognize, Context: ctx, WorkLimits: limits.WorkLimits{MaxInputWork: 1}, Trace: func(TraceEvent) { traceCalls++ }})
+					n, err := p.ParseWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: backend, Recognize: recognize, Context: ctx, Limits: limits.Limits{MaxWork: 1}, Trace: func(TraceEvent) { traceCalls++ }})
 					if n != nil || !errors.Is(err, context.Canceled) || traceCalls != 0 {
 						t.Fatalf("ParseWith node=%v err=%v traces=%d", n, err, traceCalls)
 					}
@@ -215,7 +215,7 @@ func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
 					docProg := setupProgram(t, `rule main = "a" $$`, moduleOnly)
 					ctx, cancel = context.WithCancel(context.Background())
 					cancel()
-					d, err := docProg.NewDocumentWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: backend, Context: ctx, WorkLimits: limits.WorkLimits{MaxInputWork: 1}})
+					d, err := docProg.NewDocumentWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: backend, Context: ctx, Limits: limits.Limits{MaxWork: 1}})
 					if d != nil || !errors.Is(err, context.Canceled) {
 						t.Fatalf("NewDocumentWith document=%v err=%v", d, err)
 					}
@@ -229,7 +229,7 @@ func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
 					cancel()
 					reader := &setupCountingReader{r: strings.NewReader(text)}
 					emits, traces := 0, 0
-					err = streamProg.ParseStreamWith("main", reader, func(*value.Node) error { emits++; return nil }, ParseOptions{Backend: backend, Context: ctx, WorkLimits: limits.WorkLimits{MaxInputWork: 1}, Trace: func(TraceEvent) { traces++ }})
+					err = streamProg.ParseStreamWith("main", reader, func(*value.Node) error { emits++; return nil }, ParseOptions{Backend: backend, Context: ctx, Limits: limits.Limits{MaxWork: 1}, Trace: func(TraceEvent) { traces++ }})
 					if !errors.Is(err, context.Canceled) || reader.reads != 0 || emits != 0 || traces != 0 {
 						t.Fatalf("ParseStreamWith err=%v reads=%d emits=%d traces=%d", err, reader.reads, emits, traces)
 					}
@@ -251,7 +251,7 @@ func TestWorkSetupPostBackendChecksStopBeforePublication(t *testing.T) {
 				prog := setupProgram(t, `rule main = [a-z]* #atomic $$`, moduleOnly)
 				gate := newSetupPhaseContext(func() bool { return setupBackendReady(prog, backend) })
 				traceCalls := 0
-				n, err := prog.ParseWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: backend, Context: gate, WorkLimits: limits.WorkLimits{MaxInputWork: 1}, Trace: func(TraceEvent) { traceCalls++ }})
+				n, err := prog.ParseWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: backend, Context: gate, Limits: limits.Limits{MaxWork: 1}, Trace: func(TraceEvent) { traceCalls++ }})
 				if n != nil || !errors.Is(err, context.Canceled) || !gate.triggered || traceCalls != 0 {
 					t.Fatalf("ParseWith node=%v err=%v gate=%t traces=%d", n, err, gate.triggered, traceCalls)
 				}
@@ -262,7 +262,7 @@ func TestWorkSetupPostBackendChecksStopBeforePublication(t *testing.T) {
 
 				docProg := setupProgram(t, `rule main = "a" $$`, moduleOnly)
 				docGate := newSetupPhaseContext(func() bool { return setupBackendReady(docProg, backend) })
-				doc, err := docProg.NewDocumentWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: backend, Context: docGate, WorkLimits: limits.WorkLimits{MaxInputWork: 1}})
+				doc, err := docProg.NewDocumentWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: backend, Context: docGate, Limits: limits.Limits{MaxWork: 1}})
 				if doc != nil || !errors.Is(err, context.Canceled) || !docGate.triggered {
 					t.Fatalf("NewDocumentWith document=%v err=%v gate=%t", doc, err, docGate.triggered)
 				}
@@ -275,7 +275,7 @@ func TestWorkSetupPostBackendChecksStopBeforePublication(t *testing.T) {
 				streamGate := newSetupPhaseContext(func() bool { return setupBackendReady(streamProg, backend) })
 				reader := &setupCountingReader{r: strings.NewReader("#records\na=1\n")}
 				emits, traces := 0, 0
-				err = streamProg.ParseStreamWith("main", reader, func(*value.Node) error { emits++; return nil }, ParseOptions{Backend: backend, Context: streamGate, WorkLimits: limits.WorkLimits{MaxInputWork: 1}, Trace: func(TraceEvent) { traces++ }})
+				err = streamProg.ParseStreamWith("main", reader, func(*value.Node) error { emits++; return nil }, ParseOptions{Backend: backend, Context: streamGate, Limits: limits.Limits{MaxWork: 1}, Trace: func(TraceEvent) { traces++ }})
 				if !errors.Is(err, context.Canceled) || !streamGate.triggered || reader.reads != 0 || emits != 0 || traces != 0 {
 					t.Fatalf("ParseStreamWith err=%v gate=%t reads=%d emits=%d traces=%d", err, streamGate.triggered, reader.reads, emits, traces)
 				}
@@ -325,7 +325,7 @@ func TestWorkSetupRecognizerPhaseChecks(t *testing.T) {
 			prog := setupProgram(t, `rule main = "a" $$`, false)
 			gate := newSetupPhaseContext(func() bool { return tc.ready(prog) })
 			traceCalls := 0
-			n, err := prog.ParseWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: tc.backend, Recognize: true, Context: gate, WorkLimits: limits.WorkLimits{MaxInputWork: 1}, Trace: func(TraceEvent) { traceCalls++ }})
+			n, err := prog.ParseWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: tc.backend, Recognize: true, Context: gate, Limits: limits.Limits{MaxWork: 1}, Trace: func(TraceEvent) { traceCalls++ }})
 			if n != nil || !errors.Is(err, context.Canceled) || !gate.triggered || traceCalls != 0 {
 				t.Fatalf("recognition node=%v err=%v gate=%t traces=%d", n, err, gate.triggered, traceCalls)
 			}
@@ -353,7 +353,7 @@ func TestWorkSetupInputPreparationPanicIdentity(t *testing.T) {
 		t.Run(unit.String(), func(t *testing.T) {
 			token := &workContextPanicToken{phase: "input materialization"}
 			ctx := newWorkContextErrPanic(token, 1)
-			c := core.NewWorkControl(ctx, limits.WorkLimits{})
+			c := core.NewWorkControl(ctx, limits.Limits{})
 			ctx.control, ctx.armed = c, true
 			completed := false
 			got := workContextRecover(func() {
@@ -364,7 +364,7 @@ func TestWorkSetupInputPreparationPanicIdentity(t *testing.T) {
 			if !ok || attributed.Value != token || completed {
 				t.Fatalf("panic=%#v completed=%t", got, completed)
 			}
-			if unit == CodePoints && c.StepsUsed == 0 {
+			if unit == CodePoints && c.Used == 0 {
 				t.Fatal("CodePoints fixture did not enter preparation loop")
 			}
 		})

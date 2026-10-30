@@ -27,8 +27,8 @@ func TestDocumentChangesComparisonInterruptionPublication(t *testing.T) {
 		d.DrainChanges()
 		// Force interruption during the shared parse/capture/comparison invocation.
 		limited := o
-		limited.WorkLimits = limits.WorkLimits{MaxInputWork: 1}
-		if s, err := d.SnapshotWith(limited); s != nil || !errors.Is(err, limits.ErrWorkLimit) {
+		limited.Limits = limits.Limits{MaxWork: 1}
+		if s, err := d.SnapshotWith(limited); s != nil || !errors.Is(err, limits.ErrLimit) {
 			t.Fatal(s, err)
 		}
 		events := d.DrainChanges()

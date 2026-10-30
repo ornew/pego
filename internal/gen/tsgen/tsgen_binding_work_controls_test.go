@@ -62,17 +62,16 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array(
  const ordinary=p.parse(input,unit),typed=p.parseAST(input,unit);
  const active=p.parseWithOptions(input,{unit,signal:{aborted:false}}),converted=p.parseASTWithOptions(input,{unit,signal:{aborted:false}});
  check(ordinary.error===null&&typed.error===null&&active.error===null&&converted.error===null&&stable(active.node)===stable(ordinary.node)&&stable(converted.value)===stable(typed.value),"binding and environment value parity");
- const baseline=minimum(n=>p.parseRuleWithOptions("` + tt.baseline + `",input,{unit,maxSteps:n}).error===null);
+ const baseline=minimum(n=>p.parseRuleWithOptions("` + tt.baseline + `",input,{unit,maxWork:n}).error===null);
  const limit=baseline+128;
- const stopped=p.parseWithOptions(input,{unit,maxSteps:limit});
- check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="step-work-limit","` + tt.name + ` work exceeds baseline");
- check(p.parseASTWithOptions(input,{unit,maxSteps:limit}).error instanceof p.ParseInterruptionError,"typed routes share binding budget");
- check(p.parseWithOptions(input,{unit,maxInputWork:128}).error===null,"identifier and binding values use step work only");
- check(p.parseASTWithOptions(input,{unit,maxSteps:0}).error===null,"fresh binding retry");
+ const stopped=p.parseWithOptions(input,{unit,maxWork:limit});
+ check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="work-limit","` + tt.name + ` work exceeds baseline");
+ check(p.parseASTWithOptions(input,{unit,maxWork:limit}).error instanceof p.ParseInterruptionError,"typed routes share binding budget");
+ check(p.parseASTWithOptions(input,{unit,maxWork:0}).error===null,"fresh binding retry");
 }
 `
 			if !tt.isolated {
-				consumer += `const stop=p.recognizeWithOptions("z",{maxSteps:128});check(stop instanceof p.ParseInterruptionError&&stop.kind==="step-work-limit","predicate-dependent recognition counts binding work");`
+				consumer += `const stop=p.recognizeWithOptions("z",{maxWork:128});check(stop instanceof p.ParseInterruptionError&&stop.kind==="work-limit","predicate-dependent recognition counts binding work");`
 			}
 			runTypedTSFixture(t, tt.src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 		})
@@ -96,7 +95,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  let polls=0;const cause={marker:"bindings"};
  const canceled=p.parseWithOptions("z",{unit,signal:{get aborted(){return ++polls>=2},reason:cause}});
  check(canceled.node===null&&canceled.error instanceof p.ParseInterruptionError&&canceled.error.kind==="canceled"&&canceled.error.cause===cause,"binding cancellation does not publish partial node");
- check(p.parseASTWithOptions("z",{unit,maxSteps:0}).value?.N===1,"fresh caller environment after interruption");
+ check(p.parseASTWithOptions("z",{unit,maxWork:0}).value?.N===1,"fresh caller environment after interruption");
 }
 `
 		runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")

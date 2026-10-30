@@ -77,7 +77,7 @@ rule entry = key:[a-z]+ #atomic ":" value:[0-9]+ #atomic => Entry{Key: text($key
 								}
 							}}
 							if active {
-								opts.WorkLimits = limits.WorkLimits{MaxSteps: 1 << 30}
+								opts.Limits = limits.Limits{MaxWork: 1 << 30}
 							}
 							n, err := prog.ParseWith("main", input, opts)
 							return n, err, retained
@@ -188,7 +188,7 @@ func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
 							opts.Context, cancel = context.WithCancel(context.Background())
 							defer cancel()
 						case "steps":
-							opts.WorkLimits = limits.WorkLimits{MaxSteps: 1 << 30}
+							opts.Limits = limits.Limits{MaxWork: 1 << 30}
 						default:
 							at := 1
 							if cause == "publication-panic" {
@@ -207,7 +207,7 @@ func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
 								case "cancel":
 									cancel()
 								case "steps":
-									core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed
+									core.TraceParser(e).Control.Limits.MaxWork = core.TraceParser(e).Control.Used
 								case "context-panic":
 									panicCtx.armed = true
 								}
@@ -227,8 +227,8 @@ func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
 								t.Fatalf("panic=%v err=%v", got, returnedErr)
 							}
 						case "steps":
-							var limit *limits.WorkLimitError
-							if got != nil || !errors.As(returnedErr, &limit) || limit.Kind != limits.StepWorkLimit {
+							var limit *limits.LimitError
+							if got != nil || !errors.As(returnedErr, &limit) || limit.Kind != limits.LimitWork {
 								t.Fatalf("panic=%v err=%v", got, returnedErr)
 							}
 						default:

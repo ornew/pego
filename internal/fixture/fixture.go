@@ -187,7 +187,7 @@ type RunOptions struct {
 	Backends    []string
 	Equivalence *bool
 	Context     context.Context
-	WorkLimits  pego.WorkLimits
+	Limits      pego.Limits
 }
 
 // Outcome describes whether parsing matched cleanly, recovered, or rejected input.
@@ -404,7 +404,7 @@ func Run(suite *Suite, opts RunOptions) (Report, error) {
 					return report, err
 				}
 			}
-			actual, err := runCase(parsers[backend], backend, unit, c.Input, opts.Context, opts.WorkLimits)
+			actual, err := runCase(parsers[backend], backend, unit, c.Input, opts.Context, opts.Limits)
 			if err != nil {
 				return report, fmt.Errorf("case %q backend %s: %w", c.Name, backend, err)
 			}
@@ -597,7 +597,7 @@ func setGoldens(exp *Expectation, actual Actual) {
 	copy(exp.Errors, actual.Errors)
 }
 
-func runCase(p *pego.Parser, backend string, unit pego.PositionUnit, input string, ctx context.Context, limits pego.WorkLimits) (Actual, error) {
+func runCase(p *pego.Parser, backend string, unit pego.PositionUnit, input string, ctx context.Context, limits pego.Limits) (Actual, error) {
 	var b pego.Backend
 	switch backend {
 	case "default":
@@ -609,7 +609,7 @@ func runCase(p *pego.Parser, backend string, unit pego.PositionUnit, input strin
 	case "bytecode-iterative":
 		b = pego.BytecodeIterative
 	}
-	options := []pego.ParseOption{pego.WithUnit(unit), pego.WithBackend(b), pego.WithWorkLimits(limits)}
+	options := []pego.ParseOption{pego.WithUnit(unit), pego.WithBackend(b), pego.WithLimits(limits)}
 	if ctx != nil {
 		options = append(options, pego.WithContext(ctx))
 	}

@@ -14,22 +14,22 @@ import (
 func TestWorkStreamDiscardAndStackClear(t *testing.T) {
 	for _, u := range []core.PositionUnit{core.Bytes, core.CodePoints} {
 		t.Run(u.String(), func(t *testing.T) {
-			in := core.Input{Unit: u, Eof: true, BaseLine: 1, BaseCol: 1, Lines: []int{0}, Control: core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 128})}
+			in := core.Input{Unit: u, Eof: true, BaseLine: 1, BaseCol: 1, Lines: []int{0}, Control: core.NewWorkControl(nil, limits.Limits{MaxWork: 128})}
 			if u == core.Bytes {
 				in.Bs = []byte(strings.Repeat("a", 258))
 			} else {
 				in.In = []rune(strings.Repeat("a", 258))
 			}
 			got := catchStreamPanic(func() { in.Discard(129) })
-			if _, ok := got.(core.Fatal); !ok || in.Base != 0 || in.Control.StepsUsed != 128 {
-				t.Fatalf("discard interruption=%v base=%d steps=%d", got, in.Base, in.Control.StepsUsed)
+			if _, ok := got.(core.Fatal); !ok || in.Base != 0 || in.Control.Used != 128 {
+				t.Fatalf("discard interruption=%v base=%d steps=%d", got, in.Base, in.Control.Used)
 			}
 		})
 	}
 	for _, phase := range []string{"trail", "values"} {
 		t.Run(phase, func(t *testing.T) {
 			node := value.Ptr(value.Data{Text: "owned"})
-			p := &core.Parser{Input: core.Input{Unit: core.Bytes, Eof: true, Bs: []byte(strings.Repeat("a", 3000)), BaseLine: 1, BaseCol: 1, Lines: []int{0}, Control: core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 953 + 128})}, Memo: core.NewMemoTable()}
+			p := &core.Parser{Input: core.Input{Unit: core.Bytes, Eof: true, Bs: []byte(strings.Repeat("a", 3000)), BaseLine: 1, BaseCol: 1, Lines: []int{0}, Control: core.NewWorkControl(nil, limits.Limits{MaxWork: 953 + 128})}, Memo: core.NewMemoTable()}
 			if phase == "trail" {
 				p.Trail = make([]core.Undo, 0, 129)
 			} else {

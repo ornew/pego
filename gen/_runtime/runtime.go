@@ -1056,7 +1056,7 @@ type parseOptions struct {
 	unit     PositionUnit
 	maxDepth int
 	context  context.Context
-	limits   WorkLimits
+	limits   Limits
 	control  *WorkControl
 	prepared bool
 	// observe selects the observation of the parse (trace.go).
@@ -1081,9 +1081,9 @@ func WithMaxDepth(n int) ParseOption { return func(o *parseOptions) { o.maxDepth
 // A nil context is equivalent to context.Background.
 func WithContext(ctx context.Context) ParseOption { return func(o *parseOptions) { o.context = ctx } }
 
-// WithWorkLimits bounds cumulative examined input and execution work.
+// WithLimits bounds cumulative examined input and execution work.
 // Zero leaves a counter unlimited; counters are never rolled back.
-func WithWorkLimits(limits WorkLimits) ParseOption {
+func WithLimits(limits Limits) ParseOption {
 	return func(o *parseOptions) { o.limits = limits }
 }
 
@@ -1104,8 +1104,8 @@ func ResolveOptions(g *grammar, opts []ParseOption) (parseOptions, error) {
 	if o.maxDepth == 0 {
 		o.maxDepth = g.maxDepth
 	}
-	if g.NoWorkControls && (o.context != nil || o.limits != (WorkLimits{})) {
-		return o, fmt.Errorf("this parser was generated without work controls (generate with -work-controls to use WithContext and WithWorkLimits)")
+	if g.NoWorkControls && (o.context != nil || o.limits != (Limits{})) {
+		return o, fmt.Errorf("this parser was generated without work controls (generate with -work-controls to use WithContext and WithLimits)")
 	}
 	if err := o.validateDiagnostics(); err != nil {
 		return o, err
@@ -1142,7 +1142,7 @@ func (o *parseOptions) validateDiagnostics() error {
 func prepareOptions(o parseOptions) parseOptions {
 	if !o.prepared {
 		o.prepared = true
-		if o.context != nil || o.limits != (WorkLimits{}) {
+		if o.context != nil || o.limits != (Limits{}) {
 			o.control = newWorkControl(o.context, o.limits)
 		}
 	}

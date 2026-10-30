@@ -67,7 +67,7 @@ type Match struct{ Captures []Capture }
 
 type options struct {
 	ctx    context.Context
-	limits limits.WorkLimits
+	limits limits.Limits
 }
 
 // Option configures one query evaluation.
@@ -78,9 +78,9 @@ func WithContext(ctx context.Context) Option {
 	return func(o *options) { o.ctx = ctx }
 }
 
-// WithWorkLimits bounds query work. MaxSteps is charged for traversal, matching, paths and
-// results; MaxInputWork is unused by structural queries. A zero limit means unlimited work.
-func WithWorkLimits(limits pego.WorkLimits) Option {
+// WithLimits bounds query work. MaxWork is charged for traversal, matching, paths and
+// results. A zero limit means unlimited work.
+func WithLimits(limits pego.Limits) Option {
 	return func(o *options) { o.limits = limits }
 }
 
@@ -238,7 +238,7 @@ func (p *Pattern) usesRule() bool {
 // context for cancellation.
 type budget struct {
 	ctx    context.Context
-	limits limits.WorkLimits
+	limits limits.Limits
 	steps  uint64
 }
 
@@ -248,8 +248,8 @@ func (b *budget) charge(n uint64) error {
 			return err
 		}
 	}
-	if limits.ExceedsLimit(b.steps, n, b.limits.MaxSteps) {
-		return &limits.WorkLimitError{Kind: limits.StepWorkLimit, Limit: b.limits.MaxSteps, Used: b.steps, Requested: n}
+	if limits.ExceedsLimit(b.steps, n, b.limits.MaxWork) {
+		return &limits.LimitError{Kind: limits.LimitWork, Limit: b.limits.MaxWork, Used: b.steps, Requested: n}
 	}
 	b.steps = limits.SaturatingAdd(b.steps, n)
 	return nil
@@ -260,7 +260,7 @@ func (b *budget) charge(n uint64) error {
 // index, then a node's captures that are not elements, by name, and the fields of a struct by
 // name. Every node, struct, tuple, list and error value is a candidate. Results borrow graph
 // values; callers must keep the graph stable. Structural matching inspects no source text and
-// therefore consumes no input work. Cancellation, work-limit exhaustion and cycles (ErrCycle)
+// therefore charges no input. Cancellation, work-limit exhaustion and cycles (ErrCycle)
 // return an error without partial results. A query with a rule constraint reports
 // ErrNoSourceInfo when the graph has nodes but none records a rule.
 func (q *Query) Matches(root *pego.Node, opts ...Option) ([]Match, error) {

@@ -100,7 +100,7 @@ type Go struct {
 	// their typed entry points. Collection is selected per invocation.
 	Observability bool
 	// WorkControls generates the work-controlled form of the parser, which supports cancellation
-	// and the input and step limits and re-exports the options WithContext and WithWorkLimits.
+	// and the work limit and re-exports the options WithContext and WithLimits.
 	// Without it the generated parser is smaller and faster to build, and a parse that passes a
 	// control option returns an error. The controlled form is the only form of the parser: a
 	// parse that sets no limit runs it too, and is slower than with a parser generated without
@@ -190,8 +190,8 @@ type TypeScript struct {
 	// Observability emits rule tracing and profiling for batch parsing, including the typed entry
 	// points. Collection is selected per invocation.
 	Observability bool
-	// WorkControls generates the work-controlled form of the parser, which supports the signal,
-	// maxInputWork and maxSteps options. Without it the generated parser is smaller, and a parse
+	// WorkControls generates the work-controlled form of the parser, which supports the signal
+	// and maxWork options. Without it the generated parser is smaller, and a parse
 	// that passes a control option returns an error. The controlled form is the only form of the
 	// parser: a parse that sets no limit runs it too, and is slower than with a parser generated
 	// without work controls.

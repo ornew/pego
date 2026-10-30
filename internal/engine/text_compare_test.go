@@ -14,13 +14,13 @@ import (
 func TestTextFieldComparisons(t *testing.T) {
 	t.Parallel()
 	prog := compileBare(t, gentest.TextCompareGrammar, compile.Options{})
-	limits := limits.WorkLimits{MaxInputWork: 1 << 40, MaxSteps: 1 << 40}
+	limits := limits.Limits{MaxWork: 1 << 40}
 	for _, controlled := range []bool{false, true} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, input := range gentest.TextCompareInputs {
 				opts := ParseOptions{Backend: Closure, Unit: unit}
 				if controlled {
-					opts.WorkLimits = limits
+					opts.Limits = limits
 				}
 				want := gentest.ResultJSON(prog.ParseWith("main", input, opts))
 				for _, backend := range []Backend{Bytecode, BytecodeIterative} {
@@ -38,7 +38,7 @@ func TestTextFieldComparisons(t *testing.T) {
 // the result.
 func parseSteps(t *testing.T, prog *Program, backend Backend, unit PositionUnit, input string) (uint64, string) {
 	t.Helper()
-	o := ParseOptions{Backend: backend, Unit: unit, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 40}}
+	o := ParseOptions{Backend: backend, Unit: unit, Limits: limits.Limits{MaxWork: 1 << 40}}
 	active, _, control, err := prog.admitParse("main", o, false)
 	if err != nil {
 		t.Fatal(err)
@@ -49,7 +49,7 @@ func parseSteps(t *testing.T, prog *Program, backend Backend, unit PositionUnit,
 	p.MaxDepth = core.DepthLimit(o, o.Backend)
 	p.DeferMemo = true
 	n, err := active.Run(p, o.Backend, "main")
-	return control.StepsUsed, gentest.ResultJSON(n, err)
+	return control.Used, gentest.ResultJSON(n, err)
 }
 
 // textCompareEdgeGrammar compares fields in actions that fail, read the built-in members of a

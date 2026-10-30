@@ -129,32 +129,36 @@ const (
 // ParseOption configures a single parse.
 type ParseOption func(*engine.ParseOptions)
 
-// WorkLimits configures cumulative engine work for a parse invocation.
-// Zero limits are unlimited. Counts depend on backend, input unit and version.
-type WorkLimits = limits.WorkLimits
+// Limits bounds one parse invocation. A zero limit is unlimited.
+//
+// MaxWork bounds the cumulative work of the parse: every input unit
+// inspected, every rule call and loop iteration, and every unit of value
+// construction adds to one counter. Counts depend on backend, input unit and
+// version.
+type Limits = limits.Limits
 
-// WorkLimitError describes a reservation that would exceed a work limit.
-type WorkLimitError = limits.WorkLimitError
+// LimitError describes a reservation that would exceed a limit.
+type LimitError = limits.LimitError
 
-// WorkLimitKind identifies the exhausted counter.
-type WorkLimitKind = limits.WorkLimitKind
+// LimitKind identifies the exhausted limit.
+type LimitKind = limits.LimitKind
 
 const (
-	InputWorkLimit = limits.InputWorkLimit
-	StepWorkLimit  = limits.StepWorkLimit
+	// LimitWork is the kind of an exhausted MaxWork.
+	LimitWork = limits.LimitWork
 )
 
-// ErrWorkLimit identifies engine work-limit failures through errors.Is.
-var ErrWorkLimit = limits.ErrWorkLimit
+// ErrLimit identifies limit failures through errors.Is.
+var ErrLimit = limits.ErrLimit
 
 // WithContext selects invocation-local cooperative cancellation. Nil disables it.
 func WithContext(ctx context.Context) ParseOption {
 	return func(o *engine.ParseOptions) { o.Context = ctx }
 }
 
-// WithWorkLimits sets both invocation-local work limits. Zero means unlimited.
-func WithWorkLimits(limits WorkLimits) ParseOption {
-	return func(o *engine.ParseOptions) { o.WorkLimits = limits }
+// WithLimits sets the invocation-local limits. Zero means unlimited.
+func WithLimits(limits Limits) ParseOption {
+	return func(o *engine.ParseOptions) { o.Limits = limits }
 }
 
 // WithMissingTokens bounds attempted #missing literal insertions in one parse.
@@ -312,7 +316,7 @@ func (p *Parser) Parse(input string, opts ...ParseOption) (*Node, error) {
 // retained, so the input never has to fit in memory. If emit returns an error, parsing stops and
 // ParseStream returns that error. An element without a value (for example, one that is discarded with -)
 // is passed as nil. As in any repetition, an element that matches without consuming input ends it.
-// WithContext and WithWorkLimits apply to this invocation. Cancellation cannot interrupt a blocked
+// WithContext and WithLimits apply to this invocation. Cancellation cannot interrupt a blocked
 // reader or callback; the caller must arrange for it to return. A returned reader or emit error wins
 // over cancellation first observed after that call. Delivered elements remain caller-owned, and
 // retrying an interrupted stream requires caller-managed input replay.

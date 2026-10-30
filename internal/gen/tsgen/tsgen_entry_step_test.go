@@ -29,7 +29,7 @@ proto.stepWork = function (this: unknown, n?: number): void {
   by.set(name, (by.get(name) ?? 0) + 1);
   original.call(this, n);
 };
-const r = p.parseWithOptions("a+a+a", { unit: p.CodePoints, maxSteps: 100000 });
+const r = p.parseWithOptions("a+a+a", { unit: p.CodePoints, maxWork: 100000 });
 if (r.error !== null) throw new Error("parse failed");
 console.log((by.get("callBody") ?? 0) > 0 ? by.get("invokePlainBody") ?? 0 : "no call charged");
 `, gen.GenOptions{Start: "main", WorkControls: true})

@@ -22,7 +22,7 @@ import (
 // The generated fixtures are built in two forms: with work controls, so that the tests of
 // cancellation and limits can use them, and without, the form that most parsers have. Tests that
 // build fixtures run in both forms (EachMode); tests that use a control (WithContext,
-// WithWorkLimits) run with controls only (NeedsWorkControls); tests of the ordinary-only output
+// WithLimits) run with controls only (NeedsWorkControls); tests of the ordinary-only output
 // pin the ordinary form (PinOrdinary).
 //
 // A form is "0" with work controls and "1" without. Each test records its form by name, and its

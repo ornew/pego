@@ -49,8 +49,8 @@ func (c *workContextErrPanic) Err() error {
 	c.calls++
 	if c.calls == c.panicAt {
 		if c.control != nil {
-			c.stepsAtPanic, c.stepsSince = c.control.StepsUsed, c.control.StepsSinceCheck
-			c.inputAtPanic, c.inputSince = c.control.InputUsed, c.control.InputSinceCheck
+			c.stepsAtPanic, c.stepsSince = c.control.Used, c.control.SinceCheck
+			c.inputAtPanic, c.inputSince = c.control.Used, c.control.SinceCheck
 		}
 		panic(c.token)
 	}
@@ -163,7 +163,7 @@ rule child = "a"`)
 			var node *value.Node
 			var returnedErr error
 			got := workContextRecover(func() {
-				node, returnedErr = childProg.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
+				node, returnedErr = childProg.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, Limits: limits.Limits{MaxWork: 1 << 20}, Trace: func(e TraceEvent) {
 					if e.Kind == TraceEnter && e.Rule == "main" {
 						observed = core.TraceParser(e)
 						ctx.control, ctx.armed = core.TraceParser(e).Control, true
@@ -186,7 +186,7 @@ rule child = "a"`)
 			var node *value.Node
 			var returnedErr error
 			got := workContextRecover(func() {
-				node, returnedErr = plainProg.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
+				node, returnedErr = plainProg.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, Limits: limits.Limits{MaxWork: 1 << 20}, Trace: func(e TraceEvent) {
 					if e.Kind == TraceEnter && e.Rule == "main" {
 						observed = core.TraceParser(e)
 						ctx.control, ctx.armed = core.TraceParser(e).Control, true
@@ -213,7 +213,7 @@ func TestWorkContextErrPanicIdentityAtPublicationAndFailedReservation(t *testing
 			var node *value.Node
 			var returnedErr error
 			got := workContextRecover(func() {
-				node, returnedErr = prog.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
+				node, returnedErr = prog.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, Limits: limits.Limits{MaxWork: 1 << 20}, Trace: func(e TraceEvent) {
 					if e.Kind == TraceExit && e.Rule == "main" {
 						observed = core.TraceParser(e)
 						ctx.control, ctx.armed = core.TraceParser(e).Control, true
@@ -233,16 +233,16 @@ func TestWorkContextErrPanicIdentityAtPublicationAndFailedReservation(t *testing
 			var node *value.Node
 			var returnedErr error
 			got := workContextRecover(func() {
-				node, returnedErr = prog.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
+				node, returnedErr = prog.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, Limits: limits.Limits{MaxWork: 1 << 20}, Trace: func(e TraceEvent) {
 					if e.Kind == TraceEnter && e.Rule == "main" {
 						observed = core.TraceParser(e)
 						ctx.control = core.TraceParser(e).Control
 						ctx.armed = true
-						ctx.control.Limits.MaxSteps = ctx.control.StepsUsed
+						ctx.control.Limits.MaxWork = ctx.control.Used
 					}
 				}})
 			})
-			if got != token || node != nil || returnedErr != nil || ctx.calls != 2 || ctx.control == nil || ctx.stepsAtPanic != ctx.control.StepsUsed || ctx.stepsAtPanic != ctx.control.Limits.MaxSteps {
+			if got != token || node != nil || returnedErr != nil || ctx.calls != 2 || ctx.control == nil || ctx.stepsAtPanic != ctx.control.Used || ctx.stepsAtPanic != ctx.control.Limits.MaxWork {
 				t.Fatalf("panic=%#v node=%v error=%v Err calls=%d control=%v, want context panic on rejected reservation", got, node, returnedErr, ctx.calls, ctx.control)
 			}
 			workContextAssertCleanup(t, observed)
@@ -275,7 +275,7 @@ func TestWorkContextErrPanicIdentityAtCountedWorkAndRetry(t *testing.T) {
 					var node *value.Node
 					var returnedErr error
 					got := workContextRecover(func() {
-						node, returnedErr = prog.ParseWith("main", literal, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30}, Trace: func(e TraceEvent) {
+						node, returnedErr = prog.ParseWith("main", literal, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, Context: ctx, Limits: limits.Limits{MaxWork: 1 << 30}, Trace: func(e TraceEvent) {
 							if e.Kind == TraceEnter && e.Rule == "main" {
 								observed = core.TraceParser(e)
 								ctx.control, ctx.armed = core.TraceParser(e).Control, true
@@ -285,7 +285,7 @@ func TestWorkContextErrPanicIdentityAtCountedWorkAndRetry(t *testing.T) {
 					if got != token || node != nil || returnedErr != nil {
 						t.Fatalf("panic=%#v node=%v error=%v, want exact panic during counted work", got, node, returnedErr)
 					}
-					if ctx.calls != 2 || ctx.stepsSince != core.WorkCheckStepInterval-1 || ctx.stepsAtPanic < core.WorkCheckStepInterval-1 {
+					if ctx.calls != 2 || ctx.stepsSince != core.WorkCheckInterval-1 || ctx.stepsAtPanic < core.WorkCheckInterval-1 {
 						t.Fatalf("Err calls=%d steps=%d since check=%d, want callback postcheck then next counted-work poll", ctx.calls, ctx.stepsAtPanic, ctx.stepsSince)
 					}
 					workContextAssertCleanup(t, observed)
@@ -332,7 +332,7 @@ func TestWorkContextErrPanicIdentityLoadedASTOmittedProgram(t *testing.T) {
 				var node *value.Node
 				var returnedErr error
 				got := workContextRecover(func() {
-					node, returnedErr = prog.ParseWith("main", literal, ParseOptions{Backend: backend, Unit: unit, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30}, Trace: func(e TraceEvent) {
+					node, returnedErr = prog.ParseWith("main", literal, ParseOptions{Backend: backend, Unit: unit, Context: ctx, Limits: limits.Limits{MaxWork: 1 << 30}, Trace: func(e TraceEvent) {
 						if e.Kind == TraceEnter && e.Rule == "main" {
 							observed = core.TraceParser(e)
 							ctx.control, ctx.armed = core.TraceParser(e).Control, true
@@ -342,7 +342,7 @@ func TestWorkContextErrPanicIdentityLoadedASTOmittedProgram(t *testing.T) {
 				if got != token || node != nil || returnedErr != nil || ctx.calls != 2 {
 					t.Fatalf("panic=%#v node=%v error=%v Err calls=%d, want exact loaded-VM panic", got, node, returnedErr, ctx.calls)
 				}
-				if ctx.stepsSince != core.WorkCheckStepInterval-1 || ctx.stepsAtPanic < core.WorkCheckStepInterval-1 {
+				if ctx.stepsSince != core.WorkCheckInterval-1 || ctx.stepsAtPanic < core.WorkCheckInterval-1 {
 					t.Fatalf("steps at panic=%d since check=%d, want counted-work polling boundary", ctx.stepsAtPanic, ctx.stepsSince)
 				}
 				workContextAssertCleanup(t, observed)

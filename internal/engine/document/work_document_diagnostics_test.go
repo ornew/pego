@@ -47,7 +47,7 @@ func TestWorkDocumentDiagnosticPublication(t *testing.T) {
 				syntaxErrors := SyntaxErrors{syntaxError}
 				ctx := &workContextAccessorContext{Context: context.Background(), done: make(chan struct{})}
 				ctx.fn = func() error {
-					if observed == nil || observed.Control.StepsUsed < exitSteps+2048 {
+					if observed == nil || observed.Control.Used < exitSteps+2048 {
 						return nil
 					}
 					publicationPolled = true
@@ -63,15 +63,15 @@ func TestWorkDocumentDiagnosticPublication(t *testing.T) {
 					}
 				}
 				o := base
-				o.WorkLimits.MaxSteps = 1 << 20
+				o.Limits.MaxWork = 1 << 20
 				if mode != "budget" {
 					o.Context = ctx
 				}
 				o.Trace = func(e TraceEvent) {
 					if e.Kind == TraceExit && e.Rule == "main" {
-						observed, exitSteps = core.TraceParser(e), core.TraceParser(e).Control.StepsUsed
+						observed, exitSteps = core.TraceParser(e), core.TraceParser(e).Control.Used
 						if mode == "budget" {
-							core.TraceParser(e).Control.Limits.MaxSteps = exitSteps + 64
+							core.TraceParser(e).Control.Limits.MaxWork = exitSteps + 64
 						}
 					}
 				}
@@ -86,7 +86,7 @@ func TestWorkDocumentDiagnosticPublication(t *testing.T) {
 				}
 				switch mode {
 				case "budget":
-					if caught != nil || !errors.Is(err, limits.ErrWorkLimit) {
+					if caught != nil || !errors.Is(err, limits.ErrLimit) {
 						t.Fatalf("budget: error=%v panic=%v", err, caught)
 					}
 				case "syntax-error":

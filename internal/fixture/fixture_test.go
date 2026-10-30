@@ -91,7 +91,7 @@ func TestRunRecordsRuntimeErrorAndContinues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	report, err := Run(suite, RunOptions{WorkLimits: pego.WorkLimits{MaxSteps: 256}})
+	report, err := Run(suite, RunOptions{Limits: pego.Limits{MaxWork: 256}})
 	if err != nil {
 		t.Fatal(err)
 	}

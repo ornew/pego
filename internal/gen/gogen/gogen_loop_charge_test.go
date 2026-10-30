@@ -22,8 +22,8 @@ import (
 //
 // For each built-in and for nested lambdas it generates a parser whose action uses the loop, and one
 // whose action is len($xs). It asserts that the first needs at least one step per lambda call more than the
-// second, that this grows by at least one per call from the input of N to that of 2N, and that a MaxSteps
-// halfway between ends the first with ErrWorkLimit on the large input while the second completes.
+// second, that this grows by at least one per call from the input of N to that of 2N, and that a MaxWork
+// halfway between ends the first with ErrLimit on the large input while the second completes.
 // The negative control runs the same checks against a copy of the runtime without the per-element charge of
 // the loops: every case has to violate them.
 func TestGeneratedLoopCharge(t *testing.T) {
@@ -181,7 +181,7 @@ func main() {
 			problems = append(problems, fmt.Sprintf("%s: the steps of the loop grow by %d from %d to %d elements, want at least %d", c.name, grow, c.n, 2*c.n, want))
 		}
 		if f[5] != "limit" {
-			problems = append(problems, fmt.Sprintf("%s: with the limit halfway the parser ends with %q, want ErrWorkLimit", c.name, f[5]))
+			problems = append(problems, fmt.Sprintf("%s: with the limit halfway the parser ends with %q, want ErrLimit", c.name, f[5]))
 		}
 		if f[6] != "ok" {
 			problems = append(problems, fmt.Sprintf("%s: the parser without the loop ends with %q under the same limit, want completion", c.name, f[6]))
@@ -190,9 +190,9 @@ func main() {
 	return problems
 }
 
-// loopChargeProbe is the consumer in each generated package: Need returns the smallest MaxSteps with which
-// the parse of n bytes completes, and Limited runs it with the given MaxSteps and reports "limit" for
-// ErrWorkLimit, "ok" for completion and the error otherwise.
+// loopChargeProbe is the consumer in each generated package: Need returns the smallest MaxWork with which
+// the parse of n bytes completes, and Limited runs it with the given MaxWork and reports "limit" for
+// ErrLimit, "ok" for completion and the error otherwise.
 const loopChargeProbe = `
 
 import (
@@ -205,7 +205,7 @@ func Need(n int) uint64 {
 	lo, hi := uint64(1), uint64(1)<<40
 	for lo < hi {
 		mid := (lo + hi) / 2
-		if _, err := Parse(in, WithWorkLimits(WorkLimits{MaxSteps: mid})); err == nil {
+		if _, err := Parse(in, WithLimits(Limits{MaxWork: mid})); err == nil {
 			hi = mid
 		} else {
 			lo = mid + 1
@@ -215,11 +215,11 @@ func Need(n int) uint64 {
 }
 
 func Limited(n int, max uint64) string {
-	_, err := Parse(strings.Repeat("a", n), WithWorkLimits(WorkLimits{MaxSteps: max}))
+	_, err := Parse(strings.Repeat("a", n), WithLimits(Limits{MaxWork: max}))
 	switch {
 	case err == nil:
 		return "ok"
-	case errors.Is(err, ErrWorkLimit):
+	case errors.Is(err, ErrLimit):
 		return "limit"
 	}
 	return err.Error()

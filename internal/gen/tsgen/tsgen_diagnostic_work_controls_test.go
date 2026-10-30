@@ -19,15 +19,18 @@ func TestGeneratedTSWorkControlDiagnosticLineScan(t *testing.T) {
 	t.Parallel()
 	src := `rule main = "z" #repeat(2048) "!"
 
-rule fast = "z" #repeat(2048)`
+rule early = "!"`
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + tsDiagnosticMinimum + `
 for(const unit of [p.CodePoints,p.Bytes]) {
  const input="z".repeat(2048),ordinary=p.parse(input,unit),active=p.parseWithOptions(input,{unit,signal:{aborted:false}});
  check(ordinary.node===null&&ordinary.error instanceof p.SyntaxError&&active.error instanceof p.SyntaxError&&stable(active.error)===stable(ordinary.error)&&active.error.message===ordinary.error.message&&active.error.line===1&&active.error.col===2049,"diagnostic line scan parity");
- const baseline=minimum(n=>p.parseRuleWithOptions("fast",input,{unit,maxInputWork:n}).error===null),limit=baseline+64;
- for(const error of [p.parseWithOptions(input,{unit,maxInputWork:limit}).error,p.parseASTWithOptions(input,{unit,maxInputWork:limit}).error,p.recognizeWithOptions(input,{unit,maxInputWork:limit})])check(error instanceof p.ParseInterruptionError&&error.kind==="input-work-limit","diagnostic line reads consume input budget beyond matching");
- const retry=p.parseWithOptions(input,{unit,maxInputWork:0});check(retry.node===null&&retry.error instanceof p.SyntaxError&&retry.error.message===ordinary.error.message,"fresh line diagnostic retry");
+ // The budget a failure at the start of the input needs grows by one unit for each unit the line scan reads.
+ const failing=(text:string)=>minimum(n=>p.parseRuleWithOptions("early",text,{unit,maxWork:n}).error instanceof p.SyntaxError);
+ check(failing(input)>=failing("z")+input.length-1,"diagnostic line reads consume budget beyond matching");
+ const stopped=p.parseRuleWithOptions("early",input,{unit,maxWork:failing(input)-1}).error;
+ check(stopped instanceof p.ParseInterruptionError&&stopped.kind==="work-limit","the line scan stops one unit short of its budget");
+ const retry=p.parseWithOptions(input,{unit,maxWork:0});check(retry.node===null&&retry.error instanceof p.SyntaxError&&retry.error.message===ordinary.error.message,"fresh line diagnostic retry");
 }
 `
 	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
@@ -43,9 +46,9 @@ func TestGeneratedTSWorkControlDiagnosticMessage(t *testing.T) {
 for(const unit of [p.CodePoints,p.Bytes]) {
  const ordinary=p.parse("x",unit),active=p.parseWithOptions("x",{unit,signal:{aborted:false}});
  check(ordinary.error instanceof p.SyntaxError&&active.error instanceof p.SyntaxError&&active.error.message===ordinary.error.message&&stable(active.error)===stable(ordinary.error),"long custom diagnostic parity");
- const baseline=minimum(n=>p.parseRuleWithOptions("fast","x",{unit,maxSteps:n}).error instanceof p.SyntaxError),limit=baseline+128;
- for(const error of [p.parseWithOptions("x",{unit,maxSteps:limit}).error,p.parseASTWithOptions("x",{unit,maxSteps:limit}).error,p.recognizeWithOptions("x",{unit,maxSteps:limit})])check(error instanceof p.ParseInterruptionError&&error.kind==="step-work-limit","custom diagnostic text consumes cumulative work");
- const retry=p.parseWithOptions("x",{unit,maxSteps:0});check(retry.error instanceof p.SyntaxError&&retry.error.message===ordinary.error.message,"fresh custom diagnostic retry");
+ const baseline=minimum(n=>p.parseRuleWithOptions("fast","x",{unit,maxWork:n}).error instanceof p.SyntaxError),limit=baseline+128;
+ for(const error of [p.parseWithOptions("x",{unit,maxWork:limit}).error,p.parseASTWithOptions("x",{unit,maxWork:limit}).error,p.recognizeWithOptions("x",{unit,maxWork:limit})])check(error instanceof p.ParseInterruptionError&&error.kind==="work-limit","custom diagnostic text consumes cumulative work");
+ const retry=p.parseWithOptions("x",{unit,maxWork:0});check(retry.error instanceof p.SyntaxError&&retry.error.message===ordinary.error.message,"fresh custom diagnostic retry");
 }
 `
 	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
@@ -66,12 +69,12 @@ func TestGeneratedTSWorkControlDiagnosticSort(t *testing.T) {
 for(const unit of [p.CodePoints,p.Bytes]) {
  const ordinary=p.parse("",unit),active=p.parseWithOptions("",{unit,signal:{aborted:false}});
  check(ordinary.error instanceof p.SyntaxError&&active.error instanceof p.SyntaxError&&active.error.expected.length===64&&active.error.message===ordinary.error.message&&stable(active.error)===stable(ordinary.error),"long-prefix expected sorting parity");
- const baseline=minimum(n=>p.parseRuleWithOptions("fast","",{unit,maxSteps:n}).error instanceof p.SyntaxError);
+ const baseline=minimum(n=>p.parseRuleWithOptions("fast","",{unit,maxWork:n}).error instanceof p.SyntaxError);
  // Matching and expected-ID deduplication are shared. Allow the complete
  // expected text and list movement, but not all common-prefix comparisons.
  const limit=baseline+64*2100+128;
- for(const error of [p.parseWithOptions("",{unit,maxSteps:limit}).error,p.parseASTWithOptions("",{unit,maxSteps:limit}).error,p.recognizeWithOptions("",{unit,maxSteps:limit})])check(error instanceof p.ParseInterruptionError&&error.kind==="step-work-limit","expected-label comparisons consume work beyond rendering");
- check(p.parseWithOptions("",{unit,maxSteps:0}).error instanceof p.SyntaxError,"fresh sorted diagnostic retry");
+ for(const error of [p.parseWithOptions("",{unit,maxWork:limit}).error,p.parseASTWithOptions("",{unit,maxWork:limit}).error,p.recognizeWithOptions("",{unit,maxWork:limit})])check(error instanceof p.ParseInterruptionError&&error.kind==="work-limit","expected-label comparisons consume work beyond rendering");
+ check(p.parseWithOptions("",{unit,maxWork:0}).error instanceof p.SyntaxError,"fresh sorted diagnostic retry");
 }
 `
 	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
@@ -90,10 +93,10 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  const retained=active.error.errors[0]!;
  // The matching-only difference is tiny. Allow one complete long error
  // message, while retaining the aggregate Error's second copy as work.
- const baseline=minimum(n=>p.parseRuleWithOptions("fast","!",{unit,maxSteps:n}).error instanceof p.SyntaxErrors),limit=baseline+retained.message.length+128;
- const stopped=p.parseWithOptions("!",{unit,maxSteps:limit});check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="step-work-limit","aggregate recovered text consumes work after individual errors");
- const typed=p.parseASTWithOptions("!",{unit,maxSteps:limit});check(typed.value===null&&typed.error instanceof p.ParseInterruptionError,"interrupted recovery exposes no typed result");
- const retry=p.parseWithOptions("!",{unit,maxSteps:0});check(retry.node!==null&&retry.error instanceof p.SyntaxErrors&&retry.error.message===ordinary.error.message&&retained.message===ordinary.error.errors[0]!.message,"retained recovery and fresh retry");
+ const baseline=minimum(n=>p.parseRuleWithOptions("fast","!",{unit,maxWork:n}).error instanceof p.SyntaxErrors),limit=baseline+retained.message.length+128;
+ const stopped=p.parseWithOptions("!",{unit,maxWork:limit});check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="work-limit","aggregate recovered text consumes work after individual errors");
+ const typed=p.parseASTWithOptions("!",{unit,maxWork:limit});check(typed.value===null&&typed.error instanceof p.ParseInterruptionError,"interrupted recovery exposes no typed result");
+ const retry=p.parseWithOptions("!",{unit,maxWork:0});check(retry.node!==null&&retry.error instanceof p.SyntaxErrors&&retry.error.message===ordinary.error.message&&retained.message===ordinary.error.errors[0]!.message,"retained recovery and fresh retry");
 }
 `
 	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")

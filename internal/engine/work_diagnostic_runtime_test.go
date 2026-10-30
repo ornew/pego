@@ -49,7 +49,7 @@ func TestWorkDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 						var observed *core.Parser
 						var c *core.WorkControl
 						var at uint64
-						n, err := active.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
+						n, err := active.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, Limits: limits.Limits{MaxWork: 1 << 50}, Trace: func(e TraceEvent) {
 							observed = core.TraceParser(e)
 							if e.Kind == TraceEnter && e.Rule == "fallback" {
 								fallback++
@@ -58,31 +58,31 @@ func TestWorkDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 								if e.Matched || len(core.TraceExpectations(e)) != 16 {
 									t.Fatalf("unexpected diagnostic fixture exp=%d", len(core.TraceExpectations(e)))
 								}
-								armed, c, at = true, core.TraceParser(e).Control, core.TraceParser(e).Control.StepsUsed
+								armed, c, at = true, core.TraceParser(e).Control, core.TraceParser(e).Control.Used
 								if accessor {
 									if cancel {
 										c.Ctx = newPollingContext(1)
-										c.StepsSinceCheck, c.InputSinceCheck = 0, 0
+										c.SinceCheck = 0
 									} else {
-										c.Limits.MaxSteps = at + 1
+										c.Limits.MaxWork = at + 1
 									}
 									_ = e.Failure()
 									accessorReturned = true
 								} else {
 									// More than every possible merge collision and descriptor visit;
 									// long-string sorting must perform the eventual interruption.
-									c.Limits.MaxSteps = at + 4096
+									c.Limits.MaxWork = at + 4096
 								}
 							}
 						}})
-						var want error = limits.ErrWorkLimit
+						var want error = limits.ErrLimit
 						if cancel {
 							want = context.Canceled
 						}
 						if !armed || n != nil || !errors.Is(err, want) || accessorReturned || fallback != 0 || observed == nil || observed.Scratch != nil || observed.Control != nil {
 							t.Fatalf("%v/%v recognize=%t accessor=%t cancel=%t: armed=%t node=%t err=%v returned=%t fallback=%d", b, u, recognize, accessor, cancel, armed, n != nil, err, accessorReturned, fallback)
 						}
-						if !accessor && c.StepsUsed <= at+16*17 {
+						if !accessor && c.Used <= at+16*17 {
 							t.Fatal("budget exhausted before diagnostic sorting")
 						}
 						n, err = active.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize})
@@ -122,14 +122,14 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 			for _, recognize := range []bool{false, true} {
 				armed, fallback := false, 0
 				var observed *core.Parser
-				n, err := prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
+				n, err := prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, Limits: limits.Limits{MaxWork: 1 << 50}, Trace: func(e TraceEvent) {
 					observed = core.TraceParser(e)
 					if e.Kind == TraceEnter && e.Rule == "fallback" {
 						fallback++
 					}
 					if !armed && e.Kind == TraceExit && e.Rule == "bad" {
 						armed = true
-						core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed + 256
+						core.TraceParser(e).Control.Limits.MaxWork = core.TraceParser(e).Control.Used + 256
 					}
 				}})
 				if !armed || n != nil || observed.Scratch != nil || observed.Control != nil {
@@ -140,12 +140,12 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 					if err != nil || fallback != 1 {
 						t.Fatalf("recognition unnecessarily formats message: %v fallback=%d", err, fallback)
 					}
-				} else if !errors.Is(err, limits.ErrWorkLimit) || fallback != 0 {
+				} else if !errors.Is(err, limits.ErrLimit) || fallback != 0 {
 					t.Fatalf("message interruption entered alternative: %v fallback=%d", err, fallback)
 				}
 				if !recognize {
 					armed, fallback = false, 0
-					n, err = prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
+					n, err = prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Limits: limits.Limits{MaxWork: 1 << 50}, Trace: func(e TraceEvent) {
 						observed = core.TraceParser(e)
 						if e.Kind == TraceEnter && e.Rule == "fallback" {
 							fallback++
@@ -154,7 +154,7 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 							armed = true
 							// The post-callback check succeeds; the message copy polls next.
 							core.TraceParser(e).Control.Ctx = newPollingContext(2)
-							core.TraceParser(e).Control.StepsSinceCheck, core.TraceParser(e).Control.InputSinceCheck = 0, 0
+							core.TraceParser(e).Control.SinceCheck = 0
 						}
 					}})
 					if !armed || n != nil || !errors.Is(err, context.Canceled) || fallback != 0 || observed.Scratch != nil || observed.Control != nil {

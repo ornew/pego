@@ -44,7 +44,7 @@ rule item = "a"`)
 					cancel()
 				}
 				if phase == "steps" {
-					o.WorkLimits.MaxSteps = 1
+					o.Limits.MaxWork = 1
 				}
 				if phase == "enter" || phase == "exit" {
 					o.Trace = func(e TraceEvent) {
@@ -57,7 +57,7 @@ rule item = "a"`)
 				n, err := d.ParseWith(o)
 				want := error(context.Canceled)
 				if phase == "steps" {
-					want = limits.ErrWorkLimit
+					want = limits.ErrLimit
 				}
 				if n != nil || !errors.Is(err, want) {
 					t.Fatalf("node=%v error=%v", n, err)
@@ -96,12 +96,12 @@ func TestWorkDocumentConstruction(t *testing.T) {
 			case "canceled":
 				o.Context = ctx
 			case "input":
-				o.WorkLimits.MaxInputWork = 1
+				o.Limits.MaxWork = 1
 			case "steps":
 				if core.DocumentPieceInput && base.Unit == Bytes {
 					continue
 				}
-				o.WorkLimits.MaxSteps = 1
+				o.Limits.MaxWork = 1
 			}
 			text := "é💡abc"
 			if phase == "steps" {
@@ -114,12 +114,12 @@ func TestWorkDocumentConstruction(t *testing.T) {
 			if phase == "canceled" && !errors.Is(err, context.Canceled) {
 				t.Fatal(err)
 			}
-			if phase != "canceled" && !errors.Is(err, limits.ErrWorkLimit) {
+			if phase != "canceled" && !errors.Is(err, limits.ErrLimit) {
 				t.Fatal(err)
 			}
 		}
 		o := base
-		o.WorkLimits = limits.WorkLimits{MaxInputWork: 100000, MaxSteps: 100000}
+		o.Limits = limits.Limits{MaxWork: 100000}
 		d, err := prog.NewDocumentWith("main", "é💡abc", o)
 		if err != nil || d == nil {
 			t.Fatalf("fresh construction: %v", err)
@@ -130,7 +130,7 @@ func TestWorkDocumentConstruction(t *testing.T) {
 		var last *core.WorkControl
 		o.Trace = func(e TraceEvent) {
 			if e.Kind == TraceEnter && e.Rule == "main" {
-				if core.TraceParser(e).Control == nil || core.TraceParser(e).Control == last || core.TraceParser(e).Control.InputUsed != 0 {
+				if core.TraceParser(e).Control == nil || core.TraceParser(e).Control == last || core.TraceParser(e).Control.Used > 1 { // at most the entry of the rule
 					t.Fatal("parse inherited construction or previous counters")
 				}
 				last = core.TraceParser(e).Control
@@ -242,7 +242,7 @@ func workDocumentAssertPreserved(t *testing.T, d *Document, before Document) {
 func workDocumentAssertRetry(t *testing.T, d *Document) {
 	t.Helper()
 	o := d.ParseDefaults()
-	o.Context, o.WorkLimits, o.Trace = nil, limits.WorkLimits{}, nil
+	o.Context, o.Limits, o.Trace = nil, limits.Limits{}, nil
 	if got, want := resultJSON(d.ParseWith(o)), resultJSON(d.Runner().(*Program).ParseWith(d.Start(), d.Text(), o)); got != want {
 		t.Fatalf("retry %s; fresh %s", got, want)
 	}

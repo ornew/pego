@@ -172,7 +172,7 @@ function balanced(events:readonly p.TraceEvent[]):void {
 }
 const source=INPUT;
 for(const unit of [p.CodePoints,p.Bytes])for(const controlled of [false,true])for(const bytes of [false,true]){
- const o={unit,maxSteps:controlled?100000:0};
+ const o={unit,maxWork:controlled?100000:0};
  const forms=bytes?[new Uint8Array(Array.from(source).flatMap(ch=>{const c=ch.codePointAt(0)!;return c<128?[c]:[0xc0|(c>>6),0x80|(c&63)]})),new Uint8Array(),new Uint8Array([0xff])]:[source,"",source+"?"];
  for(const input of forms){
   let events:p.TraceEvent[]=[];
@@ -198,7 +198,7 @@ const routes:Route[]=[
 ];
 TYPEDROUTE
 for(const route of routes)for(const controlled of [false,true]){
- const options={maxSteps:controlled?100000:0};
+ const options={maxWork:controlled?100000:0};
  let full:p.TraceEvent[]=[];route(source,{...options,trace:e=>full.push(e)});balanced(full);
  for(const value of p.testThrownValues()){
   let threw=false;try{route(source,{...options,signal:{get aborted():boolean{throw value}},trace:()=>{}})}catch(x){threw=true;check(x===value,"signal thrown identity through trace boundary")}
@@ -223,7 +223,7 @@ for(const route of routes)for(const controlled of [false,true]){
  let reentered=false;route(source,{...options,trace:()=>{if(!reentered){reentered=true;route(source,{trace:()=>{}})}}});check(reentered,"callback reentry");
  let retained=0;route(source,{...options,trace:()=>retained++});const n=retained;route(source,options);p.parse(source);check(retained===n,"no callback on later parse");
  const canceled=route(source,{signal:{aborted:true},trace:()=>{throw new Error("pre-canceled delivery")}});check(canceled.value===null&&canceled.error instanceof p.ParseInterruptionError,"pre-cancel");
- const limited=route(source,{maxSteps:1,trace:()=>{}});check(limited.value===null&&limited.error instanceof p.ParseInterruptionError,"budget withholding");
+ const limited=route(source,{maxWork:1,trace:()=>{}});check(limited.value===null&&limited.error instanceof p.ParseInterruptionError,"budget withholding");
  let aborted=false;const late=route(source,{signal:{get aborted(){return aborted}},trace:()=>{aborted=true}});check(late.value===null&&late.error instanceof p.ParseInterruptionError,"callback cancellation");
  const tooDeep=route(source,{maxDepth:1,trace:()=>{}});check(tooDeep.value===null&&tooDeep.error!==null&&tooDeep.error.message.includes("nesting too deep"),"depth error unchanged");
  check(p.testReleased(),"lifecycle observer release");

@@ -123,29 +123,31 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error { return 
 // A nil context is equivalent to context.Background.
 func WithContext(ctx context.Context) ParseOption { return rt.WithContext(ctx) }
 
-// WithWorkLimits bounds cumulative examined input and execution work.
+// WithLimits bounds cumulative examined input and execution work.
 // Zero leaves a counter unlimited; counters are never rolled back.
-func WithWorkLimits(limits WorkLimits) ParseOption { return rt.WithWorkLimits(limits) }
+func WithLimits(limits Limits) ParseOption { return rt.WithLimits(limits) }
 
-// WorkLimits bounds cumulative engine work for one parse invocation. A zero
-// limit leaves that counter unlimited. Scanning input may charge only input
-// work, so MaxSteps alone does not bound it; MaxInputWork does.
-type WorkLimits = rt.WorkLimits
+// Limits bounds one parse invocation. A zero limit leaves that limit
+// unlimited.
+//
+// MaxWork bounds the cumulative work of the parse: every input unit
+// inspected, every rule call and loop iteration, and every unit of value
+// construction adds to one counter, so a bound on it bounds scanning,
+// recursion and value building alike.
+type Limits = rt.Limits
 
-// WorkLimitKind identifies the counter that exhausted its limit.
-type WorkLimitKind = rt.WorkLimitKind
+// LimitKind identifies the limit that was exhausted.
+type LimitKind = rt.LimitKind
 
-// WorkLimitError reports a reservation that would exceed one work limit.
-// Used is the counter value before the rejected reservation; Requested is the
-// complete atomic reservation that could not be made.
-type WorkLimitError = rt.WorkLimitError
+// LimitError reports a reservation that would exceed a limit. Used is the
+// counter value before the rejected reservation; Requested is the complete
+// atomic reservation that could not be made.
+type LimitError = rt.LimitError
 
-// ErrWorkLimit is matched by errors.Is for any WorkLimitError.
-var ErrWorkLimit = rt.ErrWorkLimit
+// ErrLimit is matched by errors.Is for any LimitError.
+var ErrLimit = rt.ErrLimit
 
-const InputWorkLimit = rt.InputWorkLimit
-
-const StepWorkLimit = rt.StepWorkLimit
+const LimitWork = rt.LimitWork
 
 // Span is the range of input a typed value covers, in the parse's position unit (End is exclusive).
 //

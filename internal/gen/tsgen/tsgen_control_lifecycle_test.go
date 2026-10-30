@@ -76,7 +76,7 @@ const marker={value:"caller reason or thrown value"};
 func TestGeneratedTSWorkControlPublicOwnersAfterGC(t *testing.T) {
 	t.Parallel()
 	consumer := tsControlGCPrelude + `
-type Mode="success"|"syntax"|"limit"|"input-limit"|"canceled"|"getter-panic"|"pre-canceled"|"pre-getter-panic";
+type Mode="success"|"syntax"|"limit"|"canceled"|"getter-panic"|"pre-canceled"|"pre-getter-panic";
 class OwnedSignal implements p.CancellationSignal {
  readonly payload=new Uint8Array(32768);
  readonly reason=marker;
@@ -102,7 +102,7 @@ function makeCase(route:Route,unit:p.Unit,mode:Mode,index:number){
  const signal=new OwnedSignal(mode),input=new Uint8Array(2048).fill(mode==="syntax"?98:97);
  const refs:readonly WeakRef<object>[]=[new WeakRef(signal),new WeakRef(signal.payload),new WeakRef(input)];
  let retained:Result={value:null,error:null},threw=false,panic:unknown;
- try {retained=route(input,{unit,signal,maxSteps:mode==="limit"?32:0,maxInputWork:mode==="input-limit"?32:0})}catch(x){threw=true;panic=x}
+ try {retained=route(input,{unit,signal,maxWork:mode==="limit"?32:0})}catch(x){threw=true;panic=x}
  if(mode==="getter-panic"||mode==="pre-getter-panic")check(threw&&panic===marker&&retained.value===null,"exact getter panic is rethrown");
  else {
   check(!threw,"ordinary route does not throw");
@@ -119,13 +119,13 @@ function makeCase(route:Route,unit:p.Unit,mode:Mode,index:number){
    }
   }
   if(mode==="syntax")check(retained.value===null&&retained.error instanceof p.SyntaxError,"ordinary syntax failure");
-  if(mode==="limit"||mode==="input-limit")check(retained.value===null&&retained.error instanceof p.ParseInterruptionError&&retained.error.kind===(mode==="limit"?"step-work-limit":"input-work-limit"),"budget failure publishes no partial value");
+  if(mode==="limit")check(retained.value===null&&retained.error instanceof p.ParseInterruptionError&&retained.error.kind==="work-limit","budget failure publishes no partial value");
   if(mode==="canceled"||mode==="pre-canceled")check(retained.value===null&&retained.error instanceof p.ParseInterruptionError&&retained.error.kind==="canceled"&&retained.error.cause===marker,"cancellation retains its reason only");
  }
  // Deliberate strong roots prove the weak references work with these objects.
  return {refs,retained,panic,strong:{signal,input,payload:signal.payload},snapshot:stable(retained.value),message:retained.error?.message};
 }
-for(const unit of [p.CodePoints,p.Bytes])for(const [index,route] of routes.entries())for(const mode of ["success","syntax","limit","input-limit","canceled","getter-panic","pre-canceled","pre-getter-panic"] as const){
+for(const unit of [p.CodePoints,p.Bytes])for(const [index,route] of routes.entries())for(const mode of ["success","syntax","limit","canceled","getter-panic","pre-canceled","pre-getter-panic"] as const){
  const held=makeCase(route,unit,mode,index);
  await turn();host.gc!();
  check(held.refs[0]!.deref()===held.strong.signal&&held.refs[1]!.deref()===held.strong.payload&&held.refs[2]!.deref()===held.strong.input,"strong-root GC positive control");
@@ -151,7 +151,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const [index,route] of routes.entri
 // release omissions observable; public calls normally keep no controller root.
 const tsControlFinalizerHook = `
 export function retainControlForTest(signal:CancellationSignal,mode:string,arm:()=>void,marker:unknown) {
- const options=resolveOptions(G,{signal,maxSteps:mode==="limit"?1:0,maxInputWork:mode==="input-limit"?1:0});
+ const options=resolveOptions(G,{signal,maxWork:mode==="limit"?1:0});
  if(options instanceof Error)throw options;
  const held:{control:WorkControl|null}={control:null};
  const release=WorkControl.prototype.release;
@@ -162,8 +162,7 @@ export function retainControlForTest(signal:CancellationSignal,mode:string,arm:(
    held.control=control;
    if(control===null)throw new Error("active controller missing");
    arm();
-   if(mode==="limit")control.charge(0,2);
-   if(mode==="input-limit")control.charge(2,0);
+   if(mode==="limit")control.charge(2);
    if(mode==="canceled"||mode==="getter-panic")control.check();
    if(mode==="body-panic")throw marker;
    if(mode==="syntax")return new SyntaxError(0,1,1,["z"],[]);
@@ -177,7 +176,7 @@ export function retainControlForTest(signal:CancellationSignal,mode:string,arm:(
 func TestGeneratedTSWorkControlFinalizerAfterGC(t *testing.T) {
 	t.Parallel()
 	consumer := tsControlGCPrelude + `
-type Mode="success"|"syntax"|"limit"|"input-limit"|"canceled"|"getter-panic"|"body-panic"|"pre-canceled"|"pre-getter-panic";
+type Mode="success"|"syntax"|"limit"|"canceled"|"getter-panic"|"body-panic"|"pre-canceled"|"pre-getter-panic";
 function makeCase(mode:Mode){
  let armed=false,polls=0;
  const payload=new Uint8Array(32768);payload[0]=42;
@@ -195,14 +194,14 @@ function makeCase(mode:Mode){
  else {
   check(!result.threw,"finalizer route returns normally");
   if(mode==="syntax")check(result.retained instanceof p.SyntaxError,"retained syntax error");
-  if(mode==="limit"||mode==="input-limit")check(result.retained instanceof p.ParseInterruptionError&&result.retained.kind===(mode==="limit"?"step-work-limit":"input-work-limit"),"retained work limit");
+  if(mode==="limit")check(result.retained instanceof p.ParseInterruptionError&&result.retained.kind==="work-limit","retained work limit");
   if(mode==="canceled"||mode==="pre-canceled")check(result.retained instanceof p.ParseInterruptionError&&result.retained.kind==="canceled"&&result.retained.cause===marker,"retained cancellation reason");
  }
  // Checking the saved controller after teardown must not consult the signal.
  const before=polls;result.held.control.check();check(polls===before,"teardown removes caller getter access");
  return {result,refs,strong:{signal,payload}};
 }
-for(const mode of ["success","syntax","limit","input-limit","canceled","getter-panic","body-panic","pre-canceled","pre-getter-panic"] as const){
+for(const mode of ["success","syntax","limit","canceled","getter-panic","body-panic","pre-canceled","pre-getter-panic"] as const){
  const held=makeCase(mode);await turn();host.gc!();
  check(held.refs[0]!.deref()===held.strong.signal&&held.refs[1]!.deref()===held.strong.payload,"finalizer strong-root GC positive control");
  const roots=held.result,refs=held.refs,snapshot=stable(held.result.retained);

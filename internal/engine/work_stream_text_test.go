@@ -41,24 +41,24 @@ func TestWorkStreamTextByteSnapshotBoundaries(t *testing.T) {
 			if size >= 64 {
 				used = min(size, core.StreamTextChunk)
 			}
-			in.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: uint64(used - 1)})
+			in.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: uint64(used - 1)})
 			before := in.StreamText
 			var val string
 			err := catchFatal(t, func() { val = in.Text(0, end) })
-			var limit *limits.WorkLimitError
-			if !errors.As(err, &limit) || limit.Kind != limits.InputWorkLimit || val != "" || !reflect.DeepEqual(in.StreamText, before) {
+			var limit *limits.LimitError
+			if !errors.As(err, &limit) || limit.Kind != limits.LimitWork || val != "" || !reflect.DeepEqual(in.StreamText, before) {
 				t.Fatalf("materialization error=%v value=%q", err, val)
 			}
-			in.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: uint64(used)})
-			if got := in.Text(0, end); got != text[:end] || in.Control.InputUsed != uint64(used) || in.Control.StepsUsed != 1 {
-				t.Fatalf("exact materialization got=%q counters=%d/%d", got, in.Control.InputUsed, in.Control.StepsUsed)
+			in.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: uint64(used)})
+			if got := in.Text(0, end); got != text[:end] || in.Control.Used != uint64(used) {
+				t.Fatalf("exact materialization got=%q work=%d", got, in.Control.Used)
 			}
 			if size < 64 && in.StreamText.Source != "" || size >= 64 && in.StreamText.End != used {
 				t.Fatal("snapshot/fallback threshold changed")
 			}
 			if size >= 64 {
-				input, steps := in.Control.InputUsed, in.Control.StepsUsed
-				if in.Text(1, end) != text[1:end] || in.Control.InputUsed != input || in.Control.StepsUsed != steps {
+				used := in.Control.Used
+				if in.Text(1, end) != text[1:end] || in.Control.Used != used {
 					t.Fatal("cache hit performed new materialization")
 				}
 			}
@@ -75,7 +75,7 @@ func TestWorkStreamTextFallbackAndNoReadAhead(t *testing.T) {
 				in := core.Input{Unit: u, Reader: bufio.NewReader(r)}
 				in.Fill(size)
 				reads := r.calls
-				in.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 1 << 20})
+				in.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 1 << 20})
 				if in.Text(0, size) != strings.Repeat("x", size) || r.calls != reads {
 					t.Fatal("controlled text read ahead or changed text")
 				}
@@ -84,7 +84,7 @@ func TestWorkStreamTextFallbackAndNoReadAhead(t *testing.T) {
 						t.Fatal("fallback published a snapshot")
 					}
 				}
-				if size > 1 && in.Control.InputUsed == 0 {
+				if size > 1 && in.Control.Used == 0 {
 					t.Fatal("stream text bypassed materialization accounting")
 				}
 			})
@@ -104,37 +104,38 @@ func TestWorkStreamTextCodePointPublication(t *testing.T) {
 		t.Run(phase, func(t *testing.T) {
 			in := workStreamTextInput(CodePoints, text)
 			in.StreamText = old
-			limit := uint64(127)
+			limit := uint64(255)
 			switch phase {
 			case "encoding":
-				limit = size + 127
+				limit = 2*size + 255
 			case "offsets":
-				limit = 2 * size
+				limit = 4 * size
 			case "last-offset":
-				limit = 3*size - 1
+				limit = 8*size - 7
 			}
-			in.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: limit})
+			in.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: limit})
 			before := append([]int32(nil), old.Offsets...)
 			err := catchFatal(t, func() { _ = in.Text(0, 8) })
-			if !errors.Is(err, limits.ErrWorkLimit) || !reflect.DeepEqual(in.StreamText, old) || !reflect.DeepEqual(old.Offsets, before) {
+			if !errors.Is(err, limits.ErrLimit) || !reflect.DeepEqual(in.StreamText, old) || !reflect.DeepEqual(old.Offsets, before) {
 				t.Fatalf("%s error=%v mutated old cache", phase, err)
 			}
 		})
 	}
 	in := workStreamTextInput(CodePoints, text)
-	// Detached sizing/encoding each visit 1024 runes. The offset decoder
-	// reserves four bytes except for its final three ASCII positions.
-	in.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 3 * size, MaxInputWork: 6*size - 6})
-	if got := in.Text(0, 5); got != "aaaaa" || in.Control.StepsUsed != 3*size || in.Control.InputUsed != 6*size-6 || in.StreamText.End != size {
-		t.Fatalf("exact counters=%d/%d text=%q", in.Control.StepsUsed, in.Control.InputUsed, got)
+	// Detached sizing and encoding each visit 1024 runes at two units per rune
+	// (the rune is read and the text is built). The offset decoder reserves
+	// four bytes except for its final three ASCII positions.
+	in.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 8*size - 6})
+	if got := in.Text(0, 5); got != "aaaaa" || in.Control.Used != 8*size-6 || in.StreamText.End != size {
+		t.Fatalf("exact work=%d text=%q", in.Control.Used, got)
 	}
-	input, steps := in.Control.InputUsed, in.Control.StepsUsed
-	if in.Text(9, 15) != "aaaaaa" || in.Control.InputUsed != input || in.Control.StepsUsed != steps {
+	used := in.Control.Used
+	if in.Text(9, 15) != "aaaaaa" || in.Control.Used != used {
 		t.Fatal("cached code-point offsets were rebuilt")
 	}
 	oneShort := workStreamTextInput(CodePoints, text)
-	oneShort.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 6*size - 7})
-	if err := catchFatal(t, func() { _ = oneShort.Text(0, 5) }); !errors.Is(err, limits.ErrWorkLimit) || oneShort.StreamText.Source != "" {
+	oneShort.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 8*size - 7})
+	if err := catchFatal(t, func() { _ = oneShort.Text(0, 5) }); !errors.Is(err, limits.ErrLimit) || oneShort.StreamText.Source != "" {
 		t.Fatalf("one-short error=%v", err)
 	}
 }
@@ -147,7 +148,7 @@ func TestWorkStreamTextMalformedAndRetainedCache(t *testing.T) {
 	for _, u := range []PositionUnit{Bytes, CodePoints} {
 		in := workStreamTextInput(u, strings.Repeat("aé😀\xff\xc0z", 500))
 		in.Base = int(^uint(0)>>1) - in.Loaded() - 10
-		in.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 1 << 30})
+		in.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 1 << 30})
 		first := in.Text(in.Base+1, in.Base+10)
 		var want string
 		if u == Bytes {
@@ -181,12 +182,12 @@ func TestWorkStreamTextOffsetCancellation(t *testing.T) {
 	in.StreamText = old
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	c := &workStreamTextPhaseContext{Context: ctx, observe: func() bool { return in.Control.StepsUsed >= 2048 }}
+	c := &workStreamTextPhaseContext{Context: ctx, observe: func() bool { return in.Control.Used >= 2048 }}
 	c.cancel = cancel
-	in.Control = core.NewWorkControl(c, limits.WorkLimits{})
+	in.Control = core.NewWorkControl(c, limits.Limits{})
 	err := catchFatal(t, func() { _ = in.Text(0, 10) })
-	if err != context.Canceled || in.Control.StepsUsed < 2048 || in.Control.StepsUsed >= 3072 || !reflect.DeepEqual(in.StreamText, old) {
-		t.Fatalf("offset cancel error=%v steps=%d", err, in.Control.StepsUsed)
+	if err != context.Canceled || in.Control.Used < 2048 || in.Control.Used >= 3072 || !reflect.DeepEqual(in.StreamText, old) {
+		t.Fatalf("offset cancel error=%v steps=%d", err, in.Control.Used)
 	}
 }
 
@@ -213,7 +214,7 @@ rule row = (!"\n" .)+ #atomic "\n"`)
 			t.Run(phase, func(t *testing.T) {
 				text := strings.Repeat("aé😀\xff", 350) + "\n" + strings.Repeat("b", 100) + "\n"
 				o := base
-				o.WorkLimits.MaxInputWork = 1 << 30
+				o.Limits.MaxWork = 1 << 30
 				var saved TraceEvent
 				var previous core.StreamTextSnapshot
 				armed := false
@@ -232,7 +233,7 @@ rule row = (!"\n" .)+ #atomic "\n"`)
 						previous = p.StreamText
 						armed = true
 						if phase == "budget" {
-							p.Control.Limits.MaxInputWork = p.Control.InputUsed + 1
+							p.Control.Limits.MaxWork = p.Control.Used + 1
 						} else {
 							cancel()
 							p.Control.Ctx = ctx
@@ -241,7 +242,7 @@ rule row = (!"\n" .)+ #atomic "\n"`)
 					}
 				}
 				err := prog.ParseStreamWith("main", strings.NewReader(text), func(*value.Node) error { emissions++; return nil }, o)
-				want := limits.ErrWorkLimit
+				want := limits.ErrLimit
 				if phase == "cancel" {
 					want = context.Canceled
 				}

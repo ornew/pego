@@ -124,11 +124,12 @@ func runStreamControlRetentionCase(t *testing.T, prog *Program, outcome string, 
 			case outcome == "trace-panic" && e.Kind == TraceEnter && e.Rule == "record" && e.Pos > 9:
 				panic(ctx.token)
 			case outcome == "input-limit" && e.Kind == TraceExit && e.Rule == "record" && e.Matched && core.TraceParser(e).Control != nil:
-				if core.TraceParser(e).Control.InputUsed == 0 {
+				if core.TraceParser(e).Control.Used == 0 {
 					panic("input limit fixture did not consume input")
 				}
-				// The first record is emitted; the next reservation must fail.
-				core.TraceParser(e).Control.Limits.MaxInputWork = core.TraceParser(e).Control.InputUsed
+				// The first record is emitted (its emission needs a few units
+				// after this event); the next record's reservations must fail.
+				core.TraceParser(e).Control.Limits.MaxWork = core.TraceParser(e).Control.Used + 4
 			}
 		}))
 	})
@@ -147,7 +148,7 @@ func runStreamControlRetentionCase(t *testing.T, prog *Program, outcome string, 
 
 func streamControlRetentionOptions(o ParseOptions, ctx context.Context, trace func(TraceEvent)) ParseOptions {
 	o.Context = ctx
-	o.WorkLimits = limits.WorkLimits{MaxInputWork: 1 << 30}
+	o.Limits = limits.Limits{MaxWork: 1 << 30}
 	o.Trace = trace
 	return o
 }
@@ -177,7 +178,7 @@ func TestWorkStreamTraceRetentionWithActiveControls(t *testing.T) {
 						t.Fatalf("panic=%v err=%v emitted=%d", run.panic, run.err, len(run.nodes))
 					}
 				case "input-limit":
-					if run.panic != nil || !errors.Is(run.err, limits.ErrWorkLimit) || len(run.nodes) != 1 {
+					if run.panic != nil || !errors.Is(run.err, limits.ErrLimit) || len(run.nodes) != 1 {
 						t.Fatalf("panic=%v err=%v emitted=%d", run.panic, run.err, len(run.nodes))
 					}
 				case "reader-error", "emit-error":

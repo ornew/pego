@@ -25,7 +25,7 @@ func TestCompiledCorpusWorkParity(t *testing.T) {
 					for _, active := range []bool{false, true} {
 						opts := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit)}
 						if active {
-							opts = append(opts, pego.WithWorkLimits(pego.WorkLimits{MaxInputWork: ^uint64(0), MaxSteps: ^uint64(0)}))
+							opts = append(opts, pego.WithLimits(pego.Limits{MaxWork: ^uint64(0)}))
 						}
 						n, err := p.Parse(input, opts...)
 						if err != nil {

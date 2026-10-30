@@ -36,11 +36,11 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  check(ordinary.error===null&&active.error===null&&stable(active.node)===stable(ordinary.node)&&active.node?.fields.length===0,"failed captures are absent from successful fallback");
  const typed=p.parseAST(input,unit),converted=p.parseASTWithOptions(input,{unit,signal:{aborted:false}});
  check(typed.error===null&&converted.error===null&&stable(converted.value)===stable(typed.value),"typed rollback output parity");
- const baseline=minimum(n=>p.parseRuleWithOptions("fast",input,{unit,maxSteps:n}).error===null),limit=baseline+128;
- const stopped=p.parseWithOptions(input,{unit,maxSteps:limit});
- check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="step-work-limit","capture restoration consumes work beyond equivalent fresh frames");
- check(p.parseASTWithOptions(input,{unit,maxSteps:limit}).value===null,"typed rollback interruption exposes no partial value");
- check(p.parseWithOptions(input,{unit,maxSteps:0}).error===null,"fresh retry after interrupted capture restoration");
+ const baseline=minimum(n=>p.parseRuleWithOptions("fast",input,{unit,maxWork:n}).error===null),limit=baseline+128;
+ const stopped=p.parseWithOptions(input,{unit,maxWork:limit});
+ check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="work-limit","capture restoration consumes work beyond equivalent fresh frames");
+ check(p.parseASTWithOptions(input,{unit,maxWork:limit}).value===null,"typed rollback interruption exposes no partial value");
+ check(p.parseWithOptions(input,{unit,maxWork:0}).error===null,"fresh retry after interrupted capture restoration");
 }
 `
 	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
@@ -77,15 +77,15 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  const active=p.parseWithOptions(input,{unit,signal:{aborted:false}}),converted=p.parseASTWithOptions(input,{unit,signal:{aborted:false}});
  check(ordinary.error===null&&typed.error===null&&active.error===null&&converted.error===null&&stable(active.node)===stable(ordinary.node)&&stable(converted.value)===stable(typed.value),"Operators Rule capture preservation parity");
  check(converted.value?.type==="Box"&&converted.value.Token?.value==="-"&&converted.value.Rhs?.type==="Word","successful operator retains its captured token across candidate reset");
- const baseline=minimum(n=>p.parseRuleWithOptions("fast",input,{unit,maxSteps:n}).error===null);
+ const baseline=minimum(n=>p.parseRuleWithOptions("fast",input,{unit,maxWork:n}).error===null);
  // Allow the successful trail reset, operator span materialization and
  // either one preservation pass over both candidate frames. Completing
  // both passes must exceed this limit.
  const limit=baseline+4*512+128;
- const stopped=p.parseWithOptions(input,{unit,maxSteps:limit});
- check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="step-work-limit","Operators Rule preservation visits consume cumulative work");
- check(p.parseASTWithOptions(input,{unit,maxSteps:limit}).value===null,"typed Operators Rule interruption exposes no partial value");
- check(p.parseASTWithOptions(input,{unit,maxSteps:0}).error===null,"fresh Operators Rule retry");
+ const stopped=p.parseWithOptions(input,{unit,maxWork:limit});
+ check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="work-limit","Operators Rule preservation visits consume cumulative work");
+ check(p.parseASTWithOptions(input,{unit,maxWork:limit}).value===null,"typed Operators Rule interruption exposes no partial value");
+ check(p.parseASTWithOptions(input,{unit,maxWork:0}).error===null,"fresh Operators Rule retry");
 }
 `
 	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
@@ -120,13 +120,13 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  const input="a?".repeat(512),ordinary=p.parse(input,unit),active=p.parseWithOptions(input,{unit,signal:{aborted:false}});
  check(ordinary.node!==null&&active.node!==null&&ordinary.error instanceof p.SyntaxErrors&&active.error instanceof p.SyntaxErrors&&active.error.errors.length===1536&&stable(active.node)===stable(ordinary.node)&&active.error.message===ordinary.error.message,"same-silent memo hit preserves recovered errors and output");
  for(let i=0;i<1536;i++)check(active.error.errors[i]?.pos===(i%512)*2,"memo replay preserves error positions and order");
- const freshBudget=minimum(n=>{const r=p.parseRuleWithOptions("fresh",input,{unit,maxSteps:n});return r.node!==null&&r.error instanceof p.SyntaxErrors&&r.error.errors.length===1024});
- const snapshot=p.parseRuleWithOptions("fast",input,{unit,maxSteps:freshBudget+128});
- check(snapshot.node===null&&snapshot.error instanceof p.ParseInterruptionError&&snapshot.error.kind==="step-work-limit","recovered memo snapshots consume work beyond unretained errors");
- const baseline=minimum(n=>{const r=p.parseRuleWithOptions("fast",input,{unit,maxSteps:n});return r.node!==null&&r.error instanceof p.SyntaxErrors&&r.error.errors.length===1024});
- const stopped=p.parseWithOptions(input,{unit,maxSteps:baseline+128});
- check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="step-work-limit","recovered memo payload visits consume budget beyond stored entry");
- const retry=p.parseWithOptions(input,{unit,maxSteps:0});
+ const freshBudget=minimum(n=>{const r=p.parseRuleWithOptions("fresh",input,{unit,maxWork:n});return r.node!==null&&r.error instanceof p.SyntaxErrors&&r.error.errors.length===1024});
+ const snapshot=p.parseRuleWithOptions("fast",input,{unit,maxWork:freshBudget+128});
+ check(snapshot.node===null&&snapshot.error instanceof p.ParseInterruptionError&&snapshot.error.kind==="work-limit","recovered memo snapshots consume work beyond unretained errors");
+ const baseline=minimum(n=>{const r=p.parseRuleWithOptions("fast",input,{unit,maxWork:n});return r.node!==null&&r.error instanceof p.SyntaxErrors&&r.error.errors.length===1024});
+ const stopped=p.parseWithOptions(input,{unit,maxWork:baseline+128});
+ check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="work-limit","recovered memo payload visits consume budget beyond stored entry");
+ const retry=p.parseWithOptions(input,{unit,maxWork:0});
  check(retry.node!==null&&retry.error instanceof p.SyntaxErrors&&retry.error.errors.length===1536,"fresh recovered memo retry");
 }
 `
@@ -195,10 +195,10 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  check(ordinary.node!==null&&active.node!==null&&ordinary.error instanceof p.SyntaxErrors&&active.error instanceof p.SyntaxErrors&&active.error.errors.length===512&&stable(active.node)===stable(ordinary.node)&&active.error.message===ordinary.error.message,"Operators Rule recovered snapshot and apply parity");
  const typed=p.parseAST(input,unit),converted=p.parseASTWithOptions(input,{unit,signal:{aborted:false}});
  check(converted.error instanceof p.SyntaxErrors&&stable(converted.value)===stable(typed.value)&&converted.value?.type==="Box"&&converted.value.Token?.value==="a?".repeat(512),"typed Operators Rule recovered output");
- const baseline=minimum(n=>{const r=p.parseRuleWithOptions("fast",input,{unit,maxSteps:n});return r.node!==null&&r.error instanceof p.SyntaxErrors&&r.error.errors.length===512});
- const stopped=p.parseWithOptions(input,{unit,maxSteps:baseline+512+128});
- check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="step-work-limit","Operators Rule recovered snapshots and apply both consume work");
- const retry=p.parseWithOptions(input,{unit,maxSteps:0});
+ const baseline=minimum(n=>{const r=p.parseRuleWithOptions("fast",input,{unit,maxWork:n});return r.node!==null&&r.error instanceof p.SyntaxErrors&&r.error.errors.length===512});
+ const stopped=p.parseWithOptions(input,{unit,maxWork:baseline+512+128});
+ check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="work-limit","Operators Rule recovered snapshots and apply both consume work");
+ const retry=p.parseWithOptions(input,{unit,maxWork:0});
  check(retry.node!==null&&retry.error instanceof p.SyntaxErrors&&retry.error.errors.length===512,"fresh Operators Rule recovered retry");
 }
 `

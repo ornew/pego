@@ -15,7 +15,7 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-func actionWorkParser(ctx context.Context, limits limits.WorkLimits, unit PositionUnit) *core.Parser {
+func actionWorkParser(ctx context.Context, limits limits.Limits, unit PositionUnit) *core.Parser {
 	return &core.Parser{Input: core.Input{Unit: unit, Control: core.NewWorkControl(ctx, limits)}}
 }
 
@@ -34,7 +34,7 @@ func TestWorkActionStringHelperParity(t *testing.T) {
 	right := strings.Repeat("prefix-", 2048) + "b" + string([]byte{0x00})
 
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
-		p := actionWorkParser(nil, limits.WorkLimits{MaxInputWork: 1}, unit)
+		p := actionWorkParser(nil, limits.Limits{MaxWork: 1 << 40}, unit)
 		wantLen := len(malformed)
 		if unit == CodePoints {
 			wantLen = utf8.RuneCountInString(malformed)
@@ -61,8 +61,8 @@ func TestWorkActionStringHelperParity(t *testing.T) {
 		if got, err := p.ValueBinary("+", 20, 22); err != nil || got != 42 {
 			t.Errorf("%v integer addition = %v, %v; want 42", unit, got, err)
 		}
-		if p.Control.InputUsed != 0 || p.Control.StepsUsed == 0 {
-			t.Fatalf("scalar work counters: input=%d steps=%d", p.Control.InputUsed, p.Control.StepsUsed)
+		if p.Control.Used == 0 {
+			t.Fatalf("scalar work counter = %d, want the helpers to charge work", p.Control.Used)
 		}
 	}
 }
@@ -70,21 +70,21 @@ func TestWorkActionStringHelperParity(t *testing.T) {
 func TestWorkActionStringHelpersChargeLongWork(t *testing.T) {
 	t.Parallel()
 	long := strings.Repeat("a", 8192)
-	p := actionWorkParser(nil, limits.WorkLimits{MaxSteps: 256}, CodePoints)
-	if err := catchFatal(t, func() { p.CompareText(long+"x", long+"y") }); !errors.Is(err, limits.ErrWorkLimit) {
-		t.Fatalf("long equal-prefix comparison error = %v, want ErrWorkLimit", err)
+	p := actionWorkParser(nil, limits.Limits{MaxWork: 256}, CodePoints)
+	if err := catchFatal(t, func() { p.CompareText(long+"x", long+"y") }); !errors.Is(err, limits.ErrLimit) {
+		t.Fatalf("long equal-prefix comparison error = %v, want ErrLimit", err)
 	}
 
-	p = actionWorkParser(nil, limits.WorkLimits{MaxSteps: 128}, Bytes)
+	p = actionWorkParser(nil, limits.Limits{MaxWork: 128}, Bytes)
 	if err := catchFatal(t, func() {
 		_, _ = p.ValueBinary("+", long, long)
-	}); !errors.Is(err, limits.ErrWorkLimit) {
-		t.Fatalf("long string concatenation error = %v, want ErrWorkLimit", err)
+	}); !errors.Is(err, limits.ErrLimit) {
+		t.Fatalf("long string concatenation error = %v, want ErrLimit", err)
 	}
 
-	p = actionWorkParser(nil, limits.WorkLimits{MaxSteps: 128}, CodePoints)
-	if err := catchFatal(t, func() { p.ValueTextLen(long) }); !errors.Is(err, limits.ErrWorkLimit) {
-		t.Fatalf("long rune length error = %v, want ErrWorkLimit", err)
+	p = actionWorkParser(nil, limits.Limits{MaxWork: 128}, CodePoints)
+	if err := catchFatal(t, func() { p.ValueTextLen(long) }); !errors.Is(err, limits.ErrLimit) {
+		t.Fatalf("long rune length error = %v, want ErrLimit", err)
 	}
 }
 
@@ -120,7 +120,7 @@ func TestWorkActionCollectionLoopsChargeElements(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := newPollingContext(1)
-			p := actionWorkParser(ctx, limits.WorkLimits{}, CodePoints)
+			p := actionWorkParser(ctx, limits.Limits{}, CodePoints)
 			var locals *core.Local
 			if tc.name == "local copy" {
 				for i := 0; i < size; i++ {
@@ -163,10 +163,10 @@ rule items = [a-z] #atomic*`)
 						n, err := prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 							if !armed && e.Kind == TraceExit && e.Rule == "items" {
 								armed = true
-								core.TraceParser(e).Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
+								core.TraceParser(e).Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 128})
 							}
 						}})
-						if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) {
+						if !armed || n != nil || !errors.Is(err, limits.ErrLimit) {
 							t.Fatalf("controlled parse: armed=%t node=%v err=%v", armed, n, err)
 						}
 						n, err = prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})
@@ -194,11 +194,11 @@ rule items = [a-z] #atomic*`)
 				n, err := prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 					if !armed && e.Kind == TraceExit && e.Rule == "items" {
 						armed = true
-						attempt = core.NewWorkControl(newPollingContext(2), limits.WorkLimits{})
+						attempt = core.NewWorkControl(newPollingContext(2), limits.Limits{})
 						core.TraceParser(e).Control = attempt
 					}
 				}})
-				if !armed || n != nil || !errors.Is(err, context.Canceled) || attempt.StepsUsed < 128 {
+				if !armed || n != nil || !errors.Is(err, context.Canceled) || attempt.Used < 128 {
 					t.Fatalf("controlled parse: armed=%t node=%v err=%v, want cancellation and no result", armed, n, err)
 				}
 				n, err = prog.ParseWith("main", "abc", ParseOptions{Backend: backend, Unit: unit})
@@ -226,7 +226,7 @@ rule items = [a-z]* #atomic`)
 				armContext := func(e TraceEvent, armed *bool) {
 					if !*armed && e.Kind == TraceExit && e.Rule == "items" {
 						*armed = true
-						core.TraceParser(e).Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
+						core.TraceParser(e).Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 128})
 					}
 				}
 				armed := false
@@ -239,10 +239,10 @@ rule items = [a-z]* #atomic`)
 				n, err = recovery.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 					if !armed && e.Kind == TraceExit && e.Rule == "items" {
 						armed = true
-						core.TraceParser(e).Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 256})
+						core.TraceParser(e).Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 256})
 					}
 				}})
-				if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) {
+				if !armed || n != nil || !errors.Is(err, limits.ErrLimit) {
 					t.Fatalf("recovery swallowed action interruption: armed=%t node=%v err=%v", armed, n, err)
 				}
 				n, err = recovery.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})

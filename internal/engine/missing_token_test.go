@@ -59,7 +59,7 @@ func TestMissingTokensLiteralAndUnits(t *testing.T) {
 			o := ParseOptions{Unit: unit, MissingTokens: 8}
 			if controlled {
 				o.Context = context.Background()
-				o.WorkLimits.MaxSteps = 1 << 20
+				o.Limits.MaxWork = 1 << 20
 			}
 			prog := mustCompile(t, `rule main = "é" ";" #missing $$`)
 			n, errs := requireInsertions(t, prog, "é", o, 1)
@@ -203,7 +203,7 @@ func TestMissingTokensLeftRecursion(t *testing.T) {
 		o := ParseOptions{MissingTokens: 64}
 		if controlled {
 			o.Context = context.Background()
-			o.WorkLimits.MaxSteps = 1 << 20
+			o.Limits.MaxWork = 1 << 20
 		}
 		for _, recognize := range []bool{false, true} {
 			o.Recognize = recognize
@@ -447,7 +447,7 @@ func TestMissingTokensMemoSeedContextAndRecycledPointers(t *testing.T) {
 	for _, controlled := range []bool{false, true} {
 		p := &core.Parser{Memo: core.NewMemoTable()}
 		if controlled && core.WorkControlsEnabled {
-			p.Control = core.NewWorkControl(context.Background(), limits.WorkLimits{})
+			p.Control = core.NewWorkControl(context.Background(), limits.Limits{})
 		}
 		ordinary := core.MemoKey{Rule: 1}
 		lookahead := core.MemoKey{Rule: 1, MissingSilent: true}

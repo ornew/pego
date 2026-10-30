@@ -316,7 +316,7 @@ func (d *Document) snapshotWith(o core.ParseOptions, legacy **value.Node) (*Snap
 	var result *Snapshot
 	output := OutputUnavailable
 	_, err := d.parseWithCapture(o, func(p *core.Parser, root *value.Node, parseErr error) error {
-		if observed != nil && observed.interrupted || errors.Is(parseErr, limits.ErrWorkLimit) {
+		if observed != nil && observed.interrupted || errors.Is(parseErr, limits.ErrLimit) {
 			return parseErr
 		}
 		p.Control.Check()
@@ -343,7 +343,7 @@ func (d *Document) snapshotWith(o core.ParseOptions, legacy **value.Node) (*Snap
 		var out strings.Builder
 		for off := 0; off < len(text); {
 			n := min(4096, len(text)-off)
-			p.Control.Charge(uint64(n), 1)
+			p.Control.Charge(uint64(n))
 			if off == 0 {
 				out.Grow(len(text))
 			}
@@ -412,9 +412,9 @@ func copySnapshotError(p *core.Parser, err error) error {
 			out[i] = syntax(x)
 		}
 		return out
-	case *limits.WorkLimitError:
+	case *limits.LimitError:
 		if e == nil {
-			return (*limits.WorkLimitError)(nil)
+			return (*limits.LimitError)(nil)
 		}
 		out := *e
 		return &out
@@ -682,7 +682,7 @@ func shareSnapshotChildren(p *core.Parser, previousGraph *snapshotGraph, previou
 	for i := range equal {
 		start := i * snapshotChildChunkSize
 		end := min(start+snapshotChildChunkSize, len(next.children))
-		p.Control.Charge(0, uint64(end-start))
+		p.Control.Charge(uint64(end - start))
 		old := previousGraph.childChunk(previous, i, end-start)
 		if len(old) != 0 && slices.Equal(old, next.children[start:end]) {
 			equal[i] = true
@@ -752,7 +752,7 @@ func sameFlatSnapshotRecord(p *core.Parser, a, b *snapshotRecord) bool {
 	}
 	for offset := 0; offset < len(a.children); offset += 4096 {
 		end := min(offset+4096, len(a.children))
-		p.Control.Charge(0, uint64(end-offset))
+		p.Control.Charge(uint64(end - offset))
 		if !slices.Equal(a.children[offset:end], b.children[offset:end]) {
 			return false
 		}
@@ -772,7 +772,7 @@ func sameSnapshotChildren(p *core.Parser, ag *snapshotGraph, a *snapshotRecord, 
 	if !a.childChunked && !b.childChunked {
 		for offset := 0; offset < count; offset += 4096 {
 			end := min(offset+4096, count)
-			p.Control.Charge(0, uint64(end-offset))
+			p.Control.Charge(uint64(end - offset))
 			if !slices.Equal(a.children[offset:end], b.children[offset:end]) {
 				return false
 			}
@@ -781,7 +781,7 @@ func sameSnapshotChildren(p *core.Parser, ag *snapshotGraph, a *snapshotRecord, 
 	}
 	for offset := 0; offset < count; offset += snapshotChildChunkSize {
 		end := min(offset+snapshotChildChunkSize, count)
-		p.Control.Charge(0, uint64(end-offset))
+		p.Control.Charge(uint64(end - offset))
 		if !slices.Equal(ag.childChunk(a, offset/snapshotChildChunkSize, end-offset), bg.childChunk(b, offset/snapshotChildChunkSize, end-offset)) {
 			return false
 		}

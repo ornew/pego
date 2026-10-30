@@ -31,7 +31,7 @@ func catchFatal(t *testing.T, f func()) error {
 
 func catchStreamPanic(f func()) (val any) { defer func() { val = recover() }(); f(); return }
 
-func stateWorkParser(lim limits.WorkLimits) *core.Parser {
+func stateWorkParser(lim limits.Limits) *core.Parser {
 	prog := &core.SharedProgram{}
 	core.InitSharedProgram(prog, &compile.Program{})
 	return &core.Parser{Prog: prog, Input: core.Input{Control: core.NewWorkControl(nil, lim)}}
@@ -48,7 +48,7 @@ func undoFixture(p *core.Parser) (*core.Frame, []*value.Node) {
 	return f, []*value.Node{old0, first0, old1, last1, latest0}
 }
 
-func diagnosticParser(lim limits.WorkLimits) *core.Parser {
+func diagnosticParser(lim limits.Limits) *core.Parser {
 	return &core.Parser{Input: core.Input{Control: core.NewWorkControl(nil, lim)}}
 }
 

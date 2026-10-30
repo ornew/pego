@@ -71,8 +71,8 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 				for _, recognize := range []bool{false, true} {
 					for _, text := range []string{input, "", tc.text, "x"} {
 						for limit := uint64(0); limit <= 80; limit++ {
-							for _, limits := range []limits.WorkLimits{{MaxSteps: limit}, {MaxInputWork: limit}} {
-								opts := ParseOptions{Unit: unit, Recognize: recognize, WorkLimits: limits}
+							for _, limits := range []limits.Limits{{MaxWork: limit}, {MaxWork: limit}} {
+								opts := ParseOptions{Unit: unit, Recognize: recognize, Limits: limits}
 								a, ae := shared.ParseWith("main", text, opts)
 								b, be := reference.ParseWith("main", text, opts)
 								if gentest.ResultJSON(a, ae) != gentest.ResultJSON(b, be) {

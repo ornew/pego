@@ -356,8 +356,8 @@ func (c *workContextErrPanic) Err() error {
 	c.calls++
 	if c.calls == c.panicAt {
 		if c.control != nil {
-			c.stepsAtPanic, c.stepsSince = c.control.StepsUsed, c.control.StepsSinceCheck
-			c.inputAtPanic, c.inputSince = c.control.InputUsed, c.control.InputSinceCheck
+			c.stepsAtPanic, c.stepsSince = c.control.Used, c.control.SinceCheck
+			c.inputAtPanic, c.inputSince = c.control.Used, c.control.SinceCheck
 		}
 		panic(c.token)
 	}

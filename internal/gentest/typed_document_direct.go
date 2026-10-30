@@ -180,7 +180,7 @@ func TestControlsAndInvalidOptions(t *testing.T){
    func(){defer func(){if recover()!=token{t.Fatal("context panic identity changed")}}();d.ParseAST(WithContext(ctx));t.Fatal("context did not panic")}()
    unchanged();reused()
   }
-  if _,err:=d.ParseAST(WithWorkLimits(WorkLimits{MaxSteps:1}));!errors.Is(err,ErrWorkLimit)||d.X_typedMemo!=nil{t.Fatalf("execution budget cleanup: %v",err)}
+  if _,err:=d.ParseAST(WithLimits(Limits{MaxWork:1}));!errors.Is(err,ErrLimit)||d.X_typedMemo!=nil{t.Fatalf("execution budget cleanup: %v",err)}
   assertDirect(t,d,unit)
  }
 }

@@ -83,19 +83,19 @@ func TestControls(t *testing.T){
   for _,c:=range []context.Context{ctx,expired}{
    v,err=r.call(input,option,WithContext(c));if !isZero(v) || !errors.Is(err,c.Err()){t.Fatalf("pre-cancel value=%v err=%v",v,err)}
   }
-  for _,steps:=range []bool{false,true}{
-   limit:=func(n uint64) ParseOption {if steps{return WithWorkLimits(WorkLimits{MaxSteps:n})};return WithWorkLimits(WorkLimits{MaxInputWork:n})}
+  for range 1{
+   limit:=func(n uint64) ParseOption {return WithLimits(Limits{MaxWork:n})}
    lo,hi:=uint64(1),uint64(1<<20)
    if _,err=r.call(input,WithUnit(unit),limit(hi));err!=nil{t.Fatal(err)}
-   for lo<hi {mid:=lo+(hi-lo)/2;_,e:=r.call(input,WithUnit(unit),limit(mid));if e==nil{hi=mid}else if errors.Is(e,ErrWorkLimit){lo=mid+1}else{t.Fatal(e)}}
+   for lo<hi {mid:=lo+(hi-lo)/2;_,e:=r.call(input,WithUnit(unit),limit(mid));if e==nil{hi=mid}else if errors.Is(e,ErrLimit){lo=mid+1}else{t.Fatal(e)}}
    if lo<=1 {t.Fatal("work not charged")}
    v,err=r.call(input,WithUnit(unit),limit(lo));if err!=nil{t.Fatalf("exact ceiling=%d: %v",lo,err)}
-   v,err=r.call(input,WithUnit(unit),limit(lo-1));var exhausted *WorkLimitError
-   if !isZero(v) || !errors.As(err,&exhausted) || !errors.Is(err,ErrWorkLimit){t.Fatalf("one short value=%v err=%v",v,err)}
+   v,err=r.call(input,WithUnit(unit),limit(lo-1));var exhausted *LimitError
+   if !isZero(v) || !errors.As(err,&exhausted) || !errors.Is(err,ErrLimit){t.Fatalf("one short value=%v err=%v",v,err)}
    if exhausted.Limit!=lo-1 || exhausted.Requested==0 || exhausted.Used>exhausted.Limit || exhausted.Requested<=exhausted.Limit-exhausted.Used {t.Fatalf("reservation metadata: %+v",exhausted)}
-   if (exhausted.Kind==StepWorkLimit)!=steps {t.Fatalf("wrong counter: %+v",exhausted)}
+   if exhausted.Kind!=LimitWork {t.Fatalf("wrong counter: %+v",exhausted)}
   }
-  if _,err=r.call(input,option,WithWorkLimits(WorkLimits{}),WithContext(nil));err!=nil{t.Fatal("retry",err)}
+  if _,err=r.call(input,option,WithLimits(Limits{}),WithContext(nil));err!=nil{t.Fatal("retry",err)}
   _=before
  })}}
 }
@@ -111,8 +111,8 @@ func TestValidationAndOptions(t *testing.T){
  }
  for _,r:=range routes(){
   calls:=0
-  option:=func(o *pegort.X_parseOptions){calls++;o.X_limits=WorkLimits{MaxSteps:100000}}
-  _,err:=r.call("é",WithContext(ctx),WithContext(context.Background()),WithWorkLimits(WorkLimits{MaxSteps:1}),option)
+  option:=func(o *pegort.X_parseOptions){calls++;o.X_limits=Limits{MaxWork:100000}}
+  _,err:=r.call("é",WithContext(ctx),WithContext(context.Background()),WithLimits(Limits{MaxWork:1}),option)
   if err!=nil || calls!=1 {t.Fatalf("last effective options: %v, callbacks %d",err,calls)}
  }
 }
@@ -132,44 +132,43 @@ func TestFatalNotRecovered(t *testing.T){
  input:=strings.Repeat("a",10000)+"b"
  for _,name:=range []string{"recovering","predicate"}{for _,ast:=range []bool{false,true}{
   var v any;var err error
-  if ast{v,err=ParseRuleAST(name,input,WithUnit(Bytes),WithWorkLimits(WorkLimits{MaxSteps:40}))}else{v,err=ParseRule(name,input,WithUnit(Bytes),WithWorkLimits(WorkLimits{MaxSteps:40}))}
-  if !isZero(v)||!errors.Is(err,ErrWorkLimit){t.Fatalf("%s ast=%v swallowed interruption value=%v err=%v",name,ast,v,err)}
+  if ast{v,err=ParseRuleAST(name,input,WithUnit(Bytes),WithLimits(Limits{MaxWork:40}))}else{v,err=ParseRule(name,input,WithUnit(Bytes),WithLimits(Limits{MaxWork:40}))}
+  if !isZero(v)||!errors.Is(err,ErrLimit){t.Fatalf("%s ast=%v swallowed interruption value=%v err=%v",name,ast,v,err)}
  }}
 }
 func TestStringAndMalformedTextWork(t *testing.T){
  text:=strings.Repeat("a",300)+"é"
- p:=&pegort.Parser{Control:pegort.X_newWorkControl(context.Background(),WorkLimits{MaxSteps:100000})}
+ p:=&pegort.Parser{Control:pegort.X_newWorkControl(context.Background(),Limits{MaxWork:100000})}
  c:=&pegort.ActCtx{P:p}
  for _,op:=range []string{"==","!=","<","<=",">",">=","+"}{
   got:=c.Binary(op,text,text)
   want:=pegort.X_rtBinary(op,text,text)
   if !reflect.DeepEqual(got,want){t.Fatalf("string %s: %v want %v",op,got,want)}
  }
- if p.Control.X_stepsUsed()==0 || p.Control.X_inputUsed()!=0{t.Fatal("string accounting mixed input and value work")}
+ if p.Control.X_workUsed()==0{t.Fatal("string work not charged")}
  for _,invoke:=range []func(*pegort.Parser){
   func(p *pegort.Parser){(&pegort.ActCtx{P:p}).Binary("==",text,text)},
   func(p *pegort.Parser){(&pegort.ActCtx{P:p}).Binary("+",text,text)},
   func(p *pegort.Parser){p.X_unitLen(text)},
  }{
-  p:=&pegort.Parser{Control:pegort.X_newWorkControl(context.Background(),WorkLimits{MaxSteps:127})}
-  func(){defer func(){f,ok:=recover().(pegort.X_fatal);if !ok || !errors.Is(f.X_err,ErrWorkLimit){t.Fatal("string work not bounded",f)}}();invoke(p)}()
-  if p.Control.X_inputUsed()!=0{t.Fatal("action value charged input")}
+  p:=&pegort.Parser{Control:pegort.X_newWorkControl(context.Background(),Limits{MaxWork:127})}
+  func(){defer func(){f,ok:=recover().(pegort.X_fatal);if !ok || !errors.Is(f.X_err,ErrLimit){t.Fatal("string work not bounded",f)}}();invoke(p)}()
  }
  // Malformed-source normalization must account for both sizing and copying.
  runes:=[]rune(strings.Repeat("�",300))
- p=&pegort.Parser{In:runes,Control:pegort.X_newWorkControl(context.Background(),WorkLimits{MaxInputWork:600,MaxSteps:600})}
+ p=&pegort.Parser{In:runes,Control:pegort.X_newWorkControl(context.Background(),Limits{MaxWork: 1200})}
  if got:=p.Text(0,len(runes));got!=string(runes){t.Fatal("normalized text mismatch")}
- if p.Control.X_inputUsed()!=600 || p.Control.X_stepsUsed()!=600{t.Fatalf("normalized counters: %+v",p.Control)}
- p=&pegort.Parser{In:runes,Control:pegort.X_newWorkControl(context.Background(),WorkLimits{MaxInputWork:599})}
- func(){defer func(){f,ok:=recover().(pegort.X_fatal);if !ok || !errors.Is(f.X_err,ErrWorkLimit){t.Fatal("normalized text unbounded",f)}}();p.Text(0,len(runes))}()
+ if p.Control.X_workUsed()!=1200{t.Fatalf("normalized counters: %+v",p.Control)}
+ p=&pegort.Parser{In:runes,Control:pegort.X_newWorkControl(context.Background(),Limits{MaxWork:1199})}
+ func(){defer func(){f,ok:=recover().(pegort.X_fatal);if !ok || !errors.Is(f.X_err,ErrLimit){t.Fatal("normalized text unbounded",f)}}();p.Text(0,len(runes))}()
 }
 
 func TestFailureDiagnosticsBounded(t *testing.T){
  input:="?"+strings.Repeat("\n",6000)
  for _,r:=range routes(){for _,steps:=range []bool{false,true}{
-  limits:=WorkLimits{MaxInputWork:128};if steps{limits=WorkLimits{MaxSteps:128}}
-  v,err:=r.call(input,WithUnit(Bytes),WithWorkLimits(limits))
-  if !isZero(v) || !errors.Is(err,ErrWorkLimit){t.Errorf("%s steps=%v early-failure diagnosis escaped budget: %v %v",r.name,steps,v,err)}
+  limits:=Limits{MaxWork:128};if steps{limits=Limits{MaxWork:128}}
+  v,err:=r.call(input,WithUnit(Bytes),WithLimits(limits))
+  if !isZero(v) || !errors.Is(err,ErrLimit){t.Errorf("%s steps=%v early-failure diagnosis escaped budget: %v %v",r.name,steps,v,err)}
   if _,err=r.call("é");err!=nil{t.Fatal("retry after diagnostic interruption",err)}
  }}
 }
@@ -178,24 +177,25 @@ func TestLineDiagnosticReservations(t *testing.T){
   input:=strings.Repeat("é\n",300)
   makeParser:=func(limit uint64)*pegort.Parser{
    p:=&pegort.Parser{X_unit:unit,X_bs:input,In:[]rune(input)};p.X_n=len(p.In);if unit==Bytes{p.X_n=len(input)}
-   p.Control=pegort.X_newWorkControl(context.Background(),WorkLimits{MaxInputWork:limit})
+   p.Control=pegort.X_newWorkControl(context.Background(),Limits{MaxWork:limit})
    return p
   }
   p:=makeParser(100000);e:=p.MakeError(p.X_n-1,nil)
   if e.Line!=300 || e.Col!=map[PositionUnit]int{Bytes:3,CodePoints:2}[unit]{t.Fatal("line coordinate changed",e)}
-  if p.Control.X_inputUsed()!=uint64(p.X_n){t.Errorf("diagnostic input uncharged: %d for %d",p.Control.X_inputUsed(),p.X_n)}
-  p=makeParser(uint64(p.X_n))
+  used:=p.Control.X_workUsed()
+  if used<uint64(p.X_n){t.Errorf("diagnostic input uncharged: %d for %d",used,p.X_n)}
+  p=makeParser(used)
   if e:=p.MakeError(p.X_n-1,nil);e.Line!=300{t.Fatal("exact diagnostic ceiling",e)}
-  p=makeParser(uint64(p.X_n-1))
-  func(){defer func(){f,ok:=recover().(pegort.X_fatal);var exhausted *WorkLimitError;if !ok || !errors.As(f.X_err,&exhausted) || exhausted.Kind!=InputWorkLimit{t.Error("one-short diagnostic unbounded",f)}}();p.MakeError(p.X_n-1,nil)}()
+  p=makeParser(used-1)
+  func(){defer func(){f,ok:=recover().(pegort.X_fatal);var exhausted *LimitError;if !ok || !errors.As(f.X_err,&exhausted) || exhausted.Kind!=LimitWork{t.Error("one-short diagnostic unbounded",f)}}();p.MakeError(p.X_n-1,nil)}()
  }
 }
 
 func TestConcurrentLimits(t *testing.T){
  var wg sync.WaitGroup
  for worker:=0;worker<8;worker++{wg.Go(func(){for repeat:=0;repeat<8;repeat++{for _,r:=range routes(){
-  if _,err:=r.call("é",WithWorkLimits(WorkLimits{MaxSteps:10000}));err!=nil{t.Error(err)}
-  if _,err:=r.call(strings.Repeat("a",1000)+"é",WithWorkLimits(WorkLimits{MaxSteps:3}));!errors.Is(err,ErrWorkLimit){t.Errorf("independent limit: %v",err)}
+  if _,err:=r.call("é",WithLimits(Limits{MaxWork:10000}));err!=nil{t.Error(err)}
+  if _,err:=r.call(strings.Repeat("a",1000)+"é",WithLimits(Limits{MaxWork:3}));!errors.Is(err,ErrLimit){t.Errorf("independent limit: %v",err)}
  }}})};wg.Wait()
 }
 `
@@ -241,34 +241,34 @@ import pegort "github.com/ornew/pego/runtime"
 import("context";"errors";"reflect";"strings";"testing";"gentest/PACKAGE/types")
 func TestConversionVisits(t *testing.T){
  n,err:=Parse(strings.Repeat("é",100));if err!=nil{t.Fatal(err)}
- c:=pegort.X_newWorkControl(context.Background(),WorkLimits{MaxSteps:100000})
+ c:=pegort.X_newWorkControl(context.Background(),Limits{MaxWork:100000})
  a:=astConv{control:c};v:=a.toTypeBranch(n)
  if v==nil || len(v.Leaves)!=100{t.Fatal("conversion failed")}
  // Branch dispatch, field scan, list dispatch, each list edge, and for each leaf its dispatch
  // and the scan of its Text field.
- if c.X_stepsUsed()!=303 || c.X_inputUsed()!=0{t.Fatalf("conversion work: steps=%d input=%d",c.X_stepsUsed(),c.X_inputUsed())}
+ if c.X_workUsed()!=303{t.Fatalf("conversion work: %d",c.X_workUsed())}
  for _,ceiling:=range []uint64{1,2,3,4,302}{
-  c:=pegort.X_newWorkControl(context.Background(),WorkLimits{MaxSteps:ceiling})
-  func(){defer func(){f,ok:=recover().(pegort.X_fatal);var e *WorkLimitError;if !ok || !errors.As(f.X_err,&e) || e.Kind!=StepWorkLimit || e.Used!=ceiling || e.Requested!=1{t.Fatalf("conversion ceiling %d interruption: %+v",ceiling,f)}}();(&astConv{control:c}).toTypeBranch(n)}()
+  c:=pegort.X_newWorkControl(context.Background(),Limits{MaxWork:ceiling})
+  func(){defer func(){f,ok:=recover().(pegort.X_fatal);var e *LimitError;if !ok || !errors.As(f.X_err,&e) || e.Kind!=LimitWork || e.Used!=ceiling || e.Requested!=1{t.Fatalf("conversion ceiling %d interruption: %+v",ceiling,f)}}();(&astConv{control:c}).toTypeBranch(n)}()
  }
 }
 func TestParseConversionSharesCounter(t *testing.T){
  input:=strings.Repeat("é",100)
- beforeSteps,beforeInput:=uint64(0),uint64(0)
- conv:=func(n *Node,c *pegort.WorkControl,parseErr error)*types.Branch{beforeSteps,beforeInput=c.X_stepsUsed(),c.X_inputUsed();v:=(&astConv{control:c}).toTypeBranch(n);if c.X_stepsUsed()!=beforeSteps+303 || c.X_inputUsed()!=beforeInput{t.Fatal("conversion counter changed independently")};return v}
- o:=pegort.X_parseOptions{X_maxDepth:pegoGrammar.X_maxDepth,X_limits:WorkLimits{MaxSteps:100000}}
+ before:=uint64(0)
+ conv:=func(n *Node,c *pegort.WorkControl,parseErr error)*types.Branch{before=c.X_workUsed();v:=(&astConv{control:c}).toTypeBranch(n);if c.X_workUsed()!=before+303{t.Fatal("conversion counter changed independently")};return v}
+ o:=pegort.X_parseOptions{X_maxDepth:pegoGrammar.X_maxDepth,X_limits:Limits{MaxWork:100000}}
  retained,err:=pegort.RunParseConverted(rules[0],input,o,conv)
  if err!=nil || retained==nil{t.Fatal(err)}
  snapshot:=*retained.Leaves[0]
- total:=beforeSteps+303
- for _,limit:=range []uint64{beforeSteps+1,total-1,total}{
-  o.X_limits.MaxSteps=limit
+ total:=before+303
+ for _,limit:=range []uint64{before+1,total-1,total}{
+  o.X_limits.MaxWork=limit
   got,err:=pegort.RunParseConverted(rules[0],input,o,func(n *Node,c *pegort.WorkControl,parseErr error)*types.Branch{return (&astConv{control:c}).toTypeBranch(n)})
-  if limit==total {if err!=nil || len(got.Leaves)!=100{t.Fatal("exact conversion ceiling",err)}}else if got!=nil || !errors.Is(err,ErrWorkLimit){t.Fatalf("partial conversion leaked at %d: %v %v",limit,got,err)}
+  if limit==total {if err!=nil || len(got.Leaves)!=100{t.Fatal("exact conversion ceiling",err)}}else if got!=nil || !errors.Is(err,ErrLimit){t.Fatalf("partial conversion leaked at %d: %v %v",limit,got,err)}
  }
  if !reflect.DeepEqual(*retained.Leaves[0],snapshot){t.Fatal("earlier result was overwritten")}
  // Cancellation raised inside conversion is surfaced at the same outer boundary.
- ctx,cancel:=context.WithCancel(context.Background());o.SetContext(ctx);o.X_limits=WorkLimits{}
+ ctx,cancel:=context.WithCancel(context.Background());o.SetContext(ctx);o.X_limits=Limits{}
  v,err:=pegort.RunParseConverted(rules[0],input,o,func(n *Node,c *pegort.WorkControl,parseErr error)*types.Branch{cancel();c.Check();return (&astConv{control:c}).toTypeBranch(n)})
  if v!=nil || !errors.Is(err,context.Canceled){t.Fatalf("conversion cancellation: %v %v",v,err)}
  if _,err:=ParseAST(input);err!=nil{t.Fatal("retry",err)}
@@ -280,27 +280,25 @@ func TestGeneratedGoWorkControlNameCollisions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated public-name collision consumers")
 	}
-	g, err := parseTest(`type WorkLimits = { Text string }
+	g, err := parseTest(`type Limits = { Text string }
 
-type WorkLimits_ = { Text string }
+type Limits_ = { Text string }
 
-type WorkLimitError = {
-    Value WorkLimits
+type LimitError = {
+    Value Limits
 }
 
-type WorkLimitKind ~ WorkLimits
+type LimitKind ~ Limits
 
-type WithContext ~ WorkLimits
+type WithContext ~ Limits
 
-type WithWorkLimits ~ WorkLimits
+type WithLimits ~ Limits
 
-type ErrWorkLimit ~ WorkLimits
+type ErrLimit ~ Limits
 
-type InputWorkLimit ~ WorkLimits
+type LimitWork ~ Limits
 
-type StepWorkLimit ~ WorkLimits
-
-rule main WorkLimits = t:("é") #atomic => WorkLimits{Text: text($t)}`)
+rule main Limits = t:("é") #atomic => Limits{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -341,23 +339,22 @@ rule main WorkLimits = t:("é") #atomic => WorkLimits{Text: text($t)}`)
 const generatedGoWorkCollisionConsumer = `package PACKAGE_test
 import("context";"errors";"testing";p "workcollision/PACKAGE";g "workcollision/PACKAGE/types")
 func TestPublicNames(t *testing.T){
- var parse func(string,...p.ParseOption)(*g.WorkLimits,error)=p.ParseAST
- v,err:=parse("é",p.WithContext(context.Background()),p.WithWorkLimits(p.WorkLimits{MaxSteps:1000}),p.WithUnit(p.Bytes))
+ var parse func(string,...p.ParseOption)(*g.Limits,error)=p.ParseAST
+ v,err:=parse("é",p.WithContext(context.Background()),p.WithLimits(p.Limits{MaxWork:1000}),p.WithUnit(p.Bytes))
  if err!=nil || v.Text!="é" || v.End!=2{t.Fatal(v,err)}
- var second *g.WorkLimits_=&g.WorkLimits_{}
- var box *g.WorkLimitError=&g.WorkLimitError{Value:v}
- var kind g.WorkLimitKind=v
+ var second *g.Limits_=&g.Limits_{}
+ var box *g.LimitError=&g.LimitError{Value:v}
+ var kind g.LimitKind=v
  var ctx g.WithContext=v
- var limits g.WithWorkLimits=v
- var sentinel g.ErrWorkLimit=v
- var input g.InputWorkLimit=v
- var steps g.StepWorkLimit=v
- _,_,_,_,_,_,_,_=second,box,kind,ctx,limits,sentinel,input,steps
- _,err=parse("é",p.WithWorkLimits(p.WorkLimits{MaxSteps:1}))
- var exhausted *p.WorkLimitError
- if !errors.Is(err,p.ErrWorkLimit) || !errors.As(err,&exhausted){t.Fatal(err)}
- var counter p.WorkLimitKind=exhausted.Kind
- if counter!=p.StepWorkLimit{t.Fatal(counter)}
+ var limits g.WithLimits=v
+ var sentinel g.ErrLimit=v
+ var work g.LimitWork=v
+ _,_,_,_,_,_,_=second,box,kind,ctx,limits,sentinel,work
+ _,err=parse("é",p.WithLimits(p.Limits{MaxWork:1}))
+ var exhausted *p.LimitError
+ if !errors.Is(err,p.ErrLimit) || !errors.As(err,&exhausted){t.Fatal(err)}
+ var counter p.LimitKind=exhausted.Kind
+ if counter!=p.LimitWork{t.Fatal(counter)}
 }
 `
 
@@ -410,7 +407,7 @@ func TestNilPublication(t *testing.T){
  }}
  for _,named:=range []bool{false,true}{
   ctx,cancel:=context.WithCancel(context.Background())
-  established:=&WorkLimitError{Kind:StepWorkLimit,Limit:1,Used:1,Requested:1}
+  established:=&LimitError{Kind:LimitWork,Limit:1,Used:1,Requested:1}
   trules[0].Entry=func(p *pegort.TParser)(any,bool){cancel();panic(pegort.X_fatal{X_err:established})}
   var err error
   if named{_,err=ParseRuleAST("main","",WithContext(ctx))}else{_,err=ParseAST("",WithContext(ctx))}
@@ -425,7 +422,7 @@ type clonePhaseContext struct{context.Context;control *pegort.WorkControl;marker
 func(c *clonePhaseContext)Done()<-chan struct{}{return make(chan struct{})}
 func(c *clonePhaseContext)Err()error{
  c.calls++
- if c.control!=nil && c.control.X_stepsUsed()>=256 {if c.marker!=nil{panic(c.marker)};return context.Canceled}
+ if c.control!=nil && c.control.X_workUsed()>=256 {if c.marker!=nil{panic(c.marker)};return context.Canceled}
  return nil
 }
 func TestRecoveredNilClonePublication(t *testing.T){
@@ -501,7 +498,7 @@ func TestLegacyAndInterruptedNil(t *testing.T){
   for _,row:=range []struct{option ParseOption;want error}{
    {WithContext(ctx),context.Canceled},
    {WithContext(&ownedErrorContext{Context:context.Background(),err:owned}),owned},
-   {WithWorkLimits(WorkLimits{MaxSteps:1}),ErrWorkLimit},
+   {WithLimits(Limits{MaxWork:1}),ErrLimit},
   }{
    got,err:=r("é",row.option)
    if got!=nil || !errors.Is(err,row.want){t.Fatalf("interruption converted nil: %T %v %v",got,got,err)}
@@ -552,7 +549,7 @@ const generatedGoOrdinaryNilErrorConsumer = `package ordinarynil
 import("context";"testing")
 func TestOrdinaryNilMapping(t *testing.T){
  for _,unit:=range []PositionUnit{CodePoints,Bytes}{
-  for _,extra:=range [][]ParseOption{nil,{WithContext(context.Background())},{WithWorkLimits(WorkLimits{MaxSteps:1000000,MaxInputWork:1000000})}}{
+  for _,extra:=range [][]ParseOption{nil,{WithContext(context.Background())},{WithLimits(Limits{MaxWork: 1000000})}}{
    opts:=append([]ParseOption{WithUnit(unit),OPTION},extra...)
    got,err:=ParseAST(INPUT,opts...)
    if err==nil || got!=nil{t.Fatalf("ordinary error returned a value: %T %v %v",got,got,err)}

@@ -57,7 +57,7 @@ func equalChangeText(p *core.Parser, a, b string) bool {
 	}
 	for off := 0; off < len(a); {
 		end := min(len(a), off+2048)
-		p.Control.Charge(uint64(end-off)*2, 1)
+		p.Control.Charge(uint64(end-off) * 2)
 		if a[off:end] != b[off:end] {
 			return false
 		}

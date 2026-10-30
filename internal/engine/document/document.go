@@ -138,7 +138,7 @@ func (d *Document) parseWithCapture(o core.ParseOptions, capture func(*core.Pars
 			}
 		}
 	}()
-	c := core.NewWorkControl(o.Context, o.WorkLimits)
+	c := core.NewWorkControl(o.Context, o.Limits)
 	if !core.WorkControlsEnabled && c != nil {
 		return nil, fmt.Errorf("work controls are unavailable in the reference build")
 	}

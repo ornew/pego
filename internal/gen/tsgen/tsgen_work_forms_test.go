@@ -85,21 +85,21 @@ for (const unit of [p.CodePoints, p.Bytes]) {
   // The options type has no control option; a caller that bypasses it still gets an error.
   // @ts-expect-error The options of a parser without work controls have no signal.
   const withSignal = p.parseWithOptions(input, { unit, signal: { aborted: false } });
-  // @ts-expect-error The options of a parser without work controls have no step limit.
-  const withSteps = p.parseASTWithOptions(input, { unit, maxSteps: 1 });
-  // @ts-expect-error The options of a parser without work controls have no input work limit.
-  const withInput = p.recognizeWithOptions(input, { unit, maxInputWork: 1 });
-  for (const error of [withSignal.error, withSteps.error, withInput]) {
+  // @ts-expect-error The options of a parser without work controls have no work limit.
+  const withWork = p.parseASTWithOptions(input, { unit, maxWork: 1 });
+  // @ts-expect-error The options of a parser without work controls have no work limit.
+  const withRecognize = p.recognizeWithOptions(input, { unit, maxWork: 1 });
+  for (const error of [withSignal.error, withWork.error, withRecognize]) {
     check(error !== null && error.message.includes("generated without work controls"), "a control option is rejected");
   }
-  const rejected = [{ signal: { aborted: false } }, { maxSteps: 1 }, { maxInputWork: 1 }] as unknown as p.ParseOptions[];
+  const rejected = [{ signal: { aborted: false } }, { maxWork: 1 }] as unknown as p.ParseOptions[];
   for (const options of rejected) {
     for (const error of [p.parseWithOptions(input, options).error, p.parseRuleWithOptions("fast", "z", options).error, p.recognizeWithOptions(input, options), p.parseASTWithOptions(input, options).error]) {
       check(error !== null && error.message.includes("generated without work controls"), "a control option is rejected by every entry point: " + JSON.stringify(options));
     }
   }
   // Zero limits and an absent signal set nothing.
-  check(p.parseWithOptions(input, { unit, signal: null, maxSteps: 0, maxInputWork: 0 } as unknown as p.ParseOptions).error === null, "unset controls are accepted");
+  check(p.parseWithOptions(input, { unit, signal: null, maxWork: 0 } as unknown as p.ParseOptions).error === null, "unset controls are accepted");
 }
 `
 	runTypedTSFixture(t, tsWorkFormsGrammar, consumer, gen.GenOptions{Start: "main", Recognize: true}, "")
@@ -112,12 +112,12 @@ func TestGeneratedTSWithWorkControlsAcceptsControlOptions(t *testing.T) {
 const input = "ab,cd";
 for (const unit of [p.CodePoints, p.Bytes]) {
   const ordinary = p.parse(input, unit), typed = p.parseAST(input, unit);
-  const o = { unit, signal: { aborted: false }, maxSteps: 1_000_000, maxInputWork: 1_000_000 };
+  const o = { unit, signal: { aborted: false }, maxWork: 1_000_000 };
   check(stable(p.parseWithOptions(input, o).node) === stable(ordinary.node), "controlled parse matches");
   check(stable(p.parseASTWithOptions(input, o).value) === stable(typed.value), "controlled typed parse matches");
   check(p.recognizeWithOptions(input, o) === null && p.parseRuleWithOptions("fast", "z", o).error === null, "controlled rule and recognizer");
-  const limited = p.parseWithOptions(input, { unit, maxSteps: 3 });
-  check(limited.error instanceof p.ParseInterruptionError && limited.error.kind === "step-work-limit", "step limit");
+  const limited = p.parseWithOptions(input, { unit, maxWork: 3 });
+  check(limited.error instanceof p.ParseInterruptionError && limited.error.kind === "work-limit", "work limit");
   const canceled = p.parseASTWithOptions(input, { unit, signal: { aborted: true } });
   check(canceled.error instanceof p.ParseInterruptionError && canceled.error.kind === "canceled", "cancellation");
   check(p.parse(input, unit).error === null, "a parse after an interruption");

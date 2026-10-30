@@ -19,23 +19,23 @@ func TestWorkDocumentPieceConstruction(t *testing.T) {
 	}
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, text := range []string{strings.Repeat("é😀x", 2048), strings.Repeat("x\xff", 4096)} {
-			c := core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
+			c := core.NewWorkControl(nil, limits.Limits{MaxWork: 1 << 30})
 			in := core.NewControlledDocumentInput(text, unit, c)
 			want := core.NewDocumentPieces(text, unit)
 			if in.Pieces == nil || !reflect.DeepEqual(in.Pieces, want) {
 				t.Fatalf("%s: controlled preparation changed piece contents", unit)
 			}
 			if unit == Bytes {
-				if c.InputUsed != 0 || c.StepsUsed != 0 {
+				if c.Used != 0 {
 					t.Fatal("immutable byte string retention was charged as a copy")
 				}
-			} else if c.InputUsed == 0 || c.StepsUsed == 0 {
+			} else if c.Used == 0 {
 				t.Fatal("code point decoding bypassed construction counters")
 			}
 		}
 	}
-	c := core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 1})
-	if err := catchFatal(t, func() { core.NewControlledDocumentInput(strings.Repeat("a", 8192), CodePoints, c) }); !errors.Is(err, limits.ErrWorkLimit) {
+	c := core.NewWorkControl(nil, limits.Limits{MaxWork: 1})
+	if err := catchFatal(t, func() { core.NewControlledDocumentInput(strings.Repeat("a", 8192), CodePoints, c) }); !errors.Is(err, limits.ErrLimit) {
 		t.Fatalf("piece preparation interruption: %v", err)
 	}
 }
@@ -48,14 +48,14 @@ func TestWorkDocumentPieceTextPublication(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		pieces := core.NewDocumentPieces(strings.Repeat("x", 8192), unit)
 		pieces.Replace(4096, 4097, "é")
-		in := core.Input{Unit: unit, Eof: true, Pieces: pieces, Control: core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 4096})}
-		if err := catchFatal(t, func() { in.Text(0, pieces.N) }); !errors.Is(err, limits.ErrWorkLimit) {
+		in := core.Input{Unit: unit, Eof: true, Pieces: pieces, Control: core.NewWorkControl(nil, limits.Limits{MaxWork: 4096})}
+		if err := catchFatal(t, func() { in.Text(0, pieces.N) }); !errors.Is(err, limits.ErrLimit) {
 			t.Fatalf("%s: piece materialization bypassed the limit: %v", unit, err)
 		}
 		if pieces.FullOK || pieces.Full != "" {
 			t.Fatal("interrupted materialization published a cache")
 		}
-		in.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 1 << 30})
+		in.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 1 << 30})
 		got := in.Text(0, pieces.N)
 		if want := strings.Repeat("x", 4096) + "é" + strings.Repeat("x", 4095); got != want || !pieces.FullOK {
 			t.Fatalf("%s: retry materialization differs", unit)

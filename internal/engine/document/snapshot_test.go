@@ -26,15 +26,15 @@ func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
 		}
 		// A memo-hit parse succeeds with this allowance. Capturing its
 		// existing graph and text must still consume the same invocation.
-		o.WorkLimits = limits.WorkLimits{MaxSteps: 100}
+		o.Limits = limits.Limits{MaxWork: 100}
 		if _, err := d.ParseWith(o); err != nil {
 			t.Fatal("memo-hit fixture", err)
 		}
 		s, err := d.SnapshotWith(o)
-		if s != nil || !errors.Is(err, limits.ErrWorkLimit) || d.Memo().Len() != 0 || d.Runs() != nil || d.Kids() != nil || d.Machine() != nil {
+		if s != nil || !errors.Is(err, limits.ErrLimit) || d.Memo().Len() != 0 || d.Runs() != nil || d.Kids() != nil || d.Machine() != nil {
 			t.Fatal("freeze interruption", s, err)
 		}
-		o.WorkLimits = limits.WorkLimits{}
+		o.Limits = limits.Limits{}
 		s, err = d.SnapshotWith(o)
 		if s == nil || err != nil || s.Text() != d.Text() {
 			t.Fatal("retry", err)
@@ -43,16 +43,16 @@ func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
 			t.Fatal("fresh mismatch")
 		}
 		// A cached parse fits, but copying all 8192 input bytes does not.
-		o.WorkLimits = limits.WorkLimits{MaxInputWork: 4096}
+		o.Limits = limits.Limits{MaxWork: 4096}
 		if _, err := d.ParseWith(o); err != nil {
 			t.Fatal("input-work memo-hit fixture", err)
 		}
 		s, err = d.SnapshotWith(o)
-		var limit *limits.WorkLimitError
-		if s != nil || !errors.As(err, &limit) || limit.Kind != limits.InputWorkLimit {
+		var limit *limits.LimitError
+		if s != nil || !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
 			t.Fatal("text-freeze input-work limit", s, err)
 		}
-		o.WorkLimits = limits.WorkLimits{}
+		o.Limits = limits.Limits{}
 		if s, err = d.SnapshotWith(o); s == nil || err != nil {
 			t.Fatal("input-work retry", err)
 		}

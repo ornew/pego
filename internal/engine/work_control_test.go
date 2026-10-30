@@ -33,7 +33,7 @@ func TestNewWorkControlDisabled(t *testing.T) {
 	t.Parallel()
 	var absent *core.WorkControl
 	absent.Check()
-	absent.Charge(1, 1)
+	absent.Charge(1)
 
 	for name, ctx := range map[string]context.Context{
 		"nil":        nil,
@@ -41,70 +41,68 @@ func TestNewWorkControlDisabled(t *testing.T) {
 		"no done":    context.WithoutCancel(context.WithValue(context.Background(), struct{}{}, "v")),
 	} {
 		t.Run(name, func(t *testing.T) {
-			if got := core.NewWorkControl(ctx, limits.WorkLimits{}); got != nil {
+			if got := core.NewWorkControl(ctx, limits.Limits{}); got != nil {
 				t.Fatalf("newWorkControl = %#v, want nil", got)
 			}
 		})
 	}
-	if got := core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1}); got == nil {
+	if got := core.NewWorkControl(nil, limits.Limits{MaxWork: 1}); got == nil {
 		t.Fatal("finite step limit returned nil control")
 	}
 }
 
 func TestWorkControlExactLimitsAndOverflow(t *testing.T) {
 	t.Parallel()
-	c := core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 5, MaxSteps: 3})
-	c.Charge(5, 3)
-	if c.InputUsed != 5 || c.StepsUsed != 3 {
-		t.Fatalf("counters = (%d,%d), want (5,3)", c.InputUsed, c.StepsUsed)
+	c := core.NewWorkControl(nil, limits.Limits{MaxWork: 8})
+	c.Charge(8)
+	if c.Used != 8 {
+		t.Fatalf("counter = %d, want 8", c.Used)
 	}
-	if err := catchFatal(t, func() { c.Charge(1, 0) }); !errors.Is(err, limits.ErrWorkLimit) {
-		t.Fatalf("input N+1 error = %v, want ErrWorkLimit", err)
+	var limitErr *limits.LimitError
+	err := catchFatal(t, func() { c.Charge(1) })
+	if !errors.Is(err, limits.ErrLimit) || !errors.As(err, &limitErr) {
+		t.Fatalf("limit+1 error = %v, want a LimitError matching ErrLimit", err)
 	}
-	var limitErr *limits.WorkLimitError
-	if !errors.As(catchFatal(t, func() { c.Charge(0, 1) }), &limitErr) {
-		t.Fatal("step N+1 error is not a WorkLimitError")
-	}
-	if limitErr.Kind != limits.StepWorkLimit || limitErr.Limit != 3 || limitErr.Used != 3 || limitErr.Requested != 1 {
-		t.Fatalf("step error = %#v", limitErr)
+	if limitErr.Kind != limits.LimitWork || limitErr.Limit != 8 || limitErr.Used != 8 || limitErr.Requested != 1 {
+		t.Fatalf("error = %#v", limitErr)
 	}
 
-	c = core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: math.MaxUint64})
-	c.Charge(math.MaxUint64-1, 0)
-	if err := catchFatal(t, func() { c.Charge(2, 0) }); err == nil {
+	c = core.NewWorkControl(nil, limits.Limits{MaxWork: math.MaxUint64})
+	c.Charge(math.MaxUint64 - 1)
+	if err := catchFatal(t, func() { c.Charge(2) }); err == nil {
 		t.Fatal("overflowing reservation unexpectedly succeeded")
 	}
-	if c.InputUsed != math.MaxUint64-1 {
-		t.Fatalf("failed reservation changed input counter to %d", c.InputUsed)
+	if c.Used != math.MaxUint64-1 {
+		t.Fatalf("failed reservation changed the counter to %d", c.Used)
 	}
 }
 
-func TestWorkControlAtomicReservationAndPriority(t *testing.T) {
+func TestWorkControlFailedReservationLeavesCounter(t *testing.T) {
 	t.Parallel()
-	c := core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 4, MaxSteps: 2})
-	c.Charge(2, 1)
-	var got *limits.WorkLimitError
-	if !errors.As(catchFatal(t, func() { c.Charge(3, 2) }), &got) {
-		t.Fatal("combined reservation did not fail with WorkLimitError")
+	c := core.NewWorkControl(nil, limits.Limits{MaxWork: 6})
+	c.Charge(2)
+	var got *limits.LimitError
+	if !errors.As(catchFatal(t, func() { c.Charge(5) }), &got) {
+		t.Fatal("reservation over the limit did not fail with LimitError")
 	}
-	if got.Kind != limits.InputWorkLimit || got.Used != 2 || got.Requested != 3 {
-		t.Fatalf("error = %#v, want input limit before step limit", got)
+	if got.Kind != limits.LimitWork || got.Used != 2 || got.Requested != 5 {
+		t.Fatalf("error = %#v", got)
 	}
-	if c.InputUsed != 2 || c.StepsUsed != 1 {
-		t.Fatalf("failed combined reservation changed counters: (%d,%d)", c.InputUsed, c.StepsUsed)
+	if c.Used != 2 {
+		t.Fatalf("failed reservation changed the counter to %d", c.Used)
 	}
 }
 
-func TestWorkControlUnlimitedCountersSaturate(t *testing.T) {
+func TestWorkControlUnlimitedCounterSaturates(t *testing.T) {
 	t.Parallel()
-	c := core.NewWorkControl(newPollingContext(0), limits.WorkLimits{})
-	c.Charge(math.MaxUint64-2, math.MaxUint64-3)
-	c.Charge(10, 11)
-	if c.InputUsed != math.MaxUint64 || c.StepsUsed != math.MaxUint64 {
-		t.Fatalf("saturated counters = (%d,%d), want MaxUint64", c.InputUsed, c.StepsUsed)
+	c := core.NewWorkControl(newPollingContext(0), limits.Limits{})
+	c.Charge(math.MaxUint64 - 2)
+	c.Charge(10)
+	if c.Used != math.MaxUint64 {
+		t.Fatalf("saturated counter = %d, want MaxUint64", c.Used)
 	}
-	if c.InputSinceCheck != 10 || c.StepsSinceCheck != 11 {
-		t.Fatalf("poll counters after following small reservation = (%d,%d), want (10,11)", c.InputSinceCheck, c.StepsSinceCheck)
+	if c.SinceCheck != 10 {
+		t.Fatalf("poll counter after following small reservation = %d, want 10", c.SinceCheck)
 	}
 }
 
@@ -113,8 +111,8 @@ func TestWorkControlCancellationAndCause(t *testing.T) {
 	cause := errors.New("caller cause")
 	ctx, cancel := context.WithCancelCause(context.Background())
 	cancel(cause)
-	c := core.NewWorkControl(ctx, limits.WorkLimits{MaxInputWork: 1})
-	got := catchFatal(t, func() { c.Charge(2, 0) })
+	c := core.NewWorkControl(ctx, limits.Limits{MaxWork: 1})
+	got := catchFatal(t, func() { c.Charge(2) })
 	if !errors.Is(got, context.Canceled) {
 		t.Fatalf("error = %v, want context.Canceled", got)
 	}
@@ -127,7 +125,7 @@ func TestWorkControlCancellationAndCause(t *testing.T) {
 
 	deadlineCtx, deadlineCancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
 	defer deadlineCancel()
-	deadline := core.NewWorkControl(deadlineCtx, limits.WorkLimits{MaxSteps: 1})
+	deadline := core.NewWorkControl(deadlineCtx, limits.Limits{MaxWork: 1})
 	if err := catchFatal(t, deadline.Check); !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("deadline error = %v, want context.DeadlineExceeded", err)
 	}
@@ -153,38 +151,27 @@ func (c *pollingContext) Err() error {
 	return nil
 }
 
-func TestWorkControlPollIntervals(t *testing.T) {
+func TestWorkControlPollInterval(t *testing.T) {
 	t.Parallel()
-	for _, tc := range []struct {
-		name string
-		work func(*core.WorkControl, uint64)
-		n    uint64
-	}{
-		{"steps", func(c *core.WorkControl, n uint64) { c.Charge(0, n) }, core.WorkCheckStepInterval},
-		{"input", func(c *core.WorkControl, n uint64) { c.Charge(n, 0) }, core.WorkCheckInputInterval},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := newPollingContext(1)
-			c := core.NewWorkControl(ctx, limits.WorkLimits{})
-			tc.work(c, tc.n-1)
-			if ctx.checks != 0 {
-				t.Fatalf("checks before interval = %d, want 0", ctx.checks)
-			}
-			if err := catchFatal(t, func() { tc.work(c, 1) }); !errors.Is(err, context.Canceled) {
-				t.Fatalf("interval poll error = %v, want context.Canceled", err)
-			}
-			if ctx.checks != 1 {
-				t.Fatalf("checks at interval = %d, want 1", ctx.checks)
-			}
-		})
+	ctx := newPollingContext(1)
+	c := core.NewWorkControl(ctx, limits.Limits{})
+	c.Charge(core.WorkCheckInterval - 1)
+	if ctx.checks != 0 {
+		t.Fatalf("checks before interval = %d, want 0", ctx.checks)
+	}
+	if err := catchFatal(t, func() { c.Charge(1) }); !errors.Is(err, context.Canceled) {
+		t.Fatalf("interval poll error = %v, want context.Canceled", err)
+	}
+	if ctx.checks != 1 {
+		t.Fatalf("checks at interval = %d, want 1", ctx.checks)
 	}
 }
 
 func TestWorkControlExplicitCheck(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
-	c := core.NewWorkControl(ctx, limits.WorkLimits{})
-	c.Charge(1, 1)
+	c := core.NewWorkControl(ctx, limits.Limits{})
+	c.Charge(1)
 	cancel()
 	if err := catchFatal(t, c.Check); !errors.Is(err, context.Canceled) {
 		t.Fatalf("check error = %v, want context.Canceled", err)

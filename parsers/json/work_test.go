@@ -15,10 +15,10 @@ func TestWorkControls(t *testing.T) {
 	if _, err := json.Parse(input); err != nil {
 		t.Fatal(err)
 	}
-	_, err := json.Parse(input, json.WithWorkLimits(json.WorkLimits{MaxSteps: 1}))
-	var limit *json.WorkLimitError
-	if !errors.Is(err, json.ErrWorkLimit) || !errors.As(err, &limit) || limit.Kind != json.StepWorkLimit {
-		t.Fatalf("step limit: got %v", err)
+	_, err := json.Parse(input, json.WithLimits(json.Limits{MaxWork: 1}))
+	var limit *json.LimitError
+	if !errors.Is(err, json.ErrLimit) || !errors.As(err, &limit) || limit.Kind != json.LimitWork {
+		t.Fatalf("work limit: got %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

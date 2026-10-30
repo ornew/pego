@@ -18,8 +18,8 @@ type GenOptions struct {
 	// It needs Types and excludes Recognize, Document and Stream.
 	TypedOnly bool
 	// WorkControls emits the work-controlled form of the generated functions, which charges
-	// cancellation and the input and step limits (WithContext, WithWorkLimits; signal, maxInputWork
-	// and maxSteps in TypeScript), and re-exports those options. Without it the functions have no charges (the ordinary form, or with Document
+	// cancellation and the work limit (WithContext, WithLimits; signal and maxWork
+	// in TypeScript), and re-exports those options. Without it the functions have no charges (the ordinary form, or with Document
 	// the form that serves a Document), and a parse with a control option fails with an error.
 	WorkControls bool
 	// Observability emits opt-in tracing and profiling for generated Go batch

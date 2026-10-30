@@ -37,7 +37,7 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gjson.ParseOption{gjson.WithUnit(u)}
 			if c {
-				o = append(o, gjson.WithWorkLimits(gjson.WorkLimits{MaxSteps: ^uint64(0), MaxInputWork: ^uint64(0)}))
+				o = append(o, gjson.WithLimits(gjson.Limits{MaxWork: ^uint64(0)}))
 			}
 			return o
 		}),
@@ -48,7 +48,7 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gcsv.ParseOption{gcsv.WithUnit(u)}
 			if c {
-				o = append(o, gcsv.WithWorkLimits(gcsv.WorkLimits{MaxSteps: ^uint64(0), MaxInputWork: ^uint64(0)}))
+				o = append(o, gcsv.WithLimits(gcsv.Limits{MaxWork: ^uint64(0)}))
 			}
 			return o
 		}),
@@ -59,7 +59,7 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gxml.ParseOption{gxml.WithUnit(u)}
 			if c {
-				o = append(o, gxml.WithWorkLimits(gxml.WorkLimits{MaxSteps: ^uint64(0), MaxInputWork: ^uint64(0)}))
+				o = append(o, gxml.WithLimits(gxml.Limits{MaxWork: ^uint64(0)}))
 			}
 			return o
 		}),
@@ -70,7 +70,7 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gcalc.ParseOption{gcalc.WithUnit(u)}
 			if c {
-				o = append(o, gcalc.WithWorkLimits(gcalc.WorkLimits{MaxSteps: ^uint64(0), MaxInputWork: ^uint64(0)}))
+				o = append(o, gcalc.WithLimits(gcalc.Limits{MaxWork: ^uint64(0)}))
 			}
 			return o
 		}),
@@ -81,7 +81,7 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gcalclr.ParseOption{gcalclr.WithUnit(u)}
 			if c {
-				o = append(o, gcalclr.WithWorkLimits(gcalclr.WorkLimits{MaxSteps: ^uint64(0), MaxInputWork: ^uint64(0)}))
+				o = append(o, gcalclr.WithLimits(gcalclr.Limits{MaxWork: ^uint64(0)}))
 			}
 			return o
 		}),
@@ -92,7 +92,7 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gminilang.ParseOption{gminilang.WithUnit(u)}
 			if c {
-				o = append(o, gminilang.WithWorkLimits(gminilang.WorkLimits{MaxSteps: ^uint64(0), MaxInputWork: ^uint64(0)}))
+				o = append(o, gminilang.WithLimits(gminilang.Limits{MaxWork: ^uint64(0)}))
 			}
 			return o
 		}),
@@ -103,7 +103,7 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []gminilang.ParseOption{gminilang.WithUnit(u)}
 			if c {
-				o = append(o, gminilang.WithWorkLimits(gminilang.WorkLimits{MaxSteps: ^uint64(0), MaxInputWork: ^uint64(0)}))
+				o = append(o, gminilang.WithLimits(gminilang.Limits{MaxWork: ^uint64(0)}))
 			}
 			return o
 		}),
@@ -114,7 +114,7 @@ func fullGeneratedProbes() map[string]fullGeneratedProbe {
 			}
 			o := []goutline.ParseOption{goutline.WithUnit(u)}
 			if c {
-				o = append(o, goutline.WithWorkLimits(goutline.WorkLimits{MaxSteps: ^uint64(0), MaxInputWork: ^uint64(0)}))
+				o = append(o, goutline.WithLimits(goutline.Limits{MaxWork: ^uint64(0)}))
 			}
 			return o
 		}),
@@ -173,7 +173,7 @@ func TestControlledFullWorkloads(t *testing.T) {
 						for _, mode := range []string{"budget", "context", "combined"} {
 							active := append([]pego.ParseOption{}, opts...)
 							if mode != "context" {
-								active = append(active, pego.WithWorkLimits(pego.WorkLimits{MaxSteps: ^uint64(0), MaxInputWork: ^uint64(0)}))
+								active = append(active, pego.WithLimits(pego.Limits{MaxWork: ^uint64(0)}))
 							}
 							if mode != "budget" {
 								ctx, cancel := context.WithCancel(context.Background())
@@ -195,8 +195,8 @@ func TestControlledFullWorkloads(t *testing.T) {
 								t.Fatalf("%s recognition diagnostics differ", mode)
 							}
 						}
-						n, err := p.Parse(input, append(opts, pego.WithWorkLimits(pego.WorkLimits{MaxSteps: 1}))...)
-						if n != nil || !errors.Is(err, pego.ErrWorkLimit) {
+						n, err := p.Parse(input, append(opts, pego.WithLimits(pego.Limits{MaxWork: 1}))...)
+						if n != nil || !errors.Is(err, pego.ErrLimit) {
 							t.Fatalf("full-input interruption: %v", err)
 						}
 						retry, retryErr := p.Parse(input, opts...)

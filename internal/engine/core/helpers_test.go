@@ -49,6 +49,6 @@ func (c *pollingContext) Err() error {
 }
 
 // diagnosticParser returns a parser that charges diagnostic work to a control with the limits.
-func diagnosticParser(limits limits.WorkLimits) *Parser {
+func diagnosticParser(limits limits.Limits) *Parser {
 	return &Parser{Input: Input{Control: NewWorkControl(nil, limits)}}
 }

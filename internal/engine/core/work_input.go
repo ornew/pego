@@ -5,13 +5,13 @@ import "unicode/utf8"
 // inputWork and StepWork have a statically removable instrumentation boundary.
 func (in *Input) inputWork(n uint64) {
 	if WorkControlsEnabled && in.Control != nil {
-		in.Control.Charge(n, 1)
+		in.Control.Charge(n)
 	}
 }
 
 func (p *Parser) StepWork() {
 	if WorkControlsEnabled && p.Control != nil {
-		p.Control.Charge(0, 1)
+		p.Control.Charge(1)
 	}
 }
 
@@ -31,7 +31,7 @@ func NewControlledTextInput(s string, unit PositionUnit, offsets bool, sc *scrat
 		in.Bs = grow(sc.bytes, len(s))
 		for off := 0; off < len(s); {
 			n := min(4096, len(s)-off)
-			c.Charge(uint64(n), 1)
+			c.Charge(uint64(n))
 			copy(in.Bs[off:off+n], s[off:off+n])
 			off += n
 		}
@@ -40,7 +40,7 @@ func NewControlledTextInput(s string, unit PositionUnit, offsets bool, sc *scrat
 	}
 	n, valid := 0, true
 	for off := 0; off < len(s); {
-		c.Charge(uint64(min(utf8.UTFMax, len(s)-off)), 1)
+		c.Charge(uint64(min(utf8.UTFMax, len(s)-off)))
 		r, size := utf8.DecodeRuneInString(s[off:])
 		if r == utf8.RuneError && size == 1 {
 			valid = false
@@ -54,7 +54,7 @@ func NewControlledTextInput(s string, unit PositionUnit, offsets bool, sc *scrat
 		in.Offs[n] = int32(len(s))
 	}
 	for off, i := 0, 0; off < len(s); i++ {
-		c.Charge(uint64(min(utf8.UTFMax, len(s)-off)), 1)
+		c.Charge(uint64(min(utf8.UTFMax, len(s)-off)))
 		r, size := utf8.DecodeRuneInString(s[off:])
 		in.In[i] = r
 		if offsets {

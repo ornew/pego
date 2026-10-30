@@ -307,7 +307,7 @@ export function setField(n: Node, name: string, v: Value, control: WorkControl |
   }
   const fs = n.fields as NodeField[];
   for (const f of fs) {
-    control?.charge(0, 1);
+    control?.charge(1);
     if (control === null ? f.name === name : equalStringsWork(f.name, name, control)) {
       f.value = v;
       return;
@@ -1016,19 +1016,18 @@ export interface ParseOptions {
   unit?: Unit;
   maxDepth?: number;
   signal?: CancellationSignal | null;
-  maxInputWork?: number;
-  maxSteps?: number;
+  maxWork?: number;
 }
 
 /**
  * The options of a parser generated without work controls: those of ParseOptions except the
  * cancellation signal and the work limits.
  */
-export type PlainParseOptions = Omit<ParseOptions, "signal" | "maxInputWork" | "maxSteps">;
+export type PlainParseOptions = Omit<ParseOptions, "signal" | "maxWork">;
 
 export function resolveOptions(g: Grammar, options?: ParseOptions): ResolvedParseOptions | Error {
-  if (!g.controlled && (options?.signal != null || (options?.maxInputWork ?? 0) !== 0 || (options?.maxSteps ?? 0) !== 0)) {
-    return new Error("this parser was generated without work controls (generate with -work-controls to use signal, maxInputWork and maxSteps)");
+  if (!g.controlled && (options?.signal != null || (options?.maxWork ?? 0) !== 0)) {
+    return new Error("this parser was generated without work controls (generate with -work-controls to use signal and maxWork)");
   }
   if (!g.observable && (options?.profile != null || options?.trace != null || options?.traceRules !== undefined || options?.traceMaxDepth !== undefined)) {
     return new Error("trace and profile options are only supported by a parser generated with observability");
@@ -1045,18 +1044,14 @@ export function resolveOptions(g: Grammar, options?: ParseOptions): ResolvedPars
   const unit = options?.unit === Bytes ? Bytes : CodePoints;
   const depth = options?.maxDepth ?? 0;
   const signal = options?.signal ?? null;
-  const maxInputWork = options?.maxInputWork ?? 0;
-  const maxSteps = options?.maxSteps ?? 0;
+  const maxWork = options?.maxWork ?? 0;
   if (!Number.isSafeInteger(depth) || depth < 0) {
     return new Error(`max depth must be a non-negative safe integer: ${depth}`);
   }
-  if (!Number.isSafeInteger(maxInputWork) || maxInputWork < 0) {
-    return new Error(`max input work must be a non-negative safe integer: ${maxInputWork}`);
+  if (!Number.isSafeInteger(maxWork) || maxWork < 0) {
+    return new Error(`max work must be a non-negative safe integer: ${maxWork}`);
   }
-  if (!Number.isSafeInteger(maxSteps) || maxSteps < 0) {
-    return new Error(`max steps must be a non-negative safe integer: ${maxSteps}`);
-  }
-  return { unit, maxDepth: depth === 0 ? g.maxDepth : depth, signal, maxInputWork, maxSteps, trace, traceRules, traceMaxDepth, profile, profileClock };
+  return { unit, maxDepth: depth === 0 ? g.maxDepth : depth, signal, maxWork, trace, traceRules, traceMaxDepth, profile, profileClock };
 }
 
 // run parses the whole input of the grammar g with rule r of a rule table with seen rules that have rule.seen set.
@@ -1374,13 +1369,13 @@ export function sameValues(a: Value[] | null, b: Value[] | null, control: WorkCo
   }
   for (let i = 0; i < a.length; i++) {
     if (control !== null) {
-      control.charge(0, 1);
+      control.charge(1);
       const x = a[i], y = b[i];
       if (typeof x === "string" && typeof y === "string") {
         if (x.length !== y.length) return false;
         for (let from = 0; from < x.length; from += 128) {
           const end = Math.min(from + 128, x.length);
-          control.charge(0, end - from);
+          control.charge(end - from);
           if (x.slice(from, end) !== y.slice(from, end)) return false;
         }
         continue;
@@ -1466,7 +1461,7 @@ export class Parser {
 
   readonly control: WorkControl | null;
 
-  stepWork(n = 1): void { this.control?.charge(0, n); }
+  stepWork(n = 1): void { this.control?.charge(n); }
 
   constructor(g: Grammar, input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number, control: WorkControl | null = null) {
     this.g = g;
@@ -1629,7 +1624,7 @@ export class Parser {
           if (offs === null) {
             offs = new Int32Array(n + 1);
             for (let k = 0; k < j; k++) {
-              control.charge(0, 1);
+              control.charge(1);
               offs[k] = k;
             }
           }
@@ -1644,7 +1639,7 @@ export class Parser {
       if (offs !== null) {
         offs[j] = i;
       }
-      control.charge(0, 1);
+      control.charge(1);
       cps[j++] = c;
     }
     if (offs !== null) {
@@ -1672,7 +1667,7 @@ export class Parser {
       const offs = new Int32Array(j + 1);
       let o = 0;
       for (let k = 0; k < j; k++) {
-        control.charge(1, 1);
+        control.charge(1);
         offs[k] = o;
         o += cps[k]! > 0xffff ? 2 : 1;
       }
@@ -1707,7 +1702,7 @@ export class Parser {
         offs[i] = o;
       }
       o += c > 0xffff ? 2 : 1;
-      control.charge(0, 1);
+      control.charge(1);
       cps[j++] = c;
       i += decoded.size;
     }
@@ -1873,7 +1868,7 @@ export class Parser {
     const control = this.control;
     if (control !== null) {
       if (this.pos >= this.n) {
-        control.charge(1, 1); // EOF probes count, including repeated probes.
+        control.charge(1); // EOF probes count, including repeated probes.
         return -1;
       }
       if (this.unit === Bytes) {
@@ -1886,7 +1881,7 @@ export class Parser {
         this.psize = decoded.size;
         return decoded.rune;
       }
-      control.charge(1, 1);
+      control.charge(1);
       this.psize = 1;
       return this.cps[this.pos]!;
     }
@@ -2025,7 +2020,7 @@ export class Parser {
     const control = this.control;
     if (control !== null) {
       if (this.offs !== null) {
-        control.charge(0, 2);
+        control.charge(2);
         start = this.offs[start]!;
         end = this.offs[end]!;
       }
@@ -2062,7 +2057,7 @@ export class Parser {
       const lines = [0];
       const units = this.unit === Bytes ? this.bs : this.cps;
       for (let i = 0; i < this.n; i++) {
-        this.control?.charge(1, 1);
+        this.control?.charge(1);
         if (units[i] === 0x0a) {
           lines.push(i + 1);
         }
@@ -2488,7 +2483,7 @@ export class Parser {
         return this.matchReplacementLiteral(lit, desc, build);
       }
       for (let i = 0; i < b.length; i++) {
-        this.control?.charge(1, 1);
+        this.control?.charge(1);
         if (this.bs[this.pos + i] !== b[i]) {
           return this.matchReplacementLiteral(lit, desc, build);
         }
@@ -2496,7 +2491,7 @@ export class Parser {
       this.pos += b.length;
     } else {
       for (const r of lit.cps) {
-        this.control?.charge(1, 1);
+        this.control?.charge(1);
         if (this.pos >= this.n || this.cps[this.pos] !== r) {
           this.expect(start, desc);
           return undefined;
@@ -2562,7 +2557,7 @@ export class Parser {
     if (this.pos === 0) {
       return true;
     }
-    this.control?.charge(1, 1);
+    this.control?.charge(1);
     return (this.unit === Bytes ? this.bs[this.pos - 1] : this.cps[this.pos - 1]) === 0x0a;
   }
 
@@ -2572,7 +2567,7 @@ export class Parser {
   }
 
   atEnd(): boolean {
-    this.control?.charge(1, 1);
+    this.control?.charge(1);
     return this.pos === this.n;
   }
 
@@ -3401,7 +3396,7 @@ export function asNode(fn: string, v: Value): Node | null {
 export function rtFold(fn: string, right: boolean, acc: Value, list: Value, f: (acc: Value, item: Value) => Value, control: WorkControl | null = null): Value {
   const items = listItems(fn, list);
   for (let i = 0; i < items.length; i++) {
-    control?.charge(0, 1);
+    control?.charge(1);
     acc = f(acc, unboxValue(items[right ? items.length - 1 - i : i]!));
   }
   return acc;

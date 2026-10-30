@@ -131,7 +131,7 @@ check((Error as { stackTraceLimit?: number }).stackTraceLimit === limit, "limit 
 const bad = p.parse("1", p.CodePoints);
 check(bad.error instanceof p.SyntaxErrors || bad.error instanceof p.SyntaxError, "bad input fails");
 for (let n = 1; n < 400; n++) {
-  p.parseWithOptions("a;1;b;", { unit: p.CodePoints, maxSteps: n });
+  p.parseWithOptions("a;1;b;", { unit: p.CodePoints, maxWork: n });
   check((Error as { stackTraceLimit?: number }).stackTraceLimit === limit, "limit restored after the work limit " + n);
 }
 // Building the recovered error charges work (the expectations and the table of line starts), so a
@@ -157,7 +157,7 @@ proto.makeError = function (this: unknown, ...a: unknown[]): unknown {
 check(polled().some((x) => x === 0), "the control sees a lowered limit");
 proto.makeError = original;
 for (let n = 40050; n <= 60000; n += 61) {
-  const r = p.parseWithOptions(long, { unit: p.CodePoints, maxInputWork: n });
+  const r = p.parseWithOptions(long, { unit: p.CodePoints, maxWork: n });
   if (r.error instanceof p.ParseInterruptionError) {
     check(typeof r.error.stack === "string" && r.error.stack.includes("\n    at "), "an interruption keeps its stack at " + n);
   }

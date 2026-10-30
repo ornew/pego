@@ -15,16 +15,16 @@ func TestDiagnosticRenameAccountsForLargeExpectationSets(t *testing.T) {
 	for i := range ids {
 		ids[i] = ExpID(i + 1)
 	}
-	p := &Parser{Input: Input{Control: NewWorkControl(nil, limits.WorkLimits{MaxSteps: 64})}}
-	if err := catchFatal(t, func() { RenamedExpected(p, ids, 999) }); !errors.Is(err, limits.ErrWorkLimit) {
-		t.Fatalf("rename work limit = %v, want ErrWorkLimit", err)
+	p := &Parser{Input: Input{Control: NewWorkControl(nil, limits.Limits{MaxWork: 64})}}
+	if err := catchFatal(t, func() { RenamedExpected(p, ids, 999) }); !errors.Is(err, limits.ErrLimit) {
+		t.Fatalf("rename work limit = %v, want ErrLimit", err)
 	}
-	if got := p.Control.StepsUsed; got != 64 {
+	if got := p.Control.Used; got != 64 {
 		t.Fatalf("rename steps = %d, want 64", got)
 	}
 
 	c := newPollingContext(1)
-	p.Control = NewWorkControl(c, limits.WorkLimits{})
+	p.Control = NewWorkControl(c, limits.Limits{})
 	if err := catchFatal(t, func() { RenamedExpected(p, ids, 999) }); !errors.Is(err, context.Canceled) {
 		t.Fatalf("rename cancellation = %v, want context.Canceled", err)
 	}

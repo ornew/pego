@@ -75,11 +75,11 @@ import("encoding/json";"errors";"fmt";"os";"strings";"testing")
 func show(v any, err error) string {b,_:=json.Marshal(v);return fmt.Sprintf("%s %v",b,err)}
 func least(f func(...ParseOption)(any,error)) uint64 {
  lo,hi:=uint64(1),uint64(1<<20)
- for lo<hi {mid:=lo+(hi-lo)/2;if _,err:=f(WithWorkLimits(WorkLimits{MaxSteps:mid}));errors.Is(err,ErrWorkLimit){lo=mid+1}else{hi=mid}}
+ for lo<hi {mid:=lo+(hi-lo)/2;if _,err:=f(WithLimits(Limits{MaxWork:mid}));errors.Is(err,ErrLimit){lo=mid+1}else{hi=mid}}
  return lo
 }
 func TestComparisons(t *testing.T){
- limits:=WithWorkLimits(WorkLimits{MaxSteps:1<<40,MaxInputWork:1<<40})
+ limits:=WithLimits(Limits{MaxWork: 1<<40})
  var steps strings.Builder
  for _,in:=range INPUTS{
   for _,unit:=range []PositionUnit{CodePoints,Bytes}{

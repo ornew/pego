@@ -152,7 +152,7 @@ TYPEDROUTE
 const source=INPUT;
 check(stable(new p.Profile().snapshot())===stable({parses:0,entered:0,calls:0,evals:0,memoHits:0,skipped:0,time:0,rules:[]}),"empty profile");
 for(const route of routes)for(const unit of [p.CodePoints,p.Bytes])for(const controlled of [false,true]){
- const options={unit,maxSteps:controlled?100000:0};
+ const options={unit,maxWork:controlled?100000:0};
  const profile=new p.Profile();let events:p.TraceEvent[]=[];
  const result=route(source,{...options,profile,trace:e=>events.push(e)}),s=profile.snapshot();
  check(stable(errorView(result.error))===stable(errorView(result.referenceError)),"error parity");checkProfile(s,events);CHECKS
@@ -174,7 +174,7 @@ for(const route of routes)for(const unit of [p.CodePoints,p.Bytes])for(const con
   route(source,{...options,profile:aborted});check(aborted.snapshot().calls===prior.calls+a.calls,"next invocation isolated");
  }
  const canceled=new p.Profile();route(source,{profile:canceled,signal:{aborted:true}});check(canceled.snapshot().entered===0,"pre-cancel has no entry");
- const limited=new p.Profile();const r=route(source,{profile:limited,maxSteps:1});check(r.value===null&&r.error instanceof p.ParseInterruptionError,"interruption withholding");
+ const limited=new p.Profile();const r=route(source,{profile:limited,maxWork:1});check(r.value===null&&r.error instanceof p.ParseInterruptionError,"interruption withholding");
  check(p.testProfileReleased(),"profile teardown");
 }
 // Host clock behavior and child exit callback attribution use a deterministic clock.
@@ -186,7 +186,7 @@ try{
  for(const bad of [undefined,{}, {now:0}]){clock(bad);for(const run of hostRoutes){check(run({profile:new p.Profile()})?.message==="profiling requires host performance.now()","missing clock result");run({trace:()=>{}})}}
  for(const value of p.testThrownValues()){
   Object.defineProperty(host,"performance",{configurable:true,get(){throw value}});let threw=false;try{p.parseWithOptions(source,{profile:new p.Profile()})}catch(x){threw=true;check(x===value,"clock getter identity")}check(threw,"clock getter threw");p.parseWithOptions(source,{trace:()=>{}});p.parse(source);
-  for(const route of routes)for(const controlled of [false,true]){clock({now(){throw value}});threw=false;try{route(source,{maxSteps:controlled?100000:0,profile:new p.Profile()})}catch(x){threw=true;check(x===value,"clock call identity")}check(threw,"clock call threw")}
+  for(const route of routes)for(const controlled of [false,true]){clock({now(){throw value}});threw=false;try{route(source,{maxWork:controlled?100000:0,profile:new p.Profile()})}catch(x){threw=true;check(x===value,"clock call identity")}check(threw,"clock call threw")}
  }
  clock({now(){return 5}});const coarse=new p.Profile();p.parseWithOptions(source,{profile:coarse});check(coarse.snapshot().time===0&&coarse.snapshot().rules.every(r=>r.time===0&&r.selfTime===0),"coarse clock accepted");
  for(const invalid of [NaN,Infinity]){clock({now(){return invalid}});let threw=false;try{p.parseWithOptions(source,{profile:new p.Profile()})}catch(x){threw=true;check(x instanceof Error&&x.message.includes("finite"),"invalid clock diagnostic")}check(threw,"invalid clock refused")}

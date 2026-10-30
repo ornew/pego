@@ -27,10 +27,10 @@ func TestSnapshotSharedStringComparisonRespectsWorkLimit(t *testing.T) {
 		{"field value", snapshotRecord{fields: value.Fields{{Name: "x", Value: long}}}, snapshotRecord{fields: value.Fields{{Name: "x", Value: strings.Clone(long)}}}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			p := &core.Parser{Control: core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1024})}
+			p := &core.Parser{Control: core.NewWorkControl(nil, limits.Limits{MaxWork: 1024})}
 			err := catchFatal(t, func() { sameSnapshotRecord(p, &snapshotGraph{}, &tc.a, &snapshotGraph{}, &tc.b) })
-			var limit *limits.WorkLimitError
-			if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit {
+			var limit *limits.LimitError
+			if !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
 				t.Fatal("string comparison escaped step limit", err)
 			}
 		})
@@ -52,16 +52,16 @@ func TestSnapshotChildRunCopyRespectsWorkLimit(t *testing.T) {
 	changed[512] = 9999
 	next := snapshotRecord{children: changed}
 	graph := snapshotGraph{nodes: []snapshotRecord{old}}
-	p := &core.Parser{Control: core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1170})}
+	p := &core.Parser{Control: core.NewWorkControl(nil, limits.Limits{MaxWork: 1170})}
 	err := catchFatal(t, func() { shareSnapshotChildren(p, &graph, &graph.nodes[0], &next) })
-	var limit *limits.WorkLimitError
-	if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit {
+	var limit *limits.LimitError
+	if !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
 		t.Fatal("copy escaped step limit", err)
 	}
 	if next.childChunked || len(next.children) != 1025 || next.children[512] != 9999 {
 		t.Fatal("interrupted copy changed the source record")
 	}
-	p = &core.Parser{Control: core.NewWorkControl(nil, limits.WorkLimits{})}
+	p = &core.Parser{Control: core.NewWorkControl(nil, limits.Limits{})}
 	chunks := shareSnapshotChildren(p, &graph, &graph.nodes[0], &next)
 	if chunks == nil || !next.childChunked || next.children != nil || chunks.length != 1025 || len(chunks.parts[4]) != 1 {
 		t.Fatal("successful copy did not retain the exact child shape")
@@ -81,7 +81,7 @@ func TestSnapshotChunkedHandleIdentity(t *testing.T) {
 	children[0] = 1 // The wide child points back to the root.
 	wide := snapshotRecord{children: children}
 	previous := snapshotGraph{nodes: []snapshotRecord{wide}}
-	p := &core.Parser{Control: core.NewWorkControl(nil, limits.WorkLimits{})}
+	p := &core.Parser{Control: core.NewWorkControl(nil, limits.Limits{})}
 	chunks := shareSnapshotChildren(p, &previous, &previous.nodes[0], &wide)
 	if chunks == nil {
 		t.Fatal("wide child sequence did not share")

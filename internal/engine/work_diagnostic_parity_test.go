@@ -172,7 +172,7 @@ rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}`,
 								}
 								want := marshal(t, wantNode, wantErr)
 								limited := base
-								limited.WorkLimits = limits.WorkLimits{MaxInputWork: 1 << 50, MaxSteps: 1 << 50}
+								limited.Limits = limits.Limits{MaxWork: 1 << 50}
 								gotNode, gotErr := prog.ParseWith("main", input, limited)
 								got := marshal(t, gotNode, gotErr)
 								if !bytes.Equal(got, want) {

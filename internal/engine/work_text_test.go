@@ -26,14 +26,14 @@ func TestWorkInputTextNativeParityAndDetachedResult(t *testing.T) {
 			source[i] = byte(i*37 + 11)
 		}
 		start, end := 3, n+3
-		in := fallbackTextInput(Bytes, 17, source, nil, core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 100_000, MaxSteps: 100_000}))
+		in := fallbackTextInput(Bytes, 17, source, nil, core.NewWorkControl(nil, limits.Limits{MaxWork: 100_000}))
 		got := in.Text(17+start, 17+end)
 		want := string(source[start:end])
 		if got != want {
 			t.Fatalf("Bytes length %d text mismatch", n)
 		}
-		if in.Control.InputUsed != uint64(n) || in.Control.StepsUsed != uint64((n+4095)/4096) {
-			t.Fatalf("Bytes length %d work=(%d,%d), want (%d,%d)", n, in.Control.InputUsed, in.Control.StepsUsed, n, (n+4095)/4096)
+		if in.Control.Used != uint64(n) {
+			t.Fatalf("Bytes length %d work=%d, want %d", n, in.Control.Used, n)
 		}
 		if n > 0 {
 			source[start] ^= 0xff
@@ -64,14 +64,14 @@ func TestWorkInputTextNativeParityAndDetachedResult(t *testing.T) {
 			}
 		}
 		start, end := 2, n+2
-		in := fallbackTextInput(CodePoints, 9, nil, runes, core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 100_000, MaxSteps: 100_000}))
+		in := fallbackTextInput(CodePoints, 9, nil, runes, core.NewWorkControl(nil, limits.Limits{MaxWork: 100_000}))
 		got := in.Text(9+start, 9+end)
 		want := string(runes[start:end])
 		if got != want {
 			t.Fatalf("CodePoints length %d text = %q, want %q", n, got, want)
 		}
-		if in.Control.InputUsed != uint64(2*n) || in.Control.StepsUsed != uint64(2*n) {
-			t.Fatalf("CodePoints length %d work=(%d,%d), want (%d,%d)", n, in.Control.InputUsed, in.Control.StepsUsed, 2*n, 2*n)
+		if in.Control.Used != uint64(4*n) {
+			t.Fatalf("CodePoints length %d work=%d, want %d", n, in.Control.Used, 4*n)
 		}
 		if n > 0 {
 			runes[start] = 'z'
@@ -86,14 +86,14 @@ func TestWorkInputTextChunkInterruptionLeavesSourceAndRetries(t *testing.T) {
 	t.Parallel()
 	byteSource := []byte(strings.Repeat("a", 4097))
 	byteBefore := append([]byte(nil), byteSource...)
-	byteInput := fallbackTextInput(Bytes, 0, byteSource, nil, core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 4096}))
-	if err := catchFatal(t, func() { _ = byteInput.Text(0, len(byteSource)) }); !errors.Is(err, limits.ErrWorkLimit) {
-		t.Fatalf("Bytes second-chunk error = %v, want ErrWorkLimit", err)
+	byteInput := fallbackTextInput(Bytes, 0, byteSource, nil, core.NewWorkControl(nil, limits.Limits{MaxWork: 4096}))
+	if err := catchFatal(t, func() { _ = byteInput.Text(0, len(byteSource)) }); !errors.Is(err, limits.ErrLimit) {
+		t.Fatalf("Bytes second-chunk error = %v, want ErrLimit", err)
 	}
-	if !reflect.DeepEqual(byteSource, byteBefore) || byteInput.Control.InputUsed != 4096 || byteInput.Control.StepsUsed != 1 {
-		t.Fatalf("Bytes failed copy mutated source or charged unexpected work: counters=(%d,%d)", byteInput.Control.InputUsed, byteInput.Control.StepsUsed)
+	if !reflect.DeepEqual(byteSource, byteBefore) || byteInput.Control.Used != 4096 {
+		t.Fatalf("Bytes failed copy mutated source or charged unexpected work: counter=%d", byteInput.Control.Used)
 	}
-	byteInput.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 10_000, MaxSteps: 10_000})
+	byteInput.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 10_000})
 	if got, want := byteInput.Text(0, len(byteSource)), string(byteSource); got != want {
 		t.Fatal("Bytes retry differs from native conversion")
 	}
@@ -103,14 +103,14 @@ func TestWorkInputTextChunkInterruptionLeavesSourceAndRetries(t *testing.T) {
 		runeSource[i] = 'λ'
 	}
 	runeBefore := append([]rune(nil), runeSource...)
-	runeInput := fallbackTextInput(CodePoints, 0, nil, runeSource, core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 257}))
-	if err := catchFatal(t, func() { _ = runeInput.Text(0, len(runeSource)) }); !errors.Is(err, limits.ErrWorkLimit) {
-		t.Fatalf("CodePoints encoding-chunk error = %v, want ErrWorkLimit", err)
+	runeInput := fallbackTextInput(CodePoints, 0, nil, runeSource, core.NewWorkControl(nil, limits.Limits{MaxWork: 257}))
+	if err := catchFatal(t, func() { _ = runeInput.Text(0, len(runeSource)) }); !errors.Is(err, limits.ErrLimit) {
+		t.Fatalf("CodePoints encoding-chunk error = %v, want ErrLimit", err)
 	}
-	if !reflect.DeepEqual(runeSource, runeBefore) || runeInput.Control.InputUsed != 257 || runeInput.Control.StepsUsed != 257 {
-		t.Fatalf("CodePoints failure mutated source or work counters=(%d,%d)", runeInput.Control.InputUsed, runeInput.Control.StepsUsed)
+	if !reflect.DeepEqual(runeSource, runeBefore) || runeInput.Control.Used != 256 {
+		t.Fatalf("CodePoints failure mutated source or work counter=%d, want one completed chunk", runeInput.Control.Used)
 	}
-	runeInput.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 10_000, MaxSteps: 10_000})
+	runeInput.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 10_000})
 	if got, want := runeInput.Text(0, len(runeSource)), string(runeSource); got != want {
 		t.Fatal("CodePoints retry differs from native conversion")
 	}
@@ -119,23 +119,23 @@ func TestWorkInputTextChunkInterruptionLeavesSourceAndRetries(t *testing.T) {
 func TestWorkInputTextPollingCancellationAtCopyAndEncoding(t *testing.T) {
 	t.Parallel()
 	bytes := []byte(strings.Repeat("b", 8192))
-	byteInput := fallbackTextInput(Bytes, 0, bytes, nil, core.NewWorkControl(newPollingContext(2), limits.WorkLimits{}))
+	byteInput := fallbackTextInput(Bytes, 0, bytes, nil, core.NewWorkControl(newPollingContext(2), limits.Limits{}))
 	if err := catchFatal(t, func() { _ = byteInput.Text(0, len(bytes)) }); !errors.Is(err, context.Canceled) {
 		t.Fatalf("Bytes cancellation = %v, want context.Canceled", err)
 	}
-	if byteInput.Control.InputUsed != 4096 || byteInput.Control.StepsUsed != 1 {
-		t.Fatalf("Bytes cancellation counters=(%d,%d), want one completed chunk", byteInput.Control.InputUsed, byteInput.Control.StepsUsed)
+	if byteInput.Control.Used != 4096 {
+		t.Fatalf("Bytes cancellation counter=%d, want one completed chunk", byteInput.Control.Used)
 	}
 
 	runes := make([]rune, 512)
 	for i := range runes {
 		runes[i] = '語'
 	}
-	runeInput := fallbackTextInput(CodePoints, 0, nil, runes, core.NewWorkControl(newPollingContext(3), limits.WorkLimits{}))
+	runeInput := fallbackTextInput(CodePoints, 0, nil, runes, core.NewWorkControl(newPollingContext(3), limits.Limits{}))
 	if err := catchFatal(t, func() { _ = runeInput.Text(0, len(runes)) }); !errors.Is(err, context.Canceled) {
 		t.Fatalf("CodePoints cancellation = %v, want context.Canceled", err)
 	}
-	if runeInput.Control.InputUsed == 0 || runeInput.Control.StepsUsed == 0 {
+	if runeInput.Control.Used == 0 {
 		t.Fatal("CodePoints cancellation did not occur after controlled work began")
 	}
 }
@@ -143,12 +143,12 @@ func TestWorkInputTextPollingCancellationAtCopyAndEncoding(t *testing.T) {
 func TestWorkInputTextSourceSubstringRemainsConstantWork(t *testing.T) {
 	t.Parallel()
 	long := strings.Repeat("x", 8192)
-	byteInput := core.Input{Unit: Bytes, Bs: []byte(long), Src: long, SrcOK: true, Control: core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 1, MaxSteps: 1})}
+	byteInput := core.Input{Unit: Bytes, Bs: []byte(long), Src: long, SrcOK: true, Control: core.NewWorkControl(nil, limits.Limits{MaxWork: 1})}
 	if got := byteInput.Text(1024, 7168); got != long[1024:7168] {
 		t.Fatal("Bytes source substring mismatch")
 	}
-	if byteInput.Control.InputUsed != 0 || byteInput.Control.StepsUsed != 0 {
-		t.Fatalf("Bytes source substring charged work=(%d,%d)", byteInput.Control.InputUsed, byteInput.Control.StepsUsed)
+	if byteInput.Control.Used != 0 {
+		t.Fatalf("Bytes source substring charged work=%d", byteInput.Control.Used)
 	}
 
 	runes := []rune(long)
@@ -156,12 +156,12 @@ func TestWorkInputTextSourceSubstringRemainsConstantWork(t *testing.T) {
 	for i := range offs {
 		offs[i] = int32(i)
 	}
-	codePointInput := core.Input{Unit: CodePoints, In: runes, Src: long, SrcOK: true, Offs: offs, Control: core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 1, MaxSteps: 1})}
+	codePointInput := core.Input{Unit: CodePoints, In: runes, Src: long, SrcOK: true, Offs: offs, Control: core.NewWorkControl(nil, limits.Limits{MaxWork: 1})}
 	if got := codePointInput.Text(1024, 7168); got != long[1024:7168] {
 		t.Fatal("CodePoints source substring mismatch")
 	}
-	if codePointInput.Control.InputUsed != 0 || codePointInput.Control.StepsUsed != 0 {
-		t.Fatalf("CodePoints source substring charged work=(%d,%d)", codePointInput.Control.InputUsed, codePointInput.Control.StepsUsed)
+	if codePointInput.Control.Used != 0 {
+		t.Fatalf("CodePoints source substring charged work=%d", codePointInput.Control.Used)
 	}
 }
 
@@ -179,8 +179,8 @@ func TestWorkTraceTextInterruptionRetriesPooledParser(t *testing.T) {
 			node, err := prog.ParseWith("main", raw, ParseOptions{
 				Backend: backend,
 				Unit:    unit,
-				WorkLimits: limits.WorkLimits{
-					MaxInputWork: 1 << 30,
+				Limits: limits.Limits{
+					MaxWork: 1 << 30,
 				},
 				Trace: func(e TraceEvent) {
 					if !armed && e.Kind == TraceExit && e.Rule == "main" && e.Matched {
@@ -189,12 +189,12 @@ func TestWorkTraceTextInterruptionRetriesPooledParser(t *testing.T) {
 						if unit == Bytes {
 							core.TraceParser(e).SrcOK = false
 						}
-						core.TraceParser(e).Control.Limits.MaxInputWork = core.TraceParser(e).Control.InputUsed
+						core.TraceParser(e).Control.Limits.MaxWork = core.TraceParser(e).Control.Used
 						_ = e.Text()
 					}
 				},
 			})
-			if !armed || node != nil || !errors.Is(err, limits.ErrWorkLimit) {
+			if !armed || node != nil || !errors.Is(err, limits.ErrLimit) {
 				t.Fatalf("%v/%v trace Text interruption: armed=%t node=%v err=%v", backend, unit, armed, node, err)
 			}
 			if observed == nil || observed.Scratch != nil || observed.Control != nil {

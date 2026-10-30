@@ -1211,12 +1211,12 @@ func TestParseStreamAST(t *testing.T) {
 // Converting elements is charged to the work limits like parsing them.
 func TestParseStreamASTWorkControls(t *testing.T) {
 	input := strings.Repeat("a"+strings.Repeat("1", 50)+";", 200)
-	steps := func(f func(limits WorkLimits) error) int {
+	steps := func(f func(limits Limits) error) int {
 		lo, hi := 1, 1<<20
 		for lo < hi {
 			mid := (lo + hi) / 2
-			var limit *WorkLimitError
-			if err := f(WorkLimits{MaxSteps: uint64(mid)}); errors.As(err, &limit) {
+			var limit *LimitError
+			if err := f(Limits{MaxWork: uint64(mid)}); errors.As(err, &limit) {
 				lo = mid + 1
 			} else if err != nil {
 				t.Fatal(err)
@@ -1226,11 +1226,11 @@ func TestParseStreamASTWorkControls(t *testing.T) {
 		}
 		return lo
 	}
-	nodes := steps(func(l WorkLimits) error {
-		return ParseStream(strings.NewReader(input), func(*Node) error { return nil }, WithWorkLimits(l))
+	nodes := steps(func(l Limits) error {
+		return ParseStream(strings.NewReader(input), func(*Node) error { return nil }, WithLimits(l))
 	})
-	values := steps(func(l WorkLimits) error {
-		return ParseStreamAST(strings.NewReader(input), func(StreamValue) error { return nil }, WithWorkLimits(l))
+	values := steps(func(l Limits) error {
+		return ParseStreamAST(strings.NewReader(input), func(StreamValue) error { return nil }, WithLimits(l))
 	})
 	if values <= nodes {
 		t.Fatalf("typed stream needs %d steps, node stream %d", values, nodes)
@@ -1298,9 +1298,9 @@ func TestTraceAndProfile(t *testing.T) {
 }
 
 func TestWorkControls(t *testing.T) {
-	var limit *WorkLimitError
+	var limit *LimitError
 	n := 0
-	err := ParseStream(strings.NewReader(strings.Repeat(input, 1000)), func(*Node) error { n++; return nil }, WithWorkLimits(WorkLimits{MaxSteps: 20000}))
+	err := ParseStream(strings.NewReader(strings.Repeat(input, 1000)), func(*Node) error { n++; return nil }, WithLimits(Limits{MaxWork: 20000}))
 	if !errors.As(err, &limit) || n == 0 || n >= 3000 {
 		t.Fatal(err, n)
 	}

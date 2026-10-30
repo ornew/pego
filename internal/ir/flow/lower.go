@@ -34,8 +34,8 @@ import (
 
 // Options selects the forms the lowering writes.
 type Options struct {
-	// Work charges a step on entering each node and on saving or restoring each capture slot, and
-	// the input work of each character a Peek reads.
+	// Work charges one unit of work on each loop iteration and for each character a Peek reads;
+	// the method that holds a rule's body charges its entry.
 	Work bool
 	// Recovers reports that the module can append recovered errors (Recovers), so backtracking
 	// points save their number.

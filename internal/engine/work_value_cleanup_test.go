@@ -20,8 +20,8 @@ func TestWorkValueCopyInterruptionPreservesChildren(t *testing.T) {
 	for i := range p.KidStack {
 		p.KidStack[i] = retained
 	}
-	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
-	if err := catchFatal(t, func() { p.Kids(0) }); !errors.Is(err, limits.ErrWorkLimit) {
+	p.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 128})
+	if err := catchFatal(t, func() { p.Kids(0) }); !errors.Is(err, limits.ErrLimit) {
 		t.Fatalf("copy interruption = %v", err)
 	}
 	// A failed copy does not publish a partial child list or clear its source.
@@ -70,8 +70,8 @@ func TestWorkValueFieldAndEnvironmentWalks(t *testing.T) {
 	} {
 		t.Run(run.name, func(t *testing.T) {
 			p := &core.Parser{Env: bindings}
-			p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
-			if err := catchFatal(t, func() { run.fn(p) }); !errors.Is(err, limits.ErrWorkLimit) {
+			p.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 128})
+			if err := catchFatal(t, func() { run.fn(p) }); !errors.Is(err, limits.ErrLimit) {
 				t.Fatalf("walk interruption = %v", err)
 			}
 			if len(fields) != 300 || fields[299].Value != 299 {
@@ -88,8 +88,8 @@ func TestWorkValueTrackingCleanupAfterInterruption(t *testing.T) {
 	for i := range p.Created {
 		p.Created[i] = retained
 	}
-	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
-	if err := catchFatal(t, func() { p.DropCreated(1) }); !errors.Is(err, limits.ErrWorkLimit) {
+	p.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 128})
+	if err := catchFatal(t, func() { p.DropCreated(1) }); !errors.Is(err, limits.ErrLimit) {
 		t.Fatalf("tracking cleanup interruption = %v", err)
 	}
 	// The interruption boundary must disable controls before mandatory cleanup.

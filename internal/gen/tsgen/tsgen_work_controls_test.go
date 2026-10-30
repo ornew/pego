@@ -49,14 +49,14 @@ for (const unit of [p.CodePoints,p.Bytes]) {
   {name:"recognize",run:(s:string|Uint8Array,o:p.ParseOptions)=>({value:null,error:p.recognizeWithOptions(s,o)})},
  ];
  for (const route of routes) {
-  let units=0,depths=0,signals=0,inputs=0,steps=0;
-  const o={get unit(){units++;return unit},get maxDepth(){depths++;return 0},get signal(){signals++;return null},get maxInputWork(){inputs++;return 0},get maxSteps(){steps++;return 0}};
+  let units=0,depths=0,signals=0,works=0;
+  const o={get unit(){units++;return unit},get maxDepth(){depths++;return 0},get signal(){signals++;return null},get maxWork(){works++;return 0}};
   const baseline=route.run("aaé",o);
-  check(baseline.error===null&&[units,depths,signals,inputs,steps].every(n=>n===1),route.name+" options read once");
+  check(baseline.error===null&&[units,depths,signals,works].every(n=>n===1),route.name+" options read once");
   for (const input of ["aaé",new Uint8Array([97,97,195,169])]) {
    const r=route.run(input,{unit,signal:canceled});
    check(r.value===null&&r.error instanceof p.ParseInterruptionError&&r.error.kind==="canceled"&&r.error.cause===reason,route.name+" pre-cancellation");
-   for (const key of ["maxInputWork","maxSteps"] as const) {
+   for (const key of ["maxWork"] as const) {
     for (const n of [-1,NaN,Infinity,-Infinity,0.5,Number.MAX_SAFE_INTEGER+1]) {
      const r=route.run(input,{unit,[key]:n,signal:canceled});
      check(r.value===null&&r.error!==null&&!(r.error instanceof p.ParseInterruptionError),"invalid limits before cancellation");
@@ -66,10 +66,10 @@ for (const unit of [p.CodePoints,p.Bytes]) {
     check(boundary>1,"finite exact boundary");
     const failed=route.run(input,{unit,[key]:boundary-1});
     check(failed.value===null,"interruption publishes no partial value");
-    limits(failed,key==="maxInputWork"?"input-work-limit":"step-work-limit",boundary-1);
+    limits(failed,"work-limit",boundary-1);
     check(route.run(input,{unit,[key]:boundary}).error===null,"exact boundary accepted");
    }
-   const active=route.run(input,{unit,maxInputWork:Number.MAX_SAFE_INTEGER,maxSteps:Number.MAX_SAFE_INTEGER});
+   const active=route.run(input,{unit,maxWork:Number.MAX_SAFE_INTEGER});
    check(active.error===null&&stable(active.value)===stable(route.run(input,{unit}).value),"unlimited-equivalent finite limits");
   }
   for (const marker of [new RangeError("Maximum call stack size exceeded"),reason,null,undefined]) {
@@ -86,9 +86,9 @@ for (const unit of [p.CodePoints,p.Bytes]) {
  }
  const paritySignal: CancellationSignal={aborted:false};
  for(const input of ["\uDC80","\uDCFF","a\uDCFFé","😀\uDCFF",new Uint8Array([255]),new Uint8Array([195]),new Uint8Array([240,159]),new Uint8Array([237,160,128])]){
-  const normal=p.parse(input,unit),active=p.parseWithOptions(input,{unit,signal:paritySignal,maxInputWork:Number.MAX_SAFE_INTEGER,maxSteps:Number.MAX_SAFE_INTEGER});
+  const normal=p.parse(input,unit),active=p.parseWithOptions(input,{unit,signal:paritySignal,maxWork:Number.MAX_SAFE_INTEGER});
   check(stable(active.node)===stable(normal.node)&&active.error?.message===normal.error?.message,"active malformed/surrogate Node parity");
-  const typed=p.parseAST(input,unit),controlled=p.parseASTWithOptions(input,{unit,signal:paritySignal,maxInputWork:Number.MAX_SAFE_INTEGER,maxSteps:Number.MAX_SAFE_INTEGER});
+  const typed=p.parseAST(input,unit),controlled=p.parseASTWithOptions(input,{unit,signal:paritySignal,maxWork:Number.MAX_SAFE_INTEGER});
   check(stable(controlled.value)===stable(typed.value)&&controlled.error?.message===typed.error?.message,"active malformed/surrogate typed parity");
  }
  let checks=0;
@@ -101,10 +101,10 @@ for (const unit of [p.CodePoints,p.Bytes]) {
  }
  const named=p.parseRuleWithOptions("missing","aaé",{unit,signal:{get aborted():boolean{throw reason}}});
  check(named.error!==null&&named.error.message==="rule missing is not defined","rule validation before signal admission");
- let parseSteps=0;for(let n=1;n<2048;n++){if(p.parseWithOptions("aaé",{unit,maxSteps:n}).error===null){parseSteps=n;break}}
+ let parseSteps=0;for(let n=1;n<2048;n++){if(p.parseWithOptions("aaé",{unit,maxWork:n}).error===null){parseSteps=n;break}}
  check(parseSteps>0,"Node budget boundary found");
- const converted=p.parseASTWithOptions("aaé",{unit,maxSteps:parseSteps});
- check(converted.value===null,"conversion does not reset the parse budget");limits(converted,"step-work-limit",parseSteps);
+ const converted=p.parseASTWithOptions("aaé",{unit,maxWork:parseSteps});
+ check(converted.value===null,"conversion does not reset the parse budget");limits(converted,"work-limit",parseSteps);
 }
 `
 
@@ -148,7 +148,7 @@ rule main Text = t:(.*) #atomic => Text{Text: text($t)}`
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
 for(const unit of [p.CodePoints,p.Bytes]) {
- const options:p.ParseOptions={unit,signal:{aborted:false},maxInputWork:Number.MAX_SAFE_INTEGER,maxSteps:Number.MAX_SAFE_INTEGER};
+ const options:p.ParseOptions={unit,signal:{aborted:false},maxWork:Number.MAX_SAFE_INTEGER};
  for(const input of ["\uDC80","\uDCFF","a\uDCFFé","😀\uDCFF",new Uint8Array([255]),new Uint8Array([195]),new Uint8Array([240,159]),new Uint8Array([237,160,128])]) {
   const normal=p.parse(input,unit),active=p.parseWithOptions(input,options);
   check(normal.error===null&&normal.node!==null&&active.error===null&&active.node!==null,"permissive malformed parse succeeds");
@@ -174,7 +174,7 @@ rule fast Text = t:(.* #atomic) => Text{Text: text($t)}
 rule reread Text = t:(&.* #atomic fast) #atomic => Text{Text: text($t)}`
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
-function threshold(input:string|Uint8Array,unit:p.Unit,key:"maxInputWork"|"maxSteps"):number {
+function threshold(input:string|Uint8Array,unit:p.Unit,key:"maxWork"):number {
  function fits(n:number):boolean {return p.parseRuleWithOptions("fast",input,{unit,[key]:n}).error===null}
  let lo=0,hi=1;while(!fits(hi)){hi*=2;check(hi<10000000,"bounded threshold search")}
  while(lo+1<hi){const mid=Math.floor((lo+hi)/2);if(fits(mid))hi=mid;else lo=mid}
@@ -184,9 +184,9 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  for(const input of ["a".repeat(800)+"é😀",new Uint8Array([...Array<number>(800).fill(97),195,169,240,159,152,128])]) {
   const plain=p.parse(input,unit),ast=p.parseAST(input,unit);
   check(plain.error===null&&plain.node!==null&&ast.error===null&&ast.value!==null&&p.recognize(input,unit)===null,"ordinary matcher paths succeed");
-  for(const key of ["maxInputWork","maxSteps"] as const) {
+  for(const key of ["maxWork"] as const) {
    const n=threshold(input,unit,key);
-   const kind=key==="maxInputWork"?"input-work-limit":"step-work-limit";
+   const kind="work-limit";
    const routes=[(o:p.ParseOptions)=>p.parseWithOptions(input,o).error,(o:p.ParseOptions)=>p.parseRuleWithOptions("reread",input,o).error,(o:p.ParseOptions)=>p.parseASTWithOptions(input,o).error,(o:p.ParseOptions)=>p.recognizeWithOptions(input,o)];
    for(const [route,run] of routes.entries()) {
     // Each route stops one unit short of the budget it needs. The lookahead rereads and the scans
@@ -196,9 +196,9 @@ for(const unit of [p.CodePoints,p.Bytes]) {
     while(lo+1<hi){const mid=Math.floor((lo+hi)/2);if(run({unit,[key]:mid})===null)hi=mid;else lo=mid}
     const error=run({unit,[key]:hi-1});
     check(error instanceof p.ParseInterruptionError&&error.kind===kind,"lookahead rereads and recognizer scans consume cumulative work; recovery cannot swallow limits");
-    // The steps of the recognizer route come to about those of one scan (4820 against 4824, measured),
-    // so only that bound is pinned for them; its input work is still cumulative.
-    if(key==="maxSteps"&&route===3)check(hi>=800&&hi>=n/2,"the recognizer needs the steps of about one scan: "+hi+" against "+n);
+    // The work of the recognizer route comes to about that of one scan, so only that bound is pinned
+    // for it.
+    if(route===3)check(hi>=800&&hi>=n/2,"the recognizer needs the work of about one scan: "+hi+" against "+n);
     else check(hi>n,"a route needs more than one scan: "+key+" route "+route+" needs "+hi+", one scan "+n);
    }
    check(p.parseWithOptions(input,{unit}).error===null,"retry after matcher interruption");
@@ -234,28 +234,28 @@ function threshold(run:(n:number)=>Error|null):number {
  check(run(hi-1)!==null,"one-short budget fails");return hi;
 }
 const wide=String.fromCodePoint(0x1000);
-// The budgets of recognition and of parsing: [maxInputWork, maxSteps] for "z", fifty "z" and fifty wide characters.
-const budgets=new Map<p.Unit,number[][]>([[p.CodePoints,[[4,10],[200,353],[200,303]]],[p.Bytes,[[9,17],[401,507],[752,908]]]]);
-const parseBudgets=new Map<p.Unit,number[][]>([[p.CodePoints,[[4,11],[200,403],[200,403]]],[p.Bytes,[[9,18],[401,557],[752,1108]]]]);
+// The budgets of recognition and of parsing: for "z", fifty "z" and fifty wide characters.
+const budgets=new Map<p.Unit,number[][]>([[p.CodePoints,[[10],[353],[303]]],[p.Bytes,[[17],[605],[1006]]]]);
+const parseBudgets=new Map<p.Unit,number[][]>([[p.CodePoints,[[11],[403],[403]]],[p.Bytes,[[18],[655],[1206]]]]);
 for(const unit of [p.CodePoints,p.Bytes]) {
  check(p.parse("z",unit).error===null&&p.recognize("z",unit)===null,"wide class fallback succeeds without controls");
  check(stable(p.parseWithOptions("z",{unit,signal:{aborted:false}}).node)===stable(p.parse("z",unit).node),"controlled class fallback preserves result");
- for(const key of ["maxInputWork","maxSteps"] as const) {
-  const kind=key==="maxInputWork"?"input-work-limit":"step-work-limit";
+ for(const key of ["maxWork"] as const) {
+  const kind="work-limit";
   const inputs=["z","z".repeat(50),wide.repeat(50)];
   for(let i=0;i<inputs.length;i++) {
    const input=inputs[i]!;
    const n=threshold(k=>p.recognizeWithOptions(input,{unit,[key]:k}));
-   check(n===budgets.get(unit)![i]![key==="maxInputWork"?0:1],key+" budget of recognition for input "+i);
+   check(n===budgets.get(unit)![i]![0],key+" budget of recognition for input "+i);
    const limited=p.recognizeWithOptions(input,{unit,[key]:n-1});
    check(limited instanceof p.ParseInterruptionError&&limited.kind===kind,"recognition stops one unit short of its budget");
    const m=threshold(k=>p.parseWithOptions(input,{unit,[key]:k}).error);
-   check(m===parseBudgets.get(unit)![i]![key==="maxInputWork"?0:1],key+" budget of parsing for input "+i);
+   check(m===parseBudgets.get(unit)![i]![0],key+" budget of parsing for input "+i);
    const parsed=p.parseWithOptions(input,{unit,[key]:m-1}).error;
    check(parsed instanceof p.ParseInterruptionError&&parsed.kind===kind,"parse stops one unit short of its budget");
   }
  }
- check(threshold(k=>p.recognizeWithOptions(wide.repeat(50),{unit,maxInputWork:k}))>threshold(k=>p.recognizeWithOptions("z",{unit,maxInputWork:k})),"a longer input needs more input work");
+ check(threshold(k=>p.recognizeWithOptions(wide.repeat(50),{unit,maxWork:k}))>threshold(k=>p.recognizeWithOptions("z",{unit,maxWork:k})),"a longer input needs more work");
  const cause={marker:"class cancellation"};let polls=0;
  const result=p.parseWithOptions("z",{unit,signal:{get aborted(){return ++polls>=2},reason:cause}});
  check(result.node===null&&result.error instanceof p.ParseInterruptionError&&result.error.kind==="canceled"&&result.error.cause===cause,"cancellation is polled while a wide class is tested");
@@ -298,13 +298,13 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["a","b","aa","bb",n
 		consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
 for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array([122])]) {
- const fast=p.parseRuleWithOptions("fast",input,{unit,maxSteps:128});
+ const fast=p.parseRuleWithOptions("fast",input,{unit,maxWork:128});
  check(fast.error===null&&fast.node!==null,"one call fits before memo string comparison");
  const normal=p.parse(input,unit);
  check(normal.error===null&&normal.node!==null,"ordinary repeated memo call succeeds");
- const errors=[p.parseWithOptions(input,{unit,maxSteps:128}).error,p.parseRuleWithOptions("main",input,{unit,maxSteps:128}).error,p.parseASTWithOptions(input,{unit,maxSteps:128}).error,p.recognizeWithOptions(input,{unit,maxSteps:128})];
- for(const [index,error] of errors.entries())check(error instanceof p.ParseInterruptionError&&error.kind==="step-work-limit"&&error.requested===128,"bounded memo-key string comparison consumes steps "+index+" "+stable(error));
- const unlimited=p.parseWithOptions(input,{unit,maxSteps:0,signal:{aborted:false}});
+ const errors=[p.parseWithOptions(input,{unit,maxWork:128}).error,p.parseRuleWithOptions("main",input,{unit,maxWork:128}).error,p.parseASTWithOptions(input,{unit,maxWork:128}).error,p.recognizeWithOptions(input,{unit,maxWork:128})];
+ for(const [index,error] of errors.entries())check(error instanceof p.ParseInterruptionError&&error.kind==="work-limit"&&error.requested===128,"bounded memo-key string comparison consumes steps "+index+" "+stable(error));
+ const unlimited=p.parseWithOptions(input,{unit,maxWork:0,signal:{aborted:false}});
  check(unlimited.error===null&&stable(unlimited.node)===stable(normal.node),"unlimited memo results preserved");
  let polls=0;const reason={marker:"memo"};
  const interrupted=p.parseWithOptions(input,{unit,signal:{get aborted(){return ++polls>=3},reason}});

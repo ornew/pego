@@ -29,7 +29,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 				}
 				before, _ := json.Marshal(records)
 				retained := value.Ptr(value.Data{Text: "retained", Fields: value.Fields{{Name: "keep", Value: "stable"}}})
-				p := diagnosticParser(limits.WorkLimits{})
+				p := diagnosticParser(limits.Limits{})
 				p.Memo, p.Recovered = core.NewMemoTable(), []*core.SyntaxError{prefix}
 				p.Memo.Slots = make([]*core.MemoEntry, 1)
 				r := &core.Rule{ID: 7}
@@ -129,21 +129,21 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 					completed = assertReplay
 				}
 				if mode == "complete" {
-					p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: steps})
+					p.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: steps})
 				} else if mode == "budget" {
 					// Less than the copy itself, so failure cannot be at a later put.
-					p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 319})
+					p.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 319})
 				} else {
-					p.Control = core.NewWorkControl(newPollingContext(1), limits.WorkLimits{})
+					p.Control = core.NewWorkControl(newPollingContext(1), limits.Limits{})
 				}
 				err := catchFatal(t, run)
 				if mode == "complete" {
-					if err != nil || p.Control.StepsUsed != steps {
-						t.Fatalf("copy error=%v steps=%d want%d", err, p.Control.StepsUsed, steps)
+					if err != nil || p.Control.Used != steps {
+						t.Fatalf("copy error=%v steps=%d want%d", err, p.Control.Used, steps)
 					}
 					completed()
 				} else {
-					want := limits.ErrWorkLimit
+					want := limits.ErrLimit
 					if mode == "cancel" {
 						want = context.Canceled
 					}

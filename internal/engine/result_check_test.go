@@ -109,7 +109,7 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 			if err != nil {
 				t.Fatal(err)
 			}
-			limits := limits.WorkLimits{MaxSteps: 1 << 30}
+			limits := limits.Limits{MaxWork: 1 << 30}
 			declared := checked.Typed.Fields["S"][0].T.String() // as the value checker resolves it
 			for _, in := range gentest.ResultCheckInputs() {
 				value := gentest.FieldCheckValues[in[:1]]
@@ -123,13 +123,13 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 					{"closure", checked, ParseOptions{Backend: Closure}},
 					{"bytecode", checked, ParseOptions{Backend: Bytecode}},
 					{"iterative", checked, ParseOptions{Backend: BytecodeIterative}},
-					{"limited closure", checked, ParseOptions{Backend: Closure, WorkLimits: limits}},
-					{"limited bytecode", checked, ParseOptions{Backend: Bytecode, WorkLimits: limits}},
+					{"limited closure", checked, ParseOptions{Backend: Closure, Limits: limits}},
+					{"limited bytecode", checked, ParseOptions{Backend: Bytecode, Limits: limits}},
 					{"document bytecode", loaded, ParseOptions{Backend: Bytecode}},
 					{"document iterative", loaded, ParseOptions{Backend: BytecodeIterative}},
-					{"limited document bytecode", loaded, ParseOptions{Backend: Bytecode, WorkLimits: limits}},
+					{"limited document bytecode", loaded, ParseOptions{Backend: Bytecode, Limits: limits}},
 					{"parse bytecode", loadedBare, ParseOptions{Backend: Bytecode}},
-					{"limited parse bytecode", loadedBare, ParseOptions{Backend: Bytecode, WorkLimits: limits}},
+					{"limited parse bytecode", loadedBare, ParseOptions{Backend: Bytecode, Limits: limits}},
 				}
 				var want string
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -239,7 +239,7 @@ func TestOperatorResultChecks(t *testing.T) {
 		if got := strings.Contains(want, "cannot cast "); got != rejected {
 			t.Errorf("%q: %s", in, want)
 		}
-		limits := limits.WorkLimits{MaxSteps: 1 << 30}
+		limits := limits.Limits{MaxWork: 1 << 30}
 		for _, run := range []struct {
 			name string
 			prog *Program
@@ -248,10 +248,10 @@ func TestOperatorResultChecks(t *testing.T) {
 			{"closure", prog, ParseOptions{Backend: Closure}},
 			{"bytecode", prog, ParseOptions{Backend: Bytecode}},
 			{"iterative", prog, ParseOptions{Backend: BytecodeIterative}},
-			{"limited closure", prog, ParseOptions{Backend: Closure, WorkLimits: limits}},
+			{"limited closure", prog, ParseOptions{Backend: Closure, Limits: limits}},
 			{"loaded bytecode", loaded, ParseOptions{Backend: Bytecode}},
 			{"loaded iterative", loaded, ParseOptions{Backend: BytecodeIterative}},
-			{"limited loaded bytecode", loaded, ParseOptions{Backend: Bytecode, WorkLimits: limits}},
+			{"limited loaded bytecode", loaded, ParseOptions{Backend: Bytecode, Limits: limits}},
 		} {
 			if got := resultWith(run.prog, in, run.o); got != want {
 				t.Errorf("%q %s: %s\nwant %s", in, run.name, got, want)

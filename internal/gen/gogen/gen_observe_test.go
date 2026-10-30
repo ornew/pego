@@ -93,9 +93,9 @@ import("context";"encoding/json";"errors";"fmt";"reflect";"sync";"testing";refer
 func TestTrace(t *testing.T){
  for _,unit:=range []PositionUnit{CodePoints,Bytes}{
   for _,controlled:=range []bool{false,true}{
-   opts:=[]ParseOption{WithUnit(unit)};if controlled {opts=append(opts,WithWorkLimits(WorkLimits{MaxSteps:100000}))}
+   opts:=[]ParseOption{WithUnit(unit)};if controlled {opts=append(opts,WithLimits(Limits{MaxWork:100000}))}
    refUnit:=reference.CodePoints;if unit==Bytes{refUnit=reference.Bytes}
-   referenceOpts:=[]reference.ParseOption{reference.WithUnit(refUnit)};if controlled{referenceOpts=append(referenceOpts,reference.WithWorkLimits(reference.WorkLimits{MaxSteps:100000}))}
+   referenceOpts:=[]reference.ParseOption{reference.WithUnit(refUnit)};if controlled{referenceOpts=append(referenceOpts,reference.WithLimits(reference.Limits{MaxWork:100000}))}
    want,werr:=reference.Parse(INPUT,referenceOpts...)
    var events []pegort.TraceEvent
    traced:=append(append([]ParseOption{},opts...),pegort.WithTrace(func(e pegort.TraceEvent){events=append(events,e)}))
@@ -173,8 +173,8 @@ func TestCallbackPanicAndInterruption(t *testing.T){
  ctx,cancel:=context.WithCancel(context.Background());cancel()
  if _,err:=Parse(INPUT,WithContext(ctx),pegort.WithTrace(func(pegort.TraceEvent){t.Fatal("callback after pre-cancel")}));!errors.Is(err,context.Canceled){t.Fatal(err)}
  var events []pegort.TraceEvent
- _,err:=Parse(INPUT,WithWorkLimits(WorkLimits{MaxSteps:1}),pegort.WithTrace(func(e pegort.TraceEvent){events=append(events,e)}))
- if !errors.Is(err,ErrWorkLimit){t.Fatal("budget",err)}
+ _,err:=Parse(INPUT,WithLimits(Limits{MaxWork:1}),pegort.WithTrace(func(e pegort.TraceEvent){events=append(events,e)}))
+ if !errors.Is(err,ErrLimit){t.Fatal("budget",err)}
  for _,e:=range events{if e.Kind==pegort.TraceExit&&e.Rule=="main"{t.Fatal("fabricated root exit",events)}}
  Parse(INPUT)
 }

@@ -39,15 +39,15 @@ func workClassNode(t *testing.T, p *Program, input string, opts ParseOptions) *v
 
 func workClassBudgetOptions(backend Backend, unit PositionUnit, allowance uint64, observed **core.Parser) ParseOptions {
 	return ParseOptions{
-		Backend:    backend,
-		Unit:       unit,
-		WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
+		Backend: backend,
+		Unit:    unit,
+		Limits:  limits.Limits{MaxWork: 1 << 30},
 		Trace: func(e TraceEvent) {
 			if e.Kind == TraceEnter && e.Rule == "main" {
 				if observed != nil {
 					*observed = core.TraceParser(e)
 				}
-				core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed + allowance
+				core.TraceParser(e).Control.Limits.MaxWork = core.TraceParser(e).Control.Used + allowance
 			}
 		},
 	}
@@ -57,12 +57,12 @@ func requireClassWorkLimit(t *testing.T, p *Program, input string, backend Backe
 	t.Helper()
 	var observed *core.Parser
 	n, err := p.ParseWith("main", input, workClassBudgetOptions(backend, unit, 32, &observed))
-	if n != nil || !errors.Is(err, limits.ErrWorkLimit) {
+	if n != nil || !errors.Is(err, limits.ErrLimit) {
 		t.Fatalf("%v/%v input %q: node=%v err type=%T, want fatal work-limit error", backend, unit, input, n, err)
 	}
-	var limit *limits.WorkLimitError
-	if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit {
-		t.Fatalf("%v/%v input %q: error=%T %v, want step WorkLimitError", backend, unit, input, err, err)
+	var limit *limits.LimitError
+	if !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
+		t.Fatalf("%v/%v input %q: error=%T %v, want step LimitError", backend, unit, input, err, err)
 	}
 	if limit.Requested != 1 || limit.Used != limit.Limit {
 		t.Fatalf("range reservation=%+v, want one rejected step at the limit", limit)
@@ -87,7 +87,7 @@ func TestWorkClassLargeNonASCIIRangesAreCharged(t *testing.T) {
 				if n := workClassNode(t, negative, gap, ParseOptions{Backend: backend, Unit: unit}); value.D(n).Text != gap {
 					t.Fatalf("negated class text=%q, want %q", value.D(n).Text, gap)
 				}
-				if n, err := positive.ParseWith("main", gap, ParseOptions{Backend: backend, Unit: unit}); n != nil || err == nil || errors.Is(err, limits.ErrWorkLimit) {
+				if n, err := positive.ParseWith("main", gap, ParseOptions{Backend: backend, Unit: unit}); n != nil || err == nil || errors.Is(err, limits.ErrLimit) {
 					t.Fatalf("unlimited positive miss: node=%v err=%v", n, err)
 				}
 
@@ -115,13 +115,13 @@ func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
 				var startSteps uint64
 				exits := 0
 				opts := ParseOptions{
-					Backend:    backend,
-					Unit:       unit,
-					WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
+					Backend: backend,
+					Unit:    unit,
+					Limits:  limits.Limits{MaxWork: 1 << 30},
 					Trace: func(e TraceEvent) {
 						if e.Kind == TraceEnter && e.Rule == "main" {
 							observed, control = core.TraceParser(e), core.TraceParser(e).Control
-							startSteps = control.StepsUsed
+							startSteps = control.Used
 							// Trace emit polls once after this callback; cancel at the next
 							// 256-step checkpoint, inside the deliberately long range scan.
 							control.Ctx = newPollingContext(2)
@@ -134,7 +134,7 @@ func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
 				if n != nil || !errors.Is(err, context.Canceled) {
 					t.Fatalf("node=%v err=%v, want cancellation during class membership", n, err)
 				}
-				if observed == nil || control == nil || control.StepsUsed-startSteps < 128 {
+				if observed == nil || control == nil || control.Used-startSteps < 128 {
 					t.Fatalf("cancellation occurred before a substantial range scan: parser observed=%v steps=%v", observed != nil, control)
 				}
 				if exits != 0 {
@@ -171,7 +171,7 @@ func TestWorkClassInterruptionBypassesChoiceAndRecovery(t *testing.T) {
 	// Without an active control, the class miss is recovered and the grammar
 	// completes. The controlled attempt must terminate before recovery/choice.
 	n, err := p.ParseWith("main", gap, ParseOptions{})
-	if n == nil || errors.Is(err, limits.ErrWorkLimit) {
+	if n == nil || errors.Is(err, limits.ErrLimit) {
 		t.Fatalf("uncontrolled recovery baseline: node=%v err=%v", n, err)
 	}
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -201,7 +201,7 @@ func TestWorkClassFastPathParity(t *testing.T) {
 					base, baseErr := p.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
 					controlled, controlledErr := p.ParseWith("main", tc.input, ParseOptions{
 						Backend: backend, Unit: unit,
-						WorkLimits: limits.WorkLimits{MaxInputWork: 10000, MaxSteps: 10000},
+						Limits: limits.Limits{MaxWork: 10000},
 					})
 					if !reflect.DeepEqual(controlled, base) || !reflect.DeepEqual(controlledErr, baseErr) {
 						t.Fatalf("controlled result differs: got %#v/%#v, want %#v/%#v", controlled, controlledErr, base, baseErr)
@@ -269,16 +269,16 @@ func TestWorkClassOptimizedRoutes(t *testing.T) {
 						var c *core.WorkControl
 						var start uint64
 						n, err := program.ParseWith("main", tc.input, ParseOptions{
-							Backend: backend, Unit: unit, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
+							Backend: backend, Unit: unit, Limits: limits.Limits{MaxWork: 1 << 30},
 							Trace: func(e TraceEvent) {
 								if e.Kind == TraceEnter && e.Rule == "main" {
 									c = core.TraceParser(e).Control
-									start = c.StepsUsed
+									start = c.Used
 									c.Ctx = newPollingContext(2)
 								}
 							},
 						})
-						if n != nil || !errors.Is(err, context.Canceled) || c == nil || c.StepsUsed-start < 128 {
+						if n != nil || !errors.Is(err, context.Canceled) || c == nil || c.Used-start < 128 {
 							t.Fatalf("%v/%v: cancellation did not interrupt optimized membership: node=%v error type=%T", backend, unit, n, err)
 						}
 						workClassNode(t, program, tc.input, servedBy(program.mode, ParseOptions{Backend: backend, Unit: unit}))

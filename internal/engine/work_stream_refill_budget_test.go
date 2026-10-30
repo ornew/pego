@@ -46,7 +46,7 @@ func streamRefillObserver(reader io.Reader, control *core.WorkControl) (*core.St
 func TestStreamReaderObserverChargesEachUnderlyingRead(t *testing.T) {
 	t.Parallel()
 	reader := &streamRefillScript{results: []streamRefillResult{{data: []byte("a")}, {data: []byte("b")}}}
-	control := core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 2})
+	control := core.NewWorkControl(nil, limits.Limits{MaxWork: 2})
 	observer, _ := streamRefillObserver(reader, control)
 	for i, want := range []byte("ab") {
 		var dst [1]byte
@@ -54,8 +54,8 @@ func TestStreamReaderObserverChargesEachUnderlyingRead(t *testing.T) {
 		if err != nil || n != 1 || dst[0] != want {
 			t.Fatalf("read %d = %d,%q,%v; want one byte %q", i, n, dst[:n], err, want)
 		}
-		if control.StepsUsed != uint64(i+1) || control.InputUsed != 0 {
-			t.Fatalf("after read %d counters steps/input=%d/%d; want %d/0", i, control.StepsUsed, control.InputUsed, i+1)
+		if control.Used != uint64(i+1) {
+			t.Fatalf("after read %d work=%d; want %d", i, control.Used, i+1)
 		}
 	}
 	if reader.reads != 2 {
@@ -67,19 +67,19 @@ func TestStreamReaderObserverBoundsBufioRetries(t *testing.T) {
 	t.Parallel()
 	t.Run("empty retries", func(t *testing.T) {
 		reader := &streamRefillScript{results: []streamRefillResult{{}, {}, {}, {}}}
-		control := core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 3})
+		control := core.NewWorkControl(nil, limits.Limits{MaxWork: 3})
 		observer, _ := streamRefillObserver(reader, control)
 		buffered := bufio.NewReader(observer)
 		limitErr := catchFatal(t, func() { _, _ = buffered.ReadByte() })
-		var limit *limits.WorkLimitError
-		if !errors.As(limitErr, &limit) || limit.Kind != limits.StepWorkLimit || limit.Used != 3 || limit.Requested != 1 || reader.reads != 3 || control.InputUsed != 0 {
-			t.Fatalf("error=%v reads=%d input=%d", limitErr, reader.reads, control.InputUsed)
+		var limit *limits.LimitError
+		if !errors.As(limitErr, &limit) || limit.Kind != limits.LimitWork || limit.Used != 3 || limit.Requested != 1 || reader.reads != 3 {
+			t.Fatalf("error=%v reads=%d work=%d", limitErr, reader.reads, control.Used)
 		}
 	})
 	for _, max := range []uint64{1, 2} {
 		t.Run(map[uint64]string{1: "one-short split rune", 2: "exact split rune"}[max], func(t *testing.T) {
 			reader := &streamRefillScript{results: []streamRefillResult{{data: []byte{0xc3}}, {data: []byte{0xa9}}}}
-			control := core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: max})
+			control := core.NewWorkControl(nil, limits.Limits{MaxWork: max})
 			observer, _ := streamRefillObserver(reader, control)
 			buffered := bufio.NewReader(observer)
 			var r rune
@@ -87,15 +87,15 @@ func TestStreamReaderObserverBoundsBufioRetries(t *testing.T) {
 			var readErr error
 			limitErr := catchFatal(t, func() { r, size, readErr = buffered.ReadRune() })
 			if max == 1 {
-				var limit *limits.WorkLimitError
-				if !errors.As(limitErr, &limit) || limit.Kind != limits.StepWorkLimit || limit.Used != 1 || limit.Requested != 1 || reader.reads != 1 || size != 0 {
+				var limit *limits.LimitError
+				if !errors.As(limitErr, &limit) || limit.Kind != limits.LimitWork || limit.Used != 1 || limit.Requested != 1 || reader.reads != 1 || size != 0 {
 					t.Fatalf("error=%v reads=%d rune=%q size=%d", limitErr, reader.reads, r, size)
 				}
 			} else if limitErr != nil || readErr != nil || r != 'é' || size != 2 || reader.reads != 2 {
 				t.Fatalf("error=%v readErr=%v rune=%q size=%d reads=%d", limitErr, readErr, r, size, reader.reads)
 			}
-			if control.StepsUsed != max || control.InputUsed != 0 {
-				t.Fatalf("steps=%d input=%d", control.StepsUsed, control.InputUsed)
+			if control.Used != max {
+				t.Fatalf("work=%d, want %d", control.Used, max)
 			}
 		})
 	}
@@ -108,11 +108,11 @@ func TestWorkStreamEmptyRefillBudget(t *testing.T) {
 rule row = .+ #atomic`)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {
 		reader := &workCancelledRefillReader{cancel: func() {}}
-		o.WorkLimits = limits.WorkLimits{MaxSteps: 64}
+		o.Limits = limits.Limits{MaxWork: 64}
 		emits := 0
 		err := prog.ParseStreamWith("main", reader, func(*value.Node) error { emits++; return nil }, o)
-		var limit *limits.WorkLimitError
-		if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit || limit.Used != 64 || limit.Requested != 1 || reader.calls == 0 || reader.calls > 64 || emits != 0 {
+		var limit *limits.LimitError
+		if !errors.As(err, &limit) || limit.Kind != limits.LimitWork || limit.Used != 64 || limit.Requested != 1 || reader.calls == 0 || reader.calls > 64 || emits != 0 {
 			t.Fatalf("error=%v calls=%d emits=%d", err, reader.calls, emits)
 		}
 	})
@@ -121,7 +121,7 @@ rule row = .+ #atomic`)
 func TestStreamReaderObserverOneShortFailsBeforeCallerRead(t *testing.T) {
 	t.Parallel()
 	reader := &streamRefillScript{results: []streamRefillResult{{data: []byte("a")}, {data: []byte("b")}}}
-	control := core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1})
+	control := core.NewWorkControl(nil, limits.Limits{MaxWork: 1})
 	observer, _ := streamRefillObserver(reader, control)
 	var first [1]byte
 	if n, err := observer.Read(first[:]); n != 1 || err != nil || first[0] != 'a' {
@@ -129,11 +129,11 @@ func TestStreamReaderObserverOneShortFailsBeforeCallerRead(t *testing.T) {
 	}
 	var second [1]byte
 	limitErr := catchFatal(t, func() { _, _ = observer.Read(second[:]) })
-	if !errors.Is(limitErr, limits.ErrWorkLimit) {
-		t.Fatalf("second read error=%v, want ErrWorkLimit", limitErr)
+	if !errors.Is(limitErr, limits.ErrLimit) {
+		t.Fatalf("second read error=%v, want ErrLimit", limitErr)
 	}
-	if reader.reads != 1 || control.StepsUsed != 1 || control.InputUsed != 0 {
-		t.Fatalf("after rejected refill reads=%d counters steps/input=%d/%d", reader.reads, control.StepsUsed, control.InputUsed)
+	if reader.reads != 1 || control.Used != 1 {
+		t.Fatalf("after rejected refill reads=%d work=%d", reader.reads, control.Used)
 	}
 }
 
@@ -141,14 +141,14 @@ func TestStreamReaderObserverCancellationAndReadErrorPrecedence(t *testing.T) {
 	t.Parallel()
 	t.Run("cancellation before exhausted reservation", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
-		control := core.NewWorkControl(ctx, limits.WorkLimits{MaxSteps: 1})
-		control.Charge(0, 1)
+		control := core.NewWorkControl(ctx, limits.Limits{MaxWork: 1})
+		control.Charge(1)
 		cancel()
 		reader := &streamRefillScript{results: []streamRefillResult{{data: []byte("x")}}}
 		observer, _ := streamRefillObserver(reader, control)
 		fatalErr := catchFatal(t, func() { _, _ = observer.Read(make([]byte, 1)) })
-		if !errors.Is(fatalErr, context.Canceled) || reader.reads != 0 || control.StepsUsed != 1 {
-			t.Fatalf("error=%v reads=%d steps=%d; want cancellation before caller Read", fatalErr, reader.reads, control.StepsUsed)
+		if !errors.Is(fatalErr, context.Canceled) || reader.reads != 0 || control.Used != 1 {
+			t.Fatalf("error=%v reads=%d steps=%d; want cancellation before caller Read", fatalErr, reader.reads, control.Used)
 		}
 	})
 
@@ -161,7 +161,7 @@ func TestStreamReaderObserverCancellationAndReadErrorPrecedence(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			reader := &streamRefillScript{results: []streamRefillResult{{err: returned}}, onRead: func(int) { cancel() }}
-			control := core.NewWorkControl(ctx, limits.WorkLimits{MaxSteps: 1})
+			control := core.NewWorkControl(ctx, limits.Limits{MaxWork: 1})
 			observer, result := streamRefillObserver(reader, control)
 			fatalErr := catchFatal(t, func() { _, _ = observer.Read(make([]byte, 1)) })
 			if returned == io.EOF {
@@ -171,8 +171,8 @@ func TestStreamReaderObserverCancellationAndReadErrorPrecedence(t *testing.T) {
 			} else if fatalErr != returned {
 				t.Fatalf("error=%v, want exact reader error %v", fatalErr, returned)
 			}
-			if reader.reads != 1 || control.StepsUsed != 1 || *result != returned {
-				t.Fatalf("reads=%d steps=%d recorded=%v", reader.reads, control.StepsUsed, *result)
+			if reader.reads != 1 || control.Used != 1 || *result != returned {
+				t.Fatalf("reads=%d steps=%d recorded=%v", reader.reads, control.Used, *result)
 			}
 		})
 	}

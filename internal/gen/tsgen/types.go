@@ -492,7 +492,7 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
   const pending: ASTPending[] = [];
   const get = (v: Value, id: number): unknown => {
     for (;;) {
-      control?.charge(0, 1);
+      control?.charge(1);
       const recipe = astRecipes[id]!;
       switch (recipe.kind) {
         case "int": return isInt(v) ? v : 0;
@@ -530,7 +530,7 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
       }
       if (!(v instanceof Node)) {
         if (recipe.kind !== "tuple") return null;
-        control?.charge(0, recipe.elems!.length);
+        control?.charge(recipe.elems!.length);
         return recipe.elems!.map(e => get(null, e));
       }
       if (recipe.kind === "tnode" && (v.type === "error" || v.type === typeTupleValue || v.type === typeListValue)) return null;
@@ -542,10 +542,10 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
       if (reps.has(id)) return reps.get(id);
       let out: ASTObject | unknown[] | null = null;
       if (recipe.kind === "list") {
-        control?.charge(0, v.children.length);
+        control?.charge(v.children.length);
         out = new Array<unknown>(v.children.length);
       } else if (recipe.kind === "tuple") {
-        control?.charge(0, recipe.elems!.length);
+        control?.charge(recipe.elems!.length);
         out = new Array<unknown>(recipe.elems!.length);
       } else if (recipe.kind === "tnode") {
         // A named node type takes only its own nodes.
@@ -569,19 +569,19 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
   };
   const out = get(value, repr);
   while (pending.length !== 0) {
-    control?.charge(0, 1);
+    control?.charge(1);
     const work = pending.pop()!;
     const recipe = astRecipes[work.repr]!;
     if (recipe.kind === "list") {
       const array = work.out as unknown[];
       for (let i = 0; i < work.node.children.length; i++) {
-        control?.charge(0, 1);
+        control?.charge(1);
         array[i] = get(astKid(work.node, i), recipe.elem!);
       }
     } else if (recipe.kind === "tuple") {
       const array = work.out as unknown[];
       for (let i = 0; i < recipe.elems!.length; i++) {
-        control?.charge(0, 1);
+        control?.charge(1);
         array[i] = get(astKid(work.node, i), recipe.elems![i]!);
       }
     } else if (recipe.kind === "tnode") {
@@ -592,13 +592,13 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
       else if (astRecipes[recipe.elem!]!.kind !== "any") obj["value"] = get(null, recipe.elem!);
       else {
         // The elements of an open value, converted like any other open value.
-        control?.charge(0, n.children.length);
+        control?.charge(n.children.length);
         obj["value"] = n.children.map((_, i) => get(astKid(n, i), recipe.elem!));
       }
     } else {
       const obj = work.out as ASTObject;
       for (const f of recipe.fields!) {
-        control?.charge(0, 1);
+        control?.charge(1);
         obj[f.name] = get(getFieldWork(work.node, f.name, control), f.repr);
       }
     }

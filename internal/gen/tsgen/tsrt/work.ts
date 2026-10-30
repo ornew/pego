@@ -6,7 +6,7 @@ export interface CancellationSignal {
   readonly reason?: unknown;
 }
 
-export type ParseInterruptionKind = "canceled" | "input-work-limit" | "step-work-limit";
+export type ParseInterruptionKind = "canceled" | "work-limit";
 
 /** An interrupted invocation returns no partial Node or typed result. */
 export class ParseInterruptionError extends Error {
@@ -37,8 +37,7 @@ export interface ResolvedParseOptions {
   readonly unit: Unit;
   readonly maxDepth: number;
   signal: CancellationSignal | null;
-  readonly maxInputWork: number;
-  readonly maxSteps: number;
+  readonly maxWork: number;
 }
 
 // Signal getters are caller code. Keep their thrown identity through the
@@ -50,17 +49,13 @@ export class SignalPanic {
 
 export class WorkControl {
   private signal: CancellationSignal | null;
-  private readonly maxInputWork: number;
-  private readonly maxSteps: number;
-  private inputUsed = 0;
-  private stepsUsed = 0;
-  private inputSinceCheck = 0;
-  private stepsSinceCheck = 0;
+  private readonly maxWork: number;
+  private workUsed = 0;
+  private sinceCheck = 0;
 
   constructor(o: ResolvedParseOptions) {
     this.signal = o.signal;
-    this.maxInputWork = o.maxInputWork;
-    this.maxSteps = o.maxSteps;
+    this.maxWork = o.maxWork;
   }
 
   release(): void { this.signal = null; }
@@ -77,30 +72,23 @@ export class WorkControl {
     if (aborted) throw new Fatal(new ParseInterruptionError("canceled", 0, 0, 0, reason));
   }
 
-  charge(input: number, steps: number): void {
-    if (input >= 4096 - this.inputSinceCheck || steps >= 256 - this.stepsSinceCheck) {
+  charge(n: number): void {
+    if (n >= 256 - this.sinceCheck) {
       this.check();
-      this.inputSinceCheck = this.stepsSinceCheck = 0;
+      this.sinceCheck = 0;
     }
-    if (this.maxInputWork !== 0 && input > this.maxInputWork - this.inputUsed) {
+    if (this.maxWork !== 0 && n > this.maxWork - this.workUsed) {
       this.check();
-      throw new Fatal(new ParseInterruptionError("input-work-limit", this.maxInputWork, this.inputUsed, input));
+      throw new Fatal(new ParseInterruptionError("work-limit", this.maxWork, this.workUsed, n));
     }
-    if (this.maxSteps !== 0 && steps > this.maxSteps - this.stepsUsed) {
-      this.check();
-      throw new Fatal(new ParseInterruptionError("step-work-limit", this.maxSteps, this.stepsUsed, steps));
-    }
-    // Validate both reservations before committing either counter. Unlimited
-    // counters need no cumulative number that could lose safe-integer precision.
-    if (this.maxInputWork !== 0) this.inputUsed += input;
-    if (this.maxSteps !== 0) this.stepsUsed += steps;
-    this.inputSinceCheck = input >= 4096 ? 0 : this.inputSinceCheck + input;
-    this.stepsSinceCheck = steps >= 256 ? 0 : this.stepsSinceCheck + steps;
+    // Unlimited work needs no cumulative number that could lose safe-integer precision.
+    if (this.maxWork !== 0) this.workUsed += n;
+    this.sinceCheck = n >= 256 ? 0 : this.sinceCheck + n;
   }
 }
 
 export function withWorkControl<T>(o: ResolvedParseOptions, body: (control: WorkControl | null) => T, interrupted: (error: Error) => T): T {
-  if (o.signal === null && o.maxInputWork === 0 && o.maxSteps === 0) return body(null);
+  if (o.signal === null && o.maxWork === 0) return body(null);
   let control: WorkControl | null = null;
   try {
     control = new WorkControl(o);
@@ -146,7 +134,7 @@ export function encodeUTF8Work(s: string, control: WorkControl): Uint8Array {
   for (let i = 0; i < s.length; i++) {
     let c = stringUnitWork(s, i, control);
     if (c < 0x80) {
-      control.charge(0, 1);
+      control.charge(1);
       out[j++] = c;
       continue;
     }
@@ -158,7 +146,7 @@ export function encodeUTF8Work(s: string, control: WorkControl): Uint8Array {
         c = 0xfffd;
       }
     }
-    control.charge(0, c < 0x800 ? 2 : c < 0x10000 ? 3 : 4);
+    control.charge(c < 0x800 ? 2 : c < 0x10000 ? 3 : 4);
     if (c < 0x800) {
       out[j++] = 0xc0 | (c >> 6);
       out[j++] = 0x80 | (c & 0x3f);
@@ -213,17 +201,17 @@ export function wellFormedWork(s: string, control: WorkControl): string {
 
 
 export function stringUnitWork(s: string, i: number, control: WorkControl): number {
-  control.charge(1, 1);
+  control.charge(1);
   return s.charCodeAt(i);
 }
 export function byteUnitWork(b: Uint8Array, i: number, n: number, control: WorkControl): number {
-  control.charge(1, 1);
+  control.charge(1);
   return i < n ? b[i]! : 0;
 }
 export function joinStringsWork(parts: readonly string[], control: WorkControl): string {
   for (const part of parts) {
-    control.charge(0, 1);
-    for (let i = 0; i < part.length; i += 4096) control.charge(Math.min(4096, part.length - i), 1);
+    control.charge(1);
+    for (let i = 0; i < part.length; i += 4096) control.charge(Math.min(4096, part.length - i));
   }
   const result = parts.join("");
   control.check();
@@ -233,7 +221,7 @@ export function codePointsStringWork(cps: Int32Array, control: WorkControl): str
   const parts: string[] = [];
   for (let i = 0; i < cps.length; i += 4096) {
     const end = Math.min(i + 4096, cps.length);
-    control.charge(end - i, 1);
+    control.charge(end - i);
     parts.push(String.fromCodePoint(...cps.subarray(i, end)));
   }
   return joinStringsWork(parts, control);
@@ -282,7 +270,7 @@ export function equalStringsWork(a: string, b: string, control: WorkControl): bo
   if (a.length !== b.length) return false;
   for (let from = 0; from < a.length; from += 128) {
     const end = Math.min(from + 128, a.length);
-    control.charge(0, end - from);
+    control.charge(end - from);
     if (a.slice(from, end) !== b.slice(from, end)) return false;
   }
   return true;
@@ -292,7 +280,7 @@ export function copyNodesWork(items: readonly (Node | null)[], start: number, en
   const out: (Node | null)[] = new Array(end - start);
   for (let from = start; from < end; from += 128) {
     const stop = Math.min(from + 128, end);
-    control.charge(0, stop - from);
+    control.charge(stop - from);
     for (let i = from; i < stop; i++) out[i - start] = items[i]!;
   }
   return out;
@@ -321,7 +309,7 @@ export function sliceStringWork(s: string, start: number, end: number, control: 
   // visited extent in bounded chunks before publishing the native result.
   const from = Math.max(0, Math.min(s.length, start < 0 ? s.length + start : start));
   const to = Math.max(0, Math.min(s.length, end < 0 ? s.length + end : end));
-  for (let i = from; i < to; i += 128) control.charge(0, Math.min(128, to - i));
+  for (let i = from; i < to; i += 128) control.charge(Math.min(128, to - i));
   const result = s.slice(start, end);
   control.check();
   return result;
@@ -344,12 +332,12 @@ export function* utf8ValueBytesWork(s: string, start: number, control: WorkContr
       }
     }
     if (c >= 0xdc80 && c <= 0xdcff) {
-      control.charge(0, 1);
+      control.charge(1);
       yield c & 0xff;
       continue;
     }
     if (c >= 0xd800 && c <= 0xdfff) c = 0xfffd;
-    control.charge(0, c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4);
+    control.charge(c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4);
     if (c < 0x80) {
       yield c;
     } else if (c < 0x800) {
@@ -372,7 +360,7 @@ export function compareStringsWork(a: string, b: string, control: WorkControl): 
         const p = utf8ValueBytesWork(a, i, control);
         const q = utf8ValueBytesWork(b, i, control);
         for (;;) {
-          control.charge(0, 2);
+          control.charge(2);
           const x = p.next();
           const y = q.next();
           if (x.done || y.done) return x.done === y.done ? 0 : x.done ? -1 : 1;
@@ -390,7 +378,7 @@ export function compareStringsWork(a: string, b: string, control: WorkControl): 
 }
 
 export function valueUnitWork(s: string, i: number, control: WorkControl): number {
-  control.charge(0, 1);
+  control.charge(1);
   return s.charCodeAt(i);
 }
 
@@ -408,8 +396,8 @@ export function runeCountValueWork(s: string, control: WorkControl): number {
 
 export function joinValueStringsWork(parts: readonly string[], control: WorkControl): string {
   for (const part of parts) {
-    control.charge(0, 1);
-    for (let i = 0; i < part.length; i += 128) control.charge(0, Math.min(128, part.length - i));
+    control.charge(1);
+    for (let i = 0; i < part.length; i += 128) control.charge(Math.min(128, part.length - i));
   }
   const result = parts.join("");
   control.check();
@@ -421,7 +409,7 @@ export function joinValueStringsWork(parts: readonly string[], control: WorkCont
 export function getFieldWork(n: Node, name: string, control: WorkControl | null): Value {
   if (control === null) return n.field(name);
   for (const field of n.fields) {
-    control.charge(0, 1);
+    control.charge(1);
     if (equalStringsWork(field.name, name, control)) return field.value;
   }
   return null;
@@ -429,7 +417,7 @@ export function getFieldWork(n: Node, name: string, control: WorkControl | null)
 
 // Reserve bounded logical visits before native hashing, which cannot be polled.
 export function stringKeyWork(s: string, control: WorkControl): string {
-  for (let i = 0; i < s.length; i += 128) control.charge(0, Math.min(128, s.length - i));
+  for (let i = 0; i < s.length; i += 128) control.charge(Math.min(128, s.length - i));
   return s;
 }
 
@@ -442,7 +430,7 @@ export function copyErrorsWork(items: readonly SyntaxError[], start: number, end
   const out: SyntaxError[] = new Array(end - start);
   for (let from = start; from < end; from += 128) {
     const stop = Math.min(from + 128, end);
-    control.charge(0, stop - from);
+    control.charge(stop - from);
     for (let i = from; i < stop; i++) out[i - start] = items[i]!;
   }
   return out;
@@ -452,7 +440,7 @@ export function copyIDsWork(items: readonly number[], start: number, end: number
   const out: number[] = new Array(end - start);
   for (let from = start; from < end; from += 128) {
     const stop = Math.min(from + 128, end);
-    control.charge(0, stop - from);
+    control.charge(stop - from);
     for (let i = from; i < stop; i++) out[i - start] = items[i]!;
   }
   return out;
@@ -462,7 +450,7 @@ export function copyIDsWork(items: readonly number[], start: number, end: number
 export function sortExpectedWork(values: string[], control: WorkControl): void {
   const n = values.length;
   if (n < 2) return;
-  control.charge(0, n);
+  control.charge(n);
   let src = values, dst = new Array<string>(n);
   for (let width = 1; width < n;) {
     for (let lo = 0; lo < n;) {
@@ -470,22 +458,22 @@ export function sortExpectedWork(values: string[], control: WorkControl): void {
       let i = lo, j = mid, k = lo;
       while (i < mid && j < hi) {
         const order = compareStringsWork(src[i]!, src[j]!, control);
-        control.charge(0, 1);
+        control.charge(1);
         dst[k++] = order <= 0 ? src[i++]! : src[j++]!;
       }
-      while (i < mid) { control.charge(0, 1); dst[k++] = src[i++]!; }
-      while (j < hi) { control.charge(0, 1); dst[k++] = src[j++]!; }
+      while (i < mid) { control.charge(1); dst[k++] = src[i++]!; }
+      while (j < hi) { control.charge(1); dst[k++] = src[j++]!; }
       lo = hi;
     }
     const old = src; src = dst; dst = old;
     if (width >= n - width) break;
     width *= 2;
   }
-  if (src !== values) for (let i = 0; i < n; i++) { control.charge(0, 1); values[i] = src[i]!; }
+  if (src !== values) for (let i = 0; i < n; i++) { control.charge(1); values[i] = src[i]!; }
 }
 
 export function reserveDiagnosticTextWork(text: string, control: WorkControl): void {
-  for (let i = 0; i < text.length; i += 128) control.charge(0, Math.min(128, text.length - i));
+  for (let i = 0; i < text.length; i += 128) control.charge(Math.min(128, text.length - i));
 }
 
 // Reserve engine-owned text before the native Error constructor joins it.
@@ -496,16 +484,16 @@ export function reserveSyntaxMessageWork(line: number, col: number, expected: re
   const parts = messages.length !== 0 ? messages : expected;
   if (messages.length === 0) reserveDiagnosticTextWork(expected.length !== 0 ? "syntax error: expected " : "syntax error", control);
   for (let i = 0; i < parts.length; i++) {
-    control.charge(0, 1);
-    if (i !== 0) control.charge(0, 2);
+    control.charge(1);
+    if (i !== 0) control.charge(2);
     reserveDiagnosticTextWork(parts[i]!, control);
   }
 }
 
 export function reserveRecoveredMessageWork(errors: readonly SyntaxError[], control: WorkControl): void {
   for (let i = 0; i < errors.length; i++) {
-    control.charge(0, 1);
-    if (i !== 0) control.charge(0, 1);
+    control.charge(1);
+    if (i !== 0) control.charge(1);
     reserveDiagnosticTextWork(errors[i]!.message, control);
   }
 }

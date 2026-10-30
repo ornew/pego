@@ -17,7 +17,7 @@ func TestWorkStreamReferenceAdmission(t *testing.T) {
 	prog := mustCompile(t, gentest.Records)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	for _, o := range []ParseOptions{{Context: ctx}, {WorkLimits: limits.WorkLimits{MaxSteps: 1}}, {WorkLimits: limits.WorkLimits{MaxInputWork: 1}}} {
+	for _, o := range []ParseOptions{{Context: ctx}, {Limits: limits.Limits{MaxWork: 1}}, {Limits: limits.Limits{MaxWork: 1}}} {
 		r := &streamCallbackReader{text: "#records\na=1\n"}
 		callbacks := 0
 		r.onRead = func() { callbacks++ }

@@ -15,10 +15,10 @@ func TestWorkControls(t *testing.T) {
 	if _, err := xml.Parse(input); err != nil {
 		t.Fatal(err)
 	}
-	_, err := xml.Parse(input, xml.WithWorkLimits(xml.WorkLimits{MaxSteps: 1}))
-	var limit *xml.WorkLimitError
-	if !errors.Is(err, xml.ErrWorkLimit) || !errors.As(err, &limit) || limit.Kind != xml.StepWorkLimit {
-		t.Fatalf("step limit: got %v", err)
+	_, err := xml.Parse(input, xml.WithLimits(xml.Limits{MaxWork: 1}))
+	var limit *xml.LimitError
+	if !errors.Is(err, xml.ErrLimit) || !errors.As(err, &limit) || limit.Kind != xml.LimitWork {
+		t.Fatalf("work limit: got %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

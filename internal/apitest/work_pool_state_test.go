@@ -10,12 +10,12 @@ import (
 	"github.com/ornew/pego"
 )
 
-// leastSteps returns the least MaxSteps limit under which the parse succeeds, and the error text of
+// leastSteps returns the least MaxWork limit under which the parse succeeds, and the error text of
 // the parse one step below it.
 func leastSteps(t *testing.T, p *pego.Parser, in string) (uint64, string) {
 	t.Helper()
 	fails := func(n uint64) (bool, string) {
-		_, err := p.Parse(in, pego.WithWorkLimits(pego.WorkLimits{MaxSteps: n}))
+		_, err := p.Parse(in, pego.WithLimits(pego.Limits{MaxWork: n}))
 		if err == nil {
 			return false, ""
 		}
@@ -80,11 +80,11 @@ rule num = [0-9]+`, "main")
 	want, wantMsg := leastSteps(t, p, input)
 	for _, s := range states {
 		s.prep()
-		if _, err := p.Parse(input, pego.WithWorkLimits(pego.WorkLimits{MaxSteps: want})); err != nil {
+		if _, err := p.Parse(input, pego.WithLimits(pego.Limits{MaxWork: want})); err != nil {
 			t.Errorf("%s: limit %d fails: %v", s.name, want, err)
 		}
 		s.prep()
-		_, err := p.Parse(input, pego.WithWorkLimits(pego.WorkLimits{MaxSteps: want - 1}))
+		_, err := p.Parse(input, pego.WithLimits(pego.Limits{MaxWork: want - 1}))
 		if err == nil || err.Error() != wantMsg {
 			t.Errorf("%s: limit %d: error %v, want %q", s.name, want-1, err, wantMsg)
 		}

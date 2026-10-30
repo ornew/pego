@@ -3,32 +3,29 @@ package core
 import "github.com/ornew/pego/internal/limits"
 import "context"
 
-const (
-	WorkCheckStepInterval  = uint64(256)
-	WorkCheckInputInterval = uint64(4096)
-)
+// WorkCheckInterval is the work between two observations of cancellation.
+const WorkCheckInterval = uint64(256)
 
 // WorkControl is private state for a single parser invocation. Callers must
 // split long operations into bounded reservations so cancellation can be
 // observed between chunks.
 type WorkControl struct {
 	Ctx    context.Context
-	Limits limits.WorkLimits
+	Limits limits.Limits
 
-	InputUsed uint64
-	StepsUsed uint64
-
-	InputSinceCheck uint64
-	StepsSinceCheck uint64
+	// Used is the work reserved so far; SinceCheck is the part of it since the
+	// last observation of cancellation.
+	Used       uint64
+	SinceCheck uint64
 }
 
 // NewWorkControl returns nil when neither cancellation nor a finite budget is
 // active. A nil context is equivalent to context.Background.
-func NewWorkControl(ctx context.Context, limits limits.WorkLimits) *WorkControl {
+func NewWorkControl(ctx context.Context, limits limits.Limits) *WorkControl {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if ctx.Done() == nil && limits.MaxInputWork == 0 && limits.MaxSteps == 0 {
+	if ctx.Done() == nil && limits.MaxWork == 0 {
 		return nil
 	}
 	return &WorkControl{Ctx: ctx, Limits: limits}
@@ -61,53 +58,40 @@ func (c *WorkControl) Check() {
 	if err := contextErr(c.Ctx); err != nil {
 		panic(Fatal{Err: err})
 	}
-	c.InputSinceCheck = 0
-	c.StepsSinceCheck = 0
+	c.SinceCheck = 0
 }
 
-// Charge atomically reserves input-work and step units. Cancellation wins when
-// it is observed at a poll or when either reservation would fail; otherwise
-// input-work exhaustion takes priority over step exhaustion. A failed
-// reservation leaves both counters unchanged.
-func (c *WorkControl) Charge(inputWork, steps uint64) {
+// Charge atomically reserves n work units. Cancellation wins when it is
+// observed at a poll or when the reservation would fail. A failed reservation
+// leaves the counter unchanged. It is safe on a nil receiver.
+func (c *WorkControl) Charge(n uint64) {
 	if c == nil {
 		return
 	}
 
-	inputExceeded := limits.ExceedsLimit(c.InputUsed, inputWork, c.Limits.MaxInputWork)
-	stepsExceeded := limits.ExceedsLimit(c.StepsUsed, steps, c.Limits.MaxSteps)
-	poll := limits.ReachesInterval(c.InputSinceCheck, inputWork, WorkCheckInputInterval) ||
-		limits.ReachesInterval(c.StepsSinceCheck, steps, WorkCheckStepInterval)
+	exceeded := limits.ExceedsLimit(c.Used, n, c.Limits.MaxWork)
+	poll := limits.ReachesInterval(c.SinceCheck, n, WorkCheckInterval)
 
 	// Check on each poll boundary and on a failed reservation so an already
 	// canceled invocation wins over a simultaneously exhausted budget.
-	if poll || inputExceeded || stepsExceeded {
+	if poll || exceeded {
 		if c.Ctx != nil {
 			if err := contextErr(c.Ctx); err != nil {
 				panic(Fatal{Err: err})
 			}
 		}
 	}
-	if inputExceeded {
-		panic(Fatal{Err: &limits.WorkLimitError{
-			Kind: limits.InputWorkLimit, Limit: c.Limits.MaxInputWork,
-			Used: c.InputUsed, Requested: inputWork,
-		}})
-	}
-	if stepsExceeded {
-		panic(Fatal{Err: &limits.WorkLimitError{
-			Kind: limits.StepWorkLimit, Limit: c.Limits.MaxSteps,
-			Used: c.StepsUsed, Requested: steps,
+	if exceeded {
+		panic(Fatal{Err: &limits.LimitError{
+			Kind: limits.LimitWork, Limit: c.Limits.MaxWork,
+			Used: c.Used, Requested: n,
 		}})
 	}
 
-	c.InputUsed = limits.SaturatingAdd(c.InputUsed, inputWork)
-	c.StepsUsed = limits.SaturatingAdd(c.StepsUsed, steps)
+	c.Used = limits.SaturatingAdd(c.Used, n)
 	if poll {
-		c.InputSinceCheck = 0
-		c.StepsSinceCheck = 0
+		c.SinceCheck = 0
 		return
 	}
-	c.InputSinceCheck = limits.SaturatingAdd(c.InputSinceCheck, inputWork)
-	c.StepsSinceCheck = limits.SaturatingAdd(c.StepsSinceCheck, steps)
+	c.SinceCheck = limits.SaturatingAdd(c.SinceCheck, n)
 }

@@ -149,9 +149,9 @@ for(const w of workloads)for(const unit of [p.CodePoints,p.Bytes]){
   check(Number.isInteger(plain.node.start)&&plain.node.start>=0&&plain.node.end>=plain.node.start,w.name+"/Node missing root span");
   const plainTree=stable(plain.node),plainDiag=diagnostic(plain.error);
   const modes=[
-    {name:"unlimited-counters",options:{unit,maxInputWork:Number.MAX_SAFE_INTEGER,maxSteps:Number.MAX_SAFE_INTEGER}},
+    {name:"unlimited-counters",options:{unit,maxWork:Number.MAX_SAFE_INTEGER}},
     {name:"live-signal",options:{unit,signal:{aborted:false}}},
-    {name:"combined",options:{unit,signal:{aborted:false},maxInputWork:Number.MAX_SAFE_INTEGER,maxSteps:Number.MAX_SAFE_INTEGER}},
+    {name:"combined",options:{unit,signal:{aborted:false},maxWork:Number.MAX_SAFE_INTEGER}},
   ] as const;
   for(const mode of modes){
     const active=p.parseWithOptions(w.input,mode.options);
@@ -161,11 +161,11 @@ for(const w of workloads)for(const unit of [p.CodePoints,p.Bytes]){
   const typed=p.parseAST(w.input,unit);
   expectOutcome(w,"typed",typed.value,typed.error);
   const typedTree=stable(typed.value),typedDiag=diagnostic(typed.error);
-  const typedActive=p.parseASTWithOptions(w.input,{unit,signal:{aborted:false},maxInputWork:Number.MAX_SAFE_INTEGER,maxSteps:Number.MAX_SAFE_INTEGER});
+  const typedActive=p.parseASTWithOptions(w.input,{unit,signal:{aborted:false},maxWork:Number.MAX_SAFE_INTEGER});
   expectOutcome(w,"typed/combined",typedActive.value,typedActive.error);
   check(stable(typedActive.value)===typedTree&&diagnostic(typedActive.error)===typedDiag,w.name+"/typed changed serialized output or diagnostics");
   const recognized=p.recognize(w.input,unit);
-  const recognizedActive=p.recognizeWithOptions(w.input,{unit,signal:{aborted:false},maxInputWork:Number.MAX_SAFE_INTEGER,maxSteps:Number.MAX_SAFE_INTEGER});
+  const recognizedActive=p.recognizeWithOptions(w.input,{unit,signal:{aborted:false},maxWork:Number.MAX_SAFE_INTEGER});
   check(diagnostic(recognizedActive)===diagnostic(recognized),w.name+"/recognition changed diagnostics");
   if(w.recovery){
     check(recognized!==null&&recognized.name==="SyntaxErrors",w.name+"/recognition lost recovery diagnostics");
@@ -177,8 +177,8 @@ for(const w of workloads)for(const unit of [p.CodePoints,p.Bytes]){
 // Early failures exercise interruption publication and ensure the same parser
 // remains usable for a subsequent full-corpus retry.
 for(const w of workloads)if(["JSON","Arith_OperatorsRule","Recovery","Outline"].includes(w.name))for(const unit of [p.CodePoints,p.Bytes]){
-  for(const kind of ["step-work-limit","input-work-limit"] as const){
-    const options=kind==="step-work-limit"?{unit,maxSteps:1}:{unit,maxInputWork:1};
+  for(const kind of ["work-limit"] as const){
+    const options={unit,maxWork:1};
     const stopped=p.parseWithOptions(w.input,options);
     check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind===kind,w.name+"/"+unit+" did not interrupt with "+kind);
     const baseline=p.parse(w.input,unit),retry=p.parse(w.input,unit);

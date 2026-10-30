@@ -23,18 +23,18 @@ func BenchmarkControlledParse(b *testing.B) {
 		b.Run(w.name, func(b *testing.B) {
 			p := load(b, w.grammar)
 			input := w.input(1)
-			limits := pego.WorkLimits{MaxInputWork: ^uint64(0), MaxSteps: ^uint64(0)}
+			limits := pego.Limits{MaxWork: ^uint64(0)}
 			for _, backend := range backends {
 				for _, unit := range units {
 					b.Run(backend.name+"/"+unit.name, func(b *testing.B) {
 						// Initialize lazy instrumentation before measuring repeated calls.
-						if err := parseOK(p, w, input, pego.WithBackend(backend.b), pego.WithUnit(unit.u), pego.WithWorkLimits(limits)); err != nil {
+						if err := parseOK(p, w, input, pego.WithBackend(backend.b), pego.WithUnit(unit.u), pego.WithLimits(limits)); err != nil {
 							b.Fatal(err)
 						}
 						b.SetBytes(int64(len(input)))
 						b.ReportAllocs()
 						for b.Loop() {
-							if err := parseOK(p, w, input, pego.WithBackend(backend.b), pego.WithUnit(unit.u), pego.WithWorkLimits(limits)); err != nil {
+							if err := parseOK(p, w, input, pego.WithBackend(backend.b), pego.WithUnit(unit.u), pego.WithLimits(limits)); err != nil {
 								b.Fatal(err)
 							}
 						}
@@ -52,13 +52,13 @@ func BenchmarkControlledParse(b *testing.B) {
 							if unit.u == pego.Bytes {
 								selected = gjson.Bytes
 							}
-							_, err = gjson.Parse(input, gjson.WithUnit(selected), gjson.WithWorkLimits(gjson.WorkLimits(limits)))
+							_, err = gjson.Parse(input, gjson.WithUnit(selected), gjson.WithLimits(gjson.Limits(limits)))
 						} else {
 							selected := gxml.CodePoints
 							if unit.u == pego.Bytes {
 								selected = gxml.Bytes
 							}
-							_, err = gxml.Parse(input, gxml.WithUnit(selected), gxml.WithWorkLimits(gxml.WorkLimits(limits)))
+							_, err = gxml.Parse(input, gxml.WithUnit(selected), gxml.WithLimits(gxml.Limits(limits)))
 						}
 						if err != nil {
 							b.Fatal(err)
@@ -75,13 +75,13 @@ func BenchmarkControlledParse(b *testing.B) {
 							if unit.u == pego.Bytes {
 								selected = gjson.Bytes
 							}
-							_, err = gjson.ParseAST(input, gjson.WithUnit(selected), gjson.WithWorkLimits(gjson.WorkLimits(limits)))
+							_, err = gjson.ParseAST(input, gjson.WithUnit(selected), gjson.WithLimits(gjson.Limits(limits)))
 						} else {
 							selected := gxml.CodePoints
 							if unit.u == pego.Bytes {
 								selected = gxml.Bytes
 							}
-							_, err = gxml.ParseAST(input, gxml.WithUnit(selected), gxml.WithWorkLimits(gxml.WorkLimits(limits)))
+							_, err = gxml.ParseAST(input, gxml.WithUnit(selected), gxml.WithLimits(gxml.Limits(limits)))
 						}
 						if err != nil {
 							b.Fatal(err)
@@ -104,7 +104,7 @@ func TestControlledWorkloads(t *testing.T) {
 		t.Run(w.name, func(t *testing.T) {
 			input := w.input(10)
 			p := load(t, w.grammar)
-			limits := pego.WorkLimits{MaxInputWork: ^uint64(0), MaxSteps: ^uint64(0)}
+			limits := pego.Limits{MaxWork: ^uint64(0)}
 			equal := func(plain, controlled any) {
 				t.Helper()
 				a, err := json.Marshal(plain)
@@ -126,7 +126,7 @@ func TestControlledWorkloads(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					controlled, err := p.Parse(input, append(opts, pego.WithWorkLimits(limits))...)
+					controlled, err := p.Parse(input, append(opts, pego.WithLimits(limits))...)
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -143,7 +143,7 @@ func TestControlledWorkloads(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					controlled, err := gjson.Parse(input, gjson.WithUnit(selected), gjson.WithWorkLimits(gjson.WorkLimits(limits)))
+					controlled, err := gjson.Parse(input, gjson.WithUnit(selected), gjson.WithLimits(gjson.Limits(limits)))
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -152,7 +152,7 @@ func TestControlledWorkloads(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					controlledAST, err := gjson.ParseAST(input, gjson.WithUnit(selected), gjson.WithWorkLimits(gjson.WorkLimits(limits)))
+					controlledAST, err := gjson.ParseAST(input, gjson.WithUnit(selected), gjson.WithLimits(gjson.Limits(limits)))
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -166,7 +166,7 @@ func TestControlledWorkloads(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					controlled, err := gxml.Parse(input, gxml.WithUnit(selected), gxml.WithWorkLimits(gxml.WorkLimits(limits)))
+					controlled, err := gxml.Parse(input, gxml.WithUnit(selected), gxml.WithLimits(gxml.Limits(limits)))
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -175,7 +175,7 @@ func TestControlledWorkloads(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					controlledAST, err := gxml.ParseAST(input, gxml.WithUnit(selected), gxml.WithWorkLimits(gxml.WorkLimits(limits)))
+					controlledAST, err := gxml.ParseAST(input, gxml.WithUnit(selected), gxml.WithLimits(gxml.Limits(limits)))
 					if err != nil {
 						t.Fatal(err)
 					}

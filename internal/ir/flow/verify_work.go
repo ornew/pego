@@ -6,18 +6,15 @@ import (
 )
 
 // verifyWork checks the work-charging invariants of a function lowered with Options.Work, which keep
-// the work of a parse bounded by its limits and the context polled (the runtime polls every 256 steps
-// and every 4096 units of input work). A charge is a Step, a Peek (which charges the input work of the
-// character it reads), or a CallRule (which the runtime charges as a rule call):
+// the work of a parse bounded by its limits and the context polled (the runtime polls every 256 units
+// of work). A charge is a Step, a Peek (which charges the work of the character it reads), or a CallRule (which the runtime charges as a rule call):
 //
 //   - the function charges before it consumes input: before an Advance, a MatchLit, a MatchClass, a
 //     SkipTerminal or a SkipClasses;
 //   - every iteration of a loop without a Counter bound charges: on each path from the start of the
 //     body to a Continue or to the end of the body. A repetition of a character class is lowered to a
 //     loop of Peek and Advance without a Step (an iteration of such a loop charges no step),
-//     so its iteration charges only the input work of the character it reads, which MaxInputWork bounds
-//     and the context poll counts every 4096 units; a parse limited by MaxSteps alone is not bounded by
-//     such a loop.
+//     so its iteration charges the work of the character it reads, which MaxWork bounds.
 //
 // A function whose caller charged its entry (Func.Entered) starts charged. A path is followed through
 // ifs, blocks and exits; a path that ends in an Exit leaves the loop or block it names with the charge

@@ -13,53 +13,49 @@ import (
 	"unicode/utf8"
 )
 
-// WorkLimits bounds cumulative engine work for one parse invocation. A zero
-// limit leaves that counter unlimited. Scanning input may charge only input
-// work, so MaxSteps alone does not bound it; MaxInputWork does.
-type WorkLimits struct {
-	MaxInputWork uint64
-	MaxSteps     uint64
+// Limits bounds one parse invocation. A zero limit leaves that limit
+// unlimited.
+//
+// MaxWork bounds the cumulative work of the parse: every input unit
+// inspected, every rule call and loop iteration, and every unit of value
+// construction adds to one counter, so a bound on it bounds scanning,
+// recursion and value building alike.
+type Limits struct {
+	MaxWork uint64
 }
 
-// ErrWorkLimit is matched by errors.Is for any WorkLimitError.
-var ErrWorkLimit = errors.New("parse work limit exceeded")
+// ErrLimit is matched by errors.Is for any LimitError.
+var ErrLimit = errors.New("parse limit exceeded")
 
-// WorkLimitKind identifies the counter that exhausted its limit.
-type WorkLimitKind uint8
+// LimitKind identifies the limit that was exhausted.
+type LimitKind uint8
 
 const (
-	InputWorkLimit WorkLimitKind = iota
-	StepWorkLimit
+	LimitWork LimitKind = iota
 )
 
-// WorkLimitError reports a reservation that would exceed one work limit.
-// Used is the counter value before the rejected reservation; Requested is the
-// complete atomic reservation that could not be made.
-type WorkLimitError struct {
-	Kind      WorkLimitKind
+// LimitError reports a reservation that would exceed a limit. Used is the
+// counter value before the rejected reservation; Requested is the complete
+// atomic reservation that could not be made.
+type LimitError struct {
+	Kind      LimitKind
 	Limit     uint64
 	Used      uint64
 	Requested uint64
 }
 
-func (e *WorkLimitError) Error() string {
+func (e *LimitError) Error() string {
 	if e == nil {
-		return ErrWorkLimit.Error()
+		return ErrLimit.Error()
 	}
-	name := "input work"
-	if e.Kind == StepWorkLimit {
-		name = "steps"
-	}
-	return fmt.Sprintf("parse %s limit exceeded: limit %d, used %d, requested %d", name, e.Limit, e.Used, e.Requested)
+	return fmt.Sprintf("parse work limit exceeded: limit %d, used %d, requested %d", e.Limit, e.Used, e.Requested)
 }
 
-// Is reports whether target is the work-limit sentinel.
-func (e *WorkLimitError) Is(target error) bool { return e != nil && target == ErrWorkLimit }
+// Is reports whether target is the limit sentinel.
+func (e *LimitError) Is(target error) bool { return e != nil && target == ErrLimit }
 
-const (
-	workCheckStepInterval  = uint64(256)
-	workCheckInputInterval = uint64(4096)
-)
+// workCheckInterval is the work between two observations of cancellation.
+const workCheckInterval = uint64(256)
 
 // WorkControl is private state for a single parser invocation. Callers must
 // split long operations into bounded reservations so cancellation can be
@@ -68,30 +64,27 @@ const (
 // WorkControl is for generated parsers; not a stable API.
 type WorkControl struct {
 	ctx    context.Context
-	limits WorkLimits
+	limits Limits
 
-	// The units reserved are inputBase and stepsBase, which the slow path of
-	// charge keeps, plus what the fast path reserved since (inputUsed,
-	// stepsUsed). inputRoom and stepsRoom are the units the fast path can still
-	// reserve without reaching a poll boundary or exceeding a limit, out of the
-	// inputGrant and stepsGrant that refill computed, so that the common charge
-	// is two subtractions that inline into the matchers.
-	inputBase, stepsBase   uint64
-	inputGrant, stepsGrant uint64
-	inputRoom, stepsRoom   uint64
+	// The units reserved are base, which the slow path of charge keeps, plus
+	// what the fast path reserved since (used). room is the units the fast path
+	// can still reserve without reaching a poll boundary or exceeding a limit,
+	// out of the grant that refill computed, so that the common charge is one
+	// subtraction that inlines into the matchers.
+	base        uint64
+	grant, room uint64
 
-	inputSinceCheck uint64
-	stepsSinceCheck uint64
-	interrupted     bool // distinguishes work interruptions from ordinary parse errors
+	sinceCheck  uint64
+	interrupted bool // distinguishes work interruptions from ordinary parse errors
 }
 
 // newWorkControl returns nil when neither cancellation nor a finite budget is
 // active. A nil context is equivalent to context.Background.
-func newWorkControl(ctx context.Context, limits WorkLimits) *WorkControl {
+func newWorkControl(ctx context.Context, limits Limits) *WorkControl {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if ctx.Done() == nil && limits.MaxInputWork == 0 && limits.MaxSteps == 0 {
+	if ctx.Done() == nil && limits.MaxWork == 0 {
 		return nil
 	}
 	c := &WorkControl{ctx: ctx, limits: limits}
@@ -99,24 +92,22 @@ func newWorkControl(ctx context.Context, limits WorkLimits) *WorkControl {
 	return c
 }
 
-// inputUsed and stepsUsed return the input-work and step units reserved so far.
-func (c *WorkControl) inputUsed() uint64 { return c.inputBase + (c.inputGrant - c.inputRoom) }
-func (c *WorkControl) stepsUsed() uint64 { return c.stepsBase + (c.stepsGrant - c.stepsRoom) }
+// workUsed returns the work units reserved so far.
+func (c *WorkControl) workUsed() uint64 { return c.base + (c.grant - c.room) }
 
-// settle moves what the fast path of charge reserved into the bases and the
-// poll counters, leaving no room.
+// settle moves what the fast path of charge reserved into the base and the
+// poll counter, leaving no room.
 func (c *WorkControl) settle() {
-	in, steps := c.inputGrant-c.inputRoom, c.stepsGrant-c.stepsRoom
-	c.inputBase, c.stepsBase = c.inputBase+in, c.stepsBase+steps
-	c.inputSinceCheck, c.stepsSinceCheck = c.inputSinceCheck+in, c.stepsSinceCheck+steps
-	c.inputGrant, c.stepsGrant, c.inputRoom, c.stepsRoom = 0, 0, 0, 0
+	n := c.grant - c.room
+	c.base += n
+	c.sinceCheck += n
+	c.grant, c.room = 0, 0
 }
 
 // refill grants the fast path of charge the room left by the settled counters.
 func (c *WorkControl) refill() {
-	c.inputGrant = workRoom(c.inputBase, c.inputSinceCheck, c.limits.MaxInputWork, workCheckInputInterval)
-	c.stepsGrant = workRoom(c.stepsBase, c.stepsSinceCheck, c.limits.MaxSteps, workCheckStepInterval)
-	c.inputRoom, c.stepsRoom = c.inputGrant, c.stepsGrant
+	c.grant = workRoom(c.base, c.sinceCheck, c.limits.MaxWork, workCheckInterval)
+	c.room = c.grant
 }
 
 // workRoom returns the smallest request that reaches the poll interval
@@ -166,63 +157,47 @@ func (c *WorkControl) Check() {
 		panic(fatal{err: err})
 	}
 	c.settle()
-	c.inputSinceCheck = 0
-	c.stepsSinceCheck = 0
+	c.sinceCheck = 0
 	c.refill()
 }
 
-// Charge atomically reserves input-work and step units. Cancellation wins when
-// it is observed at a poll or when either reservation would fail; otherwise
-// input-work exhaustion takes priority over step exhaustion. A failed
-// reservation leaves both counters unchanged.
-func (c *WorkControl) Charge(inputWork, steps uint64) {
-	if c != nil && inputWork < c.inputRoom && steps < c.stepsRoom {
-		c.inputRoom -= inputWork
-		c.stepsRoom -= steps
+// Charge atomically reserves n work units. Cancellation wins when it is
+// observed at a poll or when the reservation would fail. A failed reservation
+// leaves the counter unchanged. It is safe on a nil receiver.
+func (c *WorkControl) Charge(n uint64) {
+	if c != nil && n < c.room {
+		c.room -= n
 		return
 	}
-	c.chargeSlow(inputWork, steps)
+	c.chargeSlow(n)
 }
 
-// chargeInput is charge(n, 1), and chargeStep is charge(0, 1), for the
-// matchers and rule calls. c must not be nil in chargeInput; chargeStep does
-// nothing on a nil receiver. chargeStep need not test inputRoom: outside
-// chargeSlow it is at least 1, which is the room of a request of no input.
-func (c *WorkControl) chargeInput(n uint64) {
-	if n < c.inputRoom && c.stepsRoom > 1 {
-		c.inputRoom -= n
-		c.stepsRoom--
-	} else {
-		c.chargeSlow(n, 1)
-	}
-}
-
+// chargeStep reserves one unit for a rule call, a loop iteration or a matcher
+// step; it does nothing on a nil receiver. n < room is room > 1 for n = 1.
 func (c *WorkControl) chargeStep() {
 	if c == nil {
 		return
 	}
-	if c.stepsRoom > 1 {
-		c.stepsRoom--
+	if c.room > 1 {
+		c.room--
 	} else {
-		c.chargeSlow(0, 1)
+		c.chargeSlow(1)
 	}
 }
 
 // chargeSlow is charge at a poll boundary or a limit, or on a nil receiver.
-func (c *WorkControl) chargeSlow(inputWork, steps uint64) {
+func (c *WorkControl) chargeSlow(n uint64) {
 	if c == nil {
 		return
 	}
 	c.settle()
 
-	inputExceeded := exceedsLimit(c.inputBase, inputWork, c.limits.MaxInputWork)
-	stepsExceeded := exceedsLimit(c.stepsBase, steps, c.limits.MaxSteps)
-	poll := reachesInterval(c.inputSinceCheck, inputWork, workCheckInputInterval) ||
-		reachesInterval(c.stepsSinceCheck, steps, workCheckStepInterval)
+	exceeded := exceedsLimit(c.base, n, c.limits.MaxWork)
+	poll := reachesInterval(c.sinceCheck, n, workCheckInterval)
 
 	// Check on each poll boundary and on a failed reservation so an already
 	// canceled invocation wins over a simultaneously exhausted budget.
-	if poll || inputExceeded || stepsExceeded {
+	if poll || exceeded {
 		if c.ctx != nil {
 			if err := contextErr(c.ctx); err != nil {
 				c.interrupted = true
@@ -230,29 +205,19 @@ func (c *WorkControl) chargeSlow(inputWork, steps uint64) {
 			}
 		}
 	}
-	if inputExceeded {
+	if exceeded {
 		c.interrupted = true
-		panic(fatal{err: &WorkLimitError{
-			Kind: InputWorkLimit, Limit: c.limits.MaxInputWork,
-			Used: c.inputBase, Requested: inputWork,
-		}})
-	}
-	if stepsExceeded {
-		c.interrupted = true
-		panic(fatal{err: &WorkLimitError{
-			Kind: StepWorkLimit, Limit: c.limits.MaxSteps,
-			Used: c.stepsBase, Requested: steps,
+		panic(fatal{err: &LimitError{
+			Kind: LimitWork, Limit: c.limits.MaxWork,
+			Used: c.base, Requested: n,
 		}})
 	}
 
-	c.inputBase = saturatingAdd(c.inputBase, inputWork)
-	c.stepsBase = saturatingAdd(c.stepsBase, steps)
+	c.base = saturatingAdd(c.base, n)
 	if poll {
-		c.inputSinceCheck = 0
-		c.stepsSinceCheck = 0
+		c.sinceCheck = 0
 	} else {
-		c.inputSinceCheck = saturatingAdd(c.inputSinceCheck, inputWork)
-		c.stepsSinceCheck = saturatingAdd(c.stepsSinceCheck, steps)
+		c.sinceCheck = saturatingAdd(c.sinceCheck, n)
 	}
 	c.refill()
 }
@@ -283,7 +248,7 @@ func (p *Parser) InputWork(n uint64) {
 	if p.Document != nil {
 		p.inputWorkTracked(n)
 	} else if p.Control != nil {
-		p.Control.chargeInput(n)
+		p.Control.Charge(n)
 	}
 }
 
@@ -302,7 +267,7 @@ func (p *Parser) inputWorkTracked(n uint64) {
 		}
 	}
 	if p.Control != nil {
-		p.Control.Charge(n, 1)
+		p.Control.Charge(n)
 	}
 }
 func (p *Parser) StepWork() {
@@ -318,7 +283,7 @@ func (p *Parser) setControlledSource(s string) {
 	}
 	for off := 0; off < len(s); {
 		if w := uint64(min(utf8.UTFMax, len(s)-off)); c != nil {
-			c.chargeInput(w)
+			c.Charge(w)
 		} else {
 			p.InputWork(w)
 		}
@@ -443,7 +408,7 @@ const valueWorkChunk = 128
 
 func (p *Parser) valueWork(n int) {
 	if p.Control != nil {
-		p.Control.Charge(0, uint64(n))
+		p.Control.Charge(uint64(n))
 	}
 }
 
@@ -556,7 +521,7 @@ func (p *Parser) detachedText(start, end int) string {
 	size := 0
 	for off := 0; off < len(src); {
 		n := min(valueWorkChunk, len(src)-off)
-		p.Control.Charge(uint64(n), uint64(n))
+		p.Control.Charge(2 * uint64(n))
 		for _, r := range src[off : off+n] {
 			width := utf8.RuneLen(r)
 			if width < 0 {
@@ -570,7 +535,7 @@ func (p *Parser) detachedText(start, end int) string {
 	out.Grow(size)
 	for off := 0; off < len(src); {
 		n := min(valueWorkChunk, len(src)-off)
-		p.Control.Charge(uint64(n), uint64(n))
+		p.Control.Charge(2 * uint64(n))
 		for _, r := range src[off : off+n] {
 			out.WriteRune(r)
 		}

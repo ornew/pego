@@ -59,7 +59,7 @@ func testGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	controls := gentest.FixtureWorkControls(t)
 	var limited, typedLimited string
 	if controls {
-		limited, typedLimited = "g.WithWorkLimits(g.WorkLimits{MaxSteps: 1 << 40})", "tg.WithWorkLimits(tg.WorkLimits{MaxSteps: 1 << 40})"
+		limited, typedLimited = "g.WithLimits(g.Limits{MaxWork: 1 << 40})", "tg.WithLimits(tg.Limits{MaxWork: 1 << 40})"
 	}
 	var want strings.Builder
 	var quoted []string

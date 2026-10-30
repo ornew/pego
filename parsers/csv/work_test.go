@@ -15,10 +15,10 @@ func TestWorkControls(t *testing.T) {
 	if _, err := csv.Parse(input); err != nil {
 		t.Fatal(err)
 	}
-	_, err := csv.Parse(input, csv.WithWorkLimits(csv.WorkLimits{MaxSteps: 1}))
-	var limit *csv.WorkLimitError
-	if !errors.Is(err, csv.ErrWorkLimit) || !errors.As(err, &limit) || limit.Kind != csv.StepWorkLimit {
-		t.Fatalf("step limit: got %v", err)
+	_, err := csv.Parse(input, csv.WithLimits(csv.Limits{MaxWork: 1}))
+	var limit *csv.LimitError
+	if !errors.Is(err, csv.ErrLimit) || !errors.As(err, &limit) || limit.Kind != csv.LimitWork {
+		t.Fatalf("work limit: got %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

@@ -19,8 +19,8 @@ func TestWorkActionArenaResetInterruption(t *testing.T) {
 	for range 300 {
 		*cm.closures.Alloc() = closure{ctx: &core.EvalCtx{Items: []*value.Node{retained}}}
 	}
-	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 64})
-	if err := catchFatal(t, func() { evalTerm(p.UseCtx(core.EvalCtx{P: p}), &grammar.NilLit{}) }); !errors.Is(err, limits.ErrWorkLimit) {
+	p.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 64})
+	if err := catchFatal(t, func() { evalTerm(p.UseCtx(core.EvalCtx{P: p}), &grammar.NilLit{}) }); !errors.Is(err, limits.ErrLimit) {
 		t.Fatalf("arena reset interruption = %v", err)
 	}
 	p.ReleaseScratch()

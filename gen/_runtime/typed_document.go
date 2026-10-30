@@ -27,7 +27,7 @@ func (c *TypedDocumentCloneBase) Begin(control *WorkControl) { c.Control = contr
 
 func (c *TypedDocumentCloneBase) Step(n uint64) {
 	if c.Control != nil {
-		c.Control.Charge(0, n)
+		c.Control.Charge(n)
 	}
 }
 
@@ -102,25 +102,25 @@ func TypedDocumentParse[T any](d *Document, root *TRule, o parseOptions, a workC
 // alter a later parse.
 func typedDocumentError(err error, control *WorkControl) error {
 	clone := func(e *SyntaxError) *SyntaxError {
-		control.Charge(0, 1)
+		control.Charge(1)
 		if e == nil {
 			return nil
 		}
 		out := new(SyntaxError)
 		*out = *e
 		if e.Expected != nil {
-			control.Charge(0, uint64(len(e.Expected)))
+			control.Charge(uint64(len(e.Expected)))
 			out.Expected = make([]string, len(e.Expected))
 			for i, s := range e.Expected {
-				control.Charge(0, 1)
+				control.Charge(1)
 				out.Expected[i] = s
 			}
 		}
 		if e.Messages != nil {
-			control.Charge(0, uint64(len(e.Messages)))
+			control.Charge(uint64(len(e.Messages)))
 			out.Messages = make([]string, len(e.Messages))
 			for i, s := range e.Messages {
-				control.Charge(0, 1)
+				control.Charge(1)
 				out.Messages[i] = s
 			}
 		}
@@ -130,7 +130,7 @@ func typedDocumentError(err error, control *WorkControl) error {
 	case *SyntaxError:
 		return clone(e)
 	case SyntaxErrors:
-		control.Charge(0, uint64(len(e)))
+		control.Charge(uint64(len(e)))
 		out := make(SyntaxErrors, len(e))
 		for i, item := range e {
 			out[i] = clone(item)

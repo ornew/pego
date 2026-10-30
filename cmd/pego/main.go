@@ -113,8 +113,8 @@ Commands:
       parsing and Documents, and TypeScript batch parsing, including typed
       entry points.
       -work-controls generates the work-controlled form of the parser, which
-      supports WithContext and WithWorkLimits (signal, maxInputWork and
-      maxSteps in TypeScript); without it those options are not exported, the
+      supports WithContext and WithLimits (signal and maxWork in TypeScript);
+      without it those options are not exported, the
       generated code does not charge work, and a parse that passes them
       fails. The parser has this one form only: a parse that sets no limit
       runs the same code. Generate a second parser without the option to
@@ -813,7 +813,7 @@ func genCmd(args []string, stdout io.Writer) error {
 	document := fs.Bool("document", false, "also generate a Go incremental Document (typed ParseAST with -types; incompatible with -lang ts)")
 	stream := fs.Bool("stream", false, "also generate Go ParseStream and Iterate for the start rule's #stream repetition (and their typed forms with -types; incompatible with -lang ts)")
 	observability := fs.Bool("observability", false, "emit opt-in rule tracing and profiling for Go batch/Documents and TypeScript batch parsing, including typed entry points")
-	workControls := fs.Bool("work-controls", false, "generate the work-controlled form of the parser, which supports WithContext and WithWorkLimits (signal, maxInputWork and maxSteps in TypeScript)")
+	workControls := fs.Bool("work-controls", false, "generate the work-controlled form of the parser, which supports WithContext and WithLimits (signal and maxWork in TypeScript)")
 	typedOnly := fs.Bool("typed-only", false, "generate only the typed entry points (ParseAST and siblings), without Parse, ParseRule and Recognize (needs -types)")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
 	maxDepth := fs.Int("max-depth", 0, "generated default nested rule-call limit (0 selects 100000)")

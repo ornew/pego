@@ -15,7 +15,7 @@ type StreamReaderObserver struct {
 
 func (r *StreamReaderObserver) Read(dst []byte) (int, error) {
 	r.Control.Check()
-	r.Control.Charge(0, 1) // one step per underlying reader attempt, including empty refills
+	r.Control.Charge(1) // one step per underlying reader attempt, including empty refills
 	n, err := r.Reader.Read(dst)
 	*r.Result = err
 	r.Control.checkAfterReader(err)
@@ -35,8 +35,7 @@ func (c *WorkControl) checkAfterReader(returned error) {
 		}
 		panic(Fatal{Err: err})
 	}
-	c.InputSinceCheck = 0
-	c.StepsSinceCheck = 0
+	c.SinceCheck = 0
 }
 
 // CopyStreamPrefix compacts to an earlier address in the same slice. Forward
@@ -48,7 +47,7 @@ func CopyStreamPrefix[T any](c *WorkControl, dst, src []T) int {
 	}
 	for off := 0; off < n; {
 		k := min(valueWorkChunk, n-off)
-		c.Charge(0, uint64(k))
+		c.Charge(uint64(k))
 		copy(dst[off:off+k], src[off:off+k])
 		off += k
 	}

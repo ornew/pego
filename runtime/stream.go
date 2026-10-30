@@ -91,7 +91,7 @@ type streamReader struct {
 
 func (r *streamReader) Read(dst []byte) (int, error) {
 	r.control.Check()
-	r.control.Charge(0, 1)
+	r.control.Charge(1)
 	n, err := r.reader.Read(dst)
 	if r.control.ctx != nil {
 		if cerr := contextErr(r.control.ctx); cerr != nil {
@@ -360,7 +360,7 @@ func (t *streamDiagnosticTail) result(p *Parser) error {
 	}
 	ordered := t.errors
 	if t.head != 0 {
-		p.Control.Charge(0, uint64(len(t.errors)))
+		p.Control.Charge(uint64(len(t.errors)))
 		ordered = append(append(make(SyntaxErrors, 0, len(t.errors)), t.errors[t.head:]...), t.errors[:t.head]...)
 	}
 	p.Control.Check()
@@ -682,12 +682,12 @@ func (p *Parser) streamCopy(start, end int) string {
 	start, end = start-s.base, end-s.base
 	if p.unit == Bytes {
 		if p.Control != nil {
-			p.Control.Charge(uint64(end-start), 1)
+			p.Control.Charge(uint64(end - start))
 		}
 		return string(s.bs[start:end])
 	}
 	if p.Control != nil {
-		p.Control.Charge(uint64(end-start), uint64(end-start))
+		p.Control.Charge(2 * uint64(end-start))
 	}
 	return string(s.in[start:end])
 }

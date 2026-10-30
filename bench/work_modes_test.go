@@ -30,7 +30,7 @@ func BenchmarkWorkControlModes(b *testing.B) {
 								opts = append(opts, pego.WithContext(ctx))
 							}
 							if mode == "budget" || mode == "combined" {
-								opts = append(opts, pego.WithWorkLimits(pego.WorkLimits{MaxSteps: ^uint64(0), MaxInputWork: ^uint64(0)}))
+								opts = append(opts, pego.WithLimits(pego.Limits{MaxWork: ^uint64(0)}))
 							}
 							if err := parseOK(p, &w, input, opts...); err != nil {
 								b.Fatal(err)

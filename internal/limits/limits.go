@@ -1,4 +1,4 @@
-// Package limits defines the work limits of one parse invocation, the error
+// Package limits defines the limits of one parse invocation, the error
 // that reports an exhausted limit, and the overflow-safe arithmetic used to
 // account work against them. The parser, the document and the structural
 // query share these definitions; the public API exposes them as aliases.
@@ -17,47 +17,46 @@ const (
 	DefaultMaxDepthIterative = 10_000_000
 )
 
-// WorkLimits bounds cumulative engine work for one parse invocation. A zero
-// limit leaves that counter unlimited.
-type WorkLimits struct {
-	MaxInputWork uint64
-	MaxSteps     uint64
+// Limits bounds one parse invocation. A zero limit leaves that limit
+// unlimited.
+//
+// MaxWork bounds the cumulative work of the parse: every input unit
+// inspected, every rule call and loop iteration, and every unit of value
+// construction adds to one counter, so a bound on it bounds scanning,
+// recursion and value building alike.
+type Limits struct {
+	MaxWork uint64
 }
 
-// ErrWorkLimit is matched by errors.Is for any WorkLimitError.
-var ErrWorkLimit = errors.New("parse work limit exceeded")
+// ErrLimit is matched by errors.Is for any LimitError.
+var ErrLimit = errors.New("parse limit exceeded")
 
-// WorkLimitKind identifies the counter that exhausted its limit.
-type WorkLimitKind uint8
+// LimitKind identifies the limit that was exhausted.
+type LimitKind uint8
 
 const (
-	InputWorkLimit WorkLimitKind = iota
-	StepWorkLimit
+	LimitWork LimitKind = iota
 )
 
-// WorkLimitError reports a reservation that would exceed one work limit.
-// Used is the counter value before the rejected reservation; Requested is the
-// complete atomic reservation that could not be made.
-type WorkLimitError struct {
-	Kind      WorkLimitKind
+// LimitError reports a reservation that would exceed a limit. Used is the
+// counter value before the rejected reservation; Requested is the complete
+// atomic reservation that could not be made.
+type LimitError struct {
+	Kind      LimitKind
 	Limit     uint64
 	Used      uint64
 	Requested uint64
 }
 
-func (e *WorkLimitError) Error() string {
+func (e *LimitError) Error() string {
 	if e == nil {
-		return ErrWorkLimit.Error()
+		return ErrLimit.Error()
 	}
-	name := "input work"
-	if e.Kind == StepWorkLimit {
-		name = "steps"
-	}
-	return fmt.Sprintf("parse %s limit exceeded: limit %d, used %d, requested %d", name, e.Limit, e.Used, e.Requested)
+	return fmt.Sprintf("parse work limit exceeded: limit %d, used %d, requested %d", e.Limit, e.Used, e.Requested)
 }
 
-// Is reports whether target is the work-limit sentinel.
-func (e *WorkLimitError) Is(target error) bool { return e != nil && target == ErrWorkLimit }
+// Is reports whether target is the limit sentinel.
+func (e *LimitError) Is(target error) bool { return e != nil && target == ErrLimit }
 
 // ExceedsLimit checks a reservation without computing a potentially
 // overflowing used+requested sum. A zero limit is unlimited.

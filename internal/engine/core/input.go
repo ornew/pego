@@ -37,8 +37,8 @@ type ParseOptions struct {
 	MissingTokens int
 	// Context cooperatively interrupts this invocation. Nil means no cancellation.
 	Context context.Context
-	// WorkLimits optionally bound cumulative input inspections and execution work.
-	WorkLimits limits.WorkLimits
+	// Limits optionally bound cumulative input inspections and execution work.
+	Limits limits.Limits
 	// Unit is the position unit. Matching is done per code point regardless of the unit.
 	Unit PositionUnit
 	// Backend is the backend that runs the parse.
@@ -367,7 +367,7 @@ func (in *Input) Fill(n int) bool {
 func (in *Input) read() {
 	if WorkControlsEnabled && in.Control != nil {
 		in.Control.Check()
-		in.Control.Charge(0, 1) // reading and staging one byte or code point
+		in.Control.Charge(1) // reading and staging one byte or code point
 	}
 	var err error
 	var b byte

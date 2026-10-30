@@ -37,9 +37,9 @@ func TestWorkParseBudgetAndPoolRetry(t *testing.T) {
 	prog := mustCompile(t, `rule main = [a-z]+ #atomic $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{Bytes, CodePoints} {
-			for _, lim := range []limits.WorkLimits{{MaxInputWork: 1}, {MaxSteps: 1}} {
-				n, err := prog.ParseWith("main", strings.Repeat("a", 10000), ParseOptions{Backend: b, Unit: u, WorkLimits: lim})
-				if n != nil || !errors.Is(err, limits.ErrWorkLimit) {
+			for _, lim := range []limits.Limits{{MaxWork: 1}, {MaxWork: 1}} {
+				n, err := prog.ParseWith("main", strings.Repeat("a", 10000), ParseOptions{Backend: b, Unit: u, Limits: lim})
+				if n != nil || !errors.Is(err, limits.ErrLimit) {
 					t.Fatalf("%v/%v/%v: node=%v err=%v", b, u, lim, n, err)
 				}
 				n, err = prog.ParseWith("main", "abc", ParseOptions{Backend: b, Unit: u})
@@ -132,8 +132,8 @@ func TestWorkParseFinalPublicationAndRecovery(t *testing.T) {
 	recovery := mustCompile(t, `rule main = item+ $$
 
 rule item = "a" ";" #recover(skip=[^;]* ";")`)
-	n, err := recovery.ParseWith("main", strings.Repeat("x;", 1000), ParseOptions{WorkLimits: limits.WorkLimits{MaxSteps: 5}})
-	if n != nil || !errors.Is(err, limits.ErrWorkLimit) {
+	n, err := recovery.ParseWith("main", strings.Repeat("x;", 1000), ParseOptions{Limits: limits.Limits{MaxWork: 5}})
+	if n != nil || !errors.Is(err, limits.ErrLimit) {
 		t.Fatalf("recovery swallowed interruption: node=%v err=%v", n, err)
 	}
 }
@@ -143,12 +143,12 @@ func TestWorkParseTraceAccessorInterruption(t *testing.T) {
 	prog := mustCompile(t, `rule main = "abc" $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var observed *core.Parser
-		n, err := prog.ParseWith("main", "abc", ParseOptions{Backend: b, WorkLimits: limits.WorkLimits{MaxInputWork: 100}, Trace: func(e TraceEvent) {
+		n, err := prog.ParseWith("main", "abc", ParseOptions{Backend: b, Limits: limits.Limits{MaxWork: 100}, Trace: func(e TraceEvent) {
 			observed = core.TraceParser(e)
-			core.TraceParser(e).Control.Limits.MaxInputWork = core.TraceParser(e).Control.InputUsed
+			core.TraceParser(e).Control.Limits.MaxWork = core.TraceParser(e).Control.Used
 			e.LineCol(1) // Building the first line table is engine work inside caller code.
 		}})
-		if n != nil || !errors.Is(err, limits.ErrWorkLimit) || observed == nil || observed.Scratch != nil {
+		if n != nil || !errors.Is(err, limits.ErrLimit) || observed == nil || observed.Scratch != nil {
 			t.Fatalf("%v accessor interruption: node=%v err=%v parser=%v", b, n, err, observed)
 		}
 	}
@@ -173,12 +173,12 @@ rule expr = expr "+" "a" / "a"`)
 		if n != nil || !errors.Is(err, context.Canceled) {
 			t.Fatalf("%v LR: node=%v err=%v", b, n, err)
 		}
-		n, err = prog.ParseWith("main", "a+a+a+a", ParseOptions{Backend: b, WorkLimits: limits.WorkLimits{MaxSteps: 10000}})
+		n, err = prog.ParseWith("main", "a+a+a+a", ParseOptions{Backend: b, Limits: limits.Limits{MaxWork: 10000}})
 		if n == nil || err != nil {
 			t.Fatalf("%v LR retry: node=%v err=%v", b, n, err)
 		}
 		nested := false
-		n, err = prog.ParseWith("main", "a", ParseOptions{Backend: b, WorkLimits: limits.WorkLimits{MaxSteps: 10000}, Trace: func(e TraceEvent) {
+		n, err = prog.ParseWith("main", "a", ParseOptions{Backend: b, Limits: limits.Limits{MaxWork: 10000}, Trace: func(e TraceEvent) {
 			if nested {
 				return
 			}
@@ -207,7 +207,7 @@ func TestWorkParseControlledUnicodeParity(t *testing.T) {
 					for _, input := range inputs {
 						opts := ParseOptions{Backend: b, Unit: u, Recognize: recognize}
 						baseline, baseErr := prog.ParseWith("main", input, opts)
-						opts.WorkLimits = limits.WorkLimits{MaxInputWork: 100000, MaxSteps: 100000}
+						opts.Limits = limits.Limits{MaxWork: 100000}
 						got, err := prog.ParseWith("main", input, opts)
 						if !reflect.DeepEqual(got, baseline) || !reflect.DeepEqual(err, baseErr) {
 							t.Fatalf("%v/%v/recognize=%v input=%q: controlled=%#v/%#v baseline=%#v/%#v", b, u, recognize, input, got, err, baseline, baseErr)

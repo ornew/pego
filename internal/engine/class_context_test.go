@@ -95,8 +95,8 @@ func TestClassConstructionContextFacts(t *testing.T) {
 					for _, active := range []bool{false, true} {
 						p, q := &core.Parser{}, &core.Parser{}
 						if active {
-							p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
-							q.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
+							p.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 1 << 30})
+							q.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 1 << 30})
 						}
 						expected := false
 						for _, rg := range rs {
@@ -106,7 +106,7 @@ func TestClassConstructionContextFacts(t *testing.T) {
 						if ordinary(p, r) != expected || controlled(q, r) != expected {
 							t.Fatalf("membership rune %U active=%t", r, active)
 						}
-						if active && p.Control.StepsUsed != q.Control.StepsUsed {
+						if active && p.Control.Used != q.Control.Used {
 							t.Fatal("runtime work charge changed")
 						}
 					}
@@ -160,7 +160,7 @@ func TestClassConstructionCompileContextParity(t *testing.T) {
 							// including its directly compiled recognition-only graph.
 							opts := ParseOptions{Unit: unit, Recognize: recognize}
 							if active {
-								opts.WorkLimits = limits.WorkLimits{MaxSteps: 1 << 30, MaxInputWork: 1 << 30}
+								opts.Limits = limits.Limits{MaxWork: 1 << 30}
 							}
 							x, xe := a.ParseWith("main", s, opts)
 							y, ye := b.ParseWith("main", s, opts)
@@ -228,4 +228,3 @@ func TestClassConstructionProgramReleasesCompileContext(t *testing.T) {
 	}
 	runtime.KeepAlive(p)
 }
-

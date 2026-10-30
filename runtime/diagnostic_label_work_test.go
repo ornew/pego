@@ -10,7 +10,7 @@ func TestDiagnosticRenameAccountsForLargeExpectationSets(t *testing.T) {
 	for i := range ids {
 		ids[i] = ExpID(i + 1)
 	}
-	p := &Parser{Control: newWorkControl(nil, WorkLimits{MaxSteps: 64})}
+	p := &Parser{Control: newWorkControl(nil, Limits{MaxWork: 64})}
 	var got error
 	func() {
 		defer func() {
@@ -24,10 +24,10 @@ func TestDiagnosticRenameAccountsForLargeExpectationSets(t *testing.T) {
 		}()
 		RenamedExpected(p, ids, 999)
 	}()
-	if !errors.Is(got, ErrWorkLimit) {
-		t.Fatalf("rename work limit = %v, want ErrWorkLimit", got)
+	if !errors.Is(got, ErrLimit) {
+		t.Fatalf("rename work limit = %v, want ErrLimit", got)
 	}
-	if p.Control.stepsUsed() != 64 {
-		t.Fatalf("rename steps = %d, want 64", p.Control.stepsUsed())
+	if p.Control.workUsed() != 64 {
+		t.Fatalf("rename steps = %d, want 64", p.Control.workUsed())
 	}
 }
