@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego/internal/compiletest"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // DirectTypedDocument builds typed Document parsers generated with the options extra, which
@@ -104,7 +105,7 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 	}
 	cmd := exec.Command("go", "test", "./...")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-mod=mod -trimpath")
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("direct typed Document: %v\n%s", err, out)
 	}

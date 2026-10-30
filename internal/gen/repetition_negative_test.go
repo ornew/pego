@@ -14,6 +14,7 @@ import (
 	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // Generated parsers retain negative maxima directly in their implementation-int
@@ -76,7 +77,7 @@ func main() {
 			}
 			cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "run", ".")
 			cmd.Dir = dir
-			cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+			cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"), "GOTOOLCHAIN=local")
 			out, err := cmd.CombinedOutput()
 			if err != nil || string(out) != want {
 				t.Fatalf("generated Go: %v\ngot %s\nwant %s", err, out, want)

@@ -13,6 +13,7 @@ import (
 	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // runGeneratedUntypedProgram generates untyped Go for src as package p, runs the program body with
@@ -57,7 +58,7 @@ func runGeneratedProgramWith(t *testing.T, src string, opts gen.GenOptions, body
 	}
 	cmd := exec.Command(goBin, "run", ".")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+	cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"), "GOTOOLCHAIN=local")
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()

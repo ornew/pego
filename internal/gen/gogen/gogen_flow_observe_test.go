@@ -18,6 +18,7 @@ import (
 	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // observeProbeMain is the consumer of the generated packages with the prefix PREFIX: for each input and entry
@@ -136,7 +137,7 @@ func runObserveProbes(t *testing.T, cases []gentest.Case, start string, detail [
 	write("inputs.json", string(data))
 	cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "run", ".", "inputs.json")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+	cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"), "GOTOOLCHAIN=local")
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()

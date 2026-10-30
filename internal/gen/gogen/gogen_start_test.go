@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/ir/exec/core"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -129,7 +130,7 @@ func testGeneratedGoStartRules(t *testing.T) {
 			}
 			cmd := exec.Command(goBin, "run", ".")
 			cmd.Dir = dir
-			cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+			cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"), "GOTOOLCHAIN=local")
 			var stderr strings.Builder
 			cmd.Stderr = &stderr
 			out, err := cmd.Output()

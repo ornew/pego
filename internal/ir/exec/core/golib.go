@@ -185,3 +185,13 @@ func goTarget(typed bool) *execgo.Target {
 	}
 	return t
 }
+
+// GoFlags returns flags, the GOFLAGS of a go command that builds generated Go parsers, with the
+// build tag that selects the printed compositions if this build prints them, so that the parsers
+// run the runtime that the generators of this build emit.
+func GoFlags(flags string) string {
+	if Enabled {
+		return flags + " -tags=" + RuntimeTag
+	}
+	return flags
+}

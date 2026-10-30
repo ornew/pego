@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // TestGeneratedNamedNodeTypes checks the Go types that pego gen -types gives named node types: a
@@ -117,7 +118,7 @@ func runGeneratedNamedNodeProgram(t *testing.T, src, body, want string) {
 	}
 	cmd := exec.Command(goBin, "run", ".")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+	cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"), "GOTOOLCHAIN=local")
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
@@ -407,7 +408,7 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 	}
 	cmd := exec.Command("go", "test", "./...")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-mod=mod -trimpath")
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("direct typed Document: %v\n%s", err, out)
 	}

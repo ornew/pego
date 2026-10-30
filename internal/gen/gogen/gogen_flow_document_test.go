@@ -16,6 +16,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // documentProbeMain is the consumer of the generated packages with the prefix PREFIX. For each input it creates a
@@ -234,7 +235,7 @@ func runDocumentProbes(t *testing.T, cases []documentCase, start string, mutate 
 	write("inputs.json", string(data))
 	cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "run", ".", "inputs.json")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+	cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"), "GOTOOLCHAIN=local")
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()

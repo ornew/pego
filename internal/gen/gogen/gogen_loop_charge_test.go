@@ -13,6 +13,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // TestGeneratedLoopCharge checks that every repetition of a list built-in is charged. The terms of an
@@ -156,7 +157,7 @@ func main() {
 `)
 	cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "run", ".")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+	cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"), "GOTOOLCHAIN=local")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("go run: %v\n%s", err, out)

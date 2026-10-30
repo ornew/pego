@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/gen"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // TestGenerateGoEmbeddedPackageBuilds generates a parser with the runtime embedded, as pego gen does
@@ -77,7 +78,7 @@ func TestEmbedded(t *testing.T) {
 	for _, args := range [][]string{{"vet", "./..."}, {"test", "-count=1", "./..."}} {
 		cmd := exec.Command("go", args...)
 		cmd.Dir = dir
-		cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-mod=mod -trimpath", "GOWORK=off")
+		cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"), "GOWORK=off")
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("go %s: %v\n%s", args[0], err, out)
 		}

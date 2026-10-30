@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // A separate typed consumer observes pointer identity rather than comparing
@@ -100,7 +101,7 @@ func TestPACKAGEEmpty(t *testing.T) {
 	write("identity_test.go", []byte("package filteridentity\n\nimport (\n\t\"testing\"\n"+imports.String()+")\n"+consumers.String()))
 	cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "test", "-count=1", "./...")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+	cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags("-mod=mod -trimpath"), "GOTOOLCHAIN=local")
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("typed filter identity consumer: %v\n%s", err, output)
 	}
