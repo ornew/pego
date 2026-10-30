@@ -1,0 +1,151 @@
+package compile
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/ornew/pego/internal/starttest"
+	"github.com/ornew/pego/internal/syntax"
+)
+
+// complexityMemoSources are grammars with the shapes that decide memoization: left-recursion
+// cycles with leaders and other members, transient rules, rules called once, #missing in a rule
+// and in a callee, and inline actions, which are lowered to hidden rules.
+var complexityMemoSources = []string{
+	"rule main = e $$\nrule e = e \"+\" t / t\nrule t = t \"*\" f / f\nrule f = \"x\" / \"(\" e \")\"\n",
+	"rule main = c $$\nrule a = c \"+\" / \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n",
+	"rule main = x y y z\nrule x = \"x\"\nrule y = \"y\" x\nrule z = (\"z\" #missing) / w\nrule w = z \"w\" / \"w\"\n",
+	"rule main = p p r r\nrule p = q \"p\"\nrule q = \"q\" #missing\nrule r = (\";\" #missing) p\n",
+	"rule main = a:(\"a\" => 1) b:(\"b\" => 2) => $a + $b\n",
+	"rule main = (e \"q\" / \"x\")* $$\nrule e = #operators {\n    operand \"x\"\n    level add { infix left \"+\" }\n}\n",
+}
+
+// TestComplexityMemoPolicy checks that the rules the classifier assumes the memo answers are the
+// rules that every parse memoizes: a leader, or a rule that is memoized, not transient and not
+// subject to missing tokens (Parser.Memoizes under every option).
+func TestComplexityMemoPolicy(t *testing.T) {
+	srcs := map[string]string{}
+	for i, src := range complexityMemoSources {
+		srcs[string(rune('a'+i))] = src
+	}
+	for _, pattern := range []string{"../../parsers/*/*.pego", "../../examples/*/*.pego"} {
+		paths, err := filepath.Glob(pattern)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, p := range paths {
+			b, err := os.ReadFile(p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			srcs[p] = string(b)
+		}
+	}
+	for name, src := range srcs {
+		t.Run(name, func(t *testing.T) {
+			g, err := syntax.Parse(src)
+			if err != nil {
+				t.Fatal(err)
+			}
+			g = starttest.MarkAll(g)
+			prog, err := compileStatic(g, Options{}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			c, err := ClassifyComplexity(g, "", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, r := range prog.RuleList {
+				always := r.Leader || r.Memo && !r.Transient && !r.Missing
+				if c.Memoized[r.Name] != always {
+					t.Errorf("rule %s: classifier assumes memoized=%v, compiled rule memoizes in every parse=%v (Leader %v Memo %v Transient %v Missing %v)",
+						r.Name, c.Memoized[r.Name], always, r.Leader, r.Memo, r.Transient, r.Missing)
+				}
+			}
+			for n := range c.Memoized {
+				if prog.ByName[n] == nil && !strings.HasPrefix(n, "_") {
+					t.Errorf("classifier rule %s is not a compiled rule", n)
+				}
+			}
+		})
+	}
+}
+
+func classifySource(t *testing.T, src string) *Complexity {
+	t.Helper()
+	g, err := syntax.Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := ClassifyComplexity(starttest.MarkAll(g), "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
+// TestClassifyComplexity checks the class of grammars that each exercise one part of the
+// conditions for linear cost.
+func TestClassifyComplexity(t *testing.T) {
+	for _, tc := range []struct {
+		name, src string
+		class     ComplexityClass
+		degree    int
+	}{
+		{"committing alternative", "rule main = (a / \"a\")* $$\nrule a = \"a\" \"c\"\n", ClassLinear, 0},
+		{"restarted scan", "rule main = (a / \"a\")* $$\nrule a = \"a\"* \"c\"\n", ClassPoly, 2},
+		{"nested restarted scans", "rule main = (a / \"a\")* $$\nrule a = (b / \"a\")* \"c\"\nrule b = \"a\"* \"d\"\n", ClassPoly, 3},
+		// The iteration fails only at "\"\"", before its scan, so it need not be committing.
+		{"unit failing before its source", "rule main = (s \";\")* $$\nrule s = \"\\\"\" [^\"]* (\"\\\"\\\"\" [^\"]*)* \"\\\"\"\n", ClassLinear, 0},
+		{"unit failing after its source", "rule main = (s \";\")* $$\nrule s = \"\\\"\" [^\"]* (\"\\\"\" [^\"]* \"!\")* \"\\\"\"\n", ClassPoly, 2},
+		// The operands overlap, but their only source is the shared skip ws.
+		{"source inside a shared call", "rule main = e $$\nrule e = #operators {\n    skip ws\n    operand \"true\"\n    operand [a-z]+\n    level { infix left \"+\" }\n}\nrule ws = [ \\t]*\n", ClassLinear, 0},
+		// A list built from the elements of a repetition costs its number of elements.
+		{"list of a repetition", "rule main = l $$\nrule l = \"[\" ms:m? \"]\" => concat($ms)\nrule m = f:v rs:(\",\" x:v)* => concat(list($f), map($rs, (r) => r.$x))\nrule v = \"x\" / l\n", ClassLinear, 0},
+		{"list built by right recursion", "rule main = l $$\nrule l = x:\"a\" t:l? => concat(list($x), $t)\n", ClassPoly, 2},
+		{"self-growing variable", "var s string = \"a\"\nrule main = r $$\nrule r = \"x\" {s := s + s} r / {len(s) > 0}\n", ClassExp, 0},
+		{"rebinding after the left call", "var k int\nrule main = e $$\nrule e = e \"x\" {k := k + 1} / \"x\" {k >= 0}\n", ClassLinearEnv, 0},
+		{"non-leader cycle members", "rule main = c $$\nrule a = c \"+\" / \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n", ClassUnknown, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := classifySource(t, tc.src)
+			if c.Class != tc.class || c.Degree != tc.degree {
+				t.Errorf("class %v degree %d, want %v degree %d\ncauses %v\nreasons %v", c.Class, c.Degree, tc.class, tc.degree, c.Causes, c.Reasons)
+			}
+			if tc.class == ClassPoly || tc.class == ClassExp {
+				if len(c.Causes) == 0 {
+					t.Error("no witness")
+				}
+			}
+			if tc.class == ClassUnknown && len(c.Reasons) == 0 {
+				t.Error("no reason")
+			}
+		})
+	}
+}
+
+// TestComplexityGrowingBindings checks the bindings that the growing-variable check reports.
+func TestComplexityGrowingBindings(t *testing.T) {
+	for _, tc := range []struct {
+		name, src string
+		want      int
+	}{
+		{"doubling before the call", "var s string = \"a\"\nrule main = r $$\nrule r = \"x\" {s := s + s} r / \"\"\n", 1},
+		{"bounded extension", "var indent string\nrule main = r $$\nrule r = \"x\" {indent := indent + \"  \"} r / \"\"\n", 0},
+		{"after the call", "var s string = \"a\"\nrule main = r $$\nrule r = \"x\" r {s := s + s} / \"\"\n", 0},
+		{"different alternative", "var s string = \"a\"\nrule main = r $$\nrule r = {s := s + s} \"q\" / \"x\" r / \"\"\n", 0},
+		{"empty variable", "var s string\nrule main = r $$\nrule r = \"x\" {s := s + s} r / \"\"\n", 0},
+		{"in a repetition", "var s string = \"a\"\nrule main = (\"x\" {s := s + s})* $$\n", 1},
+		{"int variable", "var n int = 1\nrule main = r $$\nrule r = \"x\" {n := n + n} r / \"\"\n", 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := classifySource(t, tc.src)
+			if len(c.Growing) != tc.want {
+				t.Errorf("growing %v, want %d", c.Growing, tc.want)
+			}
+		})
+	}
+}
