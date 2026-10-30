@@ -49,8 +49,26 @@ rule n = [0-9]+ / "(" e ")"
 rule e = (e "+" n) #recover(skip=[^+;.]+) / n
 rule n = [0-9]+
 `, Inputs: []string{"1+2;", "1+x;", "1+x+3.", "1+", "x", "", "1+2+x"}},
+		// A memoized call that fails after consuming input leaves the position where it started:
+		// the repetition after the second call of r continues from there.
+		{Name: "failed memoized call restores the position", Src: `rule main = (r "!" / r)* "q" $$
+rule r = l "b"
+rule l = "a"
+`, Inputs: []string{"aq", "abq", "ab!aq", "q", "a", "abab!q", "ab!ab!q"}},
+		// A memoized call that recovers an error and then fails drops the error: nothing restores
+		// the recovered errors after the repetition.
+		{Name: "failed memoized call drops its recovered errors", Src: `rule main = (r "!" / r)* [a-z]* "q" $$
+rule r = (l "b") #recover(skip=[^!q;]+) ";"
+rule l = "a"
+`, Inputs: []string{"axq", "ab;q", "ab;!axq", "ax;q", "q", "ax!q", "ab;ax;q"}},
+		// The calls at a position after the start, inside and outside a lookahead, with recovered
+		// errors: the expectations of a memoized call are those recorded from its position on.
+		{Name: "memoized calls after the start", Src: `rule main = "x" &(r "q") r "q" / "x" r r "w" / "x" !(r "z") r "y" $$
+rule r = (l "b") #recover(skip=[^qwyz]+) / "c" l
+rule l = "a"
+`, Inputs: []string{"xabq", "xaxq", "xabw", "xababw", "xcay", "xaby", "xq", "x", "xab", "xaxy", "xcaz"}},
 	}
-	alphabets := []string{"abcxyzq", "abcdqwz", "abcxqwz", "abcxqwz", "0123+-();.", "0123+x;."}
+	alphabets := []string{"abcxyzq", "abcdqwz", "abcxqwz", "abcxqwz", "0123+-();.", "0123+x;.", "ab!q", "abx;!q", "xabcqwyz"}
 	rng := rand.New(rand.NewSource(65))
 	for i := range cases {
 		letters := strings.Split(alphabets[i], "")
