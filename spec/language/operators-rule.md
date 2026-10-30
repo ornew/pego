@@ -271,9 +271,10 @@ With this rule, `(1 + 2) + 3` produces
   not visible to it, and `$lhs`, `$rhs` and `$op` are not defined there.
   Elsewhere `$value` is a compile-time error, `$value is only available in the
   whole-rule action of an Operators Rule`, including in an operand or operator
-  action and in an ordinary rule. An ordinary rule may declare a capture named
-  `value`, which is an ordinary capture there; an operand or operator line may
-  not (see [Value Actions](#value-actions)).
+  action, and in an ordinary rule that does not declare a capture named `value`.
+  Such a capture is an ordinary capture in an ordinary rule, so `$value` refers
+  to it there; an operand or operator line may not declare it (see
+  [Value Actions](#value-actions)).
 - A struct node created by the action and returned directly covers the
   complete match of the call, from its start position, including the text
   `skip` consumes before the first operand, to its end, as for the action of an
