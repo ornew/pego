@@ -44,7 +44,7 @@ rule m M = "m"`, map[string]string{
 				}
 				want = strings.Replace(want, "%s", suffix, 1)
 				for _, backend := range []engine.Backend{engine.Closure, engine.Bytecode, engine.BytecodeIterative} {
-					if got := gentest.ResultJSON(prog.ParseWith("main", input, engine.ParseOptions{Backend: backend})); got != want {
+					if got := gentest.ResultJSON(prog.ParseWith("main", input, engine.ParseOptions{Expectations: true, Backend: backend})); got != want {
 						t.Errorf("%s %q:\n got %s\nwant %s", backend, input, got, want)
 					}
 				}
@@ -57,7 +57,7 @@ type Out = { Size int; First *Tree }
 rule main Out = t:tree $$ => Out{Size: len($t.Value), First: $t.Value[0]}
 rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`)
 	for _, backend := range []engine.Backend{engine.Closure, engine.Bytecode, engine.BytecodeIterative} {
-		got := gentest.ResultJSON(prog.ParseWith("main", "(()(()))", engine.ParseOptions{Backend: backend}))
+		got := gentest.ResultJSON(prog.ParseWith("main", "(()(()))", engine.ParseOptions{Expectations: true, Backend: backend}))
 		if want := `"First":{"type":"Tree","start":2,"end":2,"value":[]},"Size":2`; !strings.Contains(got, want) {
 			t.Errorf("%s: got %s, want %s", backend, got, want)
 		}

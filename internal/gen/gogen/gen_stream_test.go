@@ -515,7 +515,7 @@ func engineStream(prog *engine.Program, v streamRun) string {
 			return nil
 		}
 	}
-	o := engine.ParseOptions{Unit: engine.CodePoints, DiagnosticLimit: v.Limit, DiagnosticLimitSet: v.LimitSet}
+	o := engine.ParseOptions{Expectations: true, Unit: engine.CodePoints, DiagnosticLimit: v.Limit, DiagnosticLimitSet: v.LimitSet}
 	if v.Bytes {
 		o.Unit = engine.Bytes
 	}

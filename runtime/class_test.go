@@ -37,7 +37,7 @@ func TestClassSkip(t *testing.T) {
 		}
 	}
 	parser := func(unit PositionUnit, in string, pos int) *TParser {
-		p := &TParser{Parser: &Parser{unit: unit}}
+		p := &TParser{Parser: &Parser{unit: unit, Expectations: true}}
 		if unit == Bytes {
 			p.bs, p.n = in, len(in)
 		} else {

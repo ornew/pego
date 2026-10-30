@@ -50,7 +50,7 @@ func testStartHiddenRule(t *testing.T) {
 	if !slices.Equal(prog.Starts(), []string{"a"}) {
 		t.Errorf("starts %v", prog.Starts())
 	}
-	_, err = prog.ParseWith("_x", "x", engine.ParseOptions{})
+	_, err = prog.ParseWith("_x", "x", engine.ParseOptions{Expectations: true})
 	if want := "rule _x is hidden: a rule whose name begins with an underscore is not an entry point"; err == nil || err.Error() != want {
 		t.Errorf("Parse(_x): got %v, want %s", err, want)
 	}

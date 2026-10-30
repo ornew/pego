@@ -17,7 +17,7 @@ func ignoreCaseLines(t *testing.T, src string, inputs []string) string {
 	prog := mustCompile(t, src)
 	var b strings.Builder
 	for _, in := range inputs {
-		n, err := prog.ParseWith("main", in, engine.ParseOptions{Backend: engine.Closure})
+		n, err := prog.ParseWith("main", in, engine.ParseOptions{Expectations: true, Backend: engine.Closure})
 		if err != nil {
 			b.WriteString("error\n")
 			continue

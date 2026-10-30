@@ -126,7 +126,7 @@ process.stdout.write(JSON.stringify(out));
 	wantByKey := map[string]string{"empty": "", "first": "a", "middle": "b", "unicode": "é", "last": "😀", "miss": "miss", "byte-empty": "", "byte-first": "a", "byte-middle": "b", "byte-unicode": "é", "byte-last": "😀", "byte-miss": "miss", "invalid-bytes": string([]byte{0xff})}
 	for _, result := range got {
 		input := wantByKey[result.Key]
-		_, parseErr := prog.ParseWith("main", input, engine.ParseOptions{Unit: result.Unit})
+		_, parseErr := prog.ParseWith("main", input, engine.ParseOptions{Expectations: true, Unit: result.Unit})
 		want := parseErr == nil
 		if result.OK != want {
 			t.Errorf("%s, unit %v: TypeScript accepted=%v, engine accepted=%v (error %v)", result.Key, result.Unit, result.OK, want, parseErr)

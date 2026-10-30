@@ -85,7 +85,7 @@ func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 				unit engine.PositionUnit
 				key  string
 			}{{engine.CodePoints, "codePoints"}, {engine.Bytes, "bytes"}} {
-				_, parseErr := prog.ParseWith("main", input.Value, engine.ParseOptions{Unit: unit.unit})
+				_, parseErr := prog.ParseWith("main", input.Value, engine.ParseOptions{Expectations: true, Unit: unit.unit})
 				input.Expected = append(input.Expected, literalDispatchExpected{Unit: unit.key, Accepted: parseErr == nil})
 			}
 		}

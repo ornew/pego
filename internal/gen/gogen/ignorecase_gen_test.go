@@ -104,7 +104,7 @@ func testIgnoreCaseGeneratedTypedGo(t *testing.T) {
 	prog := mustCompile(t, gentest.IgnoreCaseGenGrammar)
 	var want strings.Builder
 	for _, in := range gentest.IgnoreCaseGenInputs {
-		if _, err := prog.ParseWith("main", in, engine.ParseOptions{Backend: engine.Closure}); err != nil {
+		if _, err := prog.ParseWith("main", in, engine.ParseOptions{Expectations: true, Backend: engine.Closure}); err != nil {
 			want.WriteString("error\n")
 		} else {
 			want.WriteString("ok\n")
@@ -128,7 +128,7 @@ func TestIgnoreCaseGeneratedExpectation(t *testing.T) {
 }
 
 func testIgnoreCaseGeneratedExpectation(t *testing.T) {
-	_, err := mustCompile(t, gentest.IgnoreCaseGenGrammar).ParseWith("main", "x", engine.ParseOptions{Backend: engine.Closure})
+	_, err := mustCompile(t, gentest.IgnoreCaseGenGrammar).ParseWith("main", "x", engine.ParseOptions{Expectations: true, Backend: engine.Closure})
 	if err == nil {
 		t.Fatal("the closure backend parsed x")
 	}
@@ -157,7 +157,7 @@ func ignoreCaseDocWant(t *testing.T) string {
 	prog := mustCompile(t, gentest.IgnoreCaseGenGrammar)
 	var b strings.Builder
 	show := func(text []rune) {
-		n, err := prog.ParseWith("main", string(text), engine.ParseOptions{Backend: engine.Closure})
+		n, err := prog.ParseWith("main", string(text), engine.ParseOptions{Expectations: true, Backend: engine.Closure})
 		if err != nil {
 			b.WriteString("error\n")
 			return
@@ -219,7 +219,7 @@ func TestIgnoreCaseGeneratedTypedTerminal(t *testing.T) {
 	prog := mustCompile(t, ignoreCaseTerminalGrammar)
 	var want, list strings.Builder
 	for _, in := range inputs {
-		if _, err := prog.ParseWith("main", in, engine.ParseOptions{Backend: engine.Closure}); err != nil {
+		if _, err := prog.ParseWith("main", in, engine.ParseOptions{Expectations: true, Backend: engine.Closure}); err != nil {
 			want.WriteString("error\n")
 		} else {
 			want.WriteString("ok\n")

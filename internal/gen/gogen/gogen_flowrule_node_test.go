@@ -66,7 +66,7 @@ func testGeneratedNodeDirectRetention(t *testing.T) {
 	for _, unit := range []engine.PositionUnit{engine.CodePoints, engine.Bytes} {
 		for _, rule := range []string{"main", "pair"} {
 			for _, input := range []string{"a-123456?", "b-7!", "c-1", "d-x?", ""} {
-				n, err := p.ParseWith(rule, input, engine.ParseOptions{Unit: unit})
+				n, err := p.ParseWith(rule, input, engine.ParseOptions{Expectations: true, Unit: unit})
 				fmt.Fprintf(&rows, "{%q,%q,%s,%q},\n", rule, input,
 					map[engine.PositionUnit]string{engine.CodePoints: "CodePoints", engine.Bytes: "Bytes"}[unit], gentest.ResultJSON(n, err))
 			}

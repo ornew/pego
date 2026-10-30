@@ -55,7 +55,7 @@ func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
 			for _, input := range tc.Inputs {
 				fmt.Fprintf(&script, `for (const unit of [CodePoints,Bytes]){const input=new Uint8Array(Buffer.from(%q,"base64"));const r=parse(input,unit);const rec=recognize(input,unit);if((rec?.message??null)!==(r.error?.message??null))throw new Error("recognition differs");const child=r.node?.field("T");const expected=unit===Bytes?String.fromCharCode(...%s):String.fromCharCode(...%s);if(!r.error && (!(child instanceof Node)||child.text!==expected))throw new Error("matched bytes differ");const out:Record<string,unknown>={};if(r.error)out["err"]=r.error.message;out["node"]=JSON.parse(marshal(r.node));console.log(JSON.stringify(out));}`+"\n", base64.StdEncoding.EncodeToString([]byte(input)), tsgen.TsInts(literalTextUnits(input, engine.Bytes)), tsgen.TsInts(literalTextUnits(input, engine.CodePoints)))
 				for _, unit := range []engine.PositionUnit{engine.CodePoints, engine.Bytes} {
-					n, err := prog.ParseWith("main", input, engine.ParseOptions{Unit: unit})
+					n, err := prog.ParseWith("main", input, engine.ParseOptions{Expectations: true, Unit: unit})
 					want.WriteString(gentest.ResultJSON(n, err) + "\n")
 				}
 			}

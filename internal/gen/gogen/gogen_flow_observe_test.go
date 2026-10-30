@@ -400,7 +400,7 @@ func checkObservations(t *testing.T, group string, cases []gentest.Case, start s
 				checked++
 				events += len(r.events)
 				var eng []engine.TraceEvent
-				o := engine.ParseOptions{Backend: engine.Closure, Unit: engine.CodePoints, Recognize: entry == "recognize"}
+				o := engine.ParseOptions{Expectations: true, Backend: engine.Closure, Unit: engine.CodePoints, Recognize: entry == "recognize"}
 				o.Trace = func(e engine.TraceEvent) { eng = append(eng, e) }
 				prog.ParseWith(start, c.Inputs[j], o)
 				if msg := engineTraceMismatch(eng, r.events, c.Inputs[j]); msg != "" {

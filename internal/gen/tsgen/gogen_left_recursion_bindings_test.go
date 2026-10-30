@@ -21,8 +21,8 @@ func TestGeneratedTSLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	prog := compileBare(t, gentest.LRBindingSource, compile.Options{LeftRecursionBindings: true})
 	for _, in := range gentest.LRBindingInputs {
 		fmt.Fprintf(&script, "{ const r = parse(%q); const e = recognize(%[1]q); console.log(r.error === null ? String(r.node) : \"error: \" + r.error.message, e === null ? \"null\" : e.message); }\n", in)
-		n, err := prog.ParseWith("main", in, engine.ParseOptions{MaxDepth: 400})
-		_, recErr := prog.ParseWith("main", in, engine.ParseOptions{MaxDepth: 400, Recognize: true})
+		n, err := prog.ParseWith("main", in, engine.ParseOptions{Expectations: true, MaxDepth: 400})
+		_, recErr := prog.ParseWith("main", in, engine.ParseOptions{Expectations: true, MaxDepth: 400, Recognize: true})
 		if err != nil {
 			fmt.Fprintf(&want, "error: %v %v\n", err, recErr)
 		} else {

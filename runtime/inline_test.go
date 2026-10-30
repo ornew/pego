@@ -18,7 +18,6 @@ var hotInline = []string{
 	"(*Parser).AtLineStartBatchOrdinary",
 	"(*Parser).DropKids",
 	"(*Parser).Enter",
-	"(*Parser).ExpectOrdinary",
 	"(*Parser).LiteralText",
 	"(*Parser).Mark",
 	"(*Parser).NewNodeOrdinary",

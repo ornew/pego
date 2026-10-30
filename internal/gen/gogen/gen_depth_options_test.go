@@ -88,8 +88,8 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 				for _, in := range c.Inputs {
 					for _, unit := range []engine.PositionUnit{engine.CodePoints, engine.Bytes} {
 						for _, limit := range []int{1, 2, 3, 4, 5, 6, 8, 20} {
-							_, err := prog.ParseWith(name, in, engine.ParseOptions{Unit: unit, MaxDepth: limit})
-							_, recErr := prog.ParseWith(name, in, engine.ParseOptions{Unit: unit, MaxDepth: limit, Recognize: true})
+							_, err := prog.ParseWith(name, in, engine.ParseOptions{Expectations: true, Unit: unit, MaxDepth: limit})
+							_, recErr := prog.ParseWith(name, in, engine.ParseOptions{Expectations: true, Unit: unit, MaxDepth: limit, Recognize: true})
 							fmt.Fprintf(&rows, "{%q,%q,%s,%d,%q,%q},\n", name, in, map[engine.PositionUnit]string{engine.CodePoints: "CodePoints", engine.Bytes: "Bytes"}[unit], limit, fmt.Sprint(err), fmt.Sprint(recErr))
 						}
 					}

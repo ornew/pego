@@ -79,7 +79,7 @@ rule left = left "+" "é" / "é"
 	for _, name := range []string{"main", "one", "two", "three", "four", "five", "cap", "bind", "cut", "recovering", "expression", "left"} {
 		for _, input := range []string{"é", "?", "é!", "-é", "é+é", "", "\xff", "\xffé", "\xe2\x82", "�é", "😀"} {
 			for _, unit := range []engine.PositionUnit{engine.CodePoints, engine.Bytes} {
-				_, err := prog.ParseWith(name, input, engine.ParseOptions{Unit: unit, MaxDepth: 5, Recognize: true})
+				_, err := prog.ParseWith(name, input, engine.ParseOptions{Expectations: true, Unit: unit, MaxDepth: 5, Recognize: true})
 				fmt.Fprintf(&rows, "{%q,%q,%s,%s},\n", name, input, map[engine.PositionUnit]string{engine.CodePoints: "CodePoints", engine.Bytes: "Bytes"}[unit], strconv.Quote(fmt.Sprint(err)))
 			}
 		}

@@ -64,8 +64,8 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 			if c.name != "typescript" {
 				for _, input := range []string{"", "é", "éé", "�", "é�", "é!", "\xff", "é\xff", "\xe2\x82"} {
 					for _, unit := range []engine.PositionUnit{engine.CodePoints, engine.Bytes} {
-						n, err := prog.ParseWith("main", input, engine.ParseOptions{Unit: unit})
-						_, rerr := prog.ParseWith("main", input, engine.ParseOptions{Unit: unit, Recognize: true})
+						n, err := prog.ParseWith("main", input, engine.ParseOptions{Expectations: true, Unit: unit})
+						_, rerr := prog.ParseWith("main", input, engine.ParseOptions{Expectations: true, Unit: unit, Recognize: true})
 						fmt.Fprintf(&rows, "{%q,%s,%q,%q},\n", input, map[engine.PositionUnit]string{engine.CodePoints: "CodePoints", engine.Bytes: "Bytes"}[unit], gentest.ResultJSON(n, err), fmt.Sprint(rerr))
 					}
 				}

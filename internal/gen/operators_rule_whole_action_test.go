@@ -47,7 +47,7 @@ func testOperatorsRuleExplicitDefaultAction(t *testing.T) {
 		for _, backend := range []engine.Backend{engine.Closure, engine.Bytecode, engine.BytecodeIterative} {
 			for _, unit := range []engine.PositionUnit{engine.CodePoints, engine.Bytes} {
 				for _, input := range []string{"α", "α+α", ""} {
-					parseOpts := engine.ParseOptions{Backend: backend, Unit: unit}
+					parseOpts := engine.ParseOptions{Expectations: true, Backend: backend, Unit: unit}
 					n, err := explicit.ParseWith("main", input, parseOpts)
 					if input != "" && (n == nil || err != nil) || input == "" && err == nil {
 						t.Fatalf("%s/%s input %q: node=%v error=%v", backend, unit, input, n, err)

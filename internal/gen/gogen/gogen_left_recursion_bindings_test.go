@@ -66,9 +66,9 @@ func testGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	for _, in := range gentest.LRBindingInputs {
 		quoted = append(quoted, strconv.Quote(in))
 		for _, unit := range []engine.PositionUnit{engine.CodePoints, engine.Bytes} {
-			o := engine.ParseOptions{Unit: unit, MaxDepth: 400}
+			o := engine.ParseOptions{Expectations: true, Unit: unit, MaxDepth: 400}
 			n, err := prog.ParseWith("main", in, o)
-			_, recErr := prog.ParseWith("main", in, engine.ParseOptions{Unit: unit, MaxDepth: 400, Recognize: true})
+			_, recErr := prog.ParseWith("main", in, engine.ParseOptions{Expectations: true, Unit: unit, MaxDepth: 400, Recognize: true})
 			v, typedErr := typed.ParseWith("main", in, o)
 			line := fmt.Sprintf("%s %v %v | %v\n", gentest.ResultJSON(n, err), recErr, typedErr, typedN(v))
 			want.WriteString(line)

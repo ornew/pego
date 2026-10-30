@@ -30,7 +30,7 @@ func TestAttributeKeepsValueShape(t *testing.T) {
 			attr, plain := mustCompile(t, c.Src), mustCompile(t, plainSrc)
 			for _, backend := range []engine.Backend{engine.Default, engine.Bytecode, engine.BytecodeIterative} {
 				for _, input := range c.Inputs {
-					opts := engine.ParseOptions{Backend: backend}
+					opts := engine.ParseOptions{Expectations: true, Backend: backend}
 					got, gerr := attr.ParseWith("main", input, opts)
 					want, werr := plain.ParseWith("main", input, opts)
 					if gerr != nil || werr != nil {
@@ -88,7 +88,7 @@ func TestStreamSeesThroughGroupsAndAttributes(t *testing.T) {
 					err := p.ParseStreamWith("main", strings.NewReader(in), func(n *value.Node) error {
 						got = append(got, fmt.Sprint(n))
 						return nil
-					}, engine.ParseOptions{Backend: backend})
+					}, engine.ParseOptions{Expectations: true, Backend: backend})
 					return strings.Join(got, ","), err
 				}
 				g, gerr := run(attr)

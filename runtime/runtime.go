@@ -2353,16 +2353,13 @@ func (p *Parser) ExpectOrdinary(pos int, id ExpID) {
 	if p.Silent > 0 || pos < p.farthest {
 		return
 	}
+	if !p.Expectations {
+		id = ExpFar
+	}
 	if pos > p.farthest {
 		p.farthest = pos
 		p.exp = p.exp[:p.expBase]
 		p.expBits = 0
-	}
-	if !p.Expectations {
-		if len(p.exp) == p.expBase {
-			p.exp = append(p.exp, ExpFar)
-		}
-		return
 	}
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.expBits&bit != 0 {

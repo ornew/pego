@@ -67,12 +67,12 @@ rule ops Int | O = #operators {
 		t.Fatal(err)
 	}
 	for _, in := range []string{"svvv", "svvo+o", "svvv+o"} {
-		want := resultWith(prog, in, engine.ParseOptions{})
+		want := resultWith(prog, in, engine.ParseOptions{Expectations: true})
 		if strings.Contains(want, `"err"`) {
 			t.Fatalf("%q: %s", in, want)
 		}
 		for _, b := range []engine.Backend{engine.Closure, engine.Bytecode} {
-			got := resultWith(loaded, in, engine.ParseOptions{Backend: b})
+			got := resultWith(loaded, in, engine.ParseOptions{Expectations: true, Backend: b})
 			if b == engine.Closure {
 				if !strings.Contains(got, "closure backend needs the grammar source") {
 					t.Fatalf("%q loaded %s: %s, want the closure backend refused", in, b, got)

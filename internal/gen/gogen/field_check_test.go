@@ -50,7 +50,7 @@ rule item Int = "i" => Int{Text: "i"}
 	if d := plain.Module().Disassemble(); strings.Contains(d, "ECAST") {
 		t.Fatalf("a statically typed field is checked:\n%s", d)
 	}
-	if got := resultWith(prog, "iv", engine.ParseOptions{Backend: engine.Bytecode}); !strings.Contains(got, "cannot cast []_ to Int") {
+	if got := resultWith(prog, "iv", engine.ParseOptions{Expectations: true, Backend: engine.Bytecode}); !strings.Contains(got, "cannot cast []_ to Int") {
 		t.Fatalf("dynamic list: %s", got)
 	}
 	// The recognizer keeps the same casts as its program.

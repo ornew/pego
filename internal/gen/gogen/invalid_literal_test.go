@@ -60,7 +60,7 @@ func testGeneratedInvalidUTF8Literals(t *testing.T) {
 			for _, input := range tc.Inputs {
 				for _, unit := range []engine.PositionUnit{engine.CodePoints, engine.Bytes} {
 					var harness strings.Builder
-					n, err := prog.ParseWith("main", input, engine.ParseOptions{Unit: unit})
+					n, err := prog.ParseWith("main", input, engine.ParseOptions{Expectations: true, Unit: unit})
 					want.WriteString(gentest.ResultJSON(n, err) + "\n")
 					fmt.Fprintf(&harness, "{ input:=%q; unit:=%s.%s; n,err:=%s.Parse(input,%[4]s.WithUnit(unit)); rec:=%s.Recognize(input,%[4]s.WithUnit(unit)); if fmt.Sprint(rec)!=fmt.Sprint(err){panic(\"recognition differs\")}\n", input, pkg, map[engine.PositionUnit]string{engine.CodePoints: "CodePoints", engine.Bytes: "Bytes"}[unit], pkg, pkg)
 					if mode != "untyped" {
