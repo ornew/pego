@@ -33,6 +33,18 @@ func TestWorkLiteralReplacementMismatchBudget(t *testing.T) {
 			if c.Used != 32 || p.Pos != 0 {
 				t.Fatalf("streaming=%v work=%d pos=%d, want work only up to the limit and the initial byte mismatch", streaming, c.Used, p.Pos)
 			}
+			// With a limit that is not reached, the total is the scan of the literal for the replacement
+			// character (one unit per rune of the literal) and the inspection of the first byte: peek and
+			// mismatch, a few units, never a unit per byte compared.
+			c = core.NewWorkControl(nil, limits.Limits{MaxWork: 1 << 20})
+			p = &core.Parser{Input: core.Input{Unit: Bytes, Bs: []byte("b"), Eof: !streaming, Control: c}}
+			if streaming {
+				p.Reader = bufio.NewReader(strings.NewReader(""))
+			}
+			scan := uint64(len([]rune(literal)))
+			if p.MatchLiteral([]rune(literal), []byte(literal)) || p.Pos != 0 || c.Used < scan+1 || c.Used > scan+3 {
+				t.Fatalf("streaming=%v replacement=%v work=%d pos=%d, want a scan of %d and the first byte only", streaming, suffix != "", c.Used, p.Pos, scan)
+			}
 		}
 	}
 }
