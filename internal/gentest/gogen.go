@@ -378,7 +378,6 @@ rule e = #operators {
 	cases = append(cases, TypedOperatorsRuleBodyCases...)
 	cases = append(cases, OperatorsRuleOperandActionCases...)
 	cases = append(cases, OperatorsRuleWholeActionCases...)
-	cases = append(cases, OperatorsRuleLocalCases...)
 	for _, c := range OperatorsLineRecoveryCases {
 		cases = append(cases, c.Case)
 	}
@@ -420,6 +419,7 @@ rule e = #operators {
 		}
 		cases = append(cases, c)
 	}
+	cases = append(cases, OperatorsRuleLocalCases...)
 	return append(append(append(ConstructorCases(), TupleLiteralCases...), InlineActionGenCases()...), append(SpliceGenCases(), cases...)...)
 }
 

@@ -424,6 +424,10 @@ scope	1	7
 grammar	lean,controlled	"Operators Rule operand with recovery"
 scope	1	1	
 scope	1	6	
+grammar	lean,controlled	"Operators Rule operator action on scalar operands"
+scope	1	1	
+scope	1	6	
+scope	1	7	
 grammar	lean,controlled	"OperatorsRule prefix-part cuts"
 guard	1	1	1	0	0	"\"c\""	237
 guard	1	10	1	0	0	"\"q\""	159
@@ -15984,6 +15988,14 @@ scope	1	1
 scope	1	2	
 scope	1	3	
 scope	1	4	
+grammar	lean,controlled	"whole Operators Rule action on scalar operands"
+scope	1	1	
+scope	1	6	
+scope	1	7	
+grammar	lean,controlled	"whole Operators Rule action passing a scalar fold"
+scope	1	1	
+scope	1	6	
+scope	1	7	
 grammar	lean,controlled	"whole Operators Rule action passing the folded value"
 scope	1	1	
 scope	1	2	

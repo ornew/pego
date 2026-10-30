@@ -11,6 +11,7 @@ corpus/0/LR cut inside optional	9344f20792681d828e175147
 corpus/0/Operators Rule explicit default action	6ab06394db14f9615cb7c7a1
 corpus/0/Operators Rule operand with a cut in the recovered body	ae8a48b66d66a8bdd8945120
 corpus/0/Operators Rule operand with recovery	0562fbc0ad22fb704eed5fa9
+corpus/0/Operators Rule operator action on scalar operands	019e3da4b5fdb61e58b395ab
 corpus/0/OperatorsRule prefix-part cuts	0bc6d2dac72422f0f84e94ea
 corpus/0/a cast binding in an Operators Rule operand	7d8a56048c1b6080746a11da
 corpus/0/a failed cast in a binding backtracks	ca871e28eb3f3cc27be3166d
@@ -321,6 +322,8 @@ corpus/0/unreachable recovery chain	32b026194e44c9f29e6ab471
 corpus/0/whole Operators Rule action	f496d111ac6c66664162bd54
 corpus/0/whole Operators Rule action error	30b50f0ce899e74dacc83cd0
 corpus/0/whole Operators Rule action on level-restricted calls	be8d19c8f80f33650b42b0f2
+corpus/0/whole Operators Rule action on scalar operands	23f688310015e3d77b5fb1c9
+corpus/0/whole Operators Rule action passing a scalar fold	878edc647f87b03a926d982d
 corpus/0/whole Operators Rule action passing the folded value	dbd1089b99d818e36475c7f3
 corpus/0/whole Operators Rule action with a named node type	ca7a23e5bba20a58ad23508a
 corpus/0/whole Operators Rule action with a recovered operand	7b52e28a789fcdbc9a7743ff
@@ -354,6 +357,7 @@ corpus/1/LR cut inside optional	9344f20792681d828e175147
 corpus/1/Operators Rule explicit default action	6ab06394db14f9615cb7c7a1
 corpus/1/Operators Rule operand with a cut in the recovered body	ae8a48b66d66a8bdd8945120
 corpus/1/Operators Rule operand with recovery	0562fbc0ad22fb704eed5fa9
+corpus/1/Operators Rule operator action on scalar operands	019e3da4b5fdb61e58b395ab
 corpus/1/OperatorsRule prefix-part cuts	0bc6d2dac72422f0f84e94ea
 corpus/1/a cast binding in an Operators Rule operand	7d8a56048c1b6080746a11da
 corpus/1/a failed cast in a binding backtracks	ca871e28eb3f3cc27be3166d
@@ -664,6 +668,8 @@ corpus/1/unreachable recovery chain	32b026194e44c9f29e6ab471
 corpus/1/whole Operators Rule action	f496d111ac6c66664162bd54
 corpus/1/whole Operators Rule action error	30b50f0ce899e74dacc83cd0
 corpus/1/whole Operators Rule action on level-restricted calls	be8d19c8f80f33650b42b0f2
+corpus/1/whole Operators Rule action on scalar operands	23f688310015e3d77b5fb1c9
+corpus/1/whole Operators Rule action passing a scalar fold	878edc647f87b03a926d982d
 corpus/1/whole Operators Rule action passing the folded value	dbd1089b99d818e36475c7f3
 corpus/1/whole Operators Rule action with a named node type	ca7a23e5bba20a58ad23508a
 corpus/1/whole Operators Rule action with a recovered operand	7b52e28a789fcdbc9a7743ff
