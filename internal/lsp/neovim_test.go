@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // TestNeovimClient edits a grammar through Neovim's built-in client, with the synchronous and the
@@ -24,7 +26,9 @@ func TestNeovimClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	pego := filepath.Join(t.TempDir(), "pego")
-	if out, err := exec.Command("go", "build", "-o", pego, "../../cmd/pego").CombinedOutput(); err != nil {
+	build := exec.Command("go", "build", "-o", pego, "../../cmd/pego")
+	build.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags(os.Getenv("GOFLAGS")))
+	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build pego: %v\n%s", err, out)
 	}
 	for _, responsive := range []string{"0", "1"} {

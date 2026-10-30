@@ -250,7 +250,7 @@ func main() {
 // buildPego builds the pego command of the repository into the work directory.
 func buildPego(root, work string) (string, error) {
 	out := filepath.Join(work, "pego")
-	if _, err := execOut(root, nil, "go", "build", "-trimpath", "-o", out, "./cmd/pego"); err != nil {
+	if _, err := execOut(root, []string{"GOFLAGS=" + core.GoFlags(os.Getenv("GOFLAGS"))}, "go", "build", "-trimpath", "-o", out, "./cmd/pego"); err != nil {
 		return "", err
 	}
 	return out, nil

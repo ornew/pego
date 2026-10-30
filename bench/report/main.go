@@ -30,6 +30,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 func main() {
@@ -161,6 +163,7 @@ func runBenchmarks(root, commit string, count int) ([]byte, error) {
 	cmd := exec.Command("go", "test", "./bench", "-run", "^$", "-bench", ".", "-benchmem",
 		"-count", fmt.Sprint(count), "-timeout", "0")
 	cmd.Dir = root
+	cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags(os.Getenv("GOFLAGS")))
 	cmd.Stdout = io.MultiWriter(&b, os.Stderr)
 	cmd.Stderr = os.Stderr
 	fmt.Fprintf(os.Stderr, "running %s\n", strings.Join(cmd.Args, " "))
