@@ -224,8 +224,7 @@ func (v *verifier) stmt(st Stmt, s *scope) {
 		for i, n := range st.Names {
 			if _, dup := s.locals[n]; dup {
 				v.errorf("local %s declared twice in one scope", n)
-			}
-			if _, outer := s.lookup(n); outer {
+			} else if _, outer := s.lookup(n); outer {
 				v.errorf("local %s shadows an enclosing local", n)
 			}
 			t := Type{}
