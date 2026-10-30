@@ -43,6 +43,11 @@ type content struct {
 	outer     bool           // from outside the innermost lambda, and unbounded
 }
 
+// bounded reports whether the value is bounded in size by a constant of the grammar.
+func (c content) bounded() bool {
+	return !c.unbounded && !c.vars && !c.outer && len(c.rec) == 0 && len(c.acc) == 0
+}
+
 func (c *content) add(d content) {
 	c.unbounded = c.unbounded || d.unbounded
 	c.vars = c.vars || d.vars
@@ -60,6 +65,9 @@ func (c *content) add(d content) {
 		c.acc[n] += v
 	}
 }
+
+// compareOps are the operators that compare two strings character by character.
+var compareOps = map[string]bool{"==": true, "!=": true, "<": true, "<=": true, ">": true, ">=": true}
 
 // copyFuncs are the built-in functions that build a value in proportion to its size. list builds
 // one element for each argument, which is bounded by the grammar.
@@ -109,6 +117,14 @@ func (k *classifier) walkTerm(t grammar.Term, tc termCtx) {
 				k.walkTerm(x, tc)
 			}
 			return
+		}
+		if compareOps[t.Op] && !k.isInt(t.L, tc) && !k.isInt(t.R, tc) {
+			// Comparing two strings examines the characters of the shorter one.
+			l, r := k.sizeOf(t.L, tc, textSize), k.sizeOf(t.R, tc, textSize)
+			if !l.bounded() && !r.bounded() {
+				l.add(r)
+				k.copied(t, termPosOf(t), tc, l)
+			}
 		}
 		k.walkTerm(t.L, tc)
 		k.walkTerm(t.R, tc)
@@ -528,7 +544,11 @@ type sizeKey struct {
 // copyOp checks a copying operation (condition 4) and records it as a scanning source when an
 // operand can be larger than a constant of the grammar.
 func (k *classifier) copyOp(t grammar.Term, pos grammar.Pos, tc termCtx) {
-	all := k.sizeOf(t, tc, textSize)
+	k.copied(t, pos, tc, k.sizeOf(t, tc, textSize))
+}
+
+// copied checks the copying operation t, which copies a value of the size all.
+func (k *classifier) copied(t grammar.Term, pos grammar.Pos, tc termCtx, all content) {
 	text := k.showTerm(t)
 	worst := func(m map[string]int) (string, int) {
 		names := make([]string, 0, len(m))
