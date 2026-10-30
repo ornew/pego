@@ -245,6 +245,16 @@ func (p *printer) block(b *exec.Block) {
 	p.stmts(b)
 }
 
+// body prints a block that is the body of a statement with braces of its own, a loop or a
+// branch: those braces scope its locals.
+func (p *printer) body(b *exec.Block) {
+	if b.Label != "" {
+		p.block(b)
+		return
+	}
+	p.stmts(b)
+}
+
 // let prints the declaration l, which the statements rest follow in its block: a name that
 // nothing reads prints as the blank identifier, as Go requires.
 func (p *printer) let(l *exec.Let, rest []exec.Stmt) {
@@ -400,7 +410,7 @@ func (p *printer) loop(s *exec.Loop) {
 		h += " " + head[0]
 	}
 	p.w("%s {\n", h)
-	p.block(s.Body)
+	p.body(s.Body)
 	p.w("}\n")
 	p.scope = p.scope[:len(p.scope)-1]
 	if fr.used {
@@ -417,7 +427,7 @@ func (p *printer) ifStmt(s *exec.If, kw string) {
 		head = p.set(s.Init) + "; "
 	}
 	p.w("%s%s%s {\n", kw, head, p.expr(s.Cond, 0))
-	p.block(s.Then)
+	p.body(s.Then)
 	if s.Else != nil && len(s.Else.Stmts) == 1 && s.Else.Label == "" {
 		if e, ok := s.Else.Stmts[0].(*exec.If); ok {
 			p.ifStmt(e, "} else if ")
@@ -426,7 +436,7 @@ func (p *printer) ifStmt(s *exec.If, kw string) {
 	}
 	if s.Else != nil {
 		p.w("} else {\n")
-		p.block(s.Else)
+		p.body(s.Else)
 	}
 	p.w("}\n")
 }

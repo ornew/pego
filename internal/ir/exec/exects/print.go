@@ -417,7 +417,6 @@ func (p *printer) let(l *exec.Let, rest []exec.Stmt) {
 			unread = append(unread, n)
 		}
 	}
-	v := p.expr(l.Value, 0)
 	if c, ok := l.Value.(*exec.Call); ok && len(l.Names) > 1 {
 		rs := p.results(c)
 		for i, n := range l.Names {
@@ -441,6 +440,7 @@ func (p *printer) let(l *exec.Let, rest []exec.Stmt) {
 			return
 		}
 	}
+	v := p.expr(l.Value, 0)
 	switch {
 	case !bound && !hasCall(l.Value):
 		// Nothing reads the value and computing it has no effect.
