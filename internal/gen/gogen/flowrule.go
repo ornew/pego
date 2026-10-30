@@ -7,6 +7,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/ir/exec/execgo"
 )
 
 // Flat and framed rules of the Node and recognizer tables, as the Flow IR printer shapes them.
@@ -61,34 +62,11 @@ func (d *flatRule) markVar(name string, dead bool) {
 // a variable of quiet is followed by the statement that assigns the quiet variables of it to the blank
 // identifier.
 func varLinesExcept(vs []dvar, dead, quiet map[string]bool) string {
-	var types []string
-	names := map[string][]string{}
-	seen := map[string]bool{}
-	for _, v := range vs {
-		if !seen[v.Typ] {
-			seen[v.Typ] = true
-			types = append(types, v.Typ)
-		}
-		if !dead[v.Name] {
-			names[v.Typ] = append(names[v.Typ], v.Name)
-		}
+	ev := make([]execgo.Var, len(vs))
+	for i, v := range vs {
+		ev[i] = execgo.Var{Name: v.Name, Type: v.Typ}
 	}
-	var b strings.Builder
-	for _, typ := range types {
-		if len(names[typ]) > 0 {
-			fmt.Fprintf(&b, "var %s %s\n", strings.Join(names[typ], ", "), typ)
-			var q []string
-			for _, n := range names[typ] {
-				if quiet[n] {
-					q = append(q, n)
-				}
-			}
-			if len(q) > 0 {
-				fmt.Fprintf(&b, "%s_ = %s\n", strings.Repeat("_, ", len(q)-1), strings.Join(q, ", "))
-			}
-		}
-	}
-	return b.String()
+	return execgo.VarLines(ev, dead, quiet)
 }
 
 var chIdent = regexp.MustCompile(`\bch\b`)

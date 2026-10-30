@@ -6,8 +6,12 @@
 // statements, and the Exit prints as a goto, which never skips a declaration because every local a
 // goto could skip is inside braces that end before the label. An Exit or a Break of a loop prints
 // as a break, and a Continue as a continue, labeled only when the loop is not the innermost one.
-// Statements after a jump in the same block are not printed. Labels are unique in a printed
-// function. Arithmetic on i32, u32 and u64 maps to int32, uint32 and uint64, whose operations wrap
+// Statements at an unreachable point are not printed, but their expressions are still formed, so
+// that a target that names declarations as it prints them names them in the same order: after a
+// jump the point is unreachable up to the end of the block, the point after a labeled block is
+// reachable again if a reachable jump exits it, the point after an If is reachable if the point
+// before it is, and the point after a loop always is; a loop prints its braces whatever the
+// reachability. Labels are unique in a printed function. Arithmetic on i32, u32 and u64 maps to int32, uint32 and uint64, whose operations wrap
 // as Exec IR's do; int maps to int.
 package execgo
 
@@ -19,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/internal/ir/exec"
+	"github.com/ornew/pego/internal/ir/exec/pass"
 )
 
 // Target is how printed code reaches the parser state and the operations of one Go implementation.
@@ -44,6 +49,16 @@ type Target struct {
 	// Source, if not empty, names the source of printed functions in their first comment line,
 	// such as the package that builds the module.
 	Source string
+	// Negate, if not nil, returns the Go negation of a call of an operation that the operator !
+	// applies to, given its printed arguments, or reports false to print the operator.
+	Negate func(c *exec.Call, args []string) (string, bool)
+	// Prec, if not nil, returns the precedence of the Go text of a call of an operation: that of its
+	// loosest binary operator outside parentheses, or 6 for an operand. Without it, the text of an
+	// operation is parenthesized wherever it is an operand, unless it is atomic.
+	Prec func(text string) int
+	// Pure, if not nil, reports whether evaluating a call of an operation has no effect and cannot
+	// panic, for leaving out unread assignments (Body).
+	Pure func(c *exec.Call) bool
 }
 
 // Func returns the Go declaration of the function f of the verified module m, formatted.
@@ -57,6 +72,99 @@ func Func(m *exec.Module, f *exec.Func, t *Target) (string, error) {
 	return string(out), nil
 }
 
+// BodyResult is the printed body of a function (Body).
+type BodyResult struct {
+	// Text is the statements, unformatted.
+	Text string
+	// Stores is what pass.DeadStores found about the function's locals.
+	Stores *pass.Stores
+	// End reports that the end of the body's statements is reachable, before its label.
+	End bool
+	// Exited reports that a reachable jump exits the body's labeled block, whose label the caller
+	// prints.
+	Exited bool
+}
+
+// Body prints the statements of the body of the function f of the verified module m without the
+// function's declaration, its locals or the label of its body, which the caller prints around them,
+// as the function of a rule that the generator wraps. Assignments to the locals cand of f that
+// nothing reads are left out, and dead places print as the blank identifier (pass.DeadStores, with
+// the purity of Target.Pure).
+func Body(m *exec.Module, f *exec.Func, t *Target, cand []string) BodyResult {
+	st := pass.DeadStores(f, cand, func(x exec.Expr) bool { return Pure(x, t.Pure) })
+	p := &printer{m: m, t: t, f: f, labels: map[string]int{}, stores: st, outer: f.Body.Label}
+	fr := &frame{label: f.Body.Label, goName: f.Body.Label}
+	p.scope = append(p.scope, fr)
+	for i, s := range f.Body.Stmts {
+		if l, ok := s.(*exec.Let); ok {
+			p.let(l, f.Body.Stmts[i+1:])
+		} else {
+			p.stmt(s)
+		}
+	}
+	return BodyResult{Text: p.b.String(), Stores: st, End: !p.dead, Exited: fr.used}
+}
+
+// Pure reports whether evaluating x in Go has no effect and cannot panic: locals, constants,
+// registers, negations and the binary operators that cannot panic on operands that are pure, and the
+// calls of operations that call reports pure. Comparing for equality can panic on interfaces, and
+// dividing and shifting can panic.
+func Pure(x exec.Expr, call func(*exec.Call) bool) bool {
+	switch x := x.(type) {
+	case *exec.Local, *exec.Const, *exec.Reg:
+		return true
+	case *exec.Unary:
+		return (x.Op == "!" || x.Op == "-" || x.Op == "^") && Pure(x.X, call)
+	case *exec.Binary:
+		switch x.Op {
+		case "+", "-", "*", "&", "|", "^", "&^", "&&", "||", "<", ">", "<=", ">=":
+			return Pure(x.X, call) && Pure(x.Y, call)
+		}
+	case *exec.Call:
+		return call != nil && call(x)
+	}
+	return false
+}
+
+// Var is a local of a printed function: its name and Go type.
+type Var struct{ Name, Type string }
+
+// VarLines declares the locals vs, those of one type together (var x1, x2 int) in the order of the
+// first of each type, without the locals in dead, which still give the declarations their order:
+// the first local of each type, dead or not, places the type. A declaration that declares a local
+// of quiet is followed by the statement that assigns the quiet locals of it to the blank
+// identifier.
+func VarLines(vs []Var, dead, quiet map[string]bool) string {
+	var types []string
+	names := map[string][]string{}
+	seen := map[string]bool{}
+	for _, v := range vs {
+		if !seen[v.Type] {
+			seen[v.Type] = true
+			types = append(types, v.Type)
+		}
+		if !dead[v.Name] {
+			names[v.Type] = append(names[v.Type], v.Name)
+		}
+	}
+	var b strings.Builder
+	for _, typ := range types {
+		if len(names[typ]) > 0 {
+			fmt.Fprintf(&b, "var %s %s\n", strings.Join(names[typ], ", "), typ)
+			var q []string
+			for _, n := range names[typ] {
+				if quiet[n] {
+					q = append(q, n)
+				}
+			}
+			if len(q) > 0 {
+				fmt.Fprintf(&b, "%s_ = %s\n", strings.Repeat("_, ", len(q)-1), strings.Join(q, ", "))
+			}
+		}
+	}
+	return b.String()
+}
+
 type printer struct {
 	m      *exec.Module
 	t      *Target
@@ -65,6 +173,12 @@ type printer struct {
 	labels map[string]int // the uses of each label name in the function so far
 	// scope is the stack of the enclosing blocks and loops, innermost last.
 	scope []*frame
+	// dead reports that the current point is unreachable.
+	dead bool
+	// stores, if not nil, holds the dead locals and the assignments left out (Body).
+	stores *pass.Stores
+	// outer is the label of the function's body whose label the caller prints (Body), if any.
+	outer string
 }
 
 // frame is an enclosing block or loop.
@@ -76,7 +190,15 @@ type frame struct {
 	used bool
 }
 
-func (p *printer) w(format string, args ...any) { fmt.Fprintf(&p.b, format, args...) }
+// w writes at a reachable point.
+func (p *printer) w(format string, args ...any) {
+	if !p.dead {
+		fmt.Fprintf(&p.b, format, args...)
+	}
+}
+
+// always writes whatever the reachability.
+func (p *printer) always(format string, args ...any) { fmt.Fprintf(&p.b, format, args...) }
 
 func (p *printer) name(n string) string {
 	if p.t.FuncName != nil {
@@ -153,7 +275,7 @@ func (p *printer) fn() string {
 	} else {
 		p.block(f.Body)
 	}
-	p.w("}\n")
+	p.always("}\n")
 	return p.b.String()
 }
 
@@ -182,12 +304,19 @@ func (p *printer) stmts(b *exec.Block) {
 		} else {
 			p.stmt(st)
 		}
-		if jumps(st) {
-			break
-		}
 	}
 	p.scope = p.scope[:len(p.scope)-1]
-	if fr.used {
+	p.end(fr)
+}
+
+// end ends the block of the frame fr: its label follows if a jump named it, and makes the point
+// reachable.
+func (p *printer) end(fr *frame) {
+	if !fr.used {
+		return
+	}
+	p.dead = false
+	if fr.label != p.outer {
 		p.w("%s:\n", fr.goName)
 	}
 }
@@ -204,14 +333,6 @@ func (p *printer) label(l string) string {
 		return name + "_" + strconv.Itoa(n)
 	}
 	return name
-}
-
-func jumps(st exec.Stmt) bool {
-	switch st.(type) {
-	case *exec.Exit, *exec.Break, *exec.Continue, *exec.Return:
-		return true
-	}
-	return false
 }
 
 func declares(b *exec.Block) bool {
@@ -322,10 +443,17 @@ func (p *printer) stmt(st exec.Stmt) {
 	case *exec.If:
 		p.ifStmt(s, "if ")
 	case *exec.Set:
+		dead := p.dead
+		if p.stores != nil && p.stores.Removed[s] {
+			// The assignment is left out; its values are still formed.
+			p.dead = true
+		}
 		if c, ok := s.Values[0].(*exec.Call); ok && len(s.Values) == 1 && p.opStmt(c, p.places(s), false) {
+			p.dead = dead
 			return
 		}
 		p.w("%s\n", p.set(s))
+		p.dead = dead
 	case *exec.Do:
 		if p.opStmt(s.Call, nil, false) {
 			return
@@ -335,16 +463,20 @@ func (p *printer) stmt(st exec.Stmt) {
 		}
 	case *exec.Exit:
 		p.jump(s.Label, "")
+		p.dead = true
 	case *exec.Break:
 		p.jump(s.Label, "break")
+		p.dead = true
 	case *exec.Continue:
 		p.jump(s.Label, "continue")
+		p.dead = true
 	case *exec.Return:
 		vals := make([]string, len(s.Values))
 		for i, x := range s.Values {
 			vals[i] = p.expr(x, 0)
 		}
 		p.w("return %s\n", strings.Join(vals, ", "))
+		p.dead = true
 	case *exec.Assert:
 		p.w("if !(%s) {\npanic(%q)\n}\n", p.expr(s.Cond, 0), "assertion failed: "+s.Msg)
 	case *exec.Comment:
@@ -356,6 +488,9 @@ func (p *printer) stmt(st exec.Stmt) {
 
 // jump prints an exit (kw empty), break or continue of the block or loop labeled l.
 func (p *printer) jump(l, kw string) {
+	if p.dead {
+		return
+	}
 	inner := true // no loop lies between the jump and its target
 	for i := len(p.scope) - 1; i >= 0; i-- {
 		fr := p.scope[i]
@@ -409,9 +544,11 @@ func (p *printer) loop(s *exec.Loop) {
 	if len(head) > 0 {
 		h += " " + head[0]
 	}
-	p.w("%s {\n", h)
+	// The braces of a loop are printed whatever the reachability.
+	p.always("%s {\n", h)
 	p.body(s.Body)
-	p.w("}\n")
+	p.always("}\n")
+	p.dead = false
 	p.scope = p.scope[:len(p.scope)-1]
 	if fr.used {
 		// A labeled break or continue names the loop: its label goes before it.
@@ -426,8 +563,10 @@ func (p *printer) ifStmt(s *exec.If, kw string) {
 	if s.Init != nil {
 		head = p.set(s.Init) + "; "
 	}
+	dead := p.dead
 	p.w("%s%s%s {\n", kw, head, p.expr(s.Cond, 0))
 	p.body(s.Then)
+	p.dead = dead
 	if s.Else != nil && len(s.Else.Stmts) == 1 && s.Else.Label == "" {
 		if e, ok := s.Else.Stmts[0].(*exec.If); ok {
 			p.ifStmt(e, "} else if ")
@@ -437,6 +576,7 @@ func (p *printer) ifStmt(s *exec.If, kw string) {
 	if s.Else != nil {
 		p.w("} else {\n")
 		p.body(s.Else)
+		p.dead = dead
 	}
 	p.w("}\n")
 }
@@ -463,6 +603,8 @@ func (p *printer) places(s *exec.Set) []string {
 			dst[i] = "_"
 		case d.Reg:
 			dst[i] = p.t.Reg(d.Name)
+		case p.stores != nil && p.stores.Dead[d.Name]:
+			dst[i] = "_"
 		default:
 			dst[i] = d.Name
 		}
@@ -514,6 +656,11 @@ func (p *printer) expr(x exec.Expr, outer int) string {
 	case *exec.Feature:
 		panic("execgo: feature " + x.Name + " in a printed function; specialize it first")
 	case *exec.Unary:
+		if c, ok := x.X.(*exec.Call); ok && x.Op == "!" && p.t.Negate != nil && p.m.Op(c.Callee) != nil {
+			if s, ok := p.t.Negate(c, p.args(c)); ok {
+				return p.paren(s, outer)
+			}
+		}
 		s := p.expr(x.X, 6)
 		if strings.HasPrefix(s, x.Op) || strings.HasPrefix(s, "-") {
 			s = "(" + s + ")"
@@ -521,7 +668,11 @@ func (p *printer) expr(x exec.Expr, outer int) string {
 		return x.Op + s
 	case *exec.Binary:
 		n := prec[x.Op]
-		s := p.expr(x.X, n) + " " + x.Op + " " + p.expr(x.Y, n+1)
+		right := n + 1
+		if y, ok := x.Y.(*exec.Binary); ok && y.Op == x.Op && (x.Op == "||" || x.Op == "&&") {
+			right = n // || and && are associative
+		}
+		s := p.expr(x.X, n) + " " + x.Op + " " + p.expr(x.Y, right)
 		if n < outer {
 			return "(" + s + ")"
 		}
@@ -531,11 +682,7 @@ func (p *printer) expr(x exec.Expr, outer int) string {
 	case *exec.Call:
 		args := p.args(x)
 		if p.m.Op(x.Callee) != nil {
-			s := p.t.Op(x, args)
-			if outer > 0 && !exec.Atomic(s) {
-				s = "(" + s + ")"
-			}
-			return s
+			return p.paren(p.t.Op(x, args), outer)
 		}
 		name := p.name(x.Callee)
 		if p.t.Recv != "" {
@@ -544,6 +691,24 @@ func (p *printer) expr(x exec.Expr, outer int) string {
 		return name + "(" + strings.Join(args, ", ") + ")"
 	}
 	panic(fmt.Sprintf("execgo: expression %T", x))
+}
+
+// paren returns the text s of an operation where an operator of precedence outer encloses it,
+// parenthesized if it binds less tightly (Target.Prec).
+func (p *printer) paren(s string, outer int) string {
+	if outer == 0 {
+		return s
+	}
+	if p.t.Prec != nil {
+		if p.t.Prec(s) < outer {
+			return "(" + s + ")"
+		}
+		return s
+	}
+	if !exec.Atomic(s) {
+		return "(" + s + ")"
+	}
+	return s
 }
 
 func (p *printer) args(c *exec.Call) []string {
