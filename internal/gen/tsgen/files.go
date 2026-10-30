@@ -36,7 +36,7 @@ var tsPublicRuntime = strings.Fields(`
 
 // tsPublicControls lists the runtime declarations of the budget controls that parser.ts re-exports
 // only with -budget-controls.
-var tsPublicControls = strings.Fields(`CancellationSignal ParseInterruptionKind ParseInterruptionError`)
+var tsPublicControls = strings.Fields(`CancellationSignal ParseInterruptionKind ParseInterruptionError Unlimited`)
 
 // TsRuntimeText returns the source of runtime.ts: the runtime, the invocation budget controls and the
 // observation code, as one module that exports every declaration the generated code uses.

@@ -151,7 +151,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const [index,route] of routes.entri
 // release omissions observable; public calls normally keep no controller root.
 const tsControlFinalizerHook = `
 export function retainControlForTest(signal:CancellationSignal,mode:string,arm:()=>void,marker:unknown) {
- const options=resolveOptions(G,{signal,budget:mode==="limit"?1:0});
+ const options=resolveOptions(G,{signal,budget:mode==="limit"?1:0},"");
  if(options instanceof Error)throw options;
  const held:{control:BudgetControl|null}={control:null};
  const release=BudgetControl.prototype.release;

@@ -155,7 +155,7 @@ function fail(why: string): never { throw new Error(why); }
 for (const [name, run] of routes) {
   const charged = (len: number): number => {
     scanned = -1;
-    if (!(run("z".repeat(len), Number.MAX_SAFE_INTEGER) instanceof p.SyntaxError)) fail(name + " does not fail at the end");
+    if (!(run("z".repeat(len), Number.MAX_SAFE_INTEGER - 1) instanceof p.SyntaxError)) fail(name + " does not fail at the end");
     return scanned;
   };
   const short = charged(256), long = charged(2048);

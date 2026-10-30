@@ -108,31 +108,50 @@ func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.Ge
 	out.WriteString(" * A string is parsed as its UTF-8 encoding would be (lone surrogates as U+FFFD), and bytes are\n")
 	out.WriteString(" * decoded as UTF-8 (invalid sequences as U+FFFD, one per byte). If the parse recovered from errors\n")
 	out.WriteString(" * with #recover, the result has both the node and SyntaxErrors.\n */\n")
-	fmt.Fprintf(&out, "export function parse(input: string | Uint8Array, unit?: Unit): ParseResult {\n  return run(G, R%d, nseen, input, unit);\n}\n\n", start.ID)
-	out.WriteString(`/** Parses the whole input with the start rule name, a rule marked @start; "" selects the default start rule. */
+	// With budget controls every parse is controlled: the entry points without options use the default
+	// budget of the input, as parseWithOptions does with no budget.
+	parseBody, ruleBody := fmt.Sprintf("run(G, R%d, nseen, input, unit)", start.ID), "run(G, r, nseen, input, unit)"
+	if opts.BudgetControls {
+		parseBody, ruleBody = "parseWithOptions(input, { unit: unit ?? CodePoints })", "parseRuleWithOptions(name, input, { unit: unit ?? CodePoints })"
+	}
+	fmt.Fprintf(&out, "export function parse(input: string | Uint8Array, unit?: Unit): ParseResult {\n  return %s;\n}\n\n", parseBody)
+	if opts.BudgetControls {
+		fmt.Fprintf(&out, `/** Parses the whole input with the start rule name, a rule marked @start; "" selects the default start rule. */
+export function parseRule(name: string, input: string | Uint8Array, unit?: Unit): ParseResult {
+  return %s;
+}
+
+`, ruleBody)
+	} else {
+		fmt.Fprintf(&out, `/** Parses the whole input with the start rule name, a rule marked @start; "" selects the default start rule. */
 export function parseRule(name: string, input: string | Uint8Array, unit?: Unit): ParseResult {
   const r = startIn(rules, starts, defaultStart, name);
   if (r instanceof Error) return { node: null, error: r };
-  return run(G, r, nseen, input, unit);
+  return %s;
 }
 
-`)
+`, ruleBody)
+	}
 	if rec != nil {
 		fmt.Fprintf(&out, "/**\n * Checks that the whole input matches the rule %s without building a tree, and returns the syntax\n", start.Name)
 		out.WriteString(" * error parse would return (SyntaxErrors for errors recovered with #recover), or null. Actions needed by\n")
 		out.WriteString(" * predicates are evaluated and can report runtime errors; other actions are skipped.\n */\n")
-		fmt.Fprintf(&out, "export function recognize(input: string | Uint8Array, unit?: Unit): Error | null {\n  return run(G, Q%d, recNseen, input, unit).error;\n}\n\n", rec.ByName[start.Name].ID)
+		recBody := fmt.Sprintf("run(G, Q%d, recNseen, input, unit).error", rec.ByName[start.Name].ID)
+		if opts.BudgetControls {
+			recBody = "recognizeWithOptions(input, { unit: unit ?? CodePoints })"
+		}
+		fmt.Fprintf(&out, "export function recognize(input: string | Uint8Array, unit?: Unit): Error | null {\n  return %s;\n}\n\n", recBody)
 	}
 	fmt.Fprintf(&out, `/** Parses with invocation-local position and depth options. */
 export function parseWithOptions(input: string | Uint8Array, options?: %[1]s): ParseResult {
-  const o = resolveOptions(G, options);
+  const o = resolveOptions(G, options, input);
   if (o instanceof Error) return { node: null, error: o };
   return withObservedOptions(o, control => run(G, R%[2]d, nseen, input, o.unit, o.maxDepth, control, o), error => ({ node: null, error }));
 }
 
 /** Parses a named start rule ("" for the default) with invocation-local options, validated before rule lookup. */
 export function parseRuleWithOptions(name: string, input: string | Uint8Array, options?: %[1]s): ParseResult {
-  const o = resolveOptions(G, options);
+  const o = resolveOptions(G, options, input);
   if (o instanceof Error) return { node: null, error: o };
   const r = startIn(rules, starts, defaultStart, name);
   if (r instanceof Error) return { node: null, error: r };
@@ -143,7 +162,7 @@ export function parseRuleWithOptions(name: string, input: string | Uint8Array, o
 	if rec != nil {
 		fmt.Fprintf(&out, `/** Recognizes with invocation-local options; predicate-dependent actions may run. */
 export function recognizeWithOptions(input: string | Uint8Array, options?: %[1]s): Error | null {
-  const o = resolveOptions(G, options);
+  const o = resolveOptions(G, options, input);
   if (o instanceof Error) return o;
   return withObservedOptions<Error | null>(o, control => run(G, Q%[2]d, recNseen, input, o.unit, o.maxDepth, control, o).error, error => error);
 }

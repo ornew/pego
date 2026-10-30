@@ -69,7 +69,7 @@ for (const unit of [p.CodePoints,p.Bytes]) {
     limits(failed,"budget-limit",boundary-1);
     check(route.run(input,{unit,[key]:boundary}).error===null,"exact boundary accepted");
    }
-   const active=route.run(input,{unit,budget:Number.MAX_SAFE_INTEGER});
+   const active=route.run(input,{unit,budget:Number.MAX_SAFE_INTEGER-1});
    check(active.error===null&&stable(active.value)===stable(route.run(input,{unit}).value),"unlimited-equivalent finite limits");
   }
   for (const marker of [new RangeError("Maximum call stack size exceeded"),reason,null,undefined]) {
@@ -86,9 +86,9 @@ for (const unit of [p.CodePoints,p.Bytes]) {
  }
  const paritySignal: CancellationSignal={aborted:false};
  for(const input of ["\uDC80","\uDCFF","a\uDCFFé","😀\uDCFF",new Uint8Array([255]),new Uint8Array([195]),new Uint8Array([240,159]),new Uint8Array([237,160,128])]){
-  const normal=p.parse(input,unit),active=p.parseWithOptions(input,{unit,signal:paritySignal,budget:Number.MAX_SAFE_INTEGER});
+  const normal=p.parse(input,unit),active=p.parseWithOptions(input,{unit,signal:paritySignal,budget:Number.MAX_SAFE_INTEGER-1});
   check(stable(active.node)===stable(normal.node)&&active.error?.message===normal.error?.message,"active malformed/surrogate Node parity");
-  const typed=p.parseAST(input,unit),controlled=p.parseASTWithOptions(input,{unit,signal:paritySignal,budget:Number.MAX_SAFE_INTEGER});
+  const typed=p.parseAST(input,unit),controlled=p.parseASTWithOptions(input,{unit,signal:paritySignal,budget:Number.MAX_SAFE_INTEGER-1});
   check(stable(controlled.value)===stable(typed.value)&&controlled.error?.message===typed.error?.message,"active malformed/surrogate typed parity");
  }
  let checks=0;
@@ -148,7 +148,7 @@ rule main Text = t:(.*) #atomic => Text{Text: text($t)}`
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
 for(const unit of [p.CodePoints,p.Bytes]) {
- const options:p.ParseOptions={unit,signal:{aborted:false},budget:Number.MAX_SAFE_INTEGER};
+ const options:p.ParseOptions={unit,signal:{aborted:false},budget:Number.MAX_SAFE_INTEGER-1};
  for(const input of ["\uDC80","\uDCFF","a\uDCFFé","😀\uDCFF",new Uint8Array([255]),new Uint8Array([195]),new Uint8Array([240,159]),new Uint8Array([237,160,128])]) {
   const normal=p.parse(input,unit),active=p.parseWithOptions(input,options);
   check(normal.error===null&&normal.node!==null&&active.error===null&&active.node!==null,"permissive malformed parse succeeds");
