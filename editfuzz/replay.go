@@ -339,9 +339,10 @@ var corruptDocumentResult func(text string, tree map[string]any)
 // check compares the Document's parse with a fresh parse of its text.
 func (r *replayer) check(event int) *Mismatch {
 	// Encode the Document's result before any other parse can move the nodes it shares.
-	doc, docPanic := result(func() (*pego.Node, error) { return r.doc.Parse() })
+	var docErr, freshErr error
+	doc, docPanic := result(func() (n *pego.Node, err error) { n, docErr = r.doc.Parse(); return n, docErr })
 	text := r.doc.Text()
-	fresh, freshPanic := result(func() (*pego.Node, error) { return r.p.Parse(text, r.opts...) })
+	fresh, freshPanic := result(func() (*pego.Node, error) { n, err := r.p.Parse(text, r.opts...); freshErr = err; return n, err })
 	if docPanic != "" || freshPanic != "" {
 		// A panic in the Document parse alone points at incremental parsing; in both, at the grammar or
 		// the engine.
@@ -352,6 +353,11 @@ func (r *replayer) check(event int) *Mismatch {
 			path = "panic.fresh"
 		}
 		return r.mismatch(event, text, path, docPanic, freshPanic)
+	}
+	// A Document reuses earlier work and spends less budget than a fresh parse, so an exhausted
+	// budget on either side says nothing about the results: only parses that both complete compare.
+	if budgetExhausted(docErr) || budgetExhausted(freshErr) {
+		return nil
 	}
 	if corruptDocumentResult != nil {
 		expand(doc)
@@ -560,4 +566,10 @@ func orRoot(path string) string {
 		return "result"
 	}
 	return path
+}
+
+// budgetExhausted reports whether err is an exhausted budget.
+func budgetExhausted(err error) bool {
+	var l *pego.LimitError
+	return errors.As(err, &l) && l.Kind == pego.LimitBudget
 }

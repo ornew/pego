@@ -124,10 +124,9 @@ type Sequence struct {
 	Start         string
 	Backend       pego.Backend
 	Unit          pego.PositionUnit
-	// Limits bound the Documents and the fresh parses of a replay. A Limit error is a result like any
-	// other: a Document that reuses earlier work spends less than a fresh parse, so a finite Budget can
-	// make the two differ, and Unlimited keeps the default budget from doing so on a heavy grammar. The
-	// saved format does not record the limits, so a replay supplies them again.
+	// Limits bound the Documents and the fresh parses of a replay. A Document that reuses earlier work
+	// spends less than a fresh parse, so a check in which either parse exhausts its budget compares
+	// nothing. The saved format does not record the limits, so a replay supplies them again.
 	Limits pego.Limits
 	// Seed is the seed that generated the sequence, kept only as provenance: replay does not use it.
 	Seed       uint64

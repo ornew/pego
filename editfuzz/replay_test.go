@@ -368,3 +368,20 @@ func TestErrorsCompareByFields(t *testing.T) {
 		t.Fatalf("unrecovered error: %v", c)
 	}
 }
+
+// TestExhaustedBudgetComparesNothing checks that a budget which only the fresh parse exhausts, because
+// the Document reuses earlier work, is not a mismatch.
+func TestExhaustedBudgetComparesNothing(t *testing.T) {
+	src := testGrammars[1]
+	initial := strings.Repeat("let a=1+2;", 20)
+	for _, b := range backends {
+		for budget := uint64(1); budget <= 4096; budget += 7 {
+			seq := sequence(src, b, pego.CodePoints, initial, edit(0, 0, "let b=3;"), checkpoint)
+			seq.Limits = pego.Limits{Budget: budget}
+			var m *Mismatch
+			if err := Replay([]byte(src), seq); errors.As(err, &m) {
+				t.Fatalf("%v budget %d: %v", b, budget, err)
+			}
+		}
+	}
+}
