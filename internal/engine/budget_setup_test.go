@@ -352,7 +352,7 @@ func TestBudgetSetupInputPreparationPanicIdentity(t *testing.T) {
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(unit.String(), func(t *testing.T) {
 			token := &budgetContextPanicToken{phase: "input materialization"}
-			ctx := newBudgetContextErrPanic(token, 1)
+			ctx := newBudgetContextErrPanic(token, 2)
 			c := core.NewBudgetControl(ctx, limits.Limits{})
 			ctx.control, ctx.armed = c, true
 			completed := false

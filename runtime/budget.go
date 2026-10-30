@@ -306,25 +306,9 @@ func (p *Parser) Spend() {
 	p.Control.chargeStep()
 }
 
-// asciiRunMin is the shortest run of ASCII characters that setControlledSource charges at once.
-const asciiRunMin = 8
-
-// asciiRun returns the length of the ASCII run at s[off:] whose characters each charge a full
-// UTFMax units and whose total charge, one reservation of UTFMax each, all take the fast path of
-// charge with room units left. Charging the run in one subtraction is then exactly what
-// charging its characters one by one does.
-func asciiRun(s string, off int, room uint64) int {
-	// The character at i charges UTFMax units while at least UTFMax bytes remain from i.
-	end := min(len(s)-utf8.UTFMax+1, off+256)
-	k := 0
-	for off+k < end && s[off+k] < utf8.RuneSelf {
-		k++
-	}
-	if k > 0 && uint64(utf8.UTFMax*k) >= room {
-		return 0
-	}
-	return k
-}
+// sourceChunk is the bytes of a source that one charge of its preparation covers: one poll
+// interval, so that cancellation is observed as often as when each byte is charged alone.
+const sourceChunk = int(budgetCheckInterval)
 
 func (p *Parser) setControlledSource(s string) {
 	n, valid := 0, len(s) <= 1<<31-1
@@ -333,21 +317,29 @@ func (p *Parser) setControlledSource(s string) {
 	if p.Document != nil {
 		c = nil
 	}
-	for off := 0; off < len(s); {
+	// Each of the two passes charges one unit per byte of the source: outside a Document in
+	// chunks, before the bytes of a chunk are decoded; in a Document by the size
+	// of each character, which it records as examined.
+	for off, charged := 0, 0; off < len(s); {
+		if c != nil && off >= charged {
+			k := min(sourceChunk, len(s)-charged)
+			c.Charge(uint64(k))
+			charged += k
+		}
 		if c != nil {
-			if k := asciiRun(s, off, c.room); k >= asciiRunMin {
-				c.room -= uint64(utf8.UTFMax * k)
-				n += k
-				off += k
+			// The bytes of the charged chunk that are ASCII are one character each.
+			for off < charged && s[off] < utf8.RuneSelf {
+				n++
+				off++
+			}
+			if off >= charged {
 				continue
 			}
 		}
-		if w := uint64(min(utf8.UTFMax, len(s)-off)); c != nil {
-			c.Charge(w)
-		} else {
-			p.SpendRead(w)
-		}
 		r, size := utf8.DecodeRuneInString(s[off:])
+		if c == nil {
+			p.SpendRead(uint64(size))
+		}
 		if r == utf8.RuneError && size == 1 {
 			valid = false
 		}
@@ -369,23 +361,30 @@ func (p *Parser) setControlledSource(s string) {
 		}
 		offs[n] = int32(len(s))
 	}
-	for off, i := 0, 0; off < len(s); i++ {
+	for off, i, charged := 0, 0, 0; off < len(s); i++ {
+		if c != nil && off >= charged {
+			k := min(sourceChunk, len(s)-charged)
+			c.Charge(uint64(k))
+			charged += k
+		}
 		if c != nil {
-			if k := asciiRun(s, off, c.room); k >= asciiRunMin {
-				c.room -= uint64(utf8.UTFMax * k)
-				for j := range k {
-					p.In[i+j] = rune(s[off+j])
-					if valid {
-						offs[i+j] = int32(off + j)
-					}
+			for off < charged && s[off] < utf8.RuneSelf {
+				p.In[i] = rune(s[off])
+				if valid {
+					offs[i] = int32(off)
 				}
-				off += k
-				i += k - 1
+				off++
+				i++
+			}
+			if off >= charged {
+				i-- // the loop header advances i
 				continue
 			}
 		}
-		p.SpendRead(uint64(min(utf8.UTFMax, len(s)-off)))
 		r, size := utf8.DecodeRuneInString(s[off:])
+		if c == nil {
+			p.SpendRead(uint64(size))
+		}
 		p.In[i] = r
 		if valid {
 			offs[i] = int32(off)

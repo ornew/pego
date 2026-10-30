@@ -2761,9 +2761,9 @@ export class Parser {
 
   // operatorsRuleParse parses an expression with operators that bind tighter than min. Each level of its
   // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
-  // against the nesting limit, like a rule call.
+  // against the nesting limit, like a rule call. The call of the rule charges its entry; the loops
+  // of the expression charge each iteration.
   operatorsRuleParse(r: Rule, min: number): R {
-    this.spend();
     if (++this.depth > this.maxDepth) {
       this.tooDeep();
     }

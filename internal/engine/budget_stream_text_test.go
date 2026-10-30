@@ -111,7 +111,7 @@ func TestBudgetStreamTextCodePointPublication(t *testing.T) {
 			case "offsets":
 				limit = 4 * size
 			case "last-offset":
-				limit = 8*size - 7
+				limit = 5*size - 1
 			}
 			in.Control = core.NewBudgetControl(nil, limits.Limits{Budget: limit})
 			before := append([]int32(nil), old.Offsets...)
@@ -124,9 +124,9 @@ func TestBudgetStreamTextCodePointPublication(t *testing.T) {
 	in := budgetStreamTextInput(CodePoints, text)
 	// Detached sizing and encoding each visit 1024 runes at two units per rune
 	// (the rune is read and the text is built). The offset decoder reserves
-	// four bytes except for its final three ASCII positions.
-	in.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 8*size - 6})
-	if got := in.Text(0, 5); got != "aaaaa" || in.Control.Used != 8*size-6 || in.StreamText.End != size {
+	// the bytes of each character it decodes, one for an ASCII character.
+	in.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 5 * size})
+	if got := in.Text(0, 5); got != "aaaaa" || in.Control.Used != 5*size || in.StreamText.End != size {
 		t.Fatalf("exact spent=%d text=%q", in.Control.Used, got)
 	}
 	used := in.Control.Used
@@ -134,7 +134,7 @@ func TestBudgetStreamTextCodePointPublication(t *testing.T) {
 		t.Fatal("cached code-point offsets were rebuilt")
 	}
 	oneShort := budgetStreamTextInput(CodePoints, text)
-	oneShort.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 8*size - 7})
+	oneShort.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 5*size - 1})
 	if err := catchFatal(t, func() { _ = oneShort.Text(0, 5) }); !errors.Is(err, limits.ErrLimit) || oneShort.StreamText.Source != "" {
 		t.Fatalf("one-short error=%v", err)
 	}

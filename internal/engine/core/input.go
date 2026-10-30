@@ -125,9 +125,9 @@ func (in *Input) setSource(s string) {
 func (in *Input) buildOffs() {
 	offs := make([]int32, 0, len(in.In)+1)
 	for i := 0; i < len(in.Src); {
-		in.spendRead(uint64(min(utf8.UTFMax, len(in.Src)-i)))
 		offs = append(offs, int32(i))
 		_, size := utf8.DecodeRuneInString(in.Src[i:])
+		in.spendRead(uint64(size))
 		i += size
 	}
 	in.Offs = append(offs, int32(len(in.Src)))

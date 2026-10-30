@@ -52,10 +52,12 @@ charge, unit for unit.
 - **Expectations.** `ExpectBudget` records the farthest failure of a function
   without a Document. It charges the scan for a duplicate and leaves out the
   Document's record of the examined input that `Expect` makes.
-- **Source pass.** The two passes of `setControlledSource` charge up to four
-  units per character. A run of ASCII characters, each with at least four bytes
-  left, is charged in one subtraction when every one of its charges would take the
-  fast path, which is what charging them one by one does.
+- **Source pass.** The two passes of `setControlledSource` charge one unit per
+  byte of the source each, in chunks of one poll interval (256 bytes) taken before
+  the bytes of a chunk are decoded, so cancellation is observed as often as when
+  each byte is charged alone. The ASCII bytes of a charged chunk are counted and
+  stored without a decode. A Document charges the size of each character after it
+  is decoded and records it as examined.
 - **Control only when needed.** A parse has no control when it sets no limit and
   no cancelable context; the inline charges then test the control for nil and do
   nothing, and the literal and class paths skip their charged forms. A context that
@@ -134,9 +136,10 @@ them fail, so they exercise the slow path's limits. Generated-code tests read
 the reserved totals through `inputUsed()` and `stepsUsed()`. `chargeInput`
 requires a non-nil control; `chargeStep`, `Charge` and `Take` accept nil. The fast path
 assumes the input room is at least one outside the slow path, which refill and
-the fast path both preserve. Tests compare `Take`, the class table and the source
-pass with a reference that charges one unit at a time, at limits that fall
-inside a batch, and check that a context without a limit creates a control and
+the fast path both preserve. Tests compare `Take` and the class table with a
+reference that charges one unit at a time, and the source pass with a reference of
+its chunked charge, at limits that fall inside a batch and counting the context
+polls, and check that a context without a limit creates a control and
 is polled.
 
 ## Decision and Limits

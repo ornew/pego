@@ -134,7 +134,9 @@ func TestBudgetClassCharge(t *testing.T) {
 	}
 }
 
-// referenceSourceCharge charges the two passes of setControlledSource one character at a time.
+// referenceSourceCharge charges the two passes of setControlledSource as the model defines them:
+// each pass charges one unit per byte of the source, in chunks of 256 bytes taken when a
+// character starts at or after the bytes charged so far.
 func referenceSourceCharge(c *BudgetControl, s string) (err error) {
 	defer func() {
 		if x := recover(); x != nil {
@@ -142,8 +144,12 @@ func referenceSourceCharge(c *BudgetControl, s string) (err error) {
 		}
 	}()
 	for range 2 {
-		for off := 0; off < len(s); {
-			c.Charge(uint64(min(4, len(s)-off)))
+		for off, charged := 0, 0; off < len(s); {
+			if off >= charged {
+				k := min(256, len(s)-charged)
+				c.Charge(uint64(k))
+				charged += k
+			}
 			_, size := decodeRuneForTest(s[off:])
 			off += size
 		}
@@ -164,13 +170,13 @@ func decodeRuneForTest(s string) (rune, int) {
 	return 0, 1
 }
 
-func TestSetControlledSourceChargesLikeOneByOne(t *testing.T) {
+func TestSetControlledSourceChargesOneUnitPerByte(t *testing.T) {
 	long := ""
-	for range 300 {
+	for range 1300 {
 		long += "abcdefghij"
 	}
-	for _, s := range []string{"", "abc", "abcdefgh", long, long + "é" + long, "é" + long + "日本" + long[:40], long[:20] + "\xff" + long[:20]} {
-		for _, limit := range []uint64{0, 1, 7, 100, 1000, 2400, 2401, 2402, 6000, 100000} {
+	for _, s := range []string{"", "abc", "abcdefgh", long, long + "é" + long, "é" + long + "日本" + long[:40], long[:20] + "\xff" + long[:20], long + "日本語é" + long} {
+		for _, limit := range []uint64{0, 1, 7, 100, 255, 256, 257, 1000, 4096, 4097, 8192, 13000, 26000, 26001, 100000} {
 			for _, ctx := range []bool{false, true} {
 				var cx context.Context
 				if ctx {
@@ -212,7 +218,7 @@ func TestSetControlledSourceChargesLikeOneByOne(t *testing.T) {
 				if ctx && gotCtx.(*pollCounter).polls != wantCtx.(*pollCounter).polls {
 					t.Fatalf("len %d limit %d: %d polls, reference %d", len(s), limit, gotCtx.(*pollCounter).polls, wantCtx.(*pollCounter).polls)
 				}
-				if ctx && len(s) > 300 && limit == 0 && wantCtx.(*pollCounter).polls < 2 {
+				if ctx && len(s) > 8192 && limit == 0 && wantCtx.(*pollCounter).polls < 2 {
 					t.Fatalf("len %d: the reference crosses no poll boundary", len(s))
 				}
 			}

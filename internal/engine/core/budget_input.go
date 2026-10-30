@@ -38,9 +38,16 @@ func NewControlledTextInput(s string, unit PositionUnit, offsets bool, sc *scrat
 		in.Src, in.SrcOK = s, true
 		return in
 	}
+	// Each of the two passes charges one unit per byte of the source, in chunks of one poll
+	// interval, before the bytes of a chunk are decoded: cancellation is observed as often as
+	// when each byte is charged alone.
 	n, valid := 0, true
-	for off := 0; off < len(s); {
-		c.Charge(uint64(min(utf8.UTFMax, len(s)-off)))
+	for off, charged := 0, 0; off < len(s); {
+		if off >= charged {
+			k := min(int(BudgetCheckInterval), len(s)-charged)
+			c.Charge(uint64(k))
+			charged += k
+		}
 		r, size := utf8.DecodeRuneInString(s[off:])
 		if r == utf8.RuneError && size == 1 {
 			valid = false
@@ -53,8 +60,12 @@ func NewControlledTextInput(s string, unit PositionUnit, offsets bool, sc *scrat
 		in.Offs = grow(sc.offs, n+1)
 		in.Offs[n] = int32(len(s))
 	}
-	for off, i := 0, 0; off < len(s); i++ {
-		c.Charge(uint64(min(utf8.UTFMax, len(s)-off)))
+	for off, i, charged := 0, 0, 0; off < len(s); i++ {
+		if off >= charged {
+			k := min(int(BudgetCheckInterval), len(s)-charged)
+			c.Charge(uint64(k))
+			charged += k
+		}
 		r, size := utf8.DecodeRuneInString(s[off:])
 		in.In[i] = r
 		if offsets {

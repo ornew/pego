@@ -18,8 +18,8 @@ func (in *Input) PrefixByteOffset(source string, end int) int {
 	// another index. Each malformed byte is one decoded replacement scalar.
 	off := 0
 	for i := 0; i < end; i++ {
-		in.spendRead(uint64(min(utf8.UTFMax, len(source)-off)))
 		_, size := utf8.DecodeRuneInString(source[off:])
+		in.spendRead(uint64(size))
 		off += size
 	}
 	return off
