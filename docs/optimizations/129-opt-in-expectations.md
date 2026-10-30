@@ -58,11 +58,26 @@ runtime ignores.
 
 ## Cost
 
-`(*Parser).ExpectOrdinary` takes the placeholder path through its normal body, which raises its
-inlining cost from 77 to 84 against a budget of 80. It is no longer inlined into the ordinary
-generated rule bodies, and it is not in the hot-path inlining test. The benchmarks above show no
-effect from the extra call. A specialization that emits an identifier-less call for grammars
-generated without expectations would restore the inlining if a future measurement needs it.
+`(*Parser).ExpectOrdinary` serves the rule bodies of parses without budget controls and without a
+Document. It takes the placeholder path of a parse that does not record through the body that
+records, which raises the cost of the whole body to 84 against the inlining budget of 80. The
+early return for a silent position or one before the farthest failure is therefore an inlinable
+guard, and the recording sits in `expectOrdinarySlow`, which is not inlined. The method stays in
+the hot-path inlining test.
+
+Measured on the Go parser (`ParseAST` of `parsers/golang`, which is the row that runs these
+rule bodies), 12 interleaved runs per variant, at a machine load average that fell from 53 to 24
+during the run, so differences of a few percent are noise:
+
+| ParseAST | Base | Without the guard | With the guard |
+|:--|--:|--:|--:|
+| Default (no recording), ms/op | 28.27 | 27.58 (~) | 27.31 (-3.4%, p=0.03) |
+| With `WithExpectations()`, ms/op | 28.27 | 28.79 (~) | 28.73 (~) |
+
+The guard against the version without it shows no difference (p=0.38 default, p=0.93 recording).
+B/op falls by 5.2% and allocs by 1.2% in the default mode. The JSON benchmark rows above ran
+before the guard was restored; they do not run these rule bodies for their closure and bytecode
+rows, and the generated rows show no difference.
 
 The ready-made parsers whose grammars define `@error` messages (Go, Python, TypeScript, XML) are
 generated with expectations, because their messages are part of what they report. Their

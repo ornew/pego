@@ -2367,6 +2367,14 @@ func (p *Parser) ExpectOrdinary(pos int, id ExpID) {
 	if p.Silent > 0 || pos < p.farthest {
 		return
 	}
+	p.expectOrdinarySlow(pos, id)
+}
+
+// expectOrdinarySlow records the expectation of ExpectOrdinary at or beyond the farthest position.
+// It is separate so that the early return of ExpectOrdinary inlines into the generated code.
+//
+//go:noinline
+func (p *Parser) expectOrdinarySlow(pos int, id ExpID) {
 	if !p.Expectations {
 		id = ExpFar
 	}
