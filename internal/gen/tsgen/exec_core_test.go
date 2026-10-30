@@ -41,3 +41,23 @@ func TestSubstituteMethods(t *testing.T) {
 		t.Error("a hand-written method is left")
 	}
 }
+
+// TestSubstituteMethodsRefusesMalformedRuntime checks that a runtime without the method, with it
+// twice, or without its closing brace at the class body's indentation stops the substitution.
+func TestSubstituteMethodsRefusesMalformedRuntime(t *testing.T) {
+	m := []core.TSMethod{{Name: "grow", Text: "  grow() {}\n"}}
+	for name, src := range map[string]string{
+		"missing":          "class P {\n  other() {\n  }\n}\n",
+		"twice":            "class P {\n  grow() {\n  }\n  grow() {\n  }\n}\n",
+		"no closing brace": "class P {\n  grow() {\n    return 1;\n}\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			defer func() {
+				if recover() == nil {
+					t.Error("no panic")
+				}
+			}()
+			substituteMethods(src, m)
+		})
+	}
+}

@@ -84,7 +84,11 @@ func substituteMethods(src string, ms []core.TSMethod) string {
 			}
 			start = j
 		}
-		end := i + strings.Index(src[i:], "\n  }\n") + len("\n  }\n")
+		k := strings.Index(src[i:], "\n  }\n")
+		if k < 0 {
+			panic("tsgen: the method " + m.Name + " of the runtime has no closing brace at the class body's indentation")
+		}
+		end := i + k + len("\n  }\n")
 		src = src[:start] + m.Text + src[end:]
 	}
 	return src
