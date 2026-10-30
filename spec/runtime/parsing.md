@@ -305,12 +305,14 @@ evaluated at most twice at a position for each binding level and each
 combination of the values of the variables that the rule reads, with these
 exceptions.
 
-- A rule that calls no other rule, or that is called from one place in the
-  grammar, is not memoized in an ordinary parse. It is evaluated as often as
-  that place is evaluated.
-- A rule of a left-recursion cycle is not memoized, except the rule that the
-  cycle grows. It is evaluated at every call, and again at every step of the
-  growth.
+- A rule that calls no rule, itself included, or that is called from at most
+  one place in the grammar, its own body included, is not memoized in an
+  ordinary parse. It is evaluated as often as its calls are evaluated. A
+  call with a level restriction, `level(e, name)`, is a call of `e`; the
+  parse of a right operand inside an Operators Rule is not a call.
+- A rule of a left-recursion cycle is not memoized, except its leaders, the
+  rules that grow (see [Conditions for Linear Cost](#conditions-for-linear-cost)).
+  It is evaluated at every call, and again at every step of the growth.
 - A growing rule evaluates its body once for each step of the growth, and the
   number of steps is at most two more than the length of the input it
   consumes.
@@ -340,8 +342,8 @@ describes the worst input of each length.
 | Class | Cost | Example grammar | Input |
 |:--|:--|:--|:--|
 | Linear | At most proportional to n | `main = (A / "a")* $$; A = "a" "c"` | `a` repeated n times |
-| Linear given an environment bound | Proportional to n times the number of combinations of variable values that occur at one position | A rule that reads `indent`, bound from the length of a captured run of spaces | Lines of increasing indentation |
-| Polynomial of degree k | At most proportional to n^k | `main = (A / "a")* $$; A = "a"* "c"` (k = 2) | `a` repeated n times |
+| Linear given an environment bound | Proportional to n times the number of combinations of variable values that occur at one position and the size of the strings they hold | A rule that reads `indent`, bound from the length of a captured run of spaces | Lines of increasing indentation |
+| Polynomial of degree k | Proportional to n^k on its worst inputs | `main = (A / "a")* $$; A = "a"* "c"` (k = 2) | `a` repeated n times |
 | Exponential | Can double when n grows by a constant | `main = C $$; A = C "+" / "n"; C = "(" C ")" "y" / "(" C ")" "z" / A` | `(` n times, `n`, then `)z` n times |
 
 The following grammars have the class shown on the inputs shown.
@@ -359,34 +361,219 @@ The following grammars have the class shown on the inputs shown.
 | `main = xs:"x"* => len(foldl("a", $xs, (acc, x) => acc + acc))` | `x` n times | Linear evaluations, exponential value size | The accumulator doubles for each element |
 
 The same grammars with `A = "n"`, or with the bindings `{v := "0"}` and
-`{v := "1"}`, are linear.
+`{v := "1"}`, are linear. The [classification](#classification) reports the
+first exponential grammar as unknown, not exponential: its cause is a growth
+restarted inside a recursion of rule calls, which the classifier does not
+bound.
 
 ### Conditions for Linear Cost
 
-A grammar has a cost at most proportional to n, times a constant that depends
-only on the grammar, when all of the following hold. The conditions are
-sufficient, not necessary.
+The conditions below use these terms.
 
-1. **Variables.** No variable that a memoized rule reads is bound, along a
-   recursion of rule calls, from an expression that reads that variable's own
-   earlier value. When variables are bound from captures instead, the cost is
-   linear given an environment bound.
-2. **Left-recursion cycles.** A rule of a left-recursion cycle other than the
-   rule the cycle grows is never evaluated twice at one position outside the
-   growth of its cycle.
-3. **Repeated expressions.** No expression of the table in
-   [Expressions That Repeat Cost](#expressions-that-repeat-cost) can be
-   abandoned and then evaluated again at a position strictly inside the input
-   that it covered. An expression can be abandoned when it is in an alternative
-   that is not the last of its choice, when a later part of its sequence or
-   repetition element can fail, when it is inside a lookahead, and when it is
-   in the base of a `#recover`, including through the rules that call it.
-4. **Values.** No action or predicate builds a value whose size can double from
-   one evaluation to the next.
+- A **copying operation** is an operation of an action, predicate or binding
+  whose cost is charged in proportion to the size of what it builds: joining
+  strings, taking the text of a capture, converting a value to a string, and
+  building a list with `list`, `concat`, `map` or `filter`. The size of a
+  string is its number of characters, and the size of a list its number of
+  elements; the elements themselves are shared, not copied.
+- A **left call** is a call of a rule of a left-recursion cycle, in the body
+  of a rule of the same cycle, that can run before that body consumes input.
+  The rules that grow are the **leaders**, fixed by the grammar: until every
+  cycle of left calls passes through a leader, the rule declared first on a
+  cycle that passes through none becomes one, so a cycle can have several. A
+  call of a leader grows it at the position of the call, and a left call of a
+  leader at that position reads the seed that the growth has reached. A call
+  of another rule of the cycle evaluates its body without the memo, and its
+  left calls reach a leader, which grows there. Condition 3 covers what each
+  step of the growth evaluates again, and the first step of a growing unit and
+  condition 3 are checked with the leaders as the rules that grow.
+- A **scanning source** is one of the following: a repetition without an upper
+  bound, the skip expression of a `#recover`, the growth of a left-recursion
+  cycle at every call of a rule of the cycle other than a left call, the
+  operators that an Operators Rule applies, and a copying operation with an
+  operand, other than the value of a variable, that is not bounded in size by
+  a constant of the grammar. A call of a rule of the cycle after input has
+  been consumed in a body of the cycle, such as the second `E` in
+  `E = E "+" (E "q" / "x") / "x"`, starts a growth of its own at a new
+  position. In the same way, the right operand of an operator part is parsed
+  at a new position and can apply operators itself (see
+  [Parsing Rules](../language/operators-rule.md#parsing-rules)), so a unit of
+  an Operators Rule contains a scanning source when its right operand can
+  apply an operator. Copying the
+  value of a variable costs at most L, the bound of
+  [Classification](#classification), in each evaluation, which condition 4
+  counts instead. An expression **contains** a scanning source when the
+  source is part of it, or of the body of a rule that it calls, directly or
+  indirectly.
+- A **unit** is an expression after whose failure the parser continues at the
+  position where the unit started: an alternative of a choice other than the
+  last, one iteration of a repetition, the expression of an option, the
+  expression of a lookahead, which is abandoned whether it matches or not, the
+  base of a `#recover`, and, in an Operators Rule, each operator part together
+  with its right operand and each `operand` item other than the last. A unit
+  fails when something inside it fails, including a later part of its own
+  sequence and a rule that it calls.
+- A **growing unit** is a unit whose evaluation begins with a left call: the
+  left call is the first expression that it evaluates, directly or through
+  calls of rules of the cycle, such as the alternative `E "+" T` in
+  `E = E "+" T / T`. A unit that evaluates anything before its left call, such
+  as `("y")? E S "q"`, is not a growing unit. In each step of a growth after
+  the first, the left call reads the seed, and the unit examines the input
+  from the end of the seed. In the first step, the left call fails before the
+  unit examines any input when the unit reaches the leader only through
+  rules of the cycle that cannot succeed without their own left call, as
+  `add` cannot in `expr = add / term; add = expr "+" term`. Otherwise, as
+  through `F` in `E = F "+" X / Y; F = E / M`, the first step can match `M`
+  and continue the unit after it, and the unit is also checked as an
+  alternative that is not growing: from its start, against the later
+  alternatives of its choice.
+- The **continuations** of a unit are the expressions that the parser can
+  evaluate next at the position where the unit started:
+  - for a growing unit, the growing units that the same step can evaluate
+    after it, which also start at the end of the seed, and what follows the
+    calls that start the growth, at the end of the seed. What the step
+    evaluates after the unit fails runs at the position where the rule grows,
+    and condition 3 covers its cost. When the left call fails in the first
+    step, that evaluation is the one of the first step after the same failure,
+    except that later growing units read the seed, so unless one of them
+    succeeds, the step ends where the first step ended, at the end of the
+    seed. Otherwise the check as an alternative that is not growing keeps the
+    later alternatives from consuming the character at the position where the
+    rule grows, so the step again ends no farther than the seed. Either way
+    the growth ends with the seed and the parser continues at its end;
+  - for any other alternative, the later alternatives of the choice, unless
+    every way in which the alternative can fail lies after a `#cut` in it;
+  - for an iteration, an option or a lookahead, what follows the repetition,
+    option or lookahead, through the ends of the enclosing expressions and, at
+    the end of a rule body, through every call of the rule;
+  - for the base of a `#recover`, its skip expression;
+  - for a unit of an Operators Rule, the other operator parts and `operand`
+    items that the rule can try at the same position, and what follows the
+    Operators Rule expression.
+- The **first characters** of an expression are the characters with which an
+  evaluation of it can examine the input beyond its start position: those it
+  can consume first, and those that every lookahead it can evaluate before it
+  consumes input can consume first, through rule calls. The first characters
+  of the continuations include, where a continuation can match without
+  consuming input, the first characters of what follows it. The first
+  characters of a growing unit, compared with its own continuations, and of a
+  growing unit that is a continuation of another growing unit, are those of
+  the part after its left call. As a continuation of a unit that is not
+  growing, a growing unit examines the input from that unit's start, through
+  the seed.
+- A unit and a continuation **share** a call when, at the position where the
+  unit starts examining the input, both evaluate the same call before
+  anything else that examines the input: a call of the same rule with the
+  same level restriction, or with none in both, of a rule that reads no
+  variable and that is memoized or calls no rule, itself included. The call
+  has the same result in both: the memo answers it the second time, or the
+  rule repeats only its own scan, so the continuation pays for it at most what
+  the unit paid. Calls of one rule with different level restrictions, such as
+  `e` and `level(e, hi)`, are different calls with different results. A call
+  of any other rule is not shared, because evaluating its body again also
+  evaluates again the units inside it, at every level of a recursion.
+- A unit is **committing** when, for each of its continuations, the first
+  characters of the unit and of the continuation are disjoint after the calls
+  that the two share are removed from their starts, one after another, each
+  at the end of the one before. After
+  a committing unit is abandoned, nothing that the parser evaluates next
+  consumes the character at which the unit and the continuation part, so
+  nothing starts again inside the input that the unit examined after its
+  shared calls, and the shared calls are not repeated beyond their own cost.
 
-When condition 3 fails, the degree of the polynomial is one more than the
-number of such expressions nested in one another, through rule calls. When
-condition 1 or 2 fails, or a value doubles, cost can be exponential.
+A grammar's cost from a start rule is at most proportional to n, times a
+constant that depends only on the grammar, when every rule that the start rule
+reaches satisfies all of the following. The conditions are sufficient, not
+necessary.
+
+1. **Variables.** No binding of a variable reads, through any chain of
+   bindings, captures and rule values, the variable's own earlier value, when
+   the value it binds can reach a later evaluation of the same binding: when a
+   sequence of the rule body has the binding in one element and a call that
+   can reach its rule again in a later element, each at any depth of groups,
+   options and choices, or when the binding is part of the element of a
+   repetition, outside a negative lookahead. A binding and a call in
+   different alternatives of one choice are not on one path of evaluation,
+   because a failed alternative undoes its bindings before the next is tried.
+   A binding after the recursive call binds a value that no later evaluation
+   of it sees, because bindings in a called rule are not visible to its
+   caller. When every binding is a literal, a constant number of combinations
+   of values occurs at a position. When a binding reads a capture or a
+   variable, the cost is linear given an environment bound.
+2. **Repeated scans.** Every unit that contains a scanning source is
+   committing.
+3. **Growth.** No scanning source can be evaluated, outside the left call that
+   grows, at the position where a left-recursive rule grows, in its body or in
+   the body of another rule of its cycle, other than inside a call of a
+   memoized rule that is not on the cycle. Each step of the growth evaluates
+   these bodies again at that position.
+4. **Copies.** No copying operation copies a string or list that can contain a
+   capture or a value that contains a call on a recursion with the rule that
+   performs the operation, nor a fold accumulator. A copying operation in the
+   lambda of `map`, `filter`, `foldl` or `foldr` runs once for each element, as
+   in a repetition: it copies nothing from outside the lambda that is not
+   bounded in size by a constant of the grammar. A copying operation that
+   copies the value of a variable is linear given an environment bound.
+
+### Classification
+
+`pego lint` classifies the cost of the start rule that it checks. The
+classes are ordered from best to worst: each class is a weaker claim than the
+classes before it. The classes linear and linear given an environment bound
+produce no finding. The classes polynomial and exponential produce a
+[`super-linear`](lint.md#super-linear) hint at each cause, with its witness.
+The class unknown produces no finding; it is shown, with its reason, only when
+the classification is requested.
+
+| Class | Promise |
+|:--|:--|
+| Linear | Every parse from the start rule has a cost of at most c · (n + 1) |
+| Linear given an environment bound | Every parse has a cost of at most c · K · (L + 1) · (n + 1) |
+| Polynomial of degree k | None; an estimate |
+| Exponential | None; an estimate |
+| Unknown | None; the classifier cannot bound the cost |
+
+The constant c depends only on the grammar and on the backend. K is the largest
+number of distinct combinations of the values of the variables that memoized
+rules read, among the calls at one position of the parse. L is the largest size
+of a variable's value that a copying operation copies or that a memo lookup
+compares; it is zero when no variable holds a string. Under the conditions, a
+variable's value is built from literals, captures and other variables without
+feeding back into itself, so L is at most proportional to n, and the cost of
+the second class is at most proportional to K · n². A caller that needs a cost
+proportional to n needs the class Linear.
+
+The first two classes are guarantees, under the memoization of the
+implementation that runs the parse: the classifier reports them only when the
+conditions of [Conditions for Linear Cost](#conditions-for-linear-cost) hold,
+and it over-approximates where it cannot be exact. It assumes that every
+predicate can both succeed and fail, that every continuation is reachable, and
+that first characters do not depend on the path that reaches an expression.
+
+The other classes carry no promise. Deciding the cost of a grammar exactly is
+impossible, because it would decide whether a grammar's language is empty, so
+a class worse than linear can be pessimistic: no slow input need exist. The
+classes polynomial and exponential come with a **witness**, a path of rule
+calls and expressions that shows the cause, and the class unknown comes with a
+reason:
+
+- **Polynomial.** A scanning source in a unit that is not committing, the
+  continuation that can start again inside it, and the enclosing repetition or
+  recursion. The estimated degree is one more than the number of such sources
+  nested in one another through rule calls, so that a repetition restarted
+  inside a restarted repetition gives 3. A copying operation that copies a
+  capture or value containing a call on its own recursion, or a fold
+  accumulator, gives 2, and so does a scanning source evaluated in each step of
+  a growth.
+- **Exponential.** A binding that makes a variable depend on its own earlier
+  value, or a copying operation that copies a value of its own recursion, or a
+  fold accumulator, more than once, as `s + s` does.
+- **Unknown.** A condition for linear cost fails without a witness of the
+  classes above, as when sources that are not committing are nested in one
+  another without bound through a recursion of rule calls. Memoized calls in
+  the recursion can keep such a grammar linear, which the classifier does not
+  decide. Its reason is the first unit that is not committing, or the
+  condition that fails, with the expression where it fails.
 
 ### Memory
 

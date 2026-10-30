@@ -72,6 +72,7 @@ than the nesting limit, which can make any call fail.
 | `useless-lookahead` | error, warning | `!x` that never succeeds (error), `&x` or `!x` that always succeeds (warning) |
 | `nullable-repetition` | warning | A repetition whose element can match without consuming input |
 | `redundant-optional` | warning | `x?` where `x` always succeeds |
+| `growing-variable` | warning | A binding that can at least double the size of its variable on each recursion or iteration |
 | `unused-capture` | warning | A capture whose value nothing reads |
 | `duplicate-capture` | warning | A name captured twice in one match |
 | `char-class` | warning | Overlapping ranges in a class; ranges such as `[A-z]` that include punctuation |
@@ -79,6 +80,7 @@ than the nesting limit, which can make any call fail.
 | `right-recursion` | hint | A list written as right recursion |
 | `positions` | hint | `.Start` or `.End` read in a rule that is used repeatedly |
 | `long-lookahead` | hint | A lookahead that repeats `.` or a class that admits line breaks |
+| `super-linear` | hint | A cause of cost that can grow faster than the input from the start rule |
 | `case-insensitive-literal` | hint | A run of `[sS]`-style classes that spells a word |
 | `lint-directive` | warning | A directive that names an unknown check or suppresses nothing |
 
@@ -133,6 +135,39 @@ that iteration still adds an element to the list. A rule such as
 `"x"*?`. An optional lookahead `(&x)?` is not reported, because it adds a `nil`
 element that `&x` does not have.
 
+#### `growing-variable`
+
+A binding of a `string` variable whose expression joins the variable's own
+value at least twice, as in `s := s + s`, when the variable can hold a
+non-empty value and the bound value reaches a later evaluation of the same
+binding. That is so, outside a negative lookahead, when a sequence of the rule
+body has the binding in one element and a call that can reach its rule again
+in a later element, each at any depth of groups, options and choices, or when
+the binding is part of the element of a repetition in its rule. Each
+evaluation can then at least double the size of the variable, so that its size
+can grow exponentially with the input:
+
+```pego
+var s string = "a"
+
+@start
+rule R = "x" {s := s + s} R / ""
+```
+
+A variable can hold a non-empty value at the binding when its initial value is
+not empty, or when a binding of a non-empty value is visible there: one that
+precedes it in the same rule body, or in a rule that calls its rule, directly or
+indirectly, before the call. A binding in a rule that has already returned, such
+as one in `T` for `R` in `main = T R`, is not visible, because bindings in a
+called rule are not visible to its caller. A binding that extends the variable
+by a bounded piece, such as `indent := indent + "  "`, is not reported. Nor is a
+binding after the recursive call, whose value no later evaluation of it sees,
+nor one in a different alternative of a choice from the call, as in
+`R = {s := s + s} "q" / "x" R / ""`, because a failed alternative undoes its
+bindings before the next is tried. Bindings of `int` and `bool` variables are
+not reported; their effect on the number of combinations of values is a matter
+of cost, which `super-linear` reports.
+
 #### `unused-capture`
 
 A capture is reported when nothing can read its value: it is not referred to by
@@ -176,6 +211,34 @@ an edit, nor those of the rules that call it.
 A lookahead that repeats `.` or a negated class that admits line breaks, such as
 `&([^!]* ($$ / "!"))`, can examine any amount of input. Lookaheads through other
 rules are not reported.
+
+#### `super-linear`
+
+A cause of a cost that can grow faster than the length of the input, found by
+the [classification](parsing.md#classification) of the start rule. There is one
+finding per cause, at the scanning source, binding or operation that causes it.
+Its message names the class and the witness path, as positions of the rules
+and expressions on it. In
+
+```pego
+@start
+rule main = (A / "a")* $$
+
+rule A = "a"* "c"
+```
+
+the finding is at `"a"*` in `A` and says that the cost can grow as n²: when
+`"c"` fails, the repetition in `main` evaluates `A` again inside the input that
+`"a"*` examined.
+
+Only causes of the classes polynomial and exponential are reported: a
+witness that the cost can grow faster than the input, such as a growing
+variable, a copy of a value of its own recursion, or a scan that can start
+again inside the input that it examined. The finding is a hint because these
+classes can be pessimistic: no slow input need exist. The class unknown is not
+reported, because the classifier then has no such witness, only a condition
+for linear cost that it cannot establish. It is shown, with that reason, only
+when the classification is requested.
 
 #### `case-insensitive-literal`
 
