@@ -169,8 +169,10 @@ backend and every generated parser are hosts of the same parser VM. Exec IR spec
   budget, the statistics, the stream window and the Document generation. The state is abstract: a contract talks
   about it, a target chooses how to represent it.
 - **Operations.** Each operation is a transition of the abstract state with a declared signature, a behavior
-  contract, the state components it reads and writes, its cost contract, the features it belongs to and the laws
-  that passes may use. Handles that operations return (a memo entry, an expectation mark, a recovery mark, a frame)
+  contract, a precondition (`Requires`) that its callers guarantee, the state components it reads and writes, its
+  cost contract, the features it belongs to and the laws that passes may use. Behavior outside the precondition is
+  unspecified, and conformance never exercises it: two implementations may differ on states that no composition
+  reaches. Handles that operations return (a memo entry, an expectation mark, a recovery mark, a frame)
   are opaque; a memo entry exposes its specified attributes (outcome, end, examined bounds, silent, recovered errors,
   growing, provisional) through accessor operations.
 - **Composition.** Exec IR functions that sequence operations under structured control: blocks, `if`, `loop` with
@@ -236,7 +238,10 @@ boundaries, invalid sequences, both units, the examined bound after each read, a
 `memo.prune`). `lookup` returns the most recent entry stored for a key (rule, position, binding level, variable
 values, missing-token mode), or none; `lookupGrowing` returns the growing entry of a rule at a position whatever the
 variable values; `store` adds an entry that later lookups of its key return; the seed operations install, replace and
-finish the growing entry of a left-recursion leader; `prune` drops entries below a position. *Shared*: keys, the
+finish the growing entry of a left-recursion leader; `prune` drops entries below a position. The precondition of
+`lookup` is that a rule with a growing entry at a position and level is looked up there only with the key it was
+seeded with; compositions call `lookupGrowing` first for a leader. The generated Go memo table, whose lookup also
+matches a growing entry under other key values, and the engine's, whose lookup is exact, then agree. *Shared*: keys, the
 specified entry attributes, which entry a lookup returns, the storage charge. *Target*: slot arrays or maps, chaining,
 slab allocation and free lists, entry layout and packing. *Conformance*: random sequences of stores, seeds, lookups and
 prunes compared with a reference model; storage charges that do not depend on storage left by an earlier parse, as
@@ -327,14 +332,26 @@ generated Go charges an expectation scan only after its membership filter matche
 it scans. An operation's cost contract is therefore a deterministic count per target within a declared bound
 ([Decisions](#decisions)).
 
+A bound is a constant plus a sum of terms, each a positive coefficient times an abstract quantity: a measure of the
+state before the call that the reference model of the component defines and computes, such as the key values of the
+entries at the call's position, or the positions a position-indexed memo copies when it doubles. A bound is the worst
+case over the representations a target may choose: deferred memoization is bounded both by the regions a sparse
+record allocates and by the size of a dense record of calls in position order.
+
+Charges inside an operation spend the same budget that `budget.charge` and `budget.used` see. The conformance suite
+measures what an implementation charges in each call, checks it against the bound and adds it to the model's budget;
+an implementation may end the parse with a limit interruption inside an operation only when charges within the
+bound could exceed the limit.
+
 ### Authoring
 
 Compositions, operation declarations and conformance cases are written with Go builder functions in
 `internal/ir/exec`. A builder returns Exec IR that the verifier checks: types, definite assignment, that every exit
 names an enclosing block, that operations are called with their signatures and features, that each state component is
 written only by the operations that declare it, and that a specialization leaves no reference to a folded feature.
-The IR has a text dump for tests and error messages. A textual syntax, parsed by a PEGO grammar, can be added later
-without changing the IR.
+The IR has a text dump for tests, golden files and error messages, and an interpreter that runs a function against a
+machine of operations, which is how Go runs conformance cases until a backend prints them. A textual syntax, parsed
+by a PEGO grammar, can be added later without changing the IR.
 
 ### Passes
 
@@ -401,9 +418,16 @@ TypeScript printer's formatter.
 
 - **Conformance suite.** Every operation has conformance cases: small Exec IR functions, written with builders, that
   call operations and state the expected results, abstract state, statistics and charges. Each backend prints them
-  into a test program in its language and runs it, so that a case runs the same way on every target. Randomized
-  sequences of operations are compared with a reference model of each component. A conformance case is added with
-  every contract change and every bug found in an implementation.
+  into a test program in its language and runs it, so that a case runs the same way on every target; until a
+  backend exists, the interpreter runs them in Go. A case runs in lock-step on the reference model and on the
+  implementation, and fails at the first call where they differ in results, in which handle a result is, in whether
+  the parse ends, or in charges beyond the bound. Randomized sequences draw arguments from small domains, so that keys
+  collide, and keep to every precondition by consulting the model while they are drawn. A conformance case is added
+  with every contract change and every bug found in an implementation.
+- **Bindings of existing runtimes.** Before a backend prints an operation library, an existing runtime is checked
+  through a test binding that calls its functions. Where an operation is inline code of a composition, the binding
+  does what that code does: in the generated Go runtime, `memo.seed` and `memo.reseed` allocate an entry and store it
+  with `memoPut` as `grow` does, and `memo.finishSeed` clears the entry's growing flag.
 - **Mutation controls.** Each operation library has deliberately broken variants — an off-by-one prune, a lookup that
   ignores the binding level, a counter that wraps — that the suite must reject.
 - **Differential tests.** Within a stage the old and new paths run side by side behind a private switch, as record 062
@@ -464,10 +488,15 @@ through **transitional operations**: an existing hand-written runtime function d
 current behavior and no conformance cases, removed by the stage that migrates its mechanism. They let grammar code
 move to Exec IR at once while mechanisms move one at a time.
 
-1. **Foundation.** Exec IR, builders, the verifier and the passes; transitional operations for every runtime service
-   that Flow IR calls; the conformance harness and printer tests for Go and TypeScript. No output change.
-2. **Pilot** ([Pilot](#pilot)): grammar code in the ordinary mode lowered from Flow IR into Exec IR, and memoization,
-   deferred memoization, the call protocol and left-recursion growth as specified operations and compositions.
+1. **Foundation.** Exec IR, builders, the verifier, the listing and the interpreter; the declarations of the pilot's
+   operations, the reference models of their components and the conformance harness, with the generated Go runtime
+   as the first implementation checked through a test binding. No output change.
+2. **Pilot** ([Pilot](#pilot)): the passes, the Go and TypeScript backends with their printer tests, and the
+   transitional operations that the pilot's compositions call; grammar code in the ordinary mode lowered from Flow
+   IR into Exec IR, and memoization, deferred memoization, the call protocol and left-recursion growth as specified
+   operations and compositions. Passes, printers and transitional operations serve printed compositions: before
+   compositions exist, passes have nothing to transform, a printer test has no backend to run, and no composition
+   calls a mechanism that has not migrated.
 3. **Every mode of grammar code.** Budget controls, observable builds, Document and stream variants print through the
    Exec IR backend over transitional operations; the default flips and the Flow IR printers are removed.
 4. **Expected sets, recovery bookkeeping and the variable environment.**
@@ -493,7 +522,7 @@ Expected sets, recovery lists, environments and frames are transitional operatio
 
 **Work.**
 
-1. Declare the pilot's operations and write their contracts and conformance cases.
+1. Write the passes, the backends and their printer tests, and the transitional operations the compositions call.
 2. Build the Go and TypeScript operation libraries for them from the current hand-written code, which passes the
    suite before anything else changes.
 3. Write the compositions with builders, lower Flow IR into Exec IR, and print both with the switch selecting the new
