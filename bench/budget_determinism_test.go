@@ -78,6 +78,10 @@ func TestGeneratedBudgetErrorsAreDeterministic(t *testing.T) {
 					}
 					limits = append(limits, cost-1, cost, cost+1)
 					for _, l := range limits {
+						// Two collections empty the pool of parsers, so that the parser of this
+						// first run is constructed new, as it is in a fresh process.
+						runtime.GC()
+						runtime.GC()
 						want := run(in, l)
 						for i := range 6 {
 							switch i % 3 {
