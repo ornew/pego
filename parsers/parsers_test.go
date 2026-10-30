@@ -65,6 +65,8 @@ func generationsIn(t *testing.T, dir string) []generation {
 			case "-types":
 				g.hasTypes = true
 				g.config.Types = true
+			case "-expectations":
+				g.config.Expectations = true
 			case "-recognize":
 				g.config.Recognize = true
 			case "-budget-controls":
@@ -149,7 +151,11 @@ func TestBackends(t *testing.T) {
 				for i, b := range backends {
 					// Print the tree and the errors, including those recovered with #recover.
 					var got string
-					n, err := p.Parse(string(data), pego.WithBackend(b.b))
+					opts := []pego.ParseOption{pego.WithBackend(b.b)}
+					if g.config.Expectations {
+						opts = append(opts, pego.WithExpectations())
+					}
+					n, err := p.Parse(string(data), opts...)
 					if n != nil {
 						got = n.String()
 					}

@@ -67,7 +67,7 @@ func ExampleRecords_syntaxError() {
 	if errors.As(err, &se) {
 		fmt.Println(se.Line, se.Col, err)
 	}
-	// Output: 2 4 2:4: syntax error: expected ",", "\n", "\r", "\r\n", [^,"\r\n], end of input
+	// Output: 2 4 2:4: syntax error
 }
 
 func ExampleValid() {

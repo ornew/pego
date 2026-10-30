@@ -37,7 +37,7 @@ func ExampleParseAST_syntaxError() {
 	if errors.As(err, &se) {
 		fmt.Println(se.Line, se.Col, se.Message())
 	}
-	// Output: 1 13 syntax error: expected "-", "0", "[", "\"", "false", "null", "true", "{", [ \t\r\n], [1-9]
+	// Output: 1 13 syntax error
 }
 
 func ExampleValid() {

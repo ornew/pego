@@ -35,7 +35,7 @@ _, err = json.ParseAST(`{"a": [1, 2,]}`)
 var se *json.SyntaxError
 if errors.As(err, &se) {
 	fmt.Println(se.Line, se.Col, se.Message())
-	// 1 13 syntax error: expected "-", "0", "[", "\"", "false", "null", "true", "{", (? \t\r\n), (?1-9)
+	// 1 13 syntax error
 }
 ```
 

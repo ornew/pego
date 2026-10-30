@@ -53,7 +53,7 @@ cs := cue.Comments(src)
 
 // Errors.
 _, err = cue.ParseFile("a: 1\nb: [1, 2\nc: 3\n")
-var se *cue.SyntaxError // a syntax error: Line, Col, Pos, Expected
+var se *cue.SyntaxError // a syntax error: Line, Col, Pos (Expected is empty: generated without expectations)
 _, err = cue.ParseFile("a: 1\nX=a: 2\nX=b: 3\n")
 var ce *cue.SemanticError // found after the syntax: Msg, Line, Col, Span
 ```

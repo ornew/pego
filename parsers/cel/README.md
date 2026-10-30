@@ -43,7 +43,7 @@ cel.Format(e) // `a.b + f(1, 2u)`
 _, err = cel.ParseExpr("a + (b *")
 var se *cel.SyntaxError
 if errors.As(err, &se) {
-	fmt.Println(se.Line, se.Col, se.Message()) // 1 9 syntax error: expected "!", "(", "-", ...
+	fmt.Println(se.Line, se.Col, se.Message()) // 1 9 syntax error
 }
 
 // Only check.
