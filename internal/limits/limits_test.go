@@ -49,3 +49,18 @@ func TestArithmetic(t *testing.T) {
 		t.Error("SaturatingAdd does not saturate exactly at overflow")
 	}
 }
+
+func TestDefaultBudget(t *testing.T) {
+	for _, tc := range []struct{ n, want uint64 }{
+		{0, DefaultBudgetFloor},
+		{1024, DefaultBudgetFloor},
+		{1025, 1025 * 1024},
+		{1 << 30, 1 << 40},
+		{math.MaxUint64, math.MaxUint64 - 1},
+		{math.MaxUint64 / 1024, (math.MaxUint64 / 1024) * 1024},
+	} {
+		if got := DefaultBudget(tc.n); got != tc.want {
+			t.Errorf("DefaultBudget(%d) = %d, want %d", tc.n, got, tc.want)
+		}
+	}
+}
