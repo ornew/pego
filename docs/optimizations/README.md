@@ -262,6 +262,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [122. Generated TypeScript printed from Flow IR](122-typescript-from-flow-ir.md)
 - [123. Smaller boilerplate in generated Go](123-smaller-generated-go-boilerplate.md)
 - [124. Coarse budget charges in the engine](124-coarse-engine-budget-charges.md)
+- [125. The cost of the default budget](125-default-budget-cost.md)
 
 ## Experiments That Did Not Pay Off
 

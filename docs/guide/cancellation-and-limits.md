@@ -10,7 +10,8 @@ The examples use a parser `p` compiled as in [Running Parsers](running-parsers.m
 ## Cancelling a Parse
 
 `Parse` accepts per-invocation `WithContext` and `WithLimits` options. A zero
-limit is unlimited; the counter resets for the next call. Generated Go parsers offer them only when generated with
+limit selects the default described [below](#the-default-budget); `pego.Unlimited` disables the limit. The counter
+resets for the next call. Generated Go parsers offer them only when generated with
 `-budget-controls`; see [the generated Go API](generated-go-api.md#cancellation-and-budget-limits). Generated TypeScript parsers offer
 the `signal` and `budget` options only with `-budget-controls` too; see [TypeScript](typescript.md#cancellation-and-budget-limits).
 
@@ -41,6 +42,24 @@ so a batch parse returns no partial result. Cancellation is cooperative: a parse
 a callback of yours. The exact rules are in
 [Cancellation and Budget Limits](../../spec/runtime/parsing.md#cancellation-and-budget-limits); the
 [Streaming](streaming.md#cancelling-a-stream) guide shows how to cancel caller-owned I/O.
+
+## The Default Budget
+
+A parse with a zero `Budget` is not unbounded. It gets a budget of `max(2^20, 1024 * n)`, where `n` is the length of
+the input in the position unit, so a parse of untrusted input stops without your choosing a limit. Input whose
+cost per element is higher than 1024 on average, such as a grammar that backtracks heavily, fails with a
+`*pego.LimitError`, whose `Limit` is the resolved budget. Pass a larger `Budget` when you expect that cost, or
+`pego.Unlimited` when the input is trusted:
+
+```go
+node, err := p.Parse(input, pego.WithLimits(pego.Limits{Budget: pego.Unlimited}))
+```
+
+A parse with `Unlimited` and no context runs without any control, which is the fastest form. A stream does not know
+its length in advance: its default starts at `2^20` and grows by 1024 for every unit read. A `Document` resolves the
+default from the text at each `Parse`. Generated Go and TypeScript parsers apply the default when they are generated
+with `-budget-controls`; a parser generated without it spends no budget and accepts only a zero limit and
+`Unlimited`.
 
 ## Related Topics
 

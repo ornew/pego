@@ -568,7 +568,8 @@ number that does not grow with the input.
 
 Pass `pego.WithContext(ctx)` to interrupt engine execution cooperatively, or
 `pego.WithLimits(pego.Limits{Budget: ...})` to bound
-one invocation. A zero limit is unlimited. Budget counts depend on the backend,
+one invocation. A zero budget selects the default, which starts at `2^20` and grows by 1024 for every unit read from the
+reader; `pego.Unlimited` disables the limit. Budget counts depend on the backend,
 position unit and implementation; reused or copied storage also consumes budget.
 Exhaustion matches `pego.ErrLimit` through `errors.Is`.
 Text materialization also consumes budget, including building a cached stream

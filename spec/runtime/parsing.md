@@ -428,14 +428,35 @@ like rule calls; chains of left-associative operators do not nest.
 The reference Go API accepts invocation-local cancellation and a budget limit
 through `WithContext` and `WithLimits`; generated Go exposes corresponding
 package-local options.
-These controls are cooperative and backend-local. A zero limit disables the
-limit. The budget counter is monotonic for one invocation and resets on the next
+These controls are cooperative and backend-local. A zero limit selects the
+[default of that limit](#default-limits) and the value `Unlimited` disables
+it. The budget counter is monotonic for one invocation and resets on the next
 call. A reservation is checked before the corresponding work begins; if it
 exceeds the remaining allowance, that work is not performed. Decoding is the
 one exception: a reservation may follow the decode of at most one character (at
 most 4 bytes) and must precede storing or using that character. Counts are
 implementation-specific and are not elapsed-time, memory, or buffered-input
 limits.
+
+### Default Limits
+
+Every parse has a budget. A `Budget` of zero selects the default
+`max(2^20, 1024 * n)`, where `n` is the length of the input in the position
+unit of the parse: bytes for `Bytes`, code points for `CodePoints`. A
+parse that has neither a limit nor a context therefore runs controlled. The
+value `Unlimited` (the largest `uint64` in Go, `Number.MAX_SAFE_INTEGER` in
+TypeScript) disables the budget; with no context either, the parse runs
+without a control. `LimitError.Limit` reports the resolved limit, and the
+default is `Unlimited - 1` at most. One constant disables every field of
+`Limits`, and a field added to `Limits` takes the same zero and `Unlimited`
+meaning.
+
+The default is resolved once per entry point, from the input the entry point
+receives. For a `Document`, `n` is the length of the text at each `Parse`. A
+stream does not know `n` up front, so its default starts at `2^20` and grows
+to `1024 * r` as `r` units are read from the reader. A parser generated
+without budget controls spends no budget and accepts only a zero limit and
+`Unlimited`.
 
 Cancellation and exhausted limits are fatal interruptions, not ordinary
 syntactic mismatches. Ordered choice, predicates, recovery, and other grammar
