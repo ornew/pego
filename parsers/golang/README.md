@@ -42,7 +42,7 @@ ok := golang.Valid(string(src))
 | `Valid(src) bool` | Only checks the input, as `go/parser` accepts it |
 | `(*types.StringLit).Value()`, `(*types.CharLit).Value()` | The string or rune a literal denotes |
 | `(*types.IntLit).Constant()`, `(*types.FloatLit).Constant()`, `(*types.ImagLit).Constant()` | The `go/constant` value of a number |
-| `*SyntaxError` | The position (`Line`, `Col`, `Pos`) and the expected tokens of a syntax error |
+| `*SyntaxError` | The position (`Line`, `Col`, `Pos`) and, when the parse passes `WithExpectations()` (`ParseFile` does), the expected tokens of a syntax error |
 
 Positions are in code points by default; pass `Bytes` for byte offsets (which `ToGoAST` needs, and which makes the
 parser reject invalid UTF-8 everywhere; see [Deviations](#deviations)).

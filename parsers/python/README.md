@@ -64,7 +64,7 @@ if errors.As(err, &se) {
 | `FStringMiddleValue(*types.FStringMiddle)`, `FStringRawMiddleValue(*types.FStringRawMiddle)`, `FormattedValueConversionCode(*types.FormattedValue)`, `InterpolationConversionCode(*types.Interpolation)` | The literal parts and the conversion of replacement fields of f-strings and t-strings |
 | `NormalizeName(name)`, `OpName(op)` | An identifier in the NFKC form Python uses; the class of Python's `ast` for an operator (`"+"` is `Add`) |
 | `NewLineIndex(src, unit...)`, `(*LineIndex).Position(pos)` | Positions as lines (from 1) and columns (UTF-8 bytes from 0), as CPython reports them |
-| `*SyntaxError` | The position (`Pos`, `Line`, `Col`), `Expected` and `Messages` |
+| `*SyntaxError` | The position (`Pos`, `Line`, `Col`), `Expected` and `Messages`, filled when the parse passes `WithExpectations()` (`ParseModule` does) |
 
 The AST follows Python's `ast` module (`FunctionDef`, `BinOp`, `Compare`, `MatchClass`, `TypeAlias`, `Interpolation`,
 ...), with a `Span` in every node: positions are in code points by default (`python.ParseModule(src, python.Bytes)`

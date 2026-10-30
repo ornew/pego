@@ -143,7 +143,7 @@ func Decode(input string) (*Tree, error) {
 		line, col := lineCol(input, pos)
 		return nil, &WFError{Pos: pos, Line: line, Col: col, Msg: "invalid UTF-8"}
 	}
-	doc, err := ParseAST(input)
+	doc, err := ParseAST(input, WithExpectations())
 	if err != nil {
 		return nil, err
 	}
@@ -821,7 +821,7 @@ const (
 // parseContent parses the replacement text of an internal general entity, which must match the
 // production content. Spans in the result are relative to s.
 func parseContent(s string) ([]types.Content, error) {
-	doc, err := ParseAST(contentOpen + s + contentClose)
+	doc, err := ParseAST(contentOpen+s+contentClose, WithExpectations())
 	n := utf8.RuneCountInString(s)
 	if err != nil {
 		return nil, entitySyntaxError(err, len(contentOpen), n, "an element or markup is not closed in it")
@@ -838,7 +838,7 @@ func parseContent(s string) ([]types.Content, error) {
 // parameter-entity reference must not occur inside a declaration, and conditional sections are not
 // allowed. Spans in the result are relative to s.
 func parseDecls(s string) ([]types.Decl, error) {
-	doc, err := ParseAST(declsOpen + s + declsClose)
+	doc, err := ParseAST(declsOpen+s+declsClose, WithExpectations())
 	n := utf8.RuneCountInString(s)
 	if err != nil {
 		return nil, entitySyntaxError(err, len(declsOpen), n, "a declaration is not closed in it")

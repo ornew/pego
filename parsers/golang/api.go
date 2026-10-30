@@ -119,6 +119,11 @@ const WalkListElement = rt.WalkListElement
 // The graph must not be mutated concurrently. Walk does not mutate or retain it.
 func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error { return rt.Walk(root, visit) }
 
+// WithExpectations makes the parse record what a syntax error expects and the messages of @error,
+// which the SyntaxError then lists. Without it the error carries the farthest failure position only.
+// A parser generated without expectations has no WithExpectations.
+func WithExpectations() ParseOption { return rt.WithExpectations() }
+
 // Span is the range of input a typed value covers, in the parse's position unit (End is exclusive).
 //
 // Of its fields and methods, TSetSpan, TSpan are for generated parsers; not a stable API.

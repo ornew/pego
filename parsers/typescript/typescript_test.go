@@ -26,7 +26,7 @@ func TestGolden(t *testing.T) {
 			t.Fatal(err)
 		}
 		var got string
-		n, err := typescript.ParseAST(string(data))
+		n, err := typescript.ParseAST(string(data), typescript.WithExpectations())
 		if n != nil {
 			got = render(n)
 		}

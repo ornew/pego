@@ -80,7 +80,7 @@ func Valid(src string) bool {
 	if !utf8.ValidString(src) {
 		return false
 	}
-	_, err := ParseAST(src, WithUnit(Bytes))
+	_, err := ParseAST(src, WithUnit(Bytes), WithExpectations())
 	return err == nil
 }
 
@@ -98,7 +98,7 @@ func parseBytes(src string) (*types.File, error) {
 			}
 		}
 	}
-	return ParseAST(src, WithUnit(Bytes))
+	return ParseAST(src, WithUnit(Bytes), WithExpectations())
 }
 
 func countNewlines(s string) int {

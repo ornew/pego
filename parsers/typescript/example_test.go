@@ -110,7 +110,7 @@ func ExampleParseFile() {
 }
 
 func ExampleSyntaxError() {
-	_, err := typescript.ParseAST("const a = 1;\nconst b = ;\n")
+	_, err := typescript.ParseAST("const a = 1;\nconst b = ;\n", typescript.WithExpectations())
 	var se *typescript.SyntaxError
 	if errors.As(err, &se) {
 		fmt.Println(se.Line, se.Col, se.Pos, se.Message())

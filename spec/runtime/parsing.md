@@ -233,7 +233,7 @@ Recording is requested as follows.
 | Parse | Request |
 |:--|:--|
 | `Parser.Parse`, `ParseStream`, `ParsePrefix`, `Document` | The option `pego.WithExpectations()`. A `Document` fixes the mode when it is created; a later parse that asks for the other mode is an error |
-| Generated Go and TypeScript parsers | The generation option `Expectations` (`-expectations` in `pego gen`). Without it the generated parser keeps no table of expectations |
+| Generated Go and TypeScript parsers | Generate with the option `Expectations` (`-expectations` in `pego gen`), which gives the parser its table of expectations and a parse option `WithExpectations` (Go) or `expectations` (TypeScript). A parse records them only when it passes the option; a generated parser without the generation option has no table and no such option |
 | `pego parse`, `pego debug`, `pego trace`, `pego explain`, `pego profile`, `pego test`, `pego editfuzz` and the playground | Always on |
 
 ### Errors in Go and on the Command Line

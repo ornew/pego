@@ -369,7 +369,7 @@ func TestGolden(t *testing.T) {
 			t.Fatal(err)
 		}
 		var got string
-		n, err := xml.Parse(string(data))
+		n, err := xml.Parse(string(data), xml.WithExpectations())
 		if n != nil {
 			got = n.String()
 		}

@@ -67,7 +67,7 @@ import (
 // ParseModule parses a module (a file of Python source) like ParseAST and then makes the checks
 // that CPython's ast.parse makes outside its grammar (see Check).
 func ParseModule(src string, unit ...PositionUnit) (*types.Module, error) {
-	m, err := ParseAST(src, unitOptions(unit)...)
+	m, err := ParseAST(src, append(unitOptions(unit), WithExpectations())...)
 	if err != nil {
 		return nil, err
 	}

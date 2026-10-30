@@ -64,7 +64,7 @@ func ParseTSX(input string, unit ...PositionUnit) (*types.SourceFile, error) {
 // RecognizeTSX checks that input is a valid .tsx file and returns the syntax errors ParseTSX would
 // return, without the tree.
 func RecognizeTSX(input string, unit ...PositionUnit) error {
-	_, err := ParseAST(tsxMarker+input, unitOptions(unit)...)
+	_, err := ParseAST(tsxMarker+input, append(unitOptions(unit), WithExpectations())...)
 	return shiftError(err, len(tsxMarker))
 }
 
@@ -174,9 +174,9 @@ const (
 // parseWith parses the input after the markers, and moves the positions back past them.
 func parseWith(markers, input string, unit []PositionUnit) (*types.SourceFile, error) {
 	if markers == "" {
-		return ParseAST(input, unitOptions(unit)...)
+		return ParseAST(input, append(unitOptions(unit), WithExpectations())...)
 	}
-	f, err := ParseAST(markers+input, unitOptions(unit)...)
+	f, err := ParseAST(markers+input, append(unitOptions(unit), WithExpectations())...)
 	if f != nil {
 		shiftSpans(f, len(markers))
 	}

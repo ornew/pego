@@ -13,9 +13,12 @@ repetition resume points and Document results.
 
 Recording is now a choice made by the caller. Parsing records nothing by default and reports the
 farthest failure position with an empty expected list. The `WithExpectations` parse option (and the
-`Expectations` field of `ParseOptions`), the `Expectations` generation option of `gen.Go` and
-`gen.TypeScript`, and the `-expectations` flag of `pego gen` turn it on. A Document fixes the choice
-when it is created. `@error` messages are part of the record, so they follow the same choice.
+`Expectations` field of `ParseOptions`) turns it on for the interpreters. A generated parser needs
+both steps: the `Expectations` generation option of `gen.Go` and `gen.TypeScript` (the
+`-expectations` flag of `pego gen`) gives it the descriptor table and a parse option
+(`WithExpectations` in Go, `expectations` in TypeScript), and a parse records only when it passes
+that option. A Document fixes the choice when it is created. `@error` messages are part of the
+record, so they follow the same choice.
 
 When recording is off, a failure still advances the farthest position and keeps a single placeholder
 in the record instead of identifiers. The placeholder lets memoized results, resumed repetitions,
@@ -62,5 +65,7 @@ effect from the extra call. A specialization that emits an identifier-less call 
 generated without expectations would restore the inlining if a future measurement needs it.
 
 The ready-made parsers whose grammars define `@error` messages (Go, Python, TypeScript, XML) are
-generated with expectations, because their messages are part of what they report. The others are
-generated without.
+generated with expectations, because their messages are part of what they report. Their
+compatibility entry points that print messages (`ParseFile`, `ParseModule`, `Decode`) pass the parse
+option themselves; `ParseAST` records only when the caller passes it. The others are generated
+without.

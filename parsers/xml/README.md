@@ -44,7 +44,7 @@ for _, c := range doc.Root.Content {
 // Errors.
 _, err = xml.Decode(`<a x="1" x="2"/>`)
 var we *xml.WFError    // a well-formedness constraint checked after the parse
-var se *xml.SyntaxError // a syntax error, or the element type match
+var se *xml.SyntaxError // a syntax error, or the element type match; its Expected and message text need WithExpectations (Decode passes it)
 if errors.As(err, &we) {
 	fmt.Println(we.Line, we.Col, we.Msg) // 1 10 attribute x appears twice
 }

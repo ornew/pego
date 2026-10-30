@@ -60,7 +60,7 @@ _, err = typescript.ParseAST("interface A { x: number }") // nil
 | `(*types.StringLiteral).Value()`, `(*types.NoSubstitutionTemplateLiteral).Value()` | The string with its escapes decoded; template CR/CRLF line endings become LF (an unpaired surrogate gives U+FFFD) |
 | `(*types.NumericLiteral).Value()`, `(*types.BigIntLiteral).Value()` | The number as a `float64` (`+Inf` if too large) and the integer as a `*big.Int`, with `0x`, `0b`, `0o` and `_` |
 | `(*types.Identifier).Value()`, `(*types.PrivateIdentifier).Value()` | The name with its unicode escapes decoded |
-| `*SyntaxError`, `SyntaxErrors` | `Line`, `Col`, `Pos` and the expected tokens (or `Message()`) of the first syntax error, after which parsing stops |
+| `*SyntaxError`, `SyntaxErrors` | `Line`, `Col`, `Pos` and the expected tokens (or `Message()`) (with `WithExpectations()`; `ParseFile` passes it) of the first syntax error, after which parsing stops |
 
 Positions are in code points by default; `typescript.ParseAST(src, typescript.WithUnit(typescript.Bytes))` counts bytes. A node's `Span` covers its
 tokens without the white space and comments before it, and the tree has the nodes the compiler's `forEachChild`

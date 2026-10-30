@@ -50,9 +50,10 @@ type SyntaxErrors []*SyntaxError
 
 Compared with the engine's API:
 
-- **Expectations are recorded only if the parser was generated with `-expectations`.** There is no per-call option
-  like `pego.WithExpectations()`. Without it `SyntaxError.Expected` and `Messages` are empty (see
-  [recording expectations](error-messages.md#recording-expectations)).
+- **Expectations are recorded only if the parser was generated with `-expectations` and the call passes
+  `WithExpectations()`.** Otherwise `SyntaxError.Expected` and `Messages` are empty (see
+  [recording expectations](error-messages.md#recording-expectations)). A parser generated without the flag has no
+  `WithExpectations`.
 - **`Parse` and `ParseRule` replace `Parser.Parse`.** Position units and rule-call limits use
   functional options (`Parse(input, pairsparser.WithUnit(pairsparser.Bytes))`), like the engine. `ParseRule(name, input)` plays the role of
   `Parser.WithStart(name).Parse(input)`, and like it accepts only rules marked `@start`: another rule is an error,
@@ -76,10 +77,10 @@ Compared with the engine's API:
   rule name =  [a-z]+ #atomic
   ```
 
-  generated into a package `recparser` with `-expectations`, the node is returned together with the recovered errors:
+  generated into a package `recparser` with `-expectations` and parsed with `WithExpectations()`, the node is returned together with the recovered errors:
 
   ```go
-  node, err := recparser.Parse("let a;let 1;let b;")
+  node, err := recparser.Parse("let a;let 1;let b;", recparser.WithExpectations())
   fmt.Println(node)
   var errs recparser.SyntaxErrors
   if errors.As(err, &errs) {

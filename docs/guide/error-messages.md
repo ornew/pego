@@ -193,7 +193,7 @@ recorded.
 | Parse | How to record |
 |:--|:--|
 | `Parser.Parse`, `ParseStream`, `Document` | Pass `pego.WithExpectations()`. A `Document` fixes it when it is created |
-| Generated Go or TypeScript parser | Generate with `-expectations` (`Expectations` in `gen.Go` and `gen.TypeScript`) |
+| Generated Go or TypeScript parser | Generate with `-expectations` (`Expectations` in `gen.Go` and `gen.TypeScript`), then pass `WithExpectations()` (Go) or `{ expectations: true }` (TypeScript) to the parse. Generating with the flag alone does not record |
 
 ```go
 node, err := p.Parse(input, pego.WithExpectations())
