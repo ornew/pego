@@ -64,3 +64,55 @@ console.log("ok");
 		}
 	}
 }
+
+// maxInput bounds the length of the input in the position unit for every entry point: zero and
+// Unlimited set no bound, an input of exactly maxInput units parses, and a longer one fails before any
+// parsing with a ParseInterruptionError of kind "input-limit" and its length. A parser generated without
+// budget controls rejects a finite bound.
+func TestGeneratedTSMaxInput(t *testing.T) {
+	t.Parallel()
+	g, err := parseTest(`rule main = [a-zé]* !.`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := gentest.RunTSGrammarScriptWith(t, g, `import * as p from "./parser.ts";
+declare const process: { exit(code: number): never };
+function fail(why: string): never { console.log(why); return process.exit(0); }
+const text = "a".repeat(300) + "é";
+for (const [unit, n] of [[p.CodePoints, 301], [p.Bytes, 302]] as const) {
+  for (const maxInput of [0, p.Unlimited, n, n + 1]) {
+    const r = p.parseWithOptions(text, { unit, maxInput });
+    if (r.error !== null) fail("maxInput " + maxInput + ": " + r.error);
+    if (p.recognizeWithOptions(text, { unit, maxInput }) !== null) fail("recognize " + maxInput);
+    if (p.parseASTWithOptions(text, { unit, maxInput }).error !== null) fail("parseAST " + maxInput);
+  }
+  for (const [name, error] of [
+    ["parse", p.parseWithOptions(text, { unit, maxInput: n - 1 }).error],
+    ["parseRule", p.parseRuleWithOptions("", text, { unit, maxInput: n - 1 }).error],
+    ["recognize", p.recognizeWithOptions(text, { unit, maxInput: n - 1 })],
+    ["parseAST", p.parseASTWithOptions(text, { unit, maxInput: n - 1 }).error],
+    ["bytes", p.parseWithOptions(new TextEncoder().encode(text), { unit, maxInput: n - 1 }).error],
+  ] as const) {
+    if (!(error instanceof p.ParseInterruptionError) || error.kind !== "input-limit" || error.limit !== n - 1 || error.requested !== n || error.used !== 0) fail(name + " unit " + unit + ": " + error);
+    if (error.message !== "input-limit exceeded: limit " + (n - 1) + ", length " + n) fail("message " + error.message);
+  }
+}
+const cancelled = { aborted: true } as p.CancellationSignal;
+const first = p.parseWithOptions(text, { signal: cancelled, maxInput: 1 }).error;
+if (!(first instanceof p.ParseInterruptionError) || first.kind !== "input-limit") fail("input limit comes before the signal: " + first);
+if (p.parseWithOptions("abc", { maxInput: -1 }).error === null) fail("negative maxInput");
+console.log("ok");
+`, gen.GenOptions{Start: "main", BudgetControls: true, Types: true, Recognize: true})
+	if out != "ok\n" {
+		t.Fatalf("got %q", out)
+	}
+	out = gentest.RunTSGrammarScriptWith(t, g, `import * as p from "./parser.ts";
+const options = { maxInput: 3 } as p.ParseOptions;
+const r = p.parseWithOptions("abc", options);
+console.log(r.error === null ? "accepted" : String(r.error));
+console.log(p.parseWithOptions("abc", { maxInput: p.Unlimited } as p.ParseOptions).error === null ? "ok" : "unlimited rejected");
+`, gen.GenOptions{Start: "main", BudgetControls: false, Types: true, Recognize: true})
+	if want := "Error: this parser was generated without budget controls (generate with -budget-controls to use signal, budget and maxInput)\nok\n"; out != want {
+		t.Fatalf("without budget controls: got %q", out)
+	}
+}

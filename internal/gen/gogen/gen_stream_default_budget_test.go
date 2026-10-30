@@ -52,6 +52,7 @@ const generatedStreamDefaultBudgetConsumer = `package fixture
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 )
@@ -72,6 +73,17 @@ func (r *chunkReader) Read(b []byte) (int, error) {
 }
 
 var errEOF = fmt.Errorf("EOF")
+
+// cleanReader ends the stream with io.EOF, so that a completed parse returns nil.
+type cleanReader struct{ chunkReader }
+
+func (r *cleanReader) Read(b []byte) (int, error) {
+	n, err := r.chunkReader.Read(b)
+	if err == errEOF {
+		err = io.EOF
+	}
+	return n, err
+}
 
 func TestDefaultBudgetIgnoresChunking(t *testing.T) {
 	cases := []struct {
@@ -105,6 +117,38 @@ func TestDefaultBudgetIgnoresChunking(t *testing.T) {
 				if isLimit && le.Limit != c.limit {
 					t.Errorf("%s/%d: limit %d, want %d", c.name, unit, le.Limit, c.limit)
 				}
+			}
+		}
+	}
+}
+
+// A stream fails when the parser needs a unit beyond MaxInput and the stream has one, whatever the
+// chunks of the reader; a stream of exactly MaxInput units completes.
+func TestMaxInputIgnoresChunking(t *testing.T) {
+	text := "#records\n" + strings.Repeat("abc\n", 50)
+	n := uint64(len(text))
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
+		for _, max := range []uint64{0, Unlimited, n, n + 1} {
+			for _, size := range []int{1, 7, len(text)} {
+				err := ParseStream(&cleanReader{chunkReader{s: text, size: size}}, func(*Node) error { return nil }, WithUnit(unit), WithLimits(Limits{MaxInput: max}))
+				if err != nil {
+					t.Errorf("%d/MaxInput %d/%d: %v", unit, max, size, err)
+				}
+			}
+		}
+		var want string
+		for _, size := range []int{1, 7, len(text)} {
+			count := 0
+			err := ParseStream(&cleanReader{chunkReader{s: text, size: size}}, func(*Node) error { count++; return nil }, WithUnit(unit), WithLimits(Limits{MaxInput: n - 1}))
+			var le *LimitError
+			if !errors.As(err, &le) || le.Kind != LimitInput || le.Limit != n-1 || le.Requested != n {
+				t.Fatalf("%d/%d: error %v", unit, size, err)
+			}
+			got := fmt.Sprint(count, " ", err)
+			if want == "" {
+				want = got
+			} else if got != want {
+				t.Errorf("%d: chunk size %d gives %q, chunk size 1 gives %q", unit, size, got, want)
 			}
 		}
 	}

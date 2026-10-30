@@ -6,7 +6,7 @@ export interface CancellationSignal {
   readonly reason?: unknown;
 }
 
-export type ParseInterruptionKind = "canceled" | "budget-limit";
+export type ParseInterruptionKind = "canceled" | "budget-limit" | "input-limit";
 
 /** An interrupted invocation returns no partial Node or typed result. */
 export class ParseInterruptionError extends Error {
@@ -16,7 +16,7 @@ export class ParseInterruptionError extends Error {
   readonly requested: number;
 
   constructor(kind: ParseInterruptionKind, limit = 0, used = 0, requested = 0, cause: unknown = undefined) {
-    super(kind === "canceled" ? "parse canceled" : `${kind} exceeded: limit ${limit}, used ${used}, requested ${requested}`);
+    super(kind === "canceled" ? "parse canceled" : kind === "input-limit" ? `input-limit exceeded: limit ${limit}, length ${requested}` : `${kind} exceeded: limit ${limit}, used ${used}, requested ${requested}`);
     this.name = "ParseInterruptionError";
     this.kind = kind;
     this.limit = limit;

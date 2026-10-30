@@ -18,7 +18,7 @@ type GenOptions struct {
 	// It needs Types and excludes Recognize, Document and Stream.
 	TypedOnly bool
 	// BudgetControls emits the budget-controlled form of the generated functions, which charges
-	// cancellation and the budget limit (WithContext, WithLimits; signal and budget
+	// cancellation and the budget limit (WithContext, WithLimits; signal, budget and maxInput
 	// in TypeScript), and re-exports those options. Without it the functions have no charges (the ordinary form, or with Document
 	// the form that serves a Document), and a parse with a control option fails with an error.
 	BudgetControls bool

@@ -24,6 +24,8 @@ type streamInput struct {
 	// baseLine and baseCol are the line and column (1-based, in the unit) of base.
 	baseLine, baseCol int
 	eof               bool
+	// maxInput, when positive, is the longest stream the parse accepts, in units (streamFill).
+	maxInput int
 	// Emit receives the committed elements of the start rule's #stream
 	// repetition with the parse's budget control. Nil collects the repetition
 	// as a batch parse does.
@@ -142,6 +144,7 @@ func RunParseStreamWithBudget(r *Rule, reader io.Reader, emit func(*Node, *Budge
 	p.Observation = newObservation(&o.observe)
 	p.Stream = &streamInput{reader: bufio.NewReader(reader), baseLine: 1, baseCol: 1, Emit: emit, diagnostic: o.diagnostic}
 	p.Stream.tail.limit = o.diagnosticLimit
+	p.Stream.maxInput = o.maxInput
 	p.Control.Check()
 	_, ok := p.Call(r, 0)
 	p.Control.Check()
@@ -509,7 +512,13 @@ func (s *streamInput) loaded() int {
 // is already buffered and does not wait for more.
 func (p *Parser) streamFill(n int) bool {
 	p.Control.demand(n)
-	return p.streamFillTo(n)
+	ok := p.streamFillTo(n)
+	if max := p.Stream.maxInput; max > 0 && n > max && p.Stream.loaded() > max {
+		// The outcome does not depend on how the reader chunks the stream: the parser needed the
+		// unit at MaxInput and the stream holds it. loaded is at least n unless the stream ended.
+		panic(fatal{err: &LimitError{Kind: LimitInput, Limit: uint64(max), Requested: uint64(min(n, p.Stream.loaded()))}})
+	}
+	return ok
 }
 
 func (p *Parser) streamFillTo(n int) bool {

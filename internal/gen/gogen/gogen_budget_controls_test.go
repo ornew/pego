@@ -60,7 +60,7 @@ rule predicate Word = t:(!("a"* "é") "a"* "b") #atomic => Word{Text: text($t)}`
 const generatedGoBudgetConsumer = `package PACKAGE
 
 import pegort "github.com/ornew/pego/runtime"
-import("context";"errors";"reflect";"strings";"sync";"testing";"time")
+import("context";"errors";"fmt";"reflect";"strings";"sync";"testing";"time")
 
 type invocation struct{name string; call func(string,...ParseOption)(any,error)}
 func routes() []invocation {return []invocation{
@@ -97,6 +97,24 @@ func TestControls(t *testing.T){
   }
   if _,err=r.call(input,option,WithLimits(Limits{}),WithContext(nil));err!=nil{t.Fatal("retry",err)}
   _=before
+ })}}
+}
+// MaxInput bounds the input in the position unit for every entry point: zero and Unlimited set no
+// bound, an input of exactly MaxInput units parses, and a longer one fails with the LimitInput kind
+// and its length, before any parsing.
+func TestMaxInput(t *testing.T){
+ input:=strings.Repeat("a",300)+"é"
+ for _,r:=range routes(){for _,unit:=range []PositionUnit{CodePoints,Bytes}{t.Run(r.name+string(rune('0'+unit)),func(t *testing.T){
+  n:=uint64(301);if unit==Bytes{n=302}
+  for _,max:=range []uint64{0,Unlimited,n,n+1}{
+   if _,err:=r.call(input,WithUnit(unit),WithLimits(Limits{MaxInput:max}));err!=nil{t.Fatalf("MaxInput %d: %v",max,err)}
+  }
+  v,err:=r.call(input,WithUnit(unit),WithLimits(Limits{MaxInput:n-1}));var le *LimitError
+  if !isZero(v) || !errors.As(err,&le) || !errors.Is(err,ErrLimit){t.Fatalf("one over: value=%v err=%v",v,err)}
+  if le.Kind!=LimitInput || le.Limit!=n-1 || le.Requested!=n || le.Used!=0 {t.Fatalf("metadata: %+v",le)}
+  if want:=fmt.Sprintf("parse input limit exceeded: limit %d, length %d",n-1,n);err.Error()!=want{t.Fatalf("text %q, want %q",err.Error(),want)}
+  ctx,cancel:=context.WithCancel(context.Background());cancel()
+  if _,err=r.call(input,WithUnit(unit),WithContext(ctx),WithLimits(Limits{MaxInput:1}));!errors.Is(err,ErrLimit){t.Fatalf("checked before the context: %v",err)}
  })}}
 }
 func TestValidationAndOptions(t *testing.T){
@@ -298,6 +316,8 @@ type ErrLimit ~ Limits
 
 type LimitBudget ~ Limits
 
+type LimitInput ~ Limits
+
 rule main Limits = t:("é") #atomic => Limits{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
@@ -349,7 +369,8 @@ func TestPublicNames(t *testing.T){
  var limits g.WithLimits=v
  var sentinel g.ErrLimit=v
  var spend g.LimitBudget=v
- _,_,_,_,_,_,_=second,box,kind,ctx,limits,sentinel,spend
+ var length g.LimitInput=v
+ _,_,_,_,_,_,_,_=second,box,kind,ctx,limits,sentinel,spend,length
  _,err=parse("é",p.WithLimits(p.Limits{Budget:1}))
  var exhausted *p.LimitError
  if !errors.Is(err,p.ErrLimit) || !errors.As(err,&exhausted){t.Fatal(err)}

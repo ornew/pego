@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"math"
 	"reflect"
 	"sort"
 	"strconv"
@@ -1059,6 +1060,8 @@ type parseOptions struct {
 	limits   Limits
 	control  *BudgetControl
 	prepared bool
+	// maxInput is the resolved MaxInput of a stream, in units; zero sets no bound.
+	maxInput int
 	// controls is set when the parser was generated with budget controls, which alone can apply the
 	// default budget.
 	controls bool
@@ -1107,7 +1110,7 @@ func ResolveOptions(g *grammar, opts []ParseOption) (parseOptions, error) {
 	if o.maxDepth == 0 {
 		o.maxDepth = g.maxDepth
 	}
-	if g.NoBudgetControls && (o.context != nil || o.limits != (Limits{}) && o.limits != (Limits{Budget: Unlimited})) {
+	if g.NoBudgetControls && (o.context != nil || !o.limits.disabled()) {
 		return o, fmt.Errorf("this parser was generated without budget controls (generate with -budget-controls to use WithContext and WithLimits)")
 	}
 	if err := o.validateDiagnostics(); err != nil {
@@ -1149,6 +1152,11 @@ func prepareOptions(o parseOptions, n uint64, stream bool) parseOptions {
 	if !o.prepared {
 		o.prepared = true
 		l, adaptive := o.limits, false
+		// A limit beyond math.MaxInt bounds no stream.
+		if l.MaxInput != 0 && l.MaxInput != Unlimited && l.MaxInput <= math.MaxInt {
+			o.maxInput = int(l.MaxInput)
+		}
+		l.MaxInput = 0 // checked on entry, or by the stream; it needs no control
 		switch {
 		case l.Budget == Unlimited:
 			l.Budget = 0
@@ -1166,6 +1174,24 @@ func prepareOptions(o parseOptions, n uint64, stream bool) parseOptions {
 	}
 	o.control.Check()
 	return o
+}
+
+// prepareText is prepareOptions for the input text of a batch parse or a Document. It rejects a text
+// longer than MaxInput before any work: O(1), unless the byte length passes the limit in CodePoints,
+// where the count of code points decides.
+func prepareText(o parseOptions, text string) parseOptions {
+	if !o.prepared {
+		if max := o.limits.MaxInput; max != 0 && max != Unlimited {
+			n := uint64(len(text))
+			if n > max && o.unit == CodePoints {
+				n = uint64(utf8.RuneCountInString(text))
+			}
+			if n > max {
+				panic(fatal{err: &LimitError{Kind: LimitInput, Limit: max, Requested: n}})
+			}
+		}
+	}
+	return prepareOptions(o, inputUnits(text, o.unit), false)
 }
 
 // recoverParse returns engine interruptions and preserves caller panic identity.
@@ -1205,7 +1231,7 @@ func RunParseResolved(r *Rule, input string, o parseOptions) (n *Node, err error
 // parseResolvedSpend lets a conversion boundary distinguish engine interruption
 // from an ordinary nil result without inspecting caller-owned error values.
 func parseResolvedSpend(r *Rule, input string, o parseOptions) (n *Node, err error) {
-	o = prepareOptions(o, inputUnits(input, o.unit), false)
+	o = prepareText(o, input)
 	p, _ := ppool.Get().(*Parser)
 	if p == nil {
 		p = &Parser{}

@@ -1018,6 +1018,8 @@ export interface ParseOptions {
   signal?: CancellationSignal | null;
   /** Budget limit. Zero selects the default of max(2^20, 1024 times the input length in the position unit); Unlimited disables the limit. */
   budget?: number;
+  /** Longest input accepted, in the position unit. Zero and Unlimited, the default, set no bound; a longer input fails before any work with a ParseInterruptionError of kind "input-limit". */
+  maxInput?: number;
 }
 
 /** The budget value that disables the budget limit. */
@@ -1028,9 +1030,9 @@ const defaultBudgetPerUnit = 1024;
 
 // inputUnits returns the length of input in the position unit. Inputs of at most defaultBudgetPerUnit units
 // are not counted exactly: their default budget is the floor whatever their length.
-function inputUnits(input: string | Uint8Array, unit: Unit): number {
+function inputUnits(input: string | Uint8Array, unit: Unit, exact = false): number {
   const n = input.length;
-  if (n <= defaultBudgetPerUnit) return n;
+  if (!exact && n <= defaultBudgetPerUnit) return n;
   let units = 0;
   if (typeof input === "string") {
     for (let i = 0; i < n; i++) {
@@ -1050,6 +1052,16 @@ function inputUnits(input: string | Uint8Array, unit: Unit): number {
   return units;
 }
 
+// inputOverMax returns the length of input in the position unit when it exceeds max, and null
+// otherwise. It counts only when the length of the input does not already bound the count by max.
+function inputOverMax(input: string | Uint8Array, unit: Unit, max: number): number | null {
+  const n = input.length;
+  // A UTF-16 code unit is at most three bytes; a code point is at most one unit.
+  if ((typeof input === "string" && unit === Bytes ? n * 3 : n) <= max) return null;
+  const units = inputUnits(input, unit, true);
+  return units > max ? units : null;
+}
+
 // defaultBudget returns max(2^20, 1024*n), kept below Unlimited.
 function defaultBudget(n: number): number {
   return Math.min(Math.max(defaultBudgetFloor, n * defaultBudgetPerUnit), Unlimited - 1);
@@ -1059,13 +1071,13 @@ function defaultBudget(n: number): number {
  * The options of a parser generated without budget controls: those of ParseOptions except the
  * cancellation signal and the budget limits.
  */
-export type PlainParseOptions = Omit<ParseOptions, "signal" | "budget">;
+export type PlainParseOptions = Omit<ParseOptions, "signal" | "budget" | "maxInput">;
 
 // resolveOptions validates options for a parse of input. A zero budget of a parser generated with budget
 // controls resolves to the default budget of the input, and Unlimited resolves to no budget limit (zero).
 export function resolveOptions(g: Grammar, options: ParseOptions | undefined, input: string | Uint8Array): ResolvedParseOptions | Error {
-  if (!g.controlled && (options?.signal != null || ((options?.budget ?? 0) !== 0 && options?.budget !== Unlimited))) {
-    return new Error("this parser was generated without budget controls (generate with -budget-controls to use signal and budget)");
+  if (!g.controlled && (options?.signal != null || ((options?.budget ?? 0) !== 0 && options?.budget !== Unlimited) || ((options?.maxInput ?? 0) !== 0 && options?.maxInput !== Unlimited))) {
+    return new Error("this parser was generated without budget controls (generate with -budget-controls to use signal, budget and maxInput)");
   }
   if (!g.observable && (options?.profile != null || options?.trace != null || options?.traceRules !== undefined || options?.traceMaxDepth !== undefined)) {
     return new Error("trace and profile options are only supported by a parser generated with observability");
@@ -1088,6 +1100,14 @@ export function resolveOptions(g: Grammar, options: ParseOptions | undefined, in
   }
   if (!Number.isSafeInteger(requested) || requested < 0) {
     return new Error(`budget must be a non-negative safe integer: ${requested}`);
+  }
+  const maxInput = options?.maxInput ?? 0;
+  if (!Number.isSafeInteger(maxInput) || maxInput < 0) {
+    return new Error(`max input must be a non-negative safe integer: ${maxInput}`);
+  }
+  if (maxInput !== 0 && maxInput !== Unlimited) {
+    const over = inputOverMax(input, unit, maxInput);
+    if (over !== null) return new ParseInterruptionError("input-limit", maxInput, 0, over);
   }
   const budget = requested === Unlimited ? 0 : requested !== 0 ? requested : g.controlled ? defaultBudget(inputUnits(input, unit)) : 0;
   return { unit, maxDepth: depth === 0 ? g.maxDepth : depth, signal, budget, trace, traceRules, traceMaxDepth, profile, profileClock };
