@@ -106,8 +106,8 @@ These behaviors are documented, so they are limits of PEGO today, not vulnerabil
 ### Which Inputs Are Expected to Be Slow
 
 PEGO does not promise linear time. Memoization bounds how often a rule body runs at one position, but some grammars do
-quadratic, cubic or exponential work, and with such a grammar, input chosen by an attacker can reach the worst case.
-The specification defines the classes of growth, with examples, and sufficient conditions for linear work
+quadratic, cubic or exponential cost, and with such a grammar, input chosen by an attacker can reach the worst case.
+The specification defines the classes of growth, with examples, and sufficient conditions for linear cost
 ([Time and Memory](spec/runtime/parsing.md#time-and-memory)). No tool classifies a grammar yet, so set budget limits
 for any grammar that parses untrusted input.
 
@@ -129,7 +129,7 @@ for any grammar that parses untrusted input.
 - **Planned for the first release.** `pego gen` generates parsers with budget controls by default, as `-budget-controls`
   does today. Every parse gets one fixed budget proportional to the input length (c·n with a large constant), and
   an unlimited parse has to be requested explicitly. A lint warns about grammars outside the specification's
-  sufficient conditions for linear work.
+  sufficient conditions for linear cost.
 - **Later.** Budgets refined per grammar by a complexity analysis, and optional caps on input length and on estimated
   memory.
 

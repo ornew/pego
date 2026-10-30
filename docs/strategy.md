@@ -50,7 +50,7 @@ not narrow what PEGO is for.
 - Competing with tree-sitter's grammar corpus or editor integrations in the near term. PEGO grammars do not target
   tree-sitter query compatibility.
 - General context-free parsing. PEGO has no ambiguous grammars, GLR or parse forests; ordered choice is the model.
-- A linear-time promise for every grammar. The project states costs and bounds work instead (see
+- A linear-time promise for every grammar. The project states costs and bounds cost instead (see
   [Predictable Cost and Safety](#predictable-cost-and-safety)).
 - A semantic framework. Name resolution, scoping and type checking of the user's language stay in user code. The
   editor work stops at syntax-level server plumbing.
@@ -96,7 +96,7 @@ Checked against tree-sitter 0.27.1 and gotreesitter 0.56.0.
 - **Difference.** PEGO is PEG-based and builds typed values from the grammar. tree-sitter is LR(1) with bounded GLR,
   and its nodes are dynamic. tree-sitter documents no worst-case bound; its GLR version count is capped by design, and
   an open report shows that the cap can drop a correct branch (issue 6057). PEGO specifies classes of growth. Both
-  PEGO and gotreesitter count work deterministically, but gotreesitter's limits and memory budget are on by default,
+  PEGO and gotreesitter count cost deterministically, but gotreesitter's limits and memory budget are on by default,
   while PEGO's limits are opt-in today and it has no memory limit.
 - **Can replace.** A tree-sitter grammar written only to parse one language a Go team owns, where typed values and
   generated TypeScript matter more than queries and an editor corpus.
@@ -204,7 +204,7 @@ Checked against cel-go 0.30.0 and Expr 1.17.8.
   baseline is `encoding/json` `Unmarshal` into `any`, as built by Go 1.27.1; a `jsontext` baseline is not measured. Language models now make a small hand-written
   recursive-descent parser cheap to produce.
 - **Difference.** From a grammar, PEGO returns positions and rule names or typed values, recovers, reparses
-  incrementally and limits work. A hand-written parser gets each of these by hand, and differential, fuzzed
+  incrementally and limits cost. A hand-written parser gets each of these by hand, and differential, fuzzed
   equality checks do not come with it.
 - **Can replace.** New hand-written parsers for languages a team owns, where maintenance cost dominates speed.
 - **Loses today.** Raw throughput on every comparable workload, and familiarity.
@@ -218,7 +218,7 @@ Checked against pest 2.9.5, cpp-peglib 1.30.0, CPython's PEG parser (PEP 617) an
 - **Moat.** Their host ecosystems (Rust, C++, CPython itself, JavaScript).
 - **Difference.**
   - pest documents the most complete resource policy of the group: a call limit (opt-in), a stack guard that is on by
-    default on native targets, and a statement that input-size and depth limits alone do not bound work. It has no
+    default on native targets, and a statement that input-size and depth limits alone do not bound cost. It has no
     left recursion, and its output is untyped.
   - cpp-peglib has left recursion, recovery and an opt-in depth limit, with `std::any` values.
   - CPython's parser shows that a packrat PEG with left recursion can serve a production language.
@@ -334,7 +334,7 @@ they are not gates, and the release does not wait for them.
   `go get -tool` on a consumer module ([Go Versions](releasing.md#go-versions));
 - budget limits on by default: `pego gen` generates parsers with budget controls by default (what `-budget-controls` turns
   on today), one fixed budget proportional to the input length (c·n with a large constant), and a lint warning for
-  grammars outside the specification's sufficient conditions for linear work; at whatever overhead the limits have
+  grammars outside the specification's sufficient conditions for linear cost; at whatever overhead the limits have
   then, plus a budget limit flag in `pego parse` and [SECURITY.md](../SECURITY.md) updated to these defaults; published
   performance figures are measured with the limits on; reducing the overhead follows in the Performance track, and the
   release does not wait for the complexity classifier;
@@ -526,12 +526,12 @@ can rerun and dispute. The wedge benchmark comes first and covers pigeon, partic
 
 ### Predictable Cost and Safety
 
-PEGO does not promise linear time. It states what a parse costs and bounds the work. It is not yet safe by default
+PEGO does not promise linear time. It states what a parse costs and bounds the cost. It is not yet safe by default
 for untrusted input; the goals below make it so.
 
 - **Today.**
-  - The specification defines work, the expressions that repeat it, classes of growth and sufficient conditions for
-    linear work ([Time and Memory](../spec/runtime/parsing.md#time-and-memory)).
+  - The specification defines cost, the expressions that repeat it, classes of growth and sufficient conditions for
+    linear cost ([Time and Memory](../spec/runtime/parsing.md#time-and-memory)).
   - The nesting depth is capped by default.
   - The budget limit (`Budget`) and context cancellation are opt-in. Generated parsers carry them only
     when generated with `-budget-controls`. They cost 1.30–1.47× on generated Go `Parse` and 1.45–1.79× on the engine
@@ -546,7 +546,7 @@ for untrusted input; the goals below make it so.
 - **Goal: budget limits on by default.** Every parse gets a budget proportional to the input length (c·n). At the
   release, c is one fixed, large constant, calibrated on the repository grammars and ready-made parsers so that
   ordinary grammars stay well below it, and a lint warns about grammars outside the specification's sufficient
-  conditions for linear work. An unlimited parse has to be requested explicitly. The complexity classifier of the
+  conditions for linear cost. An unlimited parse has to be requested explicitly. The complexity classifier of the
   research track can later refine c per grammar; the release does not wait for it. Generated parsers are included:
   from the first release, `pego gen` generates them with budget controls by default, as `-budget-controls` does today,
   and published performance figures are measured with the limits on. The default ships at the overhead the limits
@@ -596,7 +596,7 @@ for untrusted input; the goals below make it so.
 |:--|:--|:--|:--|
 | Users can depend on a version | Tagged v0.x release; compatibility policy naming stable and unstable surfaces | No tag | Release |
 | Generated code states its requirements | Minimum Go version documented; `go get -tool` effect on consumers stated | Documented in [Releasing](releasing.md#go-versions): Go 1.27.1 for PEGO and generated code; `go get -tool` raises a consumer's `go` line to 1.27.1 | Release |
-| Untrusted input is bounded by default | Default budget (one fixed c·n budget, and a lint warning for grammars outside the sufficient conditions for linear work); budget controls generated by default; `SECURITY.md`; budget limit flag in `pego parse` | Limits opt-in, and in generated parsers only with `-budget-controls`; `SECURITY.md` states today's policy; no flag | Release |
+| Untrusted input is bounded by default | Default budget (one fixed c·n budget, and a lint warning for grammars outside the sufficient conditions for linear cost); budget controls generated by default; `SECURITY.md`; budget limit flag in `pego parse` | Limits opt-in, and in generated parsers only with `-budget-controls`; `SECURITY.md` states today's policy; no flag | Release |
 | Limits are simple | One budget across Go API, engine, generated Go and TypeScript | Two counters | Release |
 | Errors are readable | Long expected lists capped or grouped, with a test on a large grammar | Full lists | Release |
 | Public claims match measurements | README and site claims match this document's limits (tagline, untrusted input, tested runtimes) and [Benchmark Results](benchmarks.md) | The README's figures, tagline, runtime list and untrusted-input statement match; site pages not audited | Release |

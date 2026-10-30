@@ -133,9 +133,9 @@ in the tree, on every backend. `#missing` inserts an absent literal in whole-inp
 the parse fails with no tree.
 
 **Resource use is stated, and bounding it is the caller's choice today.** PEGO does not promise linear time.
-Memoization bounds how often a rule body runs at one position. The specification states which constructs repeat work,
+Memoization bounds how often a rule body runs at one position. The specification states which constructs repeat cost,
 the classes of growth a grammar can have (linear, polynomial, exponential) with example grammars, and sufficient
-conditions for linear work ([Time and Memory](../spec/runtime/parsing.md#time-and-memory)). Nesting depth is capped by
+conditions for linear cost ([Time and Memory](../spec/runtime/parsing.md#time-and-memory)). Nesting depth is capped by
 default. Budget limits are opt-in today ([Cancellation and Budget Limits](../spec/runtime/parsing.md#cancellation-and-budget-limits)).
 For a given artifact, input and options, a budget limit stops a parse at the same point on every run. Context
 cancellation follows the caller's clock. Limits on by default are a committed goal (see
@@ -236,7 +236,7 @@ These are goals, not results.
 - **Budget limits on by default.** Every parse gets a budget proportional to the input length (c·n). At first, c
   is one fixed, large constant, calibrated on the repository grammars and ready-made parsers so that ordinary
   grammars stay well below it, and a lint warns about grammars outside the specification's sufficient conditions for
-  linear work. An unlimited parse has to be requested explicitly. From the first release, `pego gen` generates
+  linear cost. An unlimited parse has to be requested explicitly. From the first release, `pego gen` generates
   parsers with budget controls by default (today `-budget-controls` turns them on), and published performance figures
   are measured with the limits on. A complexity classifier, which is research, can later refine c per grammar. The
   overhead of the limits is to shrink alongside, but the default does not wait for it.
@@ -260,7 +260,7 @@ planned to reach them.
   bytecode) may change between versions with no compatibility shims. The ready-made parser modules cannot be fetched
   with `go get` from another module ([Ready-Made Parsers](guide/ready-made-parsers.md)). PEGO and the Go code it
   generates require Go 1.27.1 ([Go Versions](releasing.md#go-versions)).
-- **Not safe by default for untrusted input yet.** The nesting cap is on by default; nothing else is. Default work
+- **Not safe by default for untrusted input yet.** The nesting cap is on by default; nothing else is. Default budget
   limits and optional input-length and memory caps are committed goals
   ([Commitments and Targets](#commitments-and-targets)).
   - Budget limits and cancellation are opt-in. Generated parsers carry them only when generated with `-budget-controls`,
@@ -337,7 +337,7 @@ tables describe documented behavior; they are not benchmarks.
 | pigeon 1.3.0 | Go | No | Yes | Exponential without memoization (its docs) | Expression count limit | None |
 | participle 2.1.4 | Go | No | Yes | Not documented | Not documented | None |
 | gpeg (`d601f967`) | Go | No | Yes | Can be super-linear where memoization is not marked (its paper) | Not documented | None |
-| pest 2.9.5 | Rust | No Go runtime | Not applicable | Input size and depth limits do not bound work (its security policy) | Call limit (opt-in); native stack guard (on by default on native targets) | Online editor |
+| pest 2.9.5 | Rust | No Go runtime | Not applicable | Input size and depth limits do not bound cost (its security policy) | Call limit (opt-in); native stack guard (on by default on native targets) | Online editor |
 | cpp-peglib 1.30.0 | C++17 | No Go runtime | Not applicable | Exponential cases without packrat (its docs) | Depth limit, off by default | Playground, `peglint` |
 | grmtools 0.15.0 | Rust | No Go runtime | Not applicable | Not documented; recovery stops at a timeout | Recovery timeout | None |
 
@@ -349,7 +349,7 @@ stack, which is why PEGO caps nesting depth by default; the iterative VM keeps r
 (context classes), participle (your structs) and gotreesitter (typed query matches) cover parts of it. A parser for
 Go and for the browser from one grammar: ANTLR, tree-sitter and gotreesitter. Recovery: tree-sitter, Lezer and ANTLR
 recover automatically, while PEGO's is declared. Incremental reparsing in pure Go: gotreesitter and gpeg. Bounded
-work: gotreesitter (on by default) and PEGO (opt-in today). PEGO's case is that one grammar covers all of these for a
+cost: gotreesitter (on by default) and PEGO (opt-in today). PEGO's case is that one grammar covers all of these for a
 language you own, with stdlib-only Go and dependency-free TypeScript. It is not a claim of being better at any
 one of them.
 

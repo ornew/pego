@@ -47,5 +47,5 @@ a callback of yours. The exact rules are in
 - [Running Parsers](running-parsers.md): results, errors and concurrency.
 - [Streaming](streaming.md): cancelling a stream whose input is caller-owned I/O.
 - [Cancellation and Budget Limits](../../spec/runtime/parsing.md#cancellation-and-budget-limits): the exact rules.
-- [Time and Memory](../../spec/runtime/parsing.md#time-and-memory): which grammars do work that grows faster than the
+- [Time and Memory](../../spec/runtime/parsing.md#time-and-memory): which grammars have a cost that grows faster than the
   input, and what each budget limit bounds.

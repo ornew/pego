@@ -259,13 +259,13 @@ observable consequences, and no others.
 
 The cost of a parse depends on the grammar as well as on the length n of the
 input. Memoization bounds how often a rule body is evaluated at a position, but
-some expressions do work that the memo does not share. This section defines how
-that work is measured, what holds for every grammar, and the classes of growth
+some expressions have a cost that the memo does not share. This section defines how
+that cost is measured, what holds for every grammar, and the classes of growth
 that a grammar can have.
 
-### Work
+### Cost
 
-The **work** of a parse is the sum of the following:
+The **cost** of a parse is the sum of the following:
 
 - the rule bodies that are evaluated, counting each step of a growing
   left-recursive rule;
@@ -275,11 +275,11 @@ The **work** of a parse is the sum of the following:
   applies;
 - the size of the values that actions and predicates build.
 
-Time is proportional to work. The memory that a parse allocates is at most
-proportional to its work plus the input, because each memo entry, node and
-value is built by work that is counted. Work is a model of cost: the counters
-of [budget limits](#cancellation-and-budget-limits) measure it in units that differ
-between backends.
+Time is proportional to cost. The memory that a parse allocates is at most
+proportional to its cost plus the input, because each memo entry, node and
+value is built by cost that is counted. The cost of a parse is measured in
+budget units, which differ between backends, and the budget of
+[budget limits](#cancellation-and-budget-limits) caps it.
 
 ### Termination
 
@@ -315,18 +315,18 @@ exceptions.
   number of steps is at most two more than the length of the input it
   consumes.
 
-### Expressions That Repeat Work
+### Expressions That Repeat Cost
 
-The memo shares the result of a rule at a position. It does not share work
+The memo shares the result of a rule at a position. It does not share cost
 inside a rule body, nor between results at different positions. The following
-expressions do work that grows with the input they cover, and repeat it when
+expressions have a cost that grows with the input they cover, and repeat it when
 they are evaluated again over the same input.
 
-| Expression | Work of one evaluation | Repeated when |
+| Expression | Cost of one evaluation | Repeated when |
 |:--|:--|:--|
 | A repetition | Its iterations, up to the input it matches | The body that contains it is evaluated again at an earlier position, so the repetition covers the same input again |
-| A lookahead | The work of its expression | It is evaluated at each of many positions and its expression examines the input after them |
-| `#recover(skip=e)` | The work of the base expression and of `e` | Its result is abandoned and parsing continues inside the skipped input |
+| A lookahead | The cost of its expression | It is evaluated at each of many positions and its expression examines the input after them |
+| `#recover(skip=e)` | The cost of the base expression and of `e` | Its result is abandoned and parsing continues inside the skipped input |
 | A growing left-recursive rule | One evaluation of its body per growth step | It is called at many positions of one input, because its result at one position is not built from its result at the next |
 | An Operators Rule | One step per operator it applies | As for left recursion |
 | A rule that reads variables | As for any rule, once for each combination of values | Calls at one position bind its variables to many different values |
@@ -334,10 +334,10 @@ they are evaluated again over the same input.
 
 ### Classes of Growth
 
-A grammar's work as a function of n falls into one of these classes. A class
+A grammar's cost as a function of n falls into one of these classes. A class
 describes the worst input of each length.
 
-| Class | Work | Example grammar | Input |
+| Class | Cost | Example grammar | Input |
 |:--|:--|:--|:--|
 | Linear | At most proportional to n | `main = (A / "a")* $$; A = "a" "c"` | `a` repeated n times |
 | Linear given an environment bound | Proportional to n times the number of combinations of variable values that occur at one position | A rule that reads `indent`, bound from the length of a captured run of spaces | Lines of increasing indentation |
@@ -361,21 +361,21 @@ The following grammars have the class shown on the inputs shown.
 The same grammars with `A = "n"`, or with the bindings `{v := "0"}` and
 `{v := "1"}`, are linear.
 
-### Conditions for Linear Work
+### Conditions for Linear Cost
 
-A grammar does work at most proportional to n, times a constant that depends
+A grammar has a cost at most proportional to n, times a constant that depends
 only on the grammar, when all of the following hold. The conditions are
 sufficient, not necessary.
 
 1. **Variables.** No variable that a memoized rule reads is bound, along a
    recursion of rule calls, from an expression that reads that variable's own
-   earlier value. When variables are bound from captures instead, the work is
+   earlier value. When variables are bound from captures instead, the cost is
    linear given an environment bound.
 2. **Left-recursion cycles.** A rule of a left-recursion cycle other than the
    rule the cycle grows is never evaluated twice at one position outside the
    growth of its cycle.
 3. **Repeated expressions.** No expression of the table in
-   [Expressions That Repeat Work](#expressions-that-repeat-work) can be
+   [Expressions That Repeat Cost](#expressions-that-repeat-cost) can be
    abandoned and then evaluated again at a position strictly inside the input
    that it covered. An expression can be abandoned when it is in an alternative
    that is not the last of its choice, when a later part of its sequence or
@@ -386,14 +386,14 @@ sufficient, not necessary.
 
 When condition 3 fails, the degree of the polynomial is one more than the
 number of such expressions nested in one another, through rule calls. When
-condition 1 or 2 fails, or a value doubles, work can be exponential.
+condition 1 or 2 fails, or a value doubles, cost can be exponential.
 
 ### Memory
 
 - **Memo table.** It holds at most one entry per memoized rule, position,
   binding level and combination of variable values.
 - **Values.** A parse keeps the value of its start rule. Values built by
-  abandoned alternatives are not kept, but their construction is work.
+  abandoned alternatives are not kept, but their construction is cost.
 - **Call stack.** It holds at most as many calls as the [nesting limit](#limits)
   allows.
 - **Streams and Documents.** A [stream](streaming.md) parse discards memo entries
@@ -401,9 +401,9 @@ condition 1 or 2 fails, or a value doubles, work can be exponential.
   [Document](documents.md) keeps memo entries and repetition records for its
   whole text between parses.
 
-### Bounding Work
+### Bounding Cost
 
-[Budget limits](#cancellation-and-budget-limits) bound the work of any parse,
+[Budget limits](#cancellation-and-budget-limits) bound the cost of any parse,
 whatever its class. `Budget` is one counter for all of it: it counts the input
 that terminals, repetitions of character classes and lookaheads examine,
 including input examined again, rule calls, repetition iterations, growth
@@ -454,7 +454,7 @@ the same result as parsing the current text from scratch.
 In the Go API, `WithContext(ctx)` supplies the context and
 `WithLimits(Limits{Budget})` the limit. The budget counter adds the
 inspected elements of the input representation and the backend's execution
-work, one unit each. Charges are not rolled back by backtracking, and their values
+steps, one unit each. Charges are not rolled back by backtracking, and their values
 depend on the backend, the position unit and the generated artifact. For a given
 artifact, input and options they are the same on every run: the storage that an
 earlier parse left in a reused parser, and when a collection releases it, never

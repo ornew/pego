@@ -120,7 +120,7 @@ more times: the closure evaluator in `closure/eval.go`, bytecode expression code
   of a repetition, and the input spend of each `Peek`. The entry of a rule is one step charged by the method that
   holds the lowered function (`Func.Entered`), and no other point of straight-line code charges: between two
   charges only the code of one rule body runs, whose length is bounded by the grammar, so the steps still bound
-  the work of a parse. These need not equal the counts of the engine's backends, because the spec lets the work
+  the cost of a parse. These need not equal the counts of the engine's backends, because the spec lets the cost
   of a parse depend on the backend and the generated artifact: Flow's choice guards skip alternatives that the
   other backends try and charge, and it charges one step per rule and per iteration where they charge one per
   expression. `Verify` counts the entry as the first charge of a function. The charge model that every build keeps

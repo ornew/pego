@@ -7,7 +7,7 @@
 ## Summary
 
 A PEGO parse does not always run in linear time. Packrat memoization bounds how often a rule body runs at a position,
-but parts of the language do work that the memo does not share, so a small grammar can take quadratic, cubic or
+but parts of the language have a cost that the memo does not share, so a small grammar can take quadratic, cubic or
 exponential time, or build values of exponential size. This record defines what a parse costs, per construct. It
 proposes:
 
@@ -15,7 +15,7 @@ proposes:
 - two runtime changes that make linear what can be made linear: memoizing the members of left-recursion cycles, and
   reusing a repetition's run after backtracking;
 - a lint warning for variables that grow themselves;
-- a regression suite that measures work at n, 2n, 4n and 8n;
+- a regression suite that measures cost at n, 2n, 4n and 8n;
 - an opt-in automatic budget of c·n.
 
 The remaining super-linear constructs are reported and bounded by the budget instead.
@@ -26,7 +26,7 @@ The remaining super-linear constructs are reported and bounded by the budget ins
 
 The runtime comment on deferred memoization says that evaluating a memoized rule at most twice per position keeps
 "parse time" linear (`internal/engine/core/runtime.go:490-495`). The bound on evaluations is correct. Linear time does not
-follow from it. Ford's linearity argument assumes that every nonterminal does a constant amount of work per position
+follow from it. Ford's linearity argument assumes that every nonterminal has a constant cost per position
 besides its calls, and that every repetition is desugared into a memoized right-recursive nonterminal. PEGO deviates in
 four ways:
 
@@ -71,7 +71,7 @@ do not depend on timing noise.
 | E5 | `main = xs:"x"* => len(foldl("a", $xs, (acc, x) => acc + acc))` | `x^n` | identical to E4, in one action | 2^n value size |
 
 E2 grows the same way on the bytecode and iterative backends. The budget limit stops every case above in proportion to
-the work done, because the closure backend charges value construction by size.
+the cost, because the closure backend charges value construction by size.
 
 A further case is a correctness defect rather than a cost. `var k int; R = {k := k + 1} R "x" / "x"` recurses
 without consuming input until the nesting limit stops it. The time grows quadratically with the limit: 4, 14, 56 and
@@ -114,27 +114,27 @@ change.
 ### Cost Model
 
 A parse is a tree of rule evaluations. Its time is the sum, over every body evaluation, of the evaluation's **local
-work**: the terminals it matches, its loop iterations, the actions and predicates it evaluates and the memo lookups
+cost**: the terminals it matches, its loop iterations, the actions and predicates it evaluates and the memo lookups
 it makes, excluding the bodies of the rules it calls. Its memory is the memo table, plus the values it builds, plus
 the call stack. Memory never exceeds a constant times time, because every entry and every value costs at least one
 budget unit to create.
 
 Per construct:
 
-| Construct | Evaluations per position | Local work per evaluation | Shared by the memo? |
+| Construct | Evaluations per position | Local cost per evaluation | Shared by the memo? |
 |:--|:--|:--|:--|
 | Memoized rule (`Memo`, outside a left-recursion cycle) | ≤ 2 per (rule, position, level, environment): the first call is not stored, the second is (`runtime.go:490-495`) | body size, plus loops | yes, for the whole body |
 | Transient rule (called from one site, or calling no rule) | bounded by its caller's evaluations of that site | as above | through its caller |
 | Left-recursion leader | 1 growth per (rule, position, environment) | one body evaluation per growth step; steps ≤ span + 1 | the final result only |
 | Non-leader member of a left-recursion cycle | every call, and once per growth step of its leader | as above | no |
 | Repetition, `Scan`, `ClassRun` | once per evaluation of the enclosing body | proportional to the span it matches | no |
-| Lookahead | once per evaluation of the enclosing body | the work of its body; consumes nothing | no |
-| `#recover(skip=e)` | once per failure of its base | the base's work plus the skip's span | no |
+| Lookahead | once per evaluation of the enclosing body | the cost of its body; consumes nothing | no |
+| `#recover(skip=e)` | once per failure of its base | the base's cost plus the skip's span | no |
 | Operators Rule | as a memoized rule, per binding level | proportional to the operators folded | the result per level only |
 | Predicate or value action | once per evaluation of its body | proportional to the sizes of the values it reads and builds | no |
 | Variable environment | multiplies memo keys by the number of distinct environments at a position | equality of the environment | per environment |
 
-**Spans** are what makes local work unbounded. A construct whose local work grows with its span is called a **scanning
+**Spans** are what makes local cost unbounded. A construct whose local cost grows with its span is called a **scanning
 construct**: an unbounded repetition, `Scan`, a left-recursion leader, an Operators Rule, a recovery skip, and a lookahead
 whose body contains one. A parse is linear when no input position is covered by the spans of more than a constant
 number of evaluations of each scanning construct, and the number of environments per position is bounded.
@@ -187,27 +187,27 @@ Linear  <  Linear·Env(vars)  <  Poly(k, witness)  <  Exp(witness)
 - `Exp` is assigned when L1 fails, when L2 fails on a cycle whose re-entry multiplies, or when L4 finds a doubling.
   The witness names the rules, the binding or the call sites involved.
 - A start rule's verdict is the worst verdict of the rules it reaches. A rule's verdict also feeds the verdicts of its
-  callers, because it is part of their local work.
+  callers, because it is part of their local cost.
 
-For a `Linear` start rule the classifier also emits a constant c_G, an upper bound on work per input position. It is
-the sum, over memoized and transient rules, of twice the local work of one body evaluation without loops, plus the
-per-iteration work of each loop. The automatic budget uses c_G.
+For a `Linear` start rule the classifier also emits a constant c_G, an upper bound on cost per input position. It is
+the sum, over memoized and transient rules, of twice the local cost of one body evaluation without loops, plus the
+per-iteration cost of each loop. The automatic budget uses c_G.
 
-**Soundness argument (sketch).** The work of a parse is the sum, over every body evaluation, of its local work. For a
+**Soundness argument (sketch).** The cost of a parse is the sum, over every body evaluation, of its local cost. For a
 grammar that satisfies L1–L4, with the left-recursion guard keyed by rule and position:
 
 1. A memoized rule is evaluated at most 2K times per (position, level) outside growth, by deferred memoization and L1.
    A transient rule is evaluated at most as often as the call site in its unique caller. The chain of callers ends at a
    memoized rule or the start rule. Under L2 no other rule is evaluated more than once per growth step.
-2. The non-loop local work of one evaluation is bounded by the size of its body.
-3. Loop and scan work is bounded by spans. Under L3, the evaluations of one scanning construct at distinct starts have
+2. The non-loop local cost of one evaluation is bounded by the size of its body.
+3. Loop and scan cost is bounded by spans. Under L3, the evaluations of one scanning construct at distinct starts have
    spans that overlap only at their ends, or the overlap is answered by a memo hit or a reused run. Summed over a parse,
    each construct therefore covers each position a constant number of times. Left-recursion growth is a scanning
    construct, so the same argument bounds its steps.
 4. Under L4 every value built is at most linear in the spans of the captures it reads, and its construction is charged
    to the evaluation that builds it.
 
-Summing gives work ≤ c_G · K · (n + 1), and memory ≤ work.
+Summing gives cost ≤ c_G · K · (n + 1), and memory ≤ cost.
 
 The conditions are sufficient, not necessary. They over-approximate in these ways:
 
@@ -305,22 +305,22 @@ normative when the classifier and the two runtime changes land; until then it is
 
 > ## Complexity
 >
-> The **work** of a parse is the number of body evaluations of rules, the input that terminals examine, the
+> The **cost** of a parse is the number of body evaluations of rules, the input that terminals examine, the
 > iterations of repetitions and the size of the values that actions and predicates build. Budget bounds both the time and
-> the memory of a parse: memory never exceeds a constant times the work.
+> the memory of a parse: memory never exceeds a constant times the cost.
 >
 > - A rule is evaluated at most twice per position, binding level and combination of the values of the variables it
 >   reads, except while a left-recursive rule grows at that position.
-> - A parse of a grammar that `pego lint` classifies as linear does work at most proportional to the length of the
+> - A parse of a grammar that `pego lint` classifies as linear has a cost at most proportional to the length of the
 >   input, with a constant that depends on the grammar only.
 > - Other grammars can do more. A repetition, a left-recursive rule or an Operators Rule whose match the grammar
->   abandons and then starts again inside it can make work quadratic or worse. A variable bound, along a recursion,
->   from its own previous value can make the number of combinations, and so work, exponential. An action can build a
+>   abandons and then starts again inside it can make cost quadratic or worse. A variable bound, along a recursion,
+>   from its own previous value can make the number of combinations, and so cost, exponential. An action can build a
 >   value whose size is exponential in the input.
 > - Every parse terminates. A call of a left-recursive rule at a position where that rule is already being evaluated
 >   fails, whatever the values of variables.
 >
-> Budget limits ([Cancellation and budget limits](../../../spec/runtime/parsing.md#cancellation-and-budget-limits)) bound the work of any parse. Values are
+> Budget limits ([Cancellation and budget limits](../../../spec/runtime/parsing.md#cancellation-and-budget-limits)) bound the cost of any parse. Values are
 > charged in proportion to their size, so a limit also bounds the memory that values occupy.
 
 ### Compatibility and Backend Support
@@ -410,7 +410,7 @@ blow-ups. That leaves unmemoized re-entry and diverging state as the exponential
 ## Decisions
 
 1. **The specification promises a bound only for certified grammars.** A parse of a grammar that the classifier
-   certifies as linear does work proportional to the input length. Other grammars carry no promise beyond termination.
+   certifies as linear has a cost proportional to the input length. Other grammars carry no promise beyond termination.
    The classifier's soundness is therefore normative once it lands. The alternatives were no promise, which leaves
    users nothing to check, and a promise for every grammar, which restarted left-recursion growth and Operators Rule
    folds make impossible.
@@ -420,7 +420,7 @@ blow-ups. That leaves unmemoized re-entry and diverging state as the exponential
 3. **Run reuse is on by default.** Recording is deferred until a site restarts inside an earlier run, and an
    optimization control disables it, as the memo has. It is adopted only if the corpora and benchmark grammars, which
    never restart inside runs, show no slowdown. Without that evidence it stays behind the control.
-4. **Memory has no bound beyond work.** Budget bounds memory linearly. A memo-entry cap with eviction, which is
+4. **Memory has no bound beyond cost.** Budget bounds memory linearly. A memo-entry cap with eviction, which is
    semantically safe except for growing seeds and Documents, is reconsidered when a Document or stream workload
    shows memo memory as the limit. A byte budget for values is not added.
 5. **The automatic budget uses c_G times a safety factor.** The factor is documented, and the caller can override c.
