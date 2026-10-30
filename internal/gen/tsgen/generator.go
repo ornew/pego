@@ -78,7 +78,17 @@ func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.Ge
 	if err != nil {
 		return nil, err
 	}
-	tsg := &Generator{Generator: gen.Generator{Prog: prog, Table: "rules", Observability: opts.Observability, DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing || !opts.EnableTSLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch}, plainUsed: map[*compile.Rule]bool{}}
+	var rec *compile.Program
+	if opts.Recognize {
+		if rec, err = recognizer(); err != nil {
+			return nil, err
+		}
+	}
+	live, err := reachableRules(prog, rec, start)
+	if err != nil {
+		return nil, err
+	}
+	tsg := &Generator{Generator: gen.Generator{Prog: prog, Table: "rules", Observability: opts.Observability, DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing || !opts.EnableTSLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch}, plainUsed: map[*compile.Rule]bool{}, live: live}
 	tsg.NoBudget = !opts.BudgetControls
 	tsg.optionsType = "ParseOptions"
 	if !opts.BudgetControls {
@@ -89,16 +99,18 @@ func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.Ge
 	if tsg.FlowErr != nil {
 		return nil, tsg.FlowErr
 	}
-	var rec *compile.Program
-	if opts.Recognize {
-		if rec, err = recognizer(); err != nil {
-			return nil, err
-		}
+	if tsg.reachErr != nil {
+		return nil, tsg.reachErr
+	}
+	if rec != nil {
 		tsg.Prog, tsg.Table = rec, "recRules"
 		tsg.rules()
 		tsg.Prog, tsg.Table = prog, "rules"
 		if tsg.FlowErr != nil {
 			return nil, tsg.FlowErr
+		}
+		if tsg.reachErr != nil {
+			return nil, tsg.reachErr
 		}
 	}
 
@@ -125,7 +137,7 @@ export function parseRule(name: string, input: string | Uint8Array, unit?: Unit)
 	} else {
 		fmt.Fprintf(&out, `/** Parses the whole input with the start rule name, a rule marked @start; "" selects the default start rule. */
 export function parseRule(name: string, input: string | Uint8Array, unit?: Unit): ParseResult {
-  const r = startIn(rules, starts, defaultStart, name);
+  const r = startIn(rules, ruleNames, starts, defaultStart, name);
   if (r instanceof Error) return { node: null, error: r };
   return %s;
 }
@@ -153,7 +165,7 @@ export function parseWithOptions(input: string | Uint8Array, options?: %[1]s): P
 export function parseRuleWithOptions(name: string, input: string | Uint8Array, options?: %[1]s): ParseResult {
   const o = resolveOptions(G, options, input);
   if (o instanceof Error) return { node: null, error: o };
-  const r = startIn(rules, starts, defaultStart, name);
+  const r = startIn(rules, ruleNames, starts, defaultStart, name);
   if (r instanceof Error) return { node: null, error: r };
   return withObservedOptions(o, control => run(G, r, nseen, input, o.unit, o.maxDepth, control, o), error => ({ node: null, error }));
 }
@@ -383,6 +395,9 @@ type Generator struct {
 	// optionsType is the name of the runtime's options type that the entry points take: ParseOptions
 	// with budget controls, PlainParseOptions without.
 	optionsType string
+	// live holds the rules that a parse can enter (reach.go).
+	live     *tsLive
+	reachErr error
 }
 
 // TsString returns s as a TypeScript string literal (JSON is valid TypeScript).
@@ -495,7 +510,12 @@ func (g *Generator) rules() {
 	init := &g.Init
 	bodies := map[*compile.Rule]string{}
 	scopes := map[*compile.Rule]*compile.Scope{}
-	all := append(append([]*compile.Rule(nil), g.Prog.RuleList...), g.Prog.Twins...)
+	var all []*compile.Rule
+	for _, r := range append(append([]*compile.Rule(nil), g.Prog.RuleList...), g.Prog.Twins...) {
+		if !g.pruned(r) {
+			all = append(all, r)
+		}
+	}
 	for _, r := range all {
 		s := compile.NewScope()
 		scopes[r] = s
@@ -513,6 +533,9 @@ func (g *Generator) rules() {
 	// Each rule is a constant, which the generated code refers to.
 	var vars []string
 	for _, r := range all {
+		if !g.tableRow(r) {
+			continue
+		}
 		value := tsShaper(g.Prog, r.BodyExpr())
 		if _, ok := r.Def.Expr.(*grammar.OperatorsRule); ok {
 			value = 0 // the lines build the rule's value
@@ -536,6 +559,11 @@ func (g *Generator) rules() {
 	if g.Table == "rules" {
 		// The table and the start rules, for parseRule (the recognizer has none).
 		fmt.Fprintf(init, "const rules: Rule[] = [%s];\n", strings.Join(vars, ", "))
+		var names []string
+		for _, r := range g.Prog.RuleList {
+			names = append(names, r.Name)
+		}
+		fmt.Fprintf(init, "const ruleNames = %s;\n", TsStrings(names))
 		fmt.Fprintf(init, "const starts = %s;\n", TsStrings(g.Prog.StartRules))
 		fmt.Fprintf(init, "const defaultStart = %s;\n", TsString(g.Prog.DefaultStartRule))
 	}
@@ -546,8 +574,10 @@ func (g *Generator) rules() {
 			g.operatorsRule(r, pr)
 			continue
 		}
-		fmt.Fprintf(init, "%s.body = %s;\n", g.ruleVar(r), g.fn(bodies[r]))
-		if r.Action != nil {
+		if g.slotReached(r) {
+			fmt.Fprintf(init, "%s.body = %s;\n", g.ruleVar(r), g.fn(bodies[r]))
+		}
+		if r.Action != nil && g.tableRow(r) {
 			g.Proj = g.Projections(r)
 			fmt.Fprintf(init, "%s.action = %s;\n", g.ruleVar(r), g.action(r.Action, scopes[r], nil))
 			g.Proj = nil

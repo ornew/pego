@@ -1046,6 +1046,7 @@ func (p *tsFlowPrinter) decl(name, s string) {
 func (p *tsFlowPrinter) call(r *compile.Rule, min int) string {
 	g := p.g
 	_, operatorsRule := r.Def.Expr.(*grammar.OperatorsRule)
+	g.checkCall(r)
 	switch {
 	case r.Plain && !operatorsRule:
 		g.plainUsed[r] = true
