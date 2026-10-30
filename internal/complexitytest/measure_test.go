@@ -1,6 +1,7 @@
 package complexitytest
 
 import (
+	"errors"
 	"math"
 	"testing"
 
@@ -115,7 +116,7 @@ func TestStepsBisectionAndTrace(t *testing.T) {
 				t.Errorf("%s %s: bisection %v, traced %v", c.name, BackendName(b), exact, traced)
 			}
 			approx, err := Steps(p, c.in, b, 10_000_000)
-			if err != nil || approx.Steps < exact.Steps || approx.Steps > exact.Steps+exact.Steps/128+1 {
+			if err != nil || approx.Steps < exact.Steps || approx.Steps > exact.Steps+exact.Steps/256+1 {
 				t.Errorf("%s %s: tolerant search %v (%v), exact %v", c.name, BackendName(b), approx, err, exact)
 			}
 		}
@@ -147,6 +148,11 @@ func TestStepsLenient(t *testing.T) {
 		c, err := StepsLenient(p, "aaab", b, 100_000)
 		if err != nil || c.ParseErr == nil || c.Capped || c.Steps == 0 {
 			t.Errorf("%s: lenient cost %+v, %v", BackendName(b), c, err)
+		}
+		var se *pego.SyntaxError
+		var ses pego.SyntaxErrors
+		if !errors.As(c.ParseErr, &se) && !errors.As(c.ParseErr, &ses) {
+			t.Errorf("%s: ParseErr %T is no syntax error", BackendName(b), c.ParseErr)
 		}
 		if _, err := Steps(p, "aaab", b, 100_000); err == nil {
 			t.Errorf("%s: strict Steps accepted a syntax error", BackendName(b))

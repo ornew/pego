@@ -12,10 +12,11 @@ import (
 // corpusCap bounds the budget of one corpus parse; a linear grammar stays far below it.
 const corpusCap = 2_000_000_000
 
-// ratioLimit is the largest growth of the worst cost per input byte from the input of size n to
-// the input of size 4n for a linear grammar. Linear growth keeps the ratio near 1; a constant
-// start-up cost and the variation between inputs stay well below the limit.
-const ratioLimit = 1.3
+// ratioLimit is the largest growth of the worst cost per input byte from the input of size 2n to
+// the input of size 4n for a linear grammar. Linear growth keeps the ratio near 1, and a fixed
+// cost lowers it, so the limit admits growth up to n^1.14 at most. The ratio starts at 2n
+// because the cost per byte of the smallest input still carries the fixed cost.
+const ratioLimit = 1.1
 
 // corpusEntry is a grammar of the repository with a family of inputs that grow with n.
 type corpusEntry struct {
@@ -32,7 +33,7 @@ type corpusEntry struct {
 	// source says where the inputs come from.
 	source string
 	// syntaxErrors marks inputs that the grammar reports syntax errors for, such as inputs with
-	// recovered errors; the parse finishes with the errors.
+	// recovered errors; the parse finishes with a *pego.SyntaxError or pego.SyntaxErrors.
 	syntaxErrors bool
 }
 
@@ -134,7 +135,7 @@ func corpusEntries() []corpusEntry {
 // backend it checks that
 //   - every input parses without exhausting the cap;
 //   - for a Linear grammar, the worst budget per input byte at 4n is at most ratioLimit times the
-//     worst at n; otherwise the series classifies as the recorded order.
+//     worst at 2n; otherwise the series classifies as the recorded order.
 func TestCorpus(t *testing.T) {
 	t.Parallel()
 	for _, e := range corpusEntries() {
@@ -180,11 +181,11 @@ func TestCorpus(t *testing.T) {
 						}
 					}
 				}
-				ratio := worst[len(worst)-1] / worst[0]
-				t.Logf("%s: worst steps per byte %.1f, ratio 4n/n %.2f, slopes %.2f, order %v", BackendName(b), worst, ratio, series.Slopes(), Classify(series))
+				ratio := worst[len(worst)-1] / worst[len(worst)-2]
+				t.Logf("%s %s: worst steps per byte %.1f, ratio 4n/2n %.3f, slopes %.2f, order %v", e.name, BackendName(b), worst, ratio, series.Slopes(), Classify(series))
 				if e.order == Linear {
 					if ratio > ratioLimit {
-						t.Errorf("%s: steps per byte grow by %.2f from n to 4n (limit %.1f)", BackendName(b), ratio, ratioLimit)
+						t.Errorf("%s: steps per byte grow by %.3f from 2n to 4n (limit %.1f)", BackendName(b), ratio, ratioLimit)
 					}
 				} else if got := Classify(series); got != e.order {
 					t.Errorf("%s: classified %v, want %v", BackendName(b), got, e.order)

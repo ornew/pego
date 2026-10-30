@@ -84,9 +84,18 @@ func ExactSteps(p *pego.Parser, input string, b pego.Backend, cap uint64) (Cost,
 
 // StepsLenient is Steps for an input that the grammar reports syntax errors for, such as one
 // that exercises error recovery: the cost of a parse that finishes with a syntax error carries
-// the error in Cost.ParseErr instead of failing.
+// the error in Cost.ParseErr instead of failing. Only a *pego.SyntaxError or pego.SyntaxErrors
+// is accepted; any other error is returned.
 func StepsLenient(p *pego.Parser, input string, b pego.Backend, cap uint64) (Cost, error) {
 	return steps(p, input, b, cap, 256)
+}
+
+// isSyntaxError reports whether err is a syntax error of the input or the list of errors that a
+// parse recovered from. Any other error is a failure of the measurement.
+func isSyntaxError(err error) bool {
+	var one *pego.SyntaxError
+	var many pego.SyntaxErrors
+	return errors.As(err, &one) || errors.As(err, &many)
 }
 
 func strict(c Cost, err error) (Cost, error) {
@@ -100,6 +109,9 @@ func steps(p *pego.Parser, input string, b pego.Backend, cap, tolDiv uint64) (Co
 	ok, parseErr := parses(p, input, b, cap)
 	if !ok {
 		return Cost{Steps: cap, Capped: true}, nil
+	}
+	if parseErr != nil && !isSyntaxError(parseErr) {
+		return Cost{}, parseErr
 	}
 	lo, hi := uint64(0), cap // budget lo fails (or is zero), budget hi finishes
 	for step := uint64(1024); step < hi; step *= 4 {

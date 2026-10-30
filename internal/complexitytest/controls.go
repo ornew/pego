@@ -120,7 +120,7 @@ func Controls() []Control {
 		{
 			Name: "E2 cycle members behind a leader, safe", Family: "E2", Positive: true,
 			Source: "rule main = c $$\nrule a = \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n",
-			Input:  parens, Sizes: double(8), ShortSizes: double(4), Order: Linear, Class: ClassLinear,
+			Input:  parens, Sizes: double(64), ShortSizes: double(32), Order: Linear, Class: ClassLinear,
 		},
 		{
 			Name: "E2 non-leader cycle members", Family: "E2", BecomesLinear: true,
@@ -130,7 +130,7 @@ func Controls() []Control {
 		{
 			Name: "E3 environments, safe", Family: "E3", Positive: true,
 			Source: "var v string\nrule main = r $$\nrule r = \"(\" {v := \"0\"} r \")\" \"y\" / \"(\" {v := \"1\"} r \")\" \"z\" / \"n\" {len(v) >= 0}\n",
-			Input:  parens, Sizes: double(8), ShortSizes: double(4), Order: Linear, Class: ClassLinear,
+			Input:  parens, Sizes: double(64), ShortSizes: double(32), Order: Linear, Class: ClassLinear,
 		},
 		{
 			Name: "E3 diverging environments", Family: "E3",
@@ -153,6 +153,9 @@ func Controls() []Control {
 	for i := range cs {
 		if cs[i].BecomesLinear && becomesLinearLanded {
 			cs[i].Order, cs[i].Capped, cs[i].Class, cs[i].Positive = Linear, false, ClassLinear, true
+			// A series of a linear control needs sizes where fixed cost no longer dominates: the
+			// slopes of the E2 positive control are 0.98 and 0.99 from 64 and 0.97 and 0.98 from 32.
+			cs[i].Sizes, cs[i].ShortSizes = double(64), double(32)
 		}
 	}
 	return cs
