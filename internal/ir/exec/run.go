@@ -10,6 +10,14 @@ type Machine interface {
 	Call(o *Op, args []any) []any
 }
 
+// RegisterMachine is a Machine whose operations read and write the registers they declare, as
+// target implementations of transitional operations do (rule.invoke moves the position): Run hands
+// it the registers of the run, by name, before it runs the function.
+type RegisterMachine interface {
+	Machine
+	UseRegisters(regs map[string]any)
+}
+
 // Interrupt is the panic value of an operation that ends the parse instead of returning.
 type Interrupt struct{ Reason string }
 
@@ -44,6 +52,9 @@ func Run(m *Module, f *Func, mach Machine, args ...any) (res []any, err error) {
 	r := &runner{m: m, mach: mach, regs: map[string]any{}}
 	for _, reg := range m.Registers {
 		r.regs[reg.Name] = zero(reg.Type)
+	}
+	if rm, ok := mach.(RegisterMachine); ok {
+		rm.UseRegisters(r.regs)
 	}
 	return r.call(f, args), nil
 }
