@@ -778,7 +778,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 	case *flow.KidsLen:
 		return "len(p.KidStack)"
 	case *flow.StreamOn:
-		return "p.Stream != nil && p.Stream.Emit != nil && p.Depth == 1"
+		return fmt.Sprintf("p.StreamsIn(%d, %v)", p.g.Cur.ID, p.g.Cur.Rec)
 	case *flow.Nil:
 		return "nil"
 	case *flow.Int:

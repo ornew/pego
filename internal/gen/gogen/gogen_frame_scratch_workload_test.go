@@ -163,7 +163,7 @@ func TestFrameAbortCleanup(t *testing.T) {
 }
 func TestFrameDepthAbortCleanup(t *testing.T) {
  var observed *pegort.Parser
- r:=&pegort.Rule{Name:"depth-abort",Seen:-1,Scope:[]string{"x"}}
+ r:=&pegort.Rule{Name:"depth-abort",Rec:true,Seen:-1,Scope:[]string{"x"}}
  r.Body=func(p *pegort.Parser,_ int)(*Node,bool){observed=p;p.SetCapture(0,p.NewNode(Node{RawText:"abandoned"}));p.Depth=FRAME_DEPTH_LIMIT;return p.Call(r,0)}
  g:=pegort.NewGrammar(0);g.SetRules([]*pegort.Rule{r},0);g.Share(pegoGrammar)
  if _,err:=pegort.RunParse(r,"",nil);err==nil || !strings.Contains(err.Error(),"nesting too deep") {t.Fatal("depth abort did not propagate")}

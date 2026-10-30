@@ -875,6 +875,8 @@ type Rule struct {
 	Memo bool
 	// Leader is the leader of a left-recursive cycle; its results are always memoized.
 	Leader bool
+	// Rec means the rule is on a cycle of calls: its entries count against the nesting limit.
+	Rec bool
 	// DocMemo means Documents memoize the rule, transient or not. It is false
 	// for the other rules of a left-recursive cycle, whose results depend on
 	// the leader's growing seed, as in the engine.
@@ -931,7 +933,7 @@ type grammar struct {
 	// NoBudgetControls reports that the parser was generated without budget controls, so that a parse
 	// asking for them fails.
 	NoBudgetControls bool
-	// MaxDepth is the default maximum nesting of rule calls.
+	// MaxDepth is the default maximum nesting of recursive rule calls.
 	maxDepth int
 	// initEnv is the environment every parse starts from, with each variable bound to its
 	// initial value, and initBound holds the names of those variables (Parser.bound).
@@ -1078,7 +1080,7 @@ type parseOptions struct {
 // WithUnit selects the unit of input positions (CodePoints by default).
 func WithUnit(unit PositionUnit) ParseOption { return func(o *parseOptions) { o.unit = unit } }
 
-// WithMaxDepth limits nested rule calls. Zero selects the generated default;
+// WithMaxDepth limits nested recursive rule calls (rules on a cycle of calls). Zero selects the generated default;
 // a negative effective limit returns an error before parsing.
 // A larger limit does not guarantee that the host stack can accommodate it.
 func WithMaxDepth(n int) ParseOption { return func(o *parseOptions) { o.maxDepth = n } }
@@ -2635,13 +2637,14 @@ func (p *Parser) invoke(r *Rule, min int) (*Node, bool) {
 	f := p.NewFrame(len(r.Scope))
 	prevFrame, prevEnv, prevCut, trail := p.Frame, p.Env, p.Cut, len(p.Trail)
 	p.Frame, p.Cut = f, false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", p.MaxDepth)})
+	if r.Rec {
+		p.Enter()
 	}
 	start := p.Pos
 	v, ok := r.Body(p, min)
-	p.Depth--
+	if r.Rec {
+		p.Depth--
+	}
 	p.Frame, p.Cut = prevFrame, prevCut
 	p.Trail = p.Trail[:trail]
 	if ok {
@@ -2679,12 +2682,13 @@ func (p *Parser) invokePlainBody(r *Rule, min int) (*Node, bool) {
 	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
+	if r.Rec {
+		p.Enter()
 	}
 	v, ok := r.Body(p, min)
-	p.Depth--
+	if r.Rec {
+		p.Depth--
+	}
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
 	if ok {
@@ -2708,10 +2712,11 @@ func (p *Parser) evaluating() {
 
 // TooDeep fails the parse for exceeding the nesting limit.
 func (p *Parser) TooDeep() {
-	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", p.MaxDepth)})
+	panic(fatal{fmt.Errorf("nesting too deep: more than %d nested recursive rule calls", p.MaxDepth)})
 }
 
-// Enter counts one more rule call and fails the parse beyond the nesting limit.
+// Enter counts one more nested entry of a recursive rule and fails the parse beyond the nesting
+// limit.
 func (p *Parser) Enter() {
 	p.Depth++
 	if p.Depth > p.MaxDepth {
@@ -3898,7 +3903,7 @@ func (p *Parser) applyErrors(a *operatorsRuleAttempt) {
 
 // OperatorsRuleParse parses an expression with operators that bind tighter than min. Each level of its
 // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
-// against the nesting limit, like a rule call.
+// against the nesting limit, like the entry of a recursive rule.
 func (p *Parser) OperatorsRuleParse(r *Rule, min int) (*Node, bool) {
 	p.Depth++
 	if p.Depth > p.MaxDepth {

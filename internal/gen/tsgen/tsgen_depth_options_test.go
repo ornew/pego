@@ -40,6 +40,10 @@ rule one = two
 rule two = three
 rule three = four
 rule four = "é"`, Inputs: []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
+		{Name: "recursion through helpers", Src: `rule main = n
+rule n = "(" n ")" / "a" one / "b" one / "é"
+rule one = two
+rule two = "é"`, Inputs: []string{"é", "aé", "(aé)", "((bé))", "(((aé)))", "((((é))))", "(a?)", "((b"}},
 		{Name: "recovery", Src: `rule main = n
 rule n = ("(" n ")" / "é") #recover(skip="?")`, Inputs: []string{"é", "(é)", "((é))", "?", "(?)"}},
 	}

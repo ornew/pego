@@ -272,7 +272,7 @@ rule list = "[" value* "]"
 	// Rule calls nest too deeply: an engine error, not a crash.
 	for _, backend := range []string{"", "closure", "bytecode"} {
 		r := call[parseResult](t, "parse", parseRequest{Grammar: src, Input: nested(40), Backend: backend})
-		if r.Matched || r.Error != "nesting too deep: more than 50 rule calls" {
+		if r.Matched || r.Error != "nesting too deep: more than 50 nested recursive rule calls" {
 			t.Errorf("backend %q: %+v", backend, r)
 		}
 	}
@@ -288,7 +288,7 @@ rule list = "[" value* "]"
 		t.Errorf("within the limits: %+v", r)
 	}
 	r = call[parseResult](t, "parse", parseRequest{Grammar: src, Input: nested(10), MaxDepth: 5})
-	if r.Matched || !strings.Contains(r.Error, "more than 5 rule calls") {
+	if r.Matched || !strings.Contains(r.Error, "more than 5 nested recursive rule calls") {
 		t.Errorf("explicit limit: %+v", r)
 	}
 }

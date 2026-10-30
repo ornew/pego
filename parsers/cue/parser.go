@@ -716,109 +716,109 @@ var rulesSpec = [...]ruleSpec{
 	{"colon_ec0", &sh53, rt.RuleMemo, 7, 0, 0},
 	{"colon_ne", &sh53, rt.RuleMemo, 8, 0, 0},
 	{"colon_ahead", &sh53, 0, 0, 0, 0},
-	{"decls", &sh332, rt.RuleMemo, 9, 10, 1},
-	{"decl_item", &sh27, 0, 0, 0, 1},
-	{"item_normal", &sh5, 0, 0, 11, 1},
-	{"item_tail", &sh5, 0, 0, 12, 1},
-	{"embed_tail", &sh5, 0, 0, 13, 1},
+	{"decls", &sh332, rt.RuleMemo | rt.RuleRec, 9, 10, 1},
+	{"decl_item", &sh27, rt.RuleRec, 0, 0, 1},
+	{"item_normal", &sh5, rt.RuleRec, 0, 11, 1},
+	{"item_tail", &sh5, rt.RuleRec, 0, 12, 1},
+	{"embed_tail", &sh5, rt.RuleRec, 0, 13, 1},
 	{"tail_end", &sh27, 0, 0, 0, 0},
 	{"tail_mark_end", &sh27, 0, 0, 0, 0},
 	{"after_ec", &sh5, rt.RuleMemo, 10, 0, 0},
 	{"after_ne", &sh5, rt.RuleMemo, 11, 0, 0},
 	{"tail_mark", &sh27, 0, 0, 0, 0},
-	{"decl", &sh27, 0, 0, 0, 1},
-	{"comp_decl", &sh23, rt.RuleMemo, 12, 14, 1},
+	{"decl", &sh27, rt.RuleRec, 0, 0, 1},
+	{"comp_decl", &sh23, rt.RuleMemo | rt.RuleRec, 12, 14, 1},
 	{"ellipsis_decl", &sh23, 0, 0, 0, 0},
-	{"let_decl", &sh331, rt.RuleMemo, 13, 15, 1},
-	{"embed_decl", &sh27, 0, 0, 0, 1},
-	{"embed_plain", &sh23, 0, 0, 12, 1},
+	{"let_decl", &sh331, rt.RuleMemo | rt.RuleRec, 13, 15, 1},
+	{"embed_decl", &sh27, rt.RuleRec, 0, 0, 1},
+	{"embed_plain", &sh23, rt.RuleRec, 0, 12, 1},
 	{"embed_bare", &sh332, 0, 0, 16, 0},
 	{"kw4", &sh23, 0, 0, 0, 0},
 	{"func_bare", &sh53, 0, 0, 0, 0},
 	{"bare_for", &sh27, 0, 0, 0, 0},
 	{"bare_if", &sh27, 0, 0, 0, 0},
 	{"bare_let", &sh27, 0, 0, 0, 0},
-	{"field", &sh27, 0, 0, 0, 1},
-	{"field_plain", &sh221, 0, 0, 17, 1},
-	{"field_alias", &sh221, 0, 0, 17, 1},
-	{"nfield", &sh27, 0, 0, 0, 1},
-	{"nfield_plain", &sh221, 0, 0, 17, 1},
-	{"nfield_alias", &sh221, 0, 0, 17, 1},
-	{"field_value", &sh27, rt.RuleMemo, 14, 0, 1},
-	{"fv_label", &sh23, 0, 0, 18, 1},
-	{"fv_choice", &sh27, 0, 0, 0, 1},
-	{"let_skip", &sh23, 0, 0, 12, 1},
+	{"field", &sh27, rt.RuleRec, 0, 0, 1},
+	{"field_plain", &sh221, rt.RuleRec, 0, 17, 1},
+	{"field_alias", &sh221, rt.RuleRec, 0, 17, 1},
+	{"nfield", &sh27, rt.RuleRec, 0, 0, 1},
+	{"nfield_plain", &sh221, rt.RuleRec, 0, 17, 1},
+	{"nfield_alias", &sh221, rt.RuleRec, 0, 17, 1},
+	{"field_value", &sh27, rt.RuleMemo | rt.RuleRec, 14, 0, 1},
+	{"fv_label", &sh23, rt.RuleRec, 0, 18, 1},
+	{"fv_choice", &sh27, rt.RuleRec, 0, 0, 1},
+	{"let_skip", &sh23, rt.RuleRec, 0, 12, 1},
 	{"let_value", &sh27, 0, 0, 0, 0},
-	{"expr_nolet", &sh23, 0, 0, 12, 1},
-	{"nested", &sh332, 0, 0, 2, 1},
-	{"alias_value", &sh223, 0, 0, 15, 1},
+	{"expr_nolet", &sh23, rt.RuleRec, 0, 12, 1},
+	{"nested", &sh332, rt.RuleRec, 0, 2, 1},
+	{"alias_value", &sh223, rt.RuleRec, 0, 15, 1},
 	{"attrs", &sh332, rt.RuleMemo, 15, 19, 1},
 	{"postfix_alias_at", &sh5, rt.RuleMemo, 16, 20, 0},
 	{"postfix_alias", &sh27, 0, 0, 0, 0},
 	{"alias_dual", &sh333, 0, 0, 21, 0},
 	{"alias_paren", &sh331, 0, 0, 2, 0},
 	{"alias_simple", &sh53, 0, 0, 2, 0},
-	{"label_plain", &sh27, rt.RuleMemo, 17, 0, 1},
+	{"label_plain", &sh27, rt.RuleMemo | rt.RuleRec, 17, 0, 1},
 	{"ident_label", &sh27, rt.RuleMemo, 18, 0, 0},
 	{"kw_label", &sh27, 0, 0, 0, 0},
 	{"for_label", &sh27, 0, 0, 0, 0},
 	{"if_label", &sh27, 0, 0, 0, 0},
 	{"let_label", &sh27, rt.RuleMemo, 19, 0, 0},
-	{"alias_label", &sh223, 0, 0, 22, 1},
-	{"nlabel_plain", &sh27, 0, 0, 0, 1},
+	{"alias_label", &sh223, rt.RuleRec, 0, 22, 1},
+	{"nlabel_plain", &sh27, rt.RuleRec, 0, 0, 1},
 	{"nident_label", &sh27, rt.RuleMemo, 20, 0, 0},
 	{"nkw_label", &sh27, 0, 0, 0, 0},
-	{"alias_nlabel", &sh223, 0, 0, 22, 1},
-	{"alias_rhs", &sh27, rt.RuleMemo, 21, 0, 1},
+	{"alias_nlabel", &sh223, rt.RuleRec, 0, 22, 1},
+	{"alias_rhs", &sh27, rt.RuleMemo | rt.RuleRec, 21, 0, 1},
 	{"ident_any", &sh27, rt.RuleMemo, 22, 0, 0},
-	{"comprehension", &sh27, 0, 0, 0, 1},
-	{"comp_single", &sh35, 0, 0, 23, 1},
-	{"comp_multi", &sh223, 0, 0, 24, 1},
-	{"fb_else", &sh5, 0, 0, 2, 1},
-	{"fb_other", &sh5, 0, 0, 2, 1},
-	{"else_clause", &sh53, 0, 0, 25, 1},
-	{"otherwise_clause", &sh53, 0, 0, 25, 1},
+	{"comprehension", &sh27, rt.RuleRec, 0, 0, 1},
+	{"comp_single", &sh35, rt.RuleRec, 0, 23, 1},
+	{"comp_multi", &sh223, rt.RuleRec, 0, 24, 1},
+	{"fb_else", &sh5, rt.RuleRec, 0, 2, 1},
+	{"fb_other", &sh5, rt.RuleRec, 0, 2, 1},
+	{"else_clause", &sh53, rt.RuleRec, 0, 25, 1},
+	{"otherwise_clause", &sh53, rt.RuleRec, 0, 25, 1},
 	{"clause_gap", &sh27, rt.RuleMemo, 23, 0, 0},
 	{"gate_for_if", &sh27, rt.RuleMemo, 24, 0, 0},
-	{"start_clause", &sh23, 0, 0, 14, 1},
-	{"clause", &sh27, 0, 0, 0, 1},
-	{"for_clause", &sh27, rt.RuleMemo, 25, 0, 1},
-	{"for_kv", &sh333, 0, 0, 26, 1},
-	{"for_v", &sh331, 0, 0, 27, 1},
-	{"if_clause", &sh53, rt.RuleMemo, 26, 14, 1},
-	{"try_clause", &sh27, rt.RuleMemo, 27, 0, 1},
-	{"try_assign", &sh331, 0, 0, 15, 1},
+	{"start_clause", &sh23, rt.RuleRec, 0, 14, 1},
+	{"clause", &sh27, rt.RuleRec, 0, 0, 1},
+	{"for_clause", &sh27, rt.RuleMemo | rt.RuleRec, 25, 0, 1},
+	{"for_kv", &sh333, rt.RuleRec, 0, 26, 1},
+	{"for_v", &sh331, rt.RuleRec, 0, 27, 1},
+	{"if_clause", &sh53, rt.RuleMemo | rt.RuleRec, 26, 14, 1},
+	{"try_clause", &sh27, rt.RuleMemo | rt.RuleRec, 27, 0, 1},
+	{"try_assign", &sh331, rt.RuleRec, 0, 15, 1},
 	{"try_plain", &sh23, 0, 0, 0, 0},
-	{"struct_lit", &sh35, rt.RuleMemo, 28, 10, 1},
-	{"list_lit", &sh223, rt.RuleMemo, 29, 28, 1},
+	{"struct_lit", &sh35, rt.RuleMemo | rt.RuleRec, 28, 10, 1},
+	{"list_lit", &sh223, rt.RuleMemo | rt.RuleRec, 29, 28, 1},
 	{"esep", &sh27, rt.RuleMemo, 30, 0, 0},
-	{"list_elem", &sh27, 0, 0, 0, 1},
-	{"elem_expr", &sh23, 0, 0, 12, 1},
+	{"list_elem", &sh27, rt.RuleRec, 0, 0, 1},
+	{"elem_expr", &sh23, rt.RuleRec, 0, 12, 1},
 	{"gate_kw3", &sh23, 0, 0, 0, 0},
 	{"bare_for_if", &sh27, rt.RuleMemo, 31, 0, 0},
-	{"alias_elem", &sh223, 0, 0, 15, 1},
-	{"list_dots", &sh5, 0, 0, 9, 1},
-	{"dots_type", &sh5, 0, 0, 29, 1},
-	{"paren_expr", &sh223, rt.RuleMemo, 32, 12, 1},
-	{"expr", &sh27, rt.RuleMemo, 33, 0, 1},
-	{"atom_expr", &sh23, 0, 0, 30, 1},
-	{"operand_any", &sh27, rt.RuleMemo, 34, 0, 1},
-	{"operand_word", &sh23, 0, 0, 31, 1},
-	{"word_any", &sh27, 0, 0, 0, 1},
+	{"alias_elem", &sh223, rt.RuleRec, 0, 15, 1},
+	{"list_dots", &sh5, rt.RuleRec, 0, 9, 1},
+	{"dots_type", &sh5, rt.RuleRec, 0, 29, 1},
+	{"paren_expr", &sh223, rt.RuleMemo | rt.RuleRec, 32, 12, 1},
+	{"expr", &sh27, rt.RuleMemo | rt.RuleRec, 33, 0, 1},
+	{"atom_expr", &sh23, rt.RuleRec, 0, 30, 1},
+	{"operand_any", &sh27, rt.RuleMemo | rt.RuleRec, 34, 0, 1},
+	{"operand_word", &sh23, rt.RuleRec, 0, 31, 1},
+	{"word_any", &sh27, rt.RuleRec, 0, 0, 1},
 	{"operand_digit", &sh23, 0, 0, 4, 0},
-	{"operand_other", &sh27, 0, 0, 0, 1},
+	{"operand_other", &sh27, rt.RuleRec, 0, 0, 1},
 	{"ident_q", &sh53, 0, 0, 32, 0},
-	{"full_expr", nil, 0, 0, 0, 1},
+	{"full_expr", nil, rt.RuleRec, 0, 0, 1},
 	{"asep", &sh27, 0, 0, 0, 0},
 	{"selector", &sh27, rt.RuleMemo, 35, 0, 0},
 	{"bool_ident_sel", &sh27, 0, 0, 0, 0},
 	{"sel_string", &sh332, 0, 0, 9, 0},
-	{"interp_expr", &sh53, rt.RuleMemo, 36, 12, 1},
-	{"attribute", &sh27, rt.RuleMemo, 37, 0, 1},
+	{"interp_expr", &sh53, rt.RuleMemo | rt.RuleRec, 36, 12, 1},
+	{"attribute", &sh27, rt.RuleMemo | rt.RuleRec, 37, 0, 1},
 	{"attribute_d", &sh27, rt.RuleMemo, 38, 0, 1},
-	{"attr_body", &sh27, rt.RuleMemo, 39, 0, 1},
-	{"attr_group", &sh27, 0, 0, 0, 1},
-	{"attr_tok", &sh27, 0, 0, 0, 1},
+	{"attr_body", &sh27, rt.RuleMemo | rt.RuleRec, 39, 0, 1},
+	{"attr_group", &sh27, rt.RuleRec, 0, 0, 1},
+	{"attr_tok", &sh27, rt.RuleRec, 0, 0, 1},
 	{"attr_num", &sh23, 0, 0, 0, 0},
 	{"num_exp", &sh27, 0, 0, 0, 0},
 	{"num_mult", &sh27, 0, 0, 0, 0},
@@ -849,8 +849,8 @@ var rulesSpec = [...]ruleSpec{
 	{"mult", &sh5, 0, 0, 0, 0},
 	{"float_lit", &sh27, 0, 0, 0, 0},
 	{"int_lit", &sh27, 0, 0, 0, 0},
-	{"strlit", &sh23, rt.RuleMemo, 51, 6, 1},
-	{"str_any", &sh27, 0, 0, 0, 1},
+	{"strlit", &sh23, rt.RuleMemo | rt.RuleRec, 51, 6, 1},
+	{"str_any", &sh27, rt.RuleRec, 0, 0, 1},
 	{"hexd4", &sh35, rt.RuleMemo, 52, 0, 0},
 	{"bigu", &sh27, rt.RuleMemo, 53, 0, 0},
 	{"esc_dq", &sh27, rt.RuleMemo, 54, 0, 0},
@@ -860,22 +860,22 @@ var rulesSpec = [...]ruleSpec{
 	{"dq_open", &sh332, 0, 0, 9, 0},
 	{"dq_mid", &sh332, 0, 0, 9, 0},
 	{"dq_end", &sh332, 0, 0, 9, 0},
-	{"dq_interp", &sh5, 0, 0, 33, 1},
-	{"dq_rest", &sh27, rt.RuleMemo, 58, 0, 1},
-	{"dq_more", &sh53, 0, 0, 34, 1},
-	{"dq_last", &sh5, 0, 0, 35, 1},
+	{"dq_interp", &sh5, rt.RuleRec, 0, 33, 1},
+	{"dq_rest", &sh27, rt.RuleMemo | rt.RuleRec, 58, 0, 1},
+	{"dq_more", &sh53, rt.RuleRec, 0, 34, 1},
+	{"dq_last", &sh5, rt.RuleRec, 0, 35, 1},
 	{"sqbody", &sh27, rt.RuleMemo, 59, 0, 0},
 	{"sq_plain", &sh332, rt.RuleMemo, 60, 9, 0},
 	{"sq_open", &sh332, 0, 0, 9, 0},
 	{"sq_mid", &sh332, 0, 0, 9, 0},
 	{"sq_end", &sh332, 0, 0, 9, 0},
-	{"sq_interp", &sh5, 0, 0, 33, 1},
-	{"sq_rest", &sh27, rt.RuleMemo, 61, 0, 1},
-	{"sq_more", &sh53, 0, 0, 34, 1},
-	{"sq_last", &sh5, 0, 0, 35, 1},
-	{"gstring", &sh27, 0, 0, 0, 1},
+	{"sq_interp", &sh5, rt.RuleRec, 0, 33, 1},
+	{"sq_rest", &sh27, rt.RuleMemo | rt.RuleRec, 61, 0, 1},
+	{"sq_more", &sh53, rt.RuleRec, 0, 34, 1},
+	{"sq_last", &sh5, rt.RuleRec, 0, 35, 1},
+	{"gstring", &sh27, rt.RuleRec, 0, 0, 1},
 	{"qc", &sh27, 0, 0, 0, 1},
-	{"hq", &sh27, rt.RuleMemo, 62, 0, 1},
+	{"hq", &sh27, rt.RuleMemo | rt.RuleRec, 62, 0, 1},
 	{"g_escbody", &sh27, 0, 0, 0, 1},
 	{"gs_esc", &sh53, rt.RuleMemo, 63, 36, 1},
 	{"g_interp_open", &sh53, 0, 0, 36, 1},
@@ -889,11 +889,11 @@ var rulesSpec = [...]ruleSpec{
 	{"gsl_open", &sh332, rt.RuleMemo, 69, 9, 1},
 	{"gsl_mid", &sh332, 0, 0, 9, 1},
 	{"gsl_end", &sh332, 0, 0, 9, 1},
-	{"gsl_interp", &sh5, 0, 0, 39, 1},
-	{"gsl_interp_s", &sh5, 0, 0, 39, 1},
-	{"gsl_rest", &sh27, rt.RuleMemo, 70, 0, 1},
-	{"gsl_more", &sh53, 0, 0, 34, 1},
-	{"gsl_last", &sh5, 0, 0, 35, 1},
+	{"gsl_interp", &sh5, rt.RuleRec, 0, 39, 1},
+	{"gsl_interp_s", &sh5, rt.RuleRec, 0, 39, 1},
+	{"gsl_rest", &sh27, rt.RuleMemo | rt.RuleRec, 70, 0, 1},
+	{"gsl_more", &sh53, rt.RuleRec, 0, 34, 1},
+	{"gsl_last", &sh5, rt.RuleRec, 0, 35, 1},
 	{"ml_body", &sh27, 0, 0, 0, 1},
 	{"ml_line", &sh53, 0, 0, 40, 1},
 	{"ml_close", &sh223, 0, 0, 14, 1},
@@ -902,11 +902,11 @@ var rulesSpec = [...]ruleSpec{
 	{"gml_open", &sh332, rt.RuleMemo, 73, 9, 1},
 	{"gml_mid", &sh332, 0, 0, 9, 1},
 	{"gml_end", &sh332, 0, 0, 9, 1},
-	{"gml_interp", &sh5, 0, 0, 39, 1},
-	{"gml_interp_s", &sh5, 0, 0, 39, 1},
-	{"gml_rest", &sh27, rt.RuleMemo, 74, 0, 1},
-	{"gml_more", &sh53, 0, 0, 34, 1},
-	{"gml_last", &sh5, 0, 0, 35, 1},
+	{"gml_interp", &sh5, rt.RuleRec, 0, 39, 1},
+	{"gml_interp_s", &sh5, rt.RuleRec, 0, 39, 1},
+	{"gml_rest", &sh27, rt.RuleMemo | rt.RuleRec, 74, 0, 1},
+	{"gml_more", &sh53, rt.RuleRec, 0, 34, 1},
+	{"gml_last", &sh5, rt.RuleRec, 0, 35, 1},
 	{"gstr_plain", &sh332, rt.RuleMemo, 75, 9, 1},
 	{"uletter", &sh27, 0, 0, 0, 0},
 	{"udigit", &sh27, 0, 0, 0, 0},
@@ -940,7 +940,7 @@ var rulesSpec = [...]ruleSpec{
 	{"dqbody", &sh27, rt.RuleMemo | rt.RuleNovalue, 89, 0, 0},
 	{"icomma", &sh53, rt.RuleNovalue, 0, 0, 0},
 	{"idchars", &sh5, rt.RuleMemo | rt.RuleNovalue, 90, 0, 0},
-	{"attr_body", &sh27, rt.RuleMemo | rt.RuleNovalue, 91, 0, 1},
+	{"attr_body", &sh27, rt.RuleMemo | rt.RuleNovalue | rt.RuleRec, 91, 0, 1},
 	{"bad_num", &sh27, rt.RuleNovalue, 0, 0, 0},
 	{"based", &sh27, rt.RuleMemo | rt.RuleNovalue, 92, 0, 0},
 	{"zero_ok", &sh53, rt.RuleNovalue, 0, 0, 0},
@@ -957,7 +957,7 @@ var rulesSpec = [...]ruleSpec{
 	{"qc", &sh27, rt.RuleNovalue, 0, 0, 1},
 	{"gs_body", &sh27, rt.RuleMemo | rt.RuleNovalue, 95, 0, 1},
 	{"g_interp_open", &sh53, rt.RuleNovalue, 0, 36, 1},
-	{"hq", &sh27, rt.RuleMemo | rt.RuleNovalue, 96, 0, 1},
+	{"hq", &sh27, rt.RuleMemo | rt.RuleNovalue | rt.RuleRec, 96, 0, 1},
 	{"ml_close_tail", &sh35, rt.RuleMemo | rt.RuleNovalue, 97, 0, 1},
 	{"ml_body", &sh27, rt.RuleNovalue, 0, 0, 1},
 	{"ml_open_tail", &sh35, rt.RuleMemo | rt.RuleNovalue, 98, 37, 1},
@@ -968,8 +968,8 @@ var rulesSpec = [...]ruleSpec{
 	{"after_ne", &sh5, rt.RuleMemo | rt.RuleNovalue, 102, 0, 0},
 	{"nlws", &sh27, rt.RuleNovalue, 0, 0, 0},
 	{"esc_dq", &sh27, rt.RuleMemo | rt.RuleNovalue, 103, 0, 0},
-	{"attr_group", &sh27, rt.RuleNovalue, 0, 0, 1},
-	{"attr_tok", &sh27, rt.RuleNovalue, 0, 0, 1},
+	{"attr_group", &sh27, rt.RuleNovalue | rt.RuleRec, 0, 0, 1},
+	{"attr_tok", &sh27, rt.RuleNovalue | rt.RuleRec, 0, 0, 1},
 	{"udigit", &sh27, rt.RuleNovalue, 0, 0, 0},
 	{"hashrest", &sh27, rt.RuleMemo | rt.RuleNovalue, 104, 0, 0},
 	{"idstart", &sh27, rt.RuleNovalue, 0, 0, 0},
@@ -982,7 +982,7 @@ var rulesSpec = [...]ruleSpec{
 	{"bigu", &sh27, rt.RuleMemo | rt.RuleNovalue, 108, 0, 0},
 	{"attr_str", &sh27, rt.RuleNovalue, 0, 0, 1},
 	{"attr_num", &sh23, rt.RuleNovalue, 0, 0, 0},
-	{"attribute", &sh27, rt.RuleMemo | rt.RuleNovalue, 109, 0, 1},
+	{"attribute", &sh27, rt.RuleMemo | rt.RuleNovalue | rt.RuleRec, 109, 0, 1},
 	{"g_escbody", &sh27, rt.RuleNovalue, 0, 0, 1},
 	{"num_exp", &sh27, rt.RuleNovalue, 0, 0, 0},
 	{"num_mult", &sh27, rt.RuleNovalue, 0, 0, 0},
@@ -1207,7 +1207,6 @@ func s0(p *rt.TParser) (any, bool) {
 	var v, v2, v5, v7 any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if v5, ok = u1(p); !ok {
 		goto L4
@@ -1229,10 +1228,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -1253,7 +1250,6 @@ func i1(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	if v6, ok = u2(p); !ok {
@@ -1280,10 +1276,8 @@ L3:
 	p.Where = "main_fast"
 	v = k4
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -1307,7 +1301,6 @@ func i2(p *rt.TParser) (any, bool) {
 	var ok bool
 	var x13, x31, x56 []any
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 65279 {
 		p.Pos++
@@ -1497,10 +1490,8 @@ L75:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "file"
 	v = tmk_File(c, true, c.Concat(c.MapList(k4, func(l_337 any) any { return c.Member((l_337), "$a") }), c.MapList(k21, func(l_338 any) any { return c.Member((l_338), "$p") }), c.MapList(k47, func(l_339 any) any { return c.Member((l_339), "$a") }), c.NewList(c.ListItems("map", k64)), k78))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -1520,7 +1511,6 @@ func i3(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit7, "package", 6, false); !ok {
 		goto fail
 	}
@@ -1552,10 +1542,8 @@ L2:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "package_clause"
 	v = tmk_Package(c, true, k3)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -1565,10 +1553,9 @@ func s4(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 105)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 105)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 7)
 		goto L6
 	}
@@ -1580,7 +1567,7 @@ func s4(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-	if !(x5 && (x4 == 105)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 105)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 7)
 		goto L9
 	}
@@ -1598,10 +1585,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -1622,7 +1607,6 @@ func i5(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit10, "import", 7, false); !ok {
 		goto fail
 	}
@@ -1681,10 +1665,8 @@ L2:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "import_paren"
 	v = tmk_ImportDecl(c, true, k3, c.NewList(c.ListItems("map", k7)))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -1704,7 +1686,6 @@ func i6(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit10, "import", 7, false); !ok {
 		goto fail
 	}
@@ -1729,10 +1710,8 @@ L2:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "import_single"
 	v = tmk_ImportDecl(c, true, nil, c.List(k3))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -1755,7 +1734,6 @@ func i7(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	if v7, ok = u8(p); !ok {
 		goto L5
@@ -1774,10 +1752,8 @@ L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "import_spec"
 	v = tmk_ImportSpec(c, true, k1, k8)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -1797,7 +1773,6 @@ func i8(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u139(p); !ok {
 		goto fail
 	}
@@ -1819,10 +1794,8 @@ func i8(p *rt.TParser) (any, bool) {
 	v = k1
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[8], v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -1842,7 +1815,6 @@ func i9(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	x4 = p.Pos
 	if _, ok = u163(p); !ok {
@@ -1870,10 +1842,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "import_path"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -1883,7 +1853,6 @@ func s12(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1, x2 = p.Pos, len(p.KidStack)
 	for {
 		x4 = p.Pos
@@ -1910,7 +1879,6 @@ func s12(p *rt.TParser) (any, bool) {
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 }
 
@@ -1920,7 +1888,6 @@ func s13(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1, x2 = p.Pos, len(p.KidStack)
 	for {
 		x4 = p.Pos
@@ -1947,7 +1914,6 @@ func s13(p *rt.TParser) (any, bool) {
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 }
 
@@ -1965,7 +1931,6 @@ func v14(p *rt.TParser) (any, bool) {
 	var ch, x19 rune
 	var ok, x20 bool
 	start = p.Pos
-	p.Enter()
 	x1, x2 = p.Pos, len(p.KidStack)
 	for {
 		x4 = p.Pos
@@ -2003,7 +1968,7 @@ func v14(p *rt.TParser) (any, bool) {
 	L9:
 		p.Pos = x6
 		x19, _, x20 = p.NextOrdinary()
-		if !(x20 && (x19 == 47)) && p.Depth+1 <= p.MaxDepth {
+		if !(x20 && (x19 == 47)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L21
 		}
@@ -2032,7 +1997,6 @@ func v14(p *rt.TParser) (any, bool) {
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 }
 
@@ -2043,7 +2007,6 @@ func s15(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.NewVals(2)[:0]
 	x3 = p.Pos
@@ -2082,10 +2045,8 @@ func s15(p *rt.TParser) (any, bool) {
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -2105,7 +2066,6 @@ func v16(p *rt.TParser) (any, bool) {
 	var ok, x8, x37 bool
 	var x7, x36 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.NewVals(2)[:0]
 	if v3, ok = s12(p); !ok {
@@ -2246,10 +2206,8 @@ L6:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -2268,7 +2226,6 @@ func v18(p *rt.TParser) (any, bool) {
 	var ok bool
 	var x8 []any
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if v5, ok = u16(p); !ok {
 		goto L4
@@ -2310,10 +2267,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -2332,7 +2287,6 @@ func v19(p *rt.TParser) (any, bool) {
 	var x2 []any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.NewVals(2)[:0]
 	if v3, ok = s12(p); !ok {
@@ -2348,10 +2302,8 @@ func v19(p *rt.TParser) (any, bool) {
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -2370,7 +2322,6 @@ func v20(p *rt.TParser) (any, bool) {
 	var x2, x8 []any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.NewVals(3)[:0]
 	x3 = p.Pos
@@ -2414,10 +2365,8 @@ L6:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -2800,7 +2749,6 @@ func s35(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
@@ -2824,10 +2772,8 @@ L3:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ellipsis_decl"
 	v = tmk_Ellipsis(c, true, nil)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -3023,10 +2969,9 @@ func i39(p *rt.TParser) (any, bool) {
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
-	if !(x7 && (x6 == 102)) && p.Depth+1 <= p.MaxDepth {
+	if !(x7 && (x6 == 102)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 28)
 		goto L8
 	}
@@ -3038,7 +2983,7 @@ func i39(p *rt.TParser) (any, bool) {
 L9:
 	p.Pos = x3
 L8:
-	if !(x7 && (x6 == 105)) && p.Depth+1 <= p.MaxDepth {
+	if !(x7 && (x6 == 105)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 29)
 		goto L11
 	}
@@ -3050,7 +2995,7 @@ L8:
 L12:
 	p.Pos = x3
 L11:
-	if !(x7 && (x6 == 108)) && p.Depth+1 <= p.MaxDepth {
+	if !(x7 && (x6 == 108)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 27)
 		goto L14
 	}
@@ -3068,10 +3013,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "embed_bare"
 	v = tmk_EmbedDecl(c, true, k1, nil)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -3081,7 +3024,6 @@ func s42(p *rt.TParser) (any, bool) {
 	var ok, x10 bool
 	var x9 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
 		p.Pos += 3
@@ -3169,10 +3111,8 @@ L6:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[42], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -3183,7 +3123,6 @@ func s43(p *rt.TParser) (any, bool) {
 	var ok, x10 bool
 	var x9 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 		p.Pos += 2
@@ -3271,10 +3210,8 @@ L6:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[43], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -3285,7 +3222,6 @@ func s44(p *rt.TParser) (any, bool) {
 	var ok, x12 bool
 	var x11 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
 		p.Pos += 3
@@ -3400,10 +3336,8 @@ L8:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[44], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -4117,7 +4051,6 @@ func s55(p *rt.TParser) (any, bool) {
 	var v, v9, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	p.Silent++
@@ -4171,10 +4104,8 @@ L8:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[55], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -4334,7 +4265,6 @@ func i59(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x2, x3, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x5 = p.Pos
@@ -4361,7 +4291,6 @@ func i59(p *rt.TParser) (any, bool) {
 	p.Where = "attrs"
 	v = c.NewList(c.ListItems("map", k1))
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 }
 
@@ -4384,7 +4313,6 @@ func i60(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = s220(p); !ok {
@@ -4414,10 +4342,8 @@ L3:
 	p.Where = "postfix_alias_at"
 	v = k4
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -4427,10 +4353,9 @@ func s61(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 126)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 126)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 33)
 		goto L6
 	}
@@ -4442,7 +4367,7 @@ func s61(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-	if !(x5 && (x4 == 126)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 126)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 33)
 		goto L9
 	}
@@ -4454,7 +4379,7 @@ L6:
 L10:
 	p.Pos = x1
 L9:
-	if !(x5 && (x4 == 126)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 126)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 33)
 		goto L12
 	}
@@ -4472,10 +4397,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -4496,7 +4419,6 @@ func i62(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 126 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit96, "~", 33, false); !ok {
@@ -4535,10 +4457,8 @@ func i62(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "alias_dual"
 	v = tmk_PostfixAlias(c, true, k1, k4)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -4558,7 +4478,6 @@ func i63(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 126 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit96, "~", 33, false); !ok {
@@ -4590,10 +4509,8 @@ func i63(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "alias_paren"
 	v = tmk_PostfixAlias(c, true, nil, k1)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -4613,7 +4530,6 @@ func i64(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 126 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit96, "~", 33, false); !ok {
@@ -4629,10 +4545,8 @@ func i64(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "alias_simple"
 	v = tmk_PostfixAlias(c, true, nil, k1)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -4674,7 +4588,7 @@ L6:
 L8:
 	p.Pos = x1
 	x10, _, x11 = p.NextOrdinary()
-	if !(x11 && (x10 == 110)) && p.Depth+1 <= p.MaxDepth {
+	if !(x11 && (x10 == 110)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 34)
 		goto L12
 	}
@@ -4737,7 +4651,6 @@ func v66(p *rt.TParser) (any, bool) {
 	var v, v6, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	if _, ok = u228(p); !ok {
@@ -4761,10 +4674,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[66], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -4848,7 +4759,7 @@ L6:
 L8:
 	p.Pos = x1
 	x10, _, x11 = p.NextOrdinary()
-	if !(x11 && (x10 == 110)) && p.Depth+1 <= p.MaxDepth {
+	if !(x11 && (x10 == 110)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 34)
 		goto L12
 	}
@@ -4911,7 +4822,6 @@ func v73(p *rt.TParser) (any, bool) {
 	var v, v6, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	if _, ok = u228(p); !ok {
@@ -4935,10 +4845,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[73], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -5037,7 +4945,7 @@ L8:
 L10:
 	p.Pos = x1
 	x12, _, x13 = p.NextOrdinary()
-	if !(x13 && (x12 == 110)) && p.Depth+1 <= p.MaxDepth {
+	if !(x13 && (x12 == 110)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 34)
 		goto L14
 	}
@@ -5100,7 +5008,6 @@ func v77(p *rt.TParser) (any, bool) {
 	var v, v6, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	if _, ok = u228(p); !ok {
@@ -5124,10 +5031,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[77], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -5954,7 +5859,7 @@ func v93(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-	if !(x5 && (x4 == 116)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 30)
 		goto L9
 	}
@@ -6049,7 +5954,6 @@ func s95(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 121 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit73, "try", 30, false); !ok {
@@ -6069,10 +5973,8 @@ L2:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "try_plain"
 	v = tmk_TryClause(c, true, nil, nil)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -6322,7 +6224,6 @@ func v102(p *rt.TParser) (any, bool) {
 	var x4, x15, ch, x45 rune
 	var x5, ok, x16, x46 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -6663,10 +6564,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[102], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -7090,7 +6989,7 @@ L8:
 L10:
 	p.Pos = x1
 	x12, _, x13 = p.NextOrdinary()
-	if !(x13 && (x12 == 110)) && p.Depth+1 <= p.MaxDepth {
+	if !(x13 && (x12 == 110)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 34)
 		goto L14
 	}
@@ -7147,7 +7046,6 @@ func i112(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
@@ -7172,10 +7070,8 @@ L3:
 	p.Where = "operand_digit"
 	v = k4
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -7261,7 +7157,6 @@ func i114(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u139(p); !ok {
 		goto fail
 	}
@@ -7291,10 +7186,8 @@ L9:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ident_q"
 	v = tmk_PostfixExpr(c, true, k1, k4)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -8261,7 +8154,6 @@ func s116(p *rt.TParser) (any, bool) {
 	var ok bool
 	var x8 []any
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if v5, ok = u16(p); !ok {
 		goto L4
@@ -8303,10 +8195,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -8324,7 +8214,6 @@ func v117(p *rt.TParser) (any, bool) {
 	var v, v2, v5, v7, v9, v11 any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if v5, ok = u139(p); !ok {
 		goto L4
@@ -8360,10 +8249,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -8374,7 +8261,6 @@ func s118(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -8435,10 +8321,8 @@ L13:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[118], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -8459,7 +8343,6 @@ func i119(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	x4 = p.Pos
 	p.Silent++
@@ -8492,10 +8375,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "sel_string"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -8649,7 +8530,6 @@ func v122(p *rt.TParser) (any, bool) {
 	var v, v5, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	p.Silent++
@@ -8697,10 +8577,8 @@ L4:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[122], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -8718,7 +8596,6 @@ func v139(p *rt.TParser) (any, bool) {
 	var v, v7, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	p.Silent++
@@ -8754,10 +8631,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[139], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -8776,7 +8651,6 @@ func v141(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -8913,10 +8787,8 @@ L25:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[141], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -8935,7 +8807,6 @@ func v142(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -8983,10 +8854,8 @@ L11:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[142], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9004,7 +8873,6 @@ func v143(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108 {
 		p.Pos += 4
@@ -9029,10 +8897,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[143], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9042,7 +8908,6 @@ func s144(p *rt.TParser) (any, bool) {
 	var v, v5, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	p.Silent++
@@ -9071,10 +8936,8 @@ L4:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[144], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9099,7 +8962,6 @@ func i145(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
@@ -9124,10 +8986,8 @@ L3:
 	p.Where = "number"
 	v = k4
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -9137,10 +8997,9 @@ func s146(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 54)
 		goto L6
 	}
@@ -9172,10 +9031,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9186,7 +9043,6 @@ func s147(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 		p.ExpectOrdinary(p.Pos, 73)
@@ -9199,10 +9055,8 @@ func s147(p *rt.TParser) (any, bool) {
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9221,7 +9075,6 @@ func v148(p *rt.TParser) (any, bool) {
 	var ok, x6 bool
 	var x5, ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
@@ -9394,10 +9247,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[148], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9408,12 +9259,11 @@ func s154(p *rt.TParser) (any, bool) {
 	var x7, x18, x24, x33, x39 rune
 	var x8, ok, x19, x25, x34, x40 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x5 = p.Pos
 	x7, _, x8 = p.NextOrdinary()
-	if !(x8 && (x7 >= 49 && x7 <= 57)) && p.Depth+1 <= p.MaxDepth {
+	if !(x8 && (x7 >= 49 && x7 <= 57)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 58)
 		goto L9
 	}
@@ -9449,7 +9299,7 @@ L11:
 L6:
 	x16 = p.Pos
 	x18, _, x19 = p.NextOrdinary()
-	if !(x19 && (x18 == 46)) && p.Depth+1 <= p.MaxDepth {
+	if !(x19 && (x18 == 46)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 24)
 		goto L20
 	}
@@ -9458,7 +9308,7 @@ L6:
 	}
 	x22 = p.Pos
 	x24, _, x25 = p.NextOrdinary()
-	if !(x25 && (x24 == 101 || x24 == 69)) && p.Depth+1 <= p.MaxDepth {
+	if !(x25 && (x24 == 101 || x24 == 69)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 61)
 		goto L26
 	}
@@ -9489,7 +9339,7 @@ L23:
 L21:
 	p.Pos = x16
 L20:
-	if !(x19 && (x18 == 101 || x18 == 69)) && p.Depth+1 <= p.MaxDepth {
+	if !(x19 && (x18 == 101 || x18 == 69)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 61)
 		goto L31
 	}
@@ -9520,7 +9370,7 @@ L4:
 	}
 	x37 = p.Pos
 	x39, _, x40 = p.NextOrdinary()
-	if !(x40 && (x39 == 101 || x39 == 69)) && p.Depth+1 <= p.MaxDepth {
+	if !(x40 && (x39 == 101 || x39 == 69)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 61)
 		goto L41
 	}
@@ -9560,10 +9410,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[154], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9574,12 +9422,11 @@ func s155(p *rt.TParser) (any, bool) {
 	var x7, x19, x28 rune
 	var x8, ok, x20, x29 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x5 = p.Pos
 	x7, _, x8 = p.NextOrdinary()
-	if !(x8 && (x7 >= 49 && x7 <= 57)) && p.Depth+1 <= p.MaxDepth {
+	if !(x8 && (x7 >= 49 && x7 <= 57)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 58)
 		goto L9
 	}
@@ -9624,7 +9471,7 @@ L4:
 	p.Pos = x2
 	x17 = p.Pos
 	x19, _, x20 = p.NextOrdinary()
-	if !(x20 && (x19 >= 49 && x19 <= 57)) && p.Depth+1 <= p.MaxDepth {
+	if !(x20 && (x19 >= 49 && x19 <= 57)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 58)
 		goto L21
 	}
@@ -9690,10 +9537,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[155], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9820,7 +9665,6 @@ func v158(p *rt.TParser) (any, bool) {
 	var x2 []any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.NewVals(4)[:0]
 	if v3, ok = s147(p); !ok {
@@ -9844,10 +9688,8 @@ func v158(p *rt.TParser) (any, bool) {
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9867,7 +9709,6 @@ func v159(p *rt.TParser) (any, bool) {
 	var x5, ok bool
 	var x9, x22 []any
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
@@ -9954,10 +9795,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9977,7 +9816,6 @@ func v160(p *rt.TParser) (any, bool) {
 	var x6, ok bool
 	var x14, x23 []any
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x5, x4, x6 = p.NextOrdinary()
 	if !(x6 && (x5 == 97 || x5 == 98 || x5 == 102 || x5 == 110 || x5 == 114 || x5 == 116 || x5 == 118 || x5 == 92 || x5 == 47 || x5 == 34)) && p.Depth <= p.MaxDepth {
@@ -10046,10 +9884,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -10069,7 +9905,6 @@ func v161(p *rt.TParser) (any, bool) {
 	var x6, ok bool
 	var x14, x23, x32, x42 []any
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x5, x4, x6 = p.NextOrdinary()
 	if !(x6 && (x5 == 97 || x5 == 98 || x5 == 102 || x5 == 110 || x5 == 114 || x5 == 116 || x5 == 118 || x5 == 92 || x5 == 47 || x5 == 39)) && p.Depth <= p.MaxDepth {
@@ -10202,10 +10037,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -10229,7 +10062,6 @@ func i163(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	x4 = p.Pos
 	p.Silent++
@@ -10262,10 +10094,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "dq_plain"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -10285,7 +10115,6 @@ func i164(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	x4 = p.Pos
 	p.Silent++
@@ -10318,10 +10147,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "dq_open"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -10341,7 +10168,6 @@ func i165(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
@@ -10361,10 +10187,8 @@ func i165(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "dq_mid"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -10384,7 +10208,6 @@ func i166(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
@@ -10404,10 +10227,8 @@ func i166(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "dq_end"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -10584,7 +10405,6 @@ func i172(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	x4 = p.Pos
 	p.Silent++
@@ -10617,10 +10437,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "sq_plain"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -10640,7 +10458,6 @@ func i173(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	x4 = p.Pos
 	p.Silent++
@@ -10673,10 +10490,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "sq_open"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -10696,7 +10511,6 @@ func i174(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
@@ -10716,10 +10530,8 @@ func i174(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "sq_mid"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -10739,7 +10551,6 @@ func i175(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
@@ -10759,10 +10570,8 @@ func i175(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "sq_end"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -10996,7 +10805,6 @@ func s181(p *rt.TParser) (any, bool) {
 	var x6, x13 []any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x5 = p.Pos
 	x6 = p.NewVals(1)[:0]
@@ -11042,10 +10850,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -11127,7 +10933,6 @@ func s183(p *rt.TParser) (any, bool) {
 	var x6, x12 []any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x5 = p.Pos
 	x6 = p.NewVals(1)[:0]
@@ -11165,10 +10970,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -11192,7 +10995,6 @@ func i184(p *rt.TParser) (any, bool) {
 	var x2, x19 []any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.NewVals(3)[:0]
 	x3 = p.Pos
@@ -11255,10 +11057,8 @@ L14:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -11268,7 +11068,6 @@ func s186(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 10)) && p.Depth <= p.MaxDepth {
@@ -11309,10 +11108,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -11336,7 +11133,6 @@ func i187(p *rt.TParser) (any, bool) {
 	var x2 []any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.NewVals(4)[:0]
 	if v3, ok = s181(p); !ok {
@@ -11381,10 +11177,8 @@ func i187(p *rt.TParser) (any, bool) {
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -11411,7 +11205,6 @@ func i189(p *rt.TParser) (any, bool) {
 	var x16 rune
 	start = p.Pos
 	prevEnv = p.Env
-	p.Enter()
 	x2 = p.Pos
 	x3 = p.Pos
 	x4 = p.NewVals(5)[:0]
@@ -11513,11 +11306,9 @@ L15:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "gtriple"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	p.Env = prevEnv
 	return v, true
 fail:
-	p.Depth--
 	p.Env = prevEnv
 	return nil, false
 }
@@ -11536,7 +11327,6 @@ func v190(p *rt.TParser) (any, bool) {
 	var ok, x22 bool
 	var x21 rune
 	start = p.Pos
-	p.Enter()
 	x1, x2 = p.Pos, len(p.KidStack)
 	for {
 		x4 = p.Pos
@@ -11578,7 +11368,7 @@ func v190(p *rt.TParser) (any, bool) {
 	L19:
 		p.Pos = x6
 		x21, _, x22 = p.NextOrdinary()
-		if !(x22 && (x21 == 92)) && p.Depth+1 <= p.MaxDepth {
+		if !(x22 && (x21 == 92)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 90)
 			goto L23
 		}
@@ -11607,7 +11397,6 @@ func v190(p *rt.TParser) (any, bool) {
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 }
 
@@ -11628,7 +11417,6 @@ func i191(p *rt.TParser) (any, bool) {
 	var x13, x48 rune
 	var x14, ok, x49 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3 = k2
 	x7 = p.Pos
@@ -11822,10 +11610,8 @@ L5:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -11852,7 +11638,6 @@ func i192(p *rt.TParser) (any, bool) {
 	var x16 rune
 	start = p.Pos
 	prevEnv = p.Env
-	p.Enter()
 	x2 = p.Pos
 	x3 = p.Pos
 	x4 = p.NewVals(5)[:0]
@@ -11963,11 +11748,9 @@ L35:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "gsl_plain"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	p.Env = prevEnv
 	return v, true
 fail:
-	p.Depth--
 	p.Env = prevEnv
 	return nil, false
 }
@@ -11992,7 +11775,6 @@ func i193(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	for {
 		x5 = p.Pos
@@ -12040,10 +11822,8 @@ L8:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "gsl_open"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -12063,7 +11843,6 @@ func i194(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
@@ -12081,10 +11860,8 @@ func i194(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "gsl_mid"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -12104,7 +11881,6 @@ func i195(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
@@ -12125,10 +11901,8 @@ func i195(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "gsl_end"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -12418,7 +12192,6 @@ func i202(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.NewVals(3)[:0]
 	x5 = p.Pos
@@ -12465,10 +12238,8 @@ L8:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -12489,7 +12260,6 @@ func i203(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	for {
 		ch, size, ok = p.NextOrdinary()
@@ -12517,10 +12287,8 @@ func i203(p *rt.TParser) (any, bool) {
 	p.Where = "ml_close"
 	v = k1
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -12547,7 +12315,6 @@ func i204(p *rt.TParser) (any, bool) {
 	var x16 rune
 	start = p.Pos
 	prevEnv = p.Env
-	p.Enter()
 	x2 = p.Pos
 	x3 = p.Pos
 	x4 = p.NewVals(5)[:0]
@@ -12673,11 +12440,9 @@ L15:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "gml_plain"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	p.Env = prevEnv
 	return v, true
 fail:
-	p.Depth--
 	p.Env = prevEnv
 	return nil, false
 }
@@ -12702,7 +12467,6 @@ func i206(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	for {
 		x5 = p.Pos
@@ -12758,10 +12522,8 @@ L8:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "gml_open"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -12781,7 +12543,6 @@ func i207(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
@@ -12799,10 +12560,8 @@ func i207(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "gml_mid"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -12823,7 +12582,6 @@ func i208(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
@@ -12854,10 +12612,8 @@ func i208(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "gml_end"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -13149,7 +12905,6 @@ func i214(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	x4 = p.Pos
 	if _, ok = u189(p); !ok {
@@ -13177,10 +12932,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "gstr_plain"
 	v = tmk_String(c, true, c.Text(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -13197,7 +12950,6 @@ func v217(p *rt.TParser) (any, bool) {
 	var x2, x4, size, x7 int
 	var ch, x8 rune
 	var ok, x9 bool
-	p.Enter()
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -13218,7 +12970,7 @@ func v217(p *rt.TParser) (any, bool) {
 	L6:
 		p.Pos = x4
 		x8, _, x9 = p.NextOrdinary()
-		if !(x9 && (x8 == 47)) && p.Depth+1 <= p.MaxDepth {
+		if !(x9 && (x8 == 47)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L10
 		}
@@ -13240,7 +12992,6 @@ func v217(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -13258,7 +13009,6 @@ func v218(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 >= 48 && x4 <= 57 || x4 == 95 || x4 == 36)) && p.Depth <= p.MaxDepth {
@@ -13277,10 +13027,8 @@ L8:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13298,7 +13046,6 @@ func v219(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u232(p); !ok {
 		goto L3
@@ -13330,10 +13077,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13343,7 +13088,6 @@ func s220(p *rt.TParser) (any, bool) {
 	var ch rune
 	var size int
 	var ok bool
-	p.Enter()
 	for {
 		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 32 || ch == 9 || ch == 13) {
@@ -13353,7 +13097,6 @@ func s220(p *rt.TParser) (any, bool) {
 		p.Pos += size
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -13363,7 +13106,6 @@ func s221(p *rt.TParser) (any, bool) {
 	var ok, x11 bool
 	var x10 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u232(p); !ok {
 		goto L3
@@ -13420,10 +13162,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13433,7 +13173,6 @@ func s222(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = s220(p); !ok {
 		goto L3
@@ -13463,10 +13202,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13476,7 +13213,6 @@ func s223(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = s220(p); !ok {
 		goto L3
@@ -13515,10 +13251,8 @@ L5:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13528,7 +13262,6 @@ func s224(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = s220(p); !ok {
 		goto L3
@@ -13561,10 +13294,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13575,7 +13306,6 @@ func s225(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit25, "=", 11, false); !ok {
@@ -13596,10 +13326,8 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13610,7 +13338,6 @@ func s226(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 102)) && p.Depth <= p.MaxDepth {
@@ -13679,10 +13406,8 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13693,7 +13418,6 @@ func s227(p *rt.TParser) (any, bool) {
 	var ok, x6 bool
 	var x5 rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 110 && p.In[p.Pos+3] == 99 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit50, "func", 20, false); !ok {
@@ -13777,10 +13501,8 @@ L14:
 	goto fail
 L4:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13798,7 +13520,6 @@ func v228(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	x3 = p.Pos
@@ -13827,10 +13548,8 @@ L2:
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13848,7 +13567,6 @@ func v229(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = s220(p); !ok {
 		goto fail
 	}
@@ -13856,10 +13574,8 @@ func v229(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13877,7 +13593,6 @@ func v230(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = u217(p); !ok {
 		goto fail
 	}
@@ -13890,10 +13605,8 @@ func v230(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13911,7 +13624,6 @@ func v231(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 10 {
 		p.Pos++
@@ -13934,10 +13646,8 @@ L3:
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13956,7 +13666,6 @@ func v232(p *rt.TParser) (any, bool) {
 	var ok, x4, x13 bool
 	var x3, x12 rune
 	start = p.Pos
-	p.Enter()
 	if _, ok = s220(p); !ok {
 		goto fail
 	}
@@ -14053,10 +13762,8 @@ L9:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -14067,7 +13774,6 @@ func s233(p *rt.TParser) (any, bool) {
 	var x6, x20 rune
 	var x7, ok, x21 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
@@ -14149,7 +13855,7 @@ L19:
 L3:
 	p.Pos = x1
 	x20, _, x21 = p.NextOrdinary()
-	if !(x21 && (x20 == 102)) && p.Depth+1 <= p.MaxDepth {
+	if !(x21 && (x20 == 102)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 28)
 		goto L22
 	}
@@ -14160,7 +13866,7 @@ L3:
 L23:
 	p.Pos = x1
 L22:
-	if !(x21 && (x20 == 105)) && p.Depth+1 <= p.MaxDepth {
+	if !(x21 && (x20 == 105)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 29)
 		goto L24
 	}
@@ -14171,7 +13877,7 @@ L22:
 L25:
 	p.Pos = x1
 L24:
-	if !(x21 && (x20 == 108)) && p.Depth+1 <= p.MaxDepth {
+	if !(x21 && (x20 == 108)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 27)
 		goto L26
 	}
@@ -14185,10 +13891,8 @@ L26:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -14199,7 +13903,6 @@ func s234(p *rt.TParser) (any, bool) {
 	var ok, x9 bool
 	var x8, ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit71, "for", 28, false); !ok {
@@ -14360,10 +14063,8 @@ L4:
 	goto fail
 L5:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -14374,7 +14075,6 @@ func s235(p *rt.TParser) (any, bool) {
 	var ok, x9 bool
 	var x8, ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit72, "if", 29, false); !ok {
@@ -14529,10 +14229,8 @@ L4:
 	goto fail
 L5:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -14550,7 +14248,6 @@ func v236(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "let", 27, false); !ok {
@@ -14582,10 +14279,8 @@ L4:
 	p.Silent--
 	p.Pos = x3
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -14596,7 +14291,6 @@ func s237(p *rt.TParser) (any, bool) {
 	var x6, x26 rune
 	var x7, ok, x27 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
@@ -14717,7 +14411,7 @@ L25:
 L3:
 	p.Pos = x1
 	x26, _, x27 = p.NextOrdinary()
-	if !(x27 && (x26 == 108)) && p.Depth+1 <= p.MaxDepth {
+	if !(x27 && (x26 == 108)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 27)
 		goto L28
 	}
@@ -14731,10 +14425,8 @@ L28:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -14753,7 +14445,6 @@ func v238(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 105)) && p.Depth <= p.MaxDepth {
@@ -14883,10 +14574,8 @@ L24:
 	p.Silent--
 	p.Pos = x23
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -14905,7 +14594,6 @@ func v239(p *rt.TParser) (any, bool) {
 	var x3, x14, ch, x44 rune
 	var x4, ok, x15, x45 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 102)) && p.Depth <= p.MaxDepth {
@@ -15239,10 +14927,8 @@ L35:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -15260,7 +14946,6 @@ func v240(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u232(p); !ok {
 		goto L3
@@ -15277,10 +14962,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -15298,7 +14981,6 @@ func v241(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u232(p); !ok {
 		goto L3
@@ -15330,10 +15012,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -15344,7 +15024,6 @@ func s242(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 102)) && p.Depth <= p.MaxDepth {
@@ -15400,10 +15079,8 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -15413,7 +15090,6 @@ func s243(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = s220(p); !ok {
 		goto fail
 	}
@@ -15436,10 +15112,8 @@ L3:
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -15457,7 +15131,6 @@ func v244(p *rt.TParser) (any, bool) {
 	var x2, x4, size, x7 int
 	var ch, x8 rune
 	var ok, x9 bool
-	p.Enter()
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -15505,7 +15178,6 @@ func v244(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -15515,7 +15187,6 @@ func s245(p *rt.TParser) (any, bool) {
 	var ok, x4 bool
 	var x3 rune
 	start = p.Pos
-	p.Enter()
 	if _, ok = s220(p); !ok {
 		goto fail
 	}
@@ -15565,10 +15236,8 @@ L2:
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -15586,7 +15255,6 @@ func v246(p *rt.TParser) (any, bool) {
 	var ch rune
 	var size, x2 int
 	var ok bool
-	p.Enter()
 	for {
 		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch == 36) {
@@ -15617,7 +15285,6 @@ func v246(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -15655,7 +15322,7 @@ func v247(p *rt.TParser) (any, bool) {
 	L6:
 		p.Pos = x4
 		x8, _, x9 = p.NextOrdinary()
-		if !(x9 && (x8 == 47)) && p.Depth+1 <= p.MaxDepth {
+		if !(x9 && (x8 == 47)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L10
 		}
@@ -15699,7 +15366,6 @@ func s248(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4 = p.Pos
 	p.Silent++
@@ -15754,10 +15420,8 @@ L6:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -15776,7 +15440,6 @@ func v249(p *rt.TParser) (any, bool) {
 	var ok, x5 bool
 	var x4, ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit180, "0", 54, false); !ok {
@@ -15942,10 +15605,8 @@ L28:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -15956,7 +15617,6 @@ func s250(p *rt.TParser) (any, bool) {
 	var ok, x4, x13 bool
 	var x3, x12 rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit180, "0", 54, false); !ok {
@@ -15967,7 +15627,7 @@ func s250(p *rt.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
-	if !(x4 && (x3 == 46)) && p.Depth+1 <= p.MaxDepth {
+	if !(x4 && (x3 == 46)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 24)
 		goto L5
 	}
@@ -15977,7 +15637,7 @@ func s250(p *rt.TParser) (any, bool) {
 	x7 = p.Pos
 	x10 = p.Pos
 	x12, _, x13 = p.NextOrdinary()
-	if !(x13 && (x12 == 101 || x12 == 69)) && p.Depth+1 <= p.MaxDepth {
+	if !(x13 && (x12 == 101 || x12 == 69)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 61)
 		goto L14
 	}
@@ -15988,7 +15648,7 @@ func s250(p *rt.TParser) (any, bool) {
 L15:
 	p.Pos = x10
 L14:
-	if !(x13 && (x12 == 75 || x12 == 77 || x12 == 71 || x12 == 84 || x12 == 80)) && p.Depth+1 <= p.MaxDepth {
+	if !(x13 && (x12 == 75 || x12 == 77 || x12 == 71 || x12 == 84 || x12 == 80)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 62)
 		goto L16
 	}
@@ -16009,7 +15669,7 @@ L9:
 L6:
 	p.Pos = x1
 L5:
-	if !(x4 && (x3 == 101 || x3 == 69)) && p.Depth+1 <= p.MaxDepth {
+	if !(x4 && (x3 == 101 || x3 == 69)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 61)
 		goto L18
 	}
@@ -16023,10 +15683,8 @@ L18:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16037,7 +15695,6 @@ func s251(p *rt.TParser) (any, bool) {
 	var x4, ch rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 >= 48 && x4 <= 57)) && p.Depth <= p.MaxDepth {
@@ -16070,10 +15727,8 @@ L8:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16084,7 +15739,6 @@ func s252(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 105)) && p.Depth <= p.MaxDepth {
@@ -16251,10 +15905,8 @@ L30:
 	p.Silent--
 	p.Pos = x29
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16273,7 +15925,6 @@ func v253(p *rt.TParser) (any, bool) {
 	var x3, x13 rune
 	var x4, ok, x14 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 35)) && p.Depth <= p.MaxDepth {
@@ -16369,10 +16020,8 @@ L20:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16383,7 +16032,6 @@ func s254(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 		p.ExpectOrdinary(p.Pos, 73)
@@ -16391,10 +16039,8 @@ func s254(p *rt.TParser) (any, bool) {
 	}
 	p.Pos += size
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16405,7 +16051,6 @@ func s255(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 49 && ch <= 57) {
 		p.ExpectOrdinary(p.Pos, 58)
@@ -16439,10 +16084,8 @@ func s255(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16453,7 +16096,6 @@ func s256(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57) {
 		p.ExpectOrdinary(p.Pos, 60)
@@ -16487,10 +16129,8 @@ func s256(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16501,7 +16141,6 @@ func s257(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit62, ".", 24, false); !ok {
@@ -16568,10 +16207,8 @@ L4:
 	p.Pos = x3
 L5:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16582,7 +16219,6 @@ func s258(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 101 || ch == 69) {
 		p.ExpectOrdinary(p.Pos, 61)
@@ -16643,10 +16279,8 @@ L6:
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16656,7 +16290,6 @@ func s259(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if !p.ClassFast(&cls353) && !p.ClassSkip(&cls353, 62) {
 		goto fail
 	}
@@ -16671,10 +16304,8 @@ L2:
 	p.Pos = x1
 L3:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16692,7 +16323,6 @@ func v260(p *rt.TParser) (any, bool) {
 	var x2, x4, size, x7 int
 	var ch, x8 rune
 	var ok, x9 bool
-	p.Enter()
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -16740,7 +16370,6 @@ func v260(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -16749,7 +16378,6 @@ func s261(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Lookup("sv"), any(2)), any(0)) }) {
 		goto L3
@@ -16776,10 +16404,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16797,7 +16423,6 @@ func v262(p *rt.TParser) (any, bool) {
 	var x2, x4, size, x7 int
 	var ch, x9 rune
 	var ok, x10 bool
-	p.Enter()
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -16824,7 +16449,7 @@ func v262(p *rt.TParser) (any, bool) {
 	L8:
 		p.Pos = x4
 		x9, _, x10 = p.NextOrdinary()
-		if !(x10 && (x9 == 92)) && p.Depth+1 <= p.MaxDepth {
+		if !(x10 && (x9 == 92)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 90)
 			goto L11
 		}
@@ -16846,7 +16471,6 @@ func v262(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -16864,7 +16488,6 @@ func i263(p *rt.TParser) (any, bool) {
 	var v, k1, v7 any
 	var ok bool
 	var x3, x5 int
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit230, "\\", 90, false); !ok {
@@ -16897,10 +16520,8 @@ func i263(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -16973,7 +16594,6 @@ func v265(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = s261(p); !ok {
 		goto fail
 	}
@@ -16987,10 +16607,8 @@ func v265(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -17000,7 +16618,6 @@ func s266(p *rt.TParser) (any, bool) {
 	var x2, x4, size, x7 int
 	var ch, x8 rune
 	var ok, x9 bool
-	p.Enter()
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -17021,7 +16638,7 @@ func s266(p *rt.TParser) (any, bool) {
 	L6:
 		p.Pos = x4
 		x8, _, x9 = p.NextOrdinary()
-		if !(x9 && (x8 == 92)) && p.Depth+1 <= p.MaxDepth {
+		if !(x9 && (x8 == 92)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 90)
 			goto L10
 		}
@@ -17043,7 +16660,6 @@ func s266(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -17064,7 +16680,6 @@ func i267(p *rt.TParser) (any, bool) {
 	var v, k1, v7 any
 	var ok bool
 	var x3, x5 int
-	p.Enter()
 	if _, ok = s261(p); !ok {
 		goto fail
 	}
@@ -17098,10 +16713,8 @@ func i267(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -17118,7 +16731,6 @@ func v268(p *rt.TParser) (any, bool) {
 	var x2, x4, size, x7, x14 int
 	var ch, x8 rune
 	var ok, x9 bool
-	p.Enter()
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -17139,7 +16751,7 @@ func v268(p *rt.TParser) (any, bool) {
 	L6:
 		p.Pos = x4
 		x8, _, x9 = p.NextOrdinary()
-		if !(x9 && (x8 == 92)) && p.Depth+1 <= p.MaxDepth {
+		if !(x9 && (x8 == 92)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 90)
 			goto L10
 		}
@@ -17193,7 +16805,6 @@ func v268(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -17203,7 +16814,6 @@ func s269(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit31, "//", 15, false); !ok {
@@ -17218,10 +16828,8 @@ func s269(p *rt.TParser) (any, bool) {
 		p.Pos += size
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -17240,7 +16848,6 @@ func v270(p *rt.TParser) (any, bool) {
 	var ch, x5 rune
 	var ok, x6 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
@@ -17257,7 +16864,7 @@ L2:
 	p.Pos = x1
 	x3 = p.Pos
 	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 170 || x5 == 181 || x5 == 186 || x5 >= 192 && x5 <= 214 || x5 >= 216 && x5 <= 246 || x5 >= 248 && x5 <= 705 || x5 >= 710 && x5 <= 721 || x5 >= 736 && x5 <= 740 || x5 == 748 || x5 == 750 || x5 >= 880 && x5 <= 884 || x5 >= 886 && x5 <= 887 || x5 >= 890 && x5 <= 893 || x5 == 895 || x5 == 902 || x5 >= 904 && x5 <= 906 || x5 == 908 || x5 >= 910 && x5 <= 929 || x5 >= 931 && x5 <= 1013 || x5 >= 1015 && x5 <= 1153 || x5 >= 1162 && x5 <= 1327 || x5 >= 1329 && x5 <= 1366 || x5 == 1369 || x5 >= 1376 && x5 <= 1416 || x5 >= 1488 && x5 <= 1514 || x5 >= 1519 && x5 <= 1522 || x5 >= 1568 && x5 <= 1610 || x5 >= 1646 && x5 <= 1647 || x5 >= 1649 && x5 <= 1747 || x5 == 1749 || x5 >= 1765 && x5 <= 1766 || x5 >= 1774 && x5 <= 1775 || x5 >= 1786 && x5 <= 1788 || x5 == 1791 || x5 == 1808 || x5 >= 1810 && x5 <= 1839 || x5 >= 1869 && x5 <= 1957 || x5 == 1969 || x5 >= 1994 && x5 <= 2026 || x5 >= 2036 && x5 <= 2037 || x5 == 2042 || x5 >= 2048 && x5 <= 2069 || x5 == 2074 || x5 == 2084 || x5 == 2088 || x5 >= 2112 && x5 <= 2136 || x5 >= 2144 && x5 <= 2154 || x5 >= 2160 && x5 <= 2183 || x5 >= 2185 && x5 <= 2191 || x5 >= 2208 && x5 <= 2249 || x5 >= 2308 && x5 <= 2361 || x5 == 2365 || x5 == 2384 || x5 >= 2392 && x5 <= 2401 || x5 >= 2417 && x5 <= 2432 || x5 >= 2437 && x5 <= 2444 || x5 >= 2447 && x5 <= 2448 || x5 >= 2451 && x5 <= 2472 || x5 >= 2474 && x5 <= 2480 || x5 == 2482 || x5 >= 2486 && x5 <= 2489 || x5 == 2493 || x5 == 2510 || x5 >= 2524 && x5 <= 2525 || x5 >= 2527 && x5 <= 2529 || x5 >= 2544 && x5 <= 2545 || x5 == 2556 || x5 >= 2565 && x5 <= 2570 || x5 >= 2575 && x5 <= 2576 || x5 >= 2579 && x5 <= 2600 || x5 >= 2602 && x5 <= 2608 || x5 >= 2610 && x5 <= 2611 || x5 >= 2613 && x5 <= 2614 || x5 >= 2616 && x5 <= 2617 || x5 >= 2649 && x5 <= 2652 || x5 == 2654 || x5 >= 2674 && x5 <= 2676 || x5 >= 2693 && x5 <= 2701 || x5 >= 2703 && x5 <= 2705 || x5 >= 2707 && x5 <= 2728 || x5 >= 2730 && x5 <= 2736 || x5 >= 2738 && x5 <= 2739 || x5 >= 2741 && x5 <= 2745 || x5 == 2749 || x5 == 2768 || x5 >= 2784 && x5 <= 2785 || x5 == 2809 || x5 >= 2821 && x5 <= 2828 || x5 >= 2831 && x5 <= 2832 || x5 >= 2835 && x5 <= 2856 || x5 >= 2858 && x5 <= 2864 || x5 >= 2866 && x5 <= 2867 || x5 >= 2869 && x5 <= 2873 || x5 == 2877 || x5 >= 2908 && x5 <= 2909 || x5 >= 2911 && x5 <= 2913 || x5 == 2929 || x5 == 2947 || x5 >= 2949 && x5 <= 2954 || x5 >= 2958 && x5 <= 2960 || x5 >= 2962 && x5 <= 2965 || x5 >= 2969 && x5 <= 2970 || x5 == 2972 || x5 >= 2974 && x5 <= 2975 || x5 >= 2979 && x5 <= 2980 || x5 >= 2984 && x5 <= 2986 || x5 >= 2990 && x5 <= 3001 || x5 == 3024 || x5 >= 3077 && x5 <= 3084 || x5 >= 3086 && x5 <= 3088 || x5 >= 3090 && x5 <= 3112 || x5 >= 3114 && x5 <= 3129 || x5 == 3133 || x5 >= 3160 && x5 <= 3162 || x5 >= 3164 && x5 <= 3165 || x5 >= 3168 && x5 <= 3169 || x5 == 3200 || x5 >= 3205 && x5 <= 3212 || x5 >= 3214 && x5 <= 3216 || x5 >= 3218 && x5 <= 3240 || x5 >= 3242 && x5 <= 3251 || x5 >= 3253 && x5 <= 3257 || x5 == 3261 || x5 >= 3292 && x5 <= 3294 || x5 >= 3296 && x5 <= 3297 || x5 >= 3313 && x5 <= 3314 || x5 >= 3332 && x5 <= 3340 || x5 >= 3342 && x5 <= 3344 || x5 >= 3346 && x5 <= 3386 || x5 == 3389 || x5 == 3406 || x5 >= 3412 && x5 <= 3414 || x5 >= 3423 && x5 <= 3425 || x5 >= 3450 && x5 <= 3455 || x5 >= 3461 && x5 <= 3478 || x5 >= 3482 && x5 <= 3505 || x5 >= 3507 && x5 <= 3515 || x5 == 3517 || x5 >= 3520 && x5 <= 3526 || x5 >= 3585 && x5 <= 3632 || x5 >= 3634 && x5 <= 3635 || x5 >= 3648 && x5 <= 3654 || x5 >= 3713 && x5 <= 3714 || x5 == 3716 || x5 >= 3718 && x5 <= 3722 || x5 >= 3724 && x5 <= 3747 || x5 == 3749 || x5 >= 3751 && x5 <= 3760 || x5 >= 3762 && x5 <= 3763 || x5 == 3773 || x5 >= 3776 && x5 <= 3780 || x5 == 3782 || x5 >= 3804 && x5 <= 3807 || x5 == 3840 || x5 >= 3904 && x5 <= 3911 || x5 >= 3913 && x5 <= 3948 || x5 >= 3976 && x5 <= 3980 || x5 >= 4096 && x5 <= 4138 || x5 == 4159 || x5 >= 4176 && x5 <= 4181 || x5 >= 4186 && x5 <= 4189 || x5 == 4193 || x5 >= 4197 && x5 <= 4198 || x5 >= 4206 && x5 <= 4208 || x5 >= 4213 && x5 <= 4225 || x5 == 4238 || x5 >= 4256 && x5 <= 4293 || x5 == 4295 || x5 == 4301 || x5 >= 4304 && x5 <= 4346 || x5 >= 4348 && x5 <= 4680 || x5 >= 4682 && x5 <= 4685 || x5 >= 4688 && x5 <= 4694 || x5 == 4696 || x5 >= 4698 && x5 <= 4701 || x5 >= 4704 && x5 <= 4744 || x5 >= 4746 && x5 <= 4749 || x5 >= 4752 && x5 <= 4784 || x5 >= 4786 && x5 <= 4789 || x5 >= 4792 && x5 <= 4798 || x5 == 4800 || x5 >= 4802 && x5 <= 4805 || x5 >= 4808 && x5 <= 4822 || x5 >= 4824 && x5 <= 4880 || x5 >= 4882 && x5 <= 4885 || x5 >= 4888 && x5 <= 4954 || x5 >= 4992 && x5 <= 5007 || x5 >= 5024 && x5 <= 5109 || x5 >= 5112 && x5 <= 5117 || x5 >= 5121 && x5 <= 5740 || x5 >= 5743 && x5 <= 5759 || x5 >= 5761 && x5 <= 5786 || x5 >= 5792 && x5 <= 5866 || x5 >= 5873 && x5 <= 5880 || x5 >= 5888 && x5 <= 5905 || x5 >= 5919 && x5 <= 5937 || x5 >= 5952 && x5 <= 5969 || x5 >= 5984 && x5 <= 5996 || x5 >= 5998 && x5 <= 6000 || x5 >= 6016 && x5 <= 6067 || x5 == 6103 || x5 == 6108 || x5 >= 6176 && x5 <= 6264 || x5 >= 6272 && x5 <= 6276 || x5 >= 6279 && x5 <= 6312 || x5 == 6314 || x5 >= 6320 && x5 <= 6389 || x5 >= 6400 && x5 <= 6430 || x5 >= 6480 && x5 <= 6509 || x5 >= 6512 && x5 <= 6516 || x5 >= 6528 && x5 <= 6571 || x5 >= 6576 && x5 <= 6601 || x5 >= 6656 && x5 <= 6678 || x5 >= 6688 && x5 <= 6740 || x5 == 6823 || x5 >= 6917 && x5 <= 6963 || x5 >= 6981 && x5 <= 6988 || x5 >= 7043 && x5 <= 7072 || x5 >= 7086 && x5 <= 7087 || x5 >= 7098 && x5 <= 7141 || x5 >= 7168 && x5 <= 7203 || x5 >= 7245 && x5 <= 7247 || x5 >= 7258 && x5 <= 7293 || x5 >= 7296 && x5 <= 7306 || x5 >= 7312 && x5 <= 7354 || x5 >= 7357 && x5 <= 7359 || x5 >= 7401 && x5 <= 7404 || x5 >= 7406 && x5 <= 7411 || x5 >= 7413 && x5 <= 7414 || x5 == 7418 || x5 >= 7424 && x5 <= 7615 || x5 >= 7680 && x5 <= 7957 || x5 >= 7960 && x5 <= 7965 || x5 >= 7968 && x5 <= 8005 || x5 >= 8008 && x5 <= 8013 || x5 >= 8016 && x5 <= 8023 || x5 == 8025 || x5 == 8027 || x5 == 8029 || x5 >= 8031 && x5 <= 8061 || x5 >= 8064 && x5 <= 8116 || x5 >= 8118 && x5 <= 8124 || x5 == 8126 || x5 >= 8130 && x5 <= 8132 || x5 >= 8134 && x5 <= 8140 || x5 >= 8144 && x5 <= 8147 || x5 >= 8150 && x5 <= 8155 || x5 >= 8160 && x5 <= 8172 || x5 >= 8178 && x5 <= 8180 || x5 >= 8182 && x5 <= 8188 || x5 == 8305 || x5 == 8319 || x5 >= 8336 && x5 <= 8348 || x5 == 8450 || x5 == 8455 || x5 >= 8458 && x5 <= 8467 || x5 == 8469 || x5 >= 8473 && x5 <= 8477 || x5 == 8484 || x5 == 8486 || x5 == 8488 || x5 >= 8490 && x5 <= 8493 || x5 >= 8495 && x5 <= 8505 || x5 >= 8508 && x5 <= 8511 || x5 >= 8517 && x5 <= 8521 || x5 == 8526 || x5 >= 8579 && x5 <= 8580 || x5 >= 11264 && x5 <= 11492 || x5 >= 11499 && x5 <= 11502 || x5 >= 11506 && x5 <= 11507 || x5 >= 11520 && x5 <= 11557 || x5 == 11559 || x5 == 11565 || x5 >= 11568 && x5 <= 11623 || x5 == 11631 || x5 >= 11648 && x5 <= 11670 || x5 >= 11680 && x5 <= 11686 || x5 >= 11688 && x5 <= 11694 || x5 >= 11696 && x5 <= 11702 || x5 >= 11704 && x5 <= 11710 || x5 >= 11712 && x5 <= 11718 || x5 >= 11720 && x5 <= 11726 || x5 >= 11728 && x5 <= 11734 || x5 >= 11736 && x5 <= 11742 || x5 == 11823 || x5 >= 12293 && x5 <= 12294 || x5 >= 12337 && x5 <= 12341 || x5 >= 12347 && x5 <= 12348 || x5 >= 12353 && x5 <= 12438 || x5 >= 12445 && x5 <= 12447 || x5 >= 12449 && x5 <= 12538 || x5 >= 12540 && x5 <= 12543 || x5 >= 12549 && x5 <= 12591 || x5 >= 12593 && x5 <= 12686 || x5 >= 12704 && x5 <= 12735 || x5 >= 12784 && x5 <= 12799 || x5 >= 13312 && x5 <= 19903 || x5 >= 19968 && x5 <= 42124 || x5 >= 42192 && x5 <= 42237 || x5 >= 42240 && x5 <= 42508 || x5 >= 42512 && x5 <= 42527 || x5 >= 42538 && x5 <= 42539 || x5 >= 42560 && x5 <= 42606 || x5 >= 42623 && x5 <= 42653 || x5 >= 42656 && x5 <= 42725 || x5 >= 42775 && x5 <= 42783 || x5 >= 42786 && x5 <= 42888 || x5 >= 42891 && x5 <= 42972 || x5 >= 42993 && x5 <= 43009 || x5 >= 43011 && x5 <= 43013 || x5 >= 43015 && x5 <= 43018 || x5 >= 43020 && x5 <= 43042 || x5 >= 43072 && x5 <= 43123 || x5 >= 43138 && x5 <= 43187 || x5 >= 43250 && x5 <= 43255 || x5 == 43259 || x5 >= 43261 && x5 <= 43262 || x5 >= 43274 && x5 <= 43301 || x5 >= 43312 && x5 <= 43334 || x5 >= 43360 && x5 <= 43388 || x5 >= 43396 && x5 <= 43442 || x5 == 43471 || x5 >= 43488 && x5 <= 43492 || x5 >= 43494 && x5 <= 43503 || x5 >= 43514 && x5 <= 43518 || x5 >= 43520 && x5 <= 43560 || x5 >= 43584 && x5 <= 43586 || x5 >= 43588 && x5 <= 43595 || x5 >= 43616 && x5 <= 43638 || x5 == 43642 || x5 >= 43646 && x5 <= 43695 || x5 == 43697 || x5 >= 43701 && x5 <= 43702 || x5 >= 43705 && x5 <= 43709 || x5 == 43712 || x5 == 43714 || x5 >= 43739 && x5 <= 43741 || x5 >= 43744 && x5 <= 43754 || x5 >= 43762 && x5 <= 43764 || x5 >= 43777 && x5 <= 43782 || x5 >= 43785 && x5 <= 43790 || x5 >= 43793 && x5 <= 43798 || x5 >= 43808 && x5 <= 43814 || x5 >= 43816 && x5 <= 43822 || x5 >= 43824 && x5 <= 43866 || x5 >= 43868 && x5 <= 43881 || x5 >= 43888 && x5 <= 44002 || x5 >= 44032 && x5 <= 55203 || x5 >= 55216 && x5 <= 55238 || x5 >= 55243 && x5 <= 55291 || x5 >= 63744 && x5 <= 64109 || x5 >= 64112 && x5 <= 64217 || x5 >= 64256 && x5 <= 64262 || x5 >= 64275 && x5 <= 64279 || x5 == 64285 || x5 >= 64287 && x5 <= 64296 || x5 >= 64298 && x5 <= 64310 || x5 >= 64312 && x5 <= 64316 || x5 == 64318 || x5 >= 64320 && x5 <= 64321 || x5 >= 64323 && x5 <= 64324 || x5 >= 64326 && x5 <= 64433 || x5 >= 64467 && x5 <= 64829 || x5 >= 64848 && x5 <= 64911 || x5 >= 64914 && x5 <= 64967 || x5 >= 65008 && x5 <= 65019 || x5 >= 65136 && x5 <= 65140 || x5 >= 65142 && x5 <= 65276 || x5 >= 65313 && x5 <= 65338 || x5 >= 65345 && x5 <= 65370 || x5 >= 65382 && x5 <= 65470 || x5 >= 65474 && x5 <= 65479 || x5 >= 65482 && x5 <= 65487 || x5 >= 65490 && x5 <= 65495 || x5 >= 65498 && x5 <= 65500 || x5 >= 65536 && x5 <= 65547 || x5 >= 65549 && x5 <= 65574 || x5 >= 65576 && x5 <= 65594 || x5 >= 65596 && x5 <= 65597 || x5 >= 65599 && x5 <= 65613 || x5 >= 65616 && x5 <= 65629 || x5 >= 65664 && x5 <= 65786 || x5 >= 66176 && x5 <= 66204 || x5 >= 66208 && x5 <= 66256 || x5 >= 66304 && x5 <= 66335 || x5 >= 66349 && x5 <= 66368 || x5 >= 66370 && x5 <= 66377 || x5 >= 66384 && x5 <= 66421 || x5 >= 66432 && x5 <= 66461 || x5 >= 66464 && x5 <= 66499 || x5 >= 66504 && x5 <= 66511 || x5 >= 66560 && x5 <= 66717 || x5 >= 66736 && x5 <= 66771 || x5 >= 66776 && x5 <= 66811 || x5 >= 66816 && x5 <= 66855 || x5 >= 66864 && x5 <= 66915 || x5 >= 66928 && x5 <= 66938 || x5 >= 66940 && x5 <= 66954 || x5 >= 66956 && x5 <= 66962 || x5 >= 66964 && x5 <= 66965 || x5 >= 66967 && x5 <= 66977 || x5 >= 66979 && x5 <= 66993 || x5 >= 66995 && x5 <= 67001 || x5 >= 67003 && x5 <= 67004 || x5 >= 67008 && x5 <= 67059 || x5 >= 67072 && x5 <= 67382 || x5 >= 67392 && x5 <= 67413 || x5 >= 67424 && x5 <= 67431 || x5 >= 67456 && x5 <= 67461 || x5 >= 67463 && x5 <= 67504 || x5 >= 67506 && x5 <= 67514 || x5 >= 67584 && x5 <= 67589 || x5 == 67592 || x5 >= 67594 && x5 <= 67637 || x5 >= 67639 && x5 <= 67640 || x5 == 67644 || x5 >= 67647 && x5 <= 67669 || x5 >= 67680 && x5 <= 67702 || x5 >= 67712 && x5 <= 67742 || x5 >= 67808 && x5 <= 67826 || x5 >= 67828 && x5 <= 67829 || x5 >= 67840 && x5 <= 67861 || x5 >= 67872 && x5 <= 67897 || x5 >= 67904 && x5 <= 67929 || x5 >= 67968 && x5 <= 68023 || x5 >= 68030 && x5 <= 68031 || x5 == 68096 || x5 >= 68112 && x5 <= 68115 || x5 >= 68117 && x5 <= 68119 || x5 >= 68121 && x5 <= 68149 || x5 >= 68192 && x5 <= 68220 || x5 >= 68224 && x5 <= 68252 || x5 >= 68288 && x5 <= 68295 || x5 >= 68297 && x5 <= 68324 || x5 >= 68352 && x5 <= 68405 || x5 >= 68416 && x5 <= 68437 || x5 >= 68448 && x5 <= 68466 || x5 >= 68480 && x5 <= 68497 || x5 >= 68608 && x5 <= 68680 || x5 >= 68736 && x5 <= 68786 || x5 >= 68800 && x5 <= 68850 || x5 >= 68864 && x5 <= 68899 || x5 >= 68938 && x5 <= 68965 || x5 >= 68975 && x5 <= 68997 || x5 >= 69248 && x5 <= 69289 || x5 >= 69296 && x5 <= 69297 || x5 >= 69314 && x5 <= 69319 || x5 >= 69376 && x5 <= 69404 || x5 == 69415 || x5 >= 69424 && x5 <= 69445 || x5 >= 69488 && x5 <= 69505 || x5 >= 69552 && x5 <= 69572 || x5 >= 69600 && x5 <= 69622 || x5 >= 69635 && x5 <= 69687 || x5 >= 69745 && x5 <= 69746 || x5 == 69749 || x5 >= 69763 && x5 <= 69807 || x5 >= 69840 && x5 <= 69864 || x5 >= 69891 && x5 <= 69926 || x5 == 69956 || x5 == 69959 || x5 >= 69968 && x5 <= 70002 || x5 == 70006 || x5 >= 70019 && x5 <= 70066 || x5 >= 70081 && x5 <= 70084 || x5 == 70106 || x5 == 70108 || x5 >= 70144 && x5 <= 70161 || x5 >= 70163 && x5 <= 70187 || x5 >= 70207 && x5 <= 70208 || x5 >= 70272 && x5 <= 70278 || x5 == 70280 || x5 >= 70282 && x5 <= 70285 || x5 >= 70287 && x5 <= 70301 || x5 >= 70303 && x5 <= 70312 || x5 >= 70320 && x5 <= 70366 || x5 >= 70405 && x5 <= 70412 || x5 >= 70415 && x5 <= 70416 || x5 >= 70419 && x5 <= 70440 || x5 >= 70442 && x5 <= 70448 || x5 >= 70450 && x5 <= 70451 || x5 >= 70453 && x5 <= 70457 || x5 == 70461 || x5 == 70480 || x5 >= 70493 && x5 <= 70497 || x5 >= 70528 && x5 <= 70537 || x5 == 70539 || x5 == 70542 || x5 >= 70544 && x5 <= 70581 || x5 == 70583 || x5 == 70609 || x5 == 70611 || x5 >= 70656 && x5 <= 70708 || x5 >= 70727 && x5 <= 70730 || x5 >= 70751 && x5 <= 70753 || x5 >= 70784 && x5 <= 70831 || x5 >= 70852 && x5 <= 70853 || x5 == 70855 || x5 >= 71040 && x5 <= 71086 || x5 >= 71128 && x5 <= 71131 || x5 >= 71168 && x5 <= 71215 || x5 == 71236 || x5 >= 71296 && x5 <= 71338 || x5 == 71352 || x5 >= 71424 && x5 <= 71450 || x5 >= 71488 && x5 <= 71494 || x5 >= 71680 && x5 <= 71723 || x5 >= 71840 && x5 <= 71903 || x5 >= 71935 && x5 <= 71942 || x5 == 71945 || x5 >= 71948 && x5 <= 71955 || x5 >= 71957 && x5 <= 71958 || x5 >= 71960 && x5 <= 71983 || x5 == 71999 || x5 == 72001 || x5 >= 72096 && x5 <= 72103 || x5 >= 72106 && x5 <= 72144 || x5 == 72161 || x5 == 72163 || x5 == 72192 || x5 >= 72203 && x5 <= 72242 || x5 == 72250 || x5 == 72272 || x5 >= 72284 && x5 <= 72329 || x5 == 72349 || x5 >= 72368 && x5 <= 72440 || x5 >= 72640 && x5 <= 72672 || x5 >= 72704 && x5 <= 72712 || x5 >= 72714 && x5 <= 72750 || x5 == 72768 || x5 >= 72818 && x5 <= 72847 || x5 >= 72960 && x5 <= 72966 || x5 >= 72968 && x5 <= 72969 || x5 >= 72971 && x5 <= 73008 || x5 == 73030 || x5 >= 73056 && x5 <= 73061 || x5 >= 73063 && x5 <= 73064 || x5 >= 73066 && x5 <= 73097 || x5 == 73112 || x5 >= 73136 && x5 <= 73179 || x5 >= 73440 && x5 <= 73458 || x5 == 73474 || x5 >= 73476 && x5 <= 73488 || x5 >= 73490 && x5 <= 73523 || x5 == 73648 || x5 >= 73728 && x5 <= 74649 || x5 >= 74880 && x5 <= 75075 || x5 >= 77712 && x5 <= 77808 || x5 >= 77824 && x5 <= 78895 || x5 >= 78913 && x5 <= 78918 || x5 >= 78944 && x5 <= 82938 || x5 >= 82944 && x5 <= 83526 || x5 >= 90368 && x5 <= 90397 || x5 >= 92160 && x5 <= 92728 || x5 >= 92736 && x5 <= 92766 || x5 >= 92784 && x5 <= 92862 || x5 >= 92880 && x5 <= 92909 || x5 >= 92928 && x5 <= 92975 || x5 >= 92992 && x5 <= 92995 || x5 >= 93027 && x5 <= 93047 || x5 >= 93053 && x5 <= 93071 || x5 >= 93504 && x5 <= 93548 || x5 >= 93760 && x5 <= 93823 || x5 >= 93856 && x5 <= 93880 || x5 >= 93883 && x5 <= 93907 || x5 >= 93952 && x5 <= 94026 || x5 == 94032 || x5 >= 94099 && x5 <= 94111 || x5 >= 94176 && x5 <= 94177 || x5 == 94179 || x5 >= 94194 && x5 <= 94195 || x5 >= 94208 && x5 <= 101589 || x5 >= 101631 && x5 <= 101662 || x5 >= 101760 && x5 <= 101874 || x5 >= 110576 && x5 <= 110579 || x5 >= 110581 && x5 <= 110587 || x5 >= 110589 && x5 <= 110590 || x5 >= 110592 && x5 <= 110882 || x5 == 110898 || x5 >= 110928 && x5 <= 110930 || x5 == 110933 || x5 >= 110948 && x5 <= 110951 || x5 >= 110960 && x5 <= 111355 || x5 >= 113664 && x5 <= 113770 || x5 >= 113776 && x5 <= 113788 || x5 >= 113792 && x5 <= 113800 || x5 >= 113808 && x5 <= 113817 || x5 >= 119808 && x5 <= 119892 || x5 >= 119894 && x5 <= 119964 || x5 >= 119966 && x5 <= 119967 || x5 == 119970 || x5 >= 119973 && x5 <= 119974 || x5 >= 119977 && x5 <= 119980 || x5 >= 119982 && x5 <= 119993 || x5 == 119995 || x5 >= 119997 && x5 <= 120003 || x5 >= 120005 && x5 <= 120069 || x5 >= 120071 && x5 <= 120074 || x5 >= 120077 && x5 <= 120084 || x5 >= 120086 && x5 <= 120092 || x5 >= 120094 && x5 <= 120121 || x5 >= 120123 && x5 <= 120126 || x5 >= 120128 && x5 <= 120132 || x5 == 120134 || x5 >= 120138 && x5 <= 120144 || x5 >= 120146 && x5 <= 120485 || x5 >= 120488 && x5 <= 120512 || x5 >= 120514 && x5 <= 120538 || x5 >= 120540 && x5 <= 120570 || x5 >= 120572 && x5 <= 120596 || x5 >= 120598 && x5 <= 120628 || x5 >= 120630 && x5 <= 120654 || x5 >= 120656 && x5 <= 120686 || x5 >= 120688 && x5 <= 120712 || x5 >= 120714 && x5 <= 120744 || x5 >= 120746 && x5 <= 120770 || x5 >= 120772 && x5 <= 120779 || x5 >= 122624 && x5 <= 122654 || x5 >= 122661 && x5 <= 122666 || x5 >= 122928 && x5 <= 122989 || x5 >= 123136 && x5 <= 123180 || x5 >= 123191 && x5 <= 123197 || x5 == 123214 || x5 >= 123536 && x5 <= 123565 || x5 >= 123584 && x5 <= 123627 || x5 >= 124112 && x5 <= 124139 || x5 >= 124368 && x5 <= 124397 || x5 == 124400 || x5 >= 124608 && x5 <= 124638 || x5 >= 124640 && x5 <= 124642 || x5 >= 124644 && x5 <= 124645 || x5 >= 124647 && x5 <= 124653 || x5 >= 124656 && x5 <= 124660 || x5 >= 124670 && x5 <= 124671 || x5 >= 124896 && x5 <= 124902 || x5 >= 124904 && x5 <= 124907 || x5 >= 124909 && x5 <= 124910 || x5 >= 124912 && x5 <= 124926 || x5 >= 124928 && x5 <= 125124 || x5 >= 125184 && x5 <= 125251 || x5 == 125259 || x5 >= 126464 && x5 <= 126467 || x5 >= 126469 && x5 <= 126495 || x5 >= 126497 && x5 <= 126498 || x5 == 126500 || x5 == 126503 || x5 >= 126505 && x5 <= 126514 || x5 >= 126516 && x5 <= 126519 || x5 == 126521 || x5 == 126523 || x5 == 126530 || x5 == 126535 || x5 == 126537 || x5 == 126539 || x5 >= 126541 && x5 <= 126543 || x5 >= 126545 && x5 <= 126546 || x5 == 126548 || x5 == 126551 || x5 == 126553 || x5 == 126555 || x5 == 126557 || x5 == 126559 || x5 >= 126561 && x5 <= 126562 || x5 == 126564 || x5 >= 126567 && x5 <= 126570 || x5 >= 126572 && x5 <= 126578 || x5 >= 126580 && x5 <= 126583 || x5 >= 126585 && x5 <= 126588 || x5 == 126590 || x5 >= 126592 && x5 <= 126601 || x5 >= 126603 && x5 <= 126619 || x5 >= 126625 && x5 <= 126627 || x5 >= 126629 && x5 <= 126633 || x5 >= 126635 && x5 <= 126651 || x5 >= 131072 && x5 <= 173791 || x5 >= 173824 && x5 <= 178205 || x5 >= 178208 && x5 <= 183981 || x5 >= 183984 && x5 <= 191456 || x5 >= 191472 && x5 <= 192093 || x5 >= 194560 && x5 <= 195101 || x5 >= 196608 && x5 <= 201546 || x5 >= 201552 && x5 <= 210041)) && p.Depth+1 <= p.MaxDepth {
+	if !(x6 && (x5 == 170 || x5 == 181 || x5 == 186 || x5 >= 192 && x5 <= 214 || x5 >= 216 && x5 <= 246 || x5 >= 248 && x5 <= 705 || x5 >= 710 && x5 <= 721 || x5 >= 736 && x5 <= 740 || x5 == 748 || x5 == 750 || x5 >= 880 && x5 <= 884 || x5 >= 886 && x5 <= 887 || x5 >= 890 && x5 <= 893 || x5 == 895 || x5 == 902 || x5 >= 904 && x5 <= 906 || x5 == 908 || x5 >= 910 && x5 <= 929 || x5 >= 931 && x5 <= 1013 || x5 >= 1015 && x5 <= 1153 || x5 >= 1162 && x5 <= 1327 || x5 >= 1329 && x5 <= 1366 || x5 == 1369 || x5 >= 1376 && x5 <= 1416 || x5 >= 1488 && x5 <= 1514 || x5 >= 1519 && x5 <= 1522 || x5 >= 1568 && x5 <= 1610 || x5 >= 1646 && x5 <= 1647 || x5 >= 1649 && x5 <= 1747 || x5 == 1749 || x5 >= 1765 && x5 <= 1766 || x5 >= 1774 && x5 <= 1775 || x5 >= 1786 && x5 <= 1788 || x5 == 1791 || x5 == 1808 || x5 >= 1810 && x5 <= 1839 || x5 >= 1869 && x5 <= 1957 || x5 == 1969 || x5 >= 1994 && x5 <= 2026 || x5 >= 2036 && x5 <= 2037 || x5 == 2042 || x5 >= 2048 && x5 <= 2069 || x5 == 2074 || x5 == 2084 || x5 == 2088 || x5 >= 2112 && x5 <= 2136 || x5 >= 2144 && x5 <= 2154 || x5 >= 2160 && x5 <= 2183 || x5 >= 2185 && x5 <= 2191 || x5 >= 2208 && x5 <= 2249 || x5 >= 2308 && x5 <= 2361 || x5 == 2365 || x5 == 2384 || x5 >= 2392 && x5 <= 2401 || x5 >= 2417 && x5 <= 2432 || x5 >= 2437 && x5 <= 2444 || x5 >= 2447 && x5 <= 2448 || x5 >= 2451 && x5 <= 2472 || x5 >= 2474 && x5 <= 2480 || x5 == 2482 || x5 >= 2486 && x5 <= 2489 || x5 == 2493 || x5 == 2510 || x5 >= 2524 && x5 <= 2525 || x5 >= 2527 && x5 <= 2529 || x5 >= 2544 && x5 <= 2545 || x5 == 2556 || x5 >= 2565 && x5 <= 2570 || x5 >= 2575 && x5 <= 2576 || x5 >= 2579 && x5 <= 2600 || x5 >= 2602 && x5 <= 2608 || x5 >= 2610 && x5 <= 2611 || x5 >= 2613 && x5 <= 2614 || x5 >= 2616 && x5 <= 2617 || x5 >= 2649 && x5 <= 2652 || x5 == 2654 || x5 >= 2674 && x5 <= 2676 || x5 >= 2693 && x5 <= 2701 || x5 >= 2703 && x5 <= 2705 || x5 >= 2707 && x5 <= 2728 || x5 >= 2730 && x5 <= 2736 || x5 >= 2738 && x5 <= 2739 || x5 >= 2741 && x5 <= 2745 || x5 == 2749 || x5 == 2768 || x5 >= 2784 && x5 <= 2785 || x5 == 2809 || x5 >= 2821 && x5 <= 2828 || x5 >= 2831 && x5 <= 2832 || x5 >= 2835 && x5 <= 2856 || x5 >= 2858 && x5 <= 2864 || x5 >= 2866 && x5 <= 2867 || x5 >= 2869 && x5 <= 2873 || x5 == 2877 || x5 >= 2908 && x5 <= 2909 || x5 >= 2911 && x5 <= 2913 || x5 == 2929 || x5 == 2947 || x5 >= 2949 && x5 <= 2954 || x5 >= 2958 && x5 <= 2960 || x5 >= 2962 && x5 <= 2965 || x5 >= 2969 && x5 <= 2970 || x5 == 2972 || x5 >= 2974 && x5 <= 2975 || x5 >= 2979 && x5 <= 2980 || x5 >= 2984 && x5 <= 2986 || x5 >= 2990 && x5 <= 3001 || x5 == 3024 || x5 >= 3077 && x5 <= 3084 || x5 >= 3086 && x5 <= 3088 || x5 >= 3090 && x5 <= 3112 || x5 >= 3114 && x5 <= 3129 || x5 == 3133 || x5 >= 3160 && x5 <= 3162 || x5 >= 3164 && x5 <= 3165 || x5 >= 3168 && x5 <= 3169 || x5 == 3200 || x5 >= 3205 && x5 <= 3212 || x5 >= 3214 && x5 <= 3216 || x5 >= 3218 && x5 <= 3240 || x5 >= 3242 && x5 <= 3251 || x5 >= 3253 && x5 <= 3257 || x5 == 3261 || x5 >= 3292 && x5 <= 3294 || x5 >= 3296 && x5 <= 3297 || x5 >= 3313 && x5 <= 3314 || x5 >= 3332 && x5 <= 3340 || x5 >= 3342 && x5 <= 3344 || x5 >= 3346 && x5 <= 3386 || x5 == 3389 || x5 == 3406 || x5 >= 3412 && x5 <= 3414 || x5 >= 3423 && x5 <= 3425 || x5 >= 3450 && x5 <= 3455 || x5 >= 3461 && x5 <= 3478 || x5 >= 3482 && x5 <= 3505 || x5 >= 3507 && x5 <= 3515 || x5 == 3517 || x5 >= 3520 && x5 <= 3526 || x5 >= 3585 && x5 <= 3632 || x5 >= 3634 && x5 <= 3635 || x5 >= 3648 && x5 <= 3654 || x5 >= 3713 && x5 <= 3714 || x5 == 3716 || x5 >= 3718 && x5 <= 3722 || x5 >= 3724 && x5 <= 3747 || x5 == 3749 || x5 >= 3751 && x5 <= 3760 || x5 >= 3762 && x5 <= 3763 || x5 == 3773 || x5 >= 3776 && x5 <= 3780 || x5 == 3782 || x5 >= 3804 && x5 <= 3807 || x5 == 3840 || x5 >= 3904 && x5 <= 3911 || x5 >= 3913 && x5 <= 3948 || x5 >= 3976 && x5 <= 3980 || x5 >= 4096 && x5 <= 4138 || x5 == 4159 || x5 >= 4176 && x5 <= 4181 || x5 >= 4186 && x5 <= 4189 || x5 == 4193 || x5 >= 4197 && x5 <= 4198 || x5 >= 4206 && x5 <= 4208 || x5 >= 4213 && x5 <= 4225 || x5 == 4238 || x5 >= 4256 && x5 <= 4293 || x5 == 4295 || x5 == 4301 || x5 >= 4304 && x5 <= 4346 || x5 >= 4348 && x5 <= 4680 || x5 >= 4682 && x5 <= 4685 || x5 >= 4688 && x5 <= 4694 || x5 == 4696 || x5 >= 4698 && x5 <= 4701 || x5 >= 4704 && x5 <= 4744 || x5 >= 4746 && x5 <= 4749 || x5 >= 4752 && x5 <= 4784 || x5 >= 4786 && x5 <= 4789 || x5 >= 4792 && x5 <= 4798 || x5 == 4800 || x5 >= 4802 && x5 <= 4805 || x5 >= 4808 && x5 <= 4822 || x5 >= 4824 && x5 <= 4880 || x5 >= 4882 && x5 <= 4885 || x5 >= 4888 && x5 <= 4954 || x5 >= 4992 && x5 <= 5007 || x5 >= 5024 && x5 <= 5109 || x5 >= 5112 && x5 <= 5117 || x5 >= 5121 && x5 <= 5740 || x5 >= 5743 && x5 <= 5759 || x5 >= 5761 && x5 <= 5786 || x5 >= 5792 && x5 <= 5866 || x5 >= 5873 && x5 <= 5880 || x5 >= 5888 && x5 <= 5905 || x5 >= 5919 && x5 <= 5937 || x5 >= 5952 && x5 <= 5969 || x5 >= 5984 && x5 <= 5996 || x5 >= 5998 && x5 <= 6000 || x5 >= 6016 && x5 <= 6067 || x5 == 6103 || x5 == 6108 || x5 >= 6176 && x5 <= 6264 || x5 >= 6272 && x5 <= 6276 || x5 >= 6279 && x5 <= 6312 || x5 == 6314 || x5 >= 6320 && x5 <= 6389 || x5 >= 6400 && x5 <= 6430 || x5 >= 6480 && x5 <= 6509 || x5 >= 6512 && x5 <= 6516 || x5 >= 6528 && x5 <= 6571 || x5 >= 6576 && x5 <= 6601 || x5 >= 6656 && x5 <= 6678 || x5 >= 6688 && x5 <= 6740 || x5 == 6823 || x5 >= 6917 && x5 <= 6963 || x5 >= 6981 && x5 <= 6988 || x5 >= 7043 && x5 <= 7072 || x5 >= 7086 && x5 <= 7087 || x5 >= 7098 && x5 <= 7141 || x5 >= 7168 && x5 <= 7203 || x5 >= 7245 && x5 <= 7247 || x5 >= 7258 && x5 <= 7293 || x5 >= 7296 && x5 <= 7306 || x5 >= 7312 && x5 <= 7354 || x5 >= 7357 && x5 <= 7359 || x5 >= 7401 && x5 <= 7404 || x5 >= 7406 && x5 <= 7411 || x5 >= 7413 && x5 <= 7414 || x5 == 7418 || x5 >= 7424 && x5 <= 7615 || x5 >= 7680 && x5 <= 7957 || x5 >= 7960 && x5 <= 7965 || x5 >= 7968 && x5 <= 8005 || x5 >= 8008 && x5 <= 8013 || x5 >= 8016 && x5 <= 8023 || x5 == 8025 || x5 == 8027 || x5 == 8029 || x5 >= 8031 && x5 <= 8061 || x5 >= 8064 && x5 <= 8116 || x5 >= 8118 && x5 <= 8124 || x5 == 8126 || x5 >= 8130 && x5 <= 8132 || x5 >= 8134 && x5 <= 8140 || x5 >= 8144 && x5 <= 8147 || x5 >= 8150 && x5 <= 8155 || x5 >= 8160 && x5 <= 8172 || x5 >= 8178 && x5 <= 8180 || x5 >= 8182 && x5 <= 8188 || x5 == 8305 || x5 == 8319 || x5 >= 8336 && x5 <= 8348 || x5 == 8450 || x5 == 8455 || x5 >= 8458 && x5 <= 8467 || x5 == 8469 || x5 >= 8473 && x5 <= 8477 || x5 == 8484 || x5 == 8486 || x5 == 8488 || x5 >= 8490 && x5 <= 8493 || x5 >= 8495 && x5 <= 8505 || x5 >= 8508 && x5 <= 8511 || x5 >= 8517 && x5 <= 8521 || x5 == 8526 || x5 >= 8579 && x5 <= 8580 || x5 >= 11264 && x5 <= 11492 || x5 >= 11499 && x5 <= 11502 || x5 >= 11506 && x5 <= 11507 || x5 >= 11520 && x5 <= 11557 || x5 == 11559 || x5 == 11565 || x5 >= 11568 && x5 <= 11623 || x5 == 11631 || x5 >= 11648 && x5 <= 11670 || x5 >= 11680 && x5 <= 11686 || x5 >= 11688 && x5 <= 11694 || x5 >= 11696 && x5 <= 11702 || x5 >= 11704 && x5 <= 11710 || x5 >= 11712 && x5 <= 11718 || x5 >= 11720 && x5 <= 11726 || x5 >= 11728 && x5 <= 11734 || x5 >= 11736 && x5 <= 11742 || x5 == 11823 || x5 >= 12293 && x5 <= 12294 || x5 >= 12337 && x5 <= 12341 || x5 >= 12347 && x5 <= 12348 || x5 >= 12353 && x5 <= 12438 || x5 >= 12445 && x5 <= 12447 || x5 >= 12449 && x5 <= 12538 || x5 >= 12540 && x5 <= 12543 || x5 >= 12549 && x5 <= 12591 || x5 >= 12593 && x5 <= 12686 || x5 >= 12704 && x5 <= 12735 || x5 >= 12784 && x5 <= 12799 || x5 >= 13312 && x5 <= 19903 || x5 >= 19968 && x5 <= 42124 || x5 >= 42192 && x5 <= 42237 || x5 >= 42240 && x5 <= 42508 || x5 >= 42512 && x5 <= 42527 || x5 >= 42538 && x5 <= 42539 || x5 >= 42560 && x5 <= 42606 || x5 >= 42623 && x5 <= 42653 || x5 >= 42656 && x5 <= 42725 || x5 >= 42775 && x5 <= 42783 || x5 >= 42786 && x5 <= 42888 || x5 >= 42891 && x5 <= 42972 || x5 >= 42993 && x5 <= 43009 || x5 >= 43011 && x5 <= 43013 || x5 >= 43015 && x5 <= 43018 || x5 >= 43020 && x5 <= 43042 || x5 >= 43072 && x5 <= 43123 || x5 >= 43138 && x5 <= 43187 || x5 >= 43250 && x5 <= 43255 || x5 == 43259 || x5 >= 43261 && x5 <= 43262 || x5 >= 43274 && x5 <= 43301 || x5 >= 43312 && x5 <= 43334 || x5 >= 43360 && x5 <= 43388 || x5 >= 43396 && x5 <= 43442 || x5 == 43471 || x5 >= 43488 && x5 <= 43492 || x5 >= 43494 && x5 <= 43503 || x5 >= 43514 && x5 <= 43518 || x5 >= 43520 && x5 <= 43560 || x5 >= 43584 && x5 <= 43586 || x5 >= 43588 && x5 <= 43595 || x5 >= 43616 && x5 <= 43638 || x5 == 43642 || x5 >= 43646 && x5 <= 43695 || x5 == 43697 || x5 >= 43701 && x5 <= 43702 || x5 >= 43705 && x5 <= 43709 || x5 == 43712 || x5 == 43714 || x5 >= 43739 && x5 <= 43741 || x5 >= 43744 && x5 <= 43754 || x5 >= 43762 && x5 <= 43764 || x5 >= 43777 && x5 <= 43782 || x5 >= 43785 && x5 <= 43790 || x5 >= 43793 && x5 <= 43798 || x5 >= 43808 && x5 <= 43814 || x5 >= 43816 && x5 <= 43822 || x5 >= 43824 && x5 <= 43866 || x5 >= 43868 && x5 <= 43881 || x5 >= 43888 && x5 <= 44002 || x5 >= 44032 && x5 <= 55203 || x5 >= 55216 && x5 <= 55238 || x5 >= 55243 && x5 <= 55291 || x5 >= 63744 && x5 <= 64109 || x5 >= 64112 && x5 <= 64217 || x5 >= 64256 && x5 <= 64262 || x5 >= 64275 && x5 <= 64279 || x5 == 64285 || x5 >= 64287 && x5 <= 64296 || x5 >= 64298 && x5 <= 64310 || x5 >= 64312 && x5 <= 64316 || x5 == 64318 || x5 >= 64320 && x5 <= 64321 || x5 >= 64323 && x5 <= 64324 || x5 >= 64326 && x5 <= 64433 || x5 >= 64467 && x5 <= 64829 || x5 >= 64848 && x5 <= 64911 || x5 >= 64914 && x5 <= 64967 || x5 >= 65008 && x5 <= 65019 || x5 >= 65136 && x5 <= 65140 || x5 >= 65142 && x5 <= 65276 || x5 >= 65313 && x5 <= 65338 || x5 >= 65345 && x5 <= 65370 || x5 >= 65382 && x5 <= 65470 || x5 >= 65474 && x5 <= 65479 || x5 >= 65482 && x5 <= 65487 || x5 >= 65490 && x5 <= 65495 || x5 >= 65498 && x5 <= 65500 || x5 >= 65536 && x5 <= 65547 || x5 >= 65549 && x5 <= 65574 || x5 >= 65576 && x5 <= 65594 || x5 >= 65596 && x5 <= 65597 || x5 >= 65599 && x5 <= 65613 || x5 >= 65616 && x5 <= 65629 || x5 >= 65664 && x5 <= 65786 || x5 >= 66176 && x5 <= 66204 || x5 >= 66208 && x5 <= 66256 || x5 >= 66304 && x5 <= 66335 || x5 >= 66349 && x5 <= 66368 || x5 >= 66370 && x5 <= 66377 || x5 >= 66384 && x5 <= 66421 || x5 >= 66432 && x5 <= 66461 || x5 >= 66464 && x5 <= 66499 || x5 >= 66504 && x5 <= 66511 || x5 >= 66560 && x5 <= 66717 || x5 >= 66736 && x5 <= 66771 || x5 >= 66776 && x5 <= 66811 || x5 >= 66816 && x5 <= 66855 || x5 >= 66864 && x5 <= 66915 || x5 >= 66928 && x5 <= 66938 || x5 >= 66940 && x5 <= 66954 || x5 >= 66956 && x5 <= 66962 || x5 >= 66964 && x5 <= 66965 || x5 >= 66967 && x5 <= 66977 || x5 >= 66979 && x5 <= 66993 || x5 >= 66995 && x5 <= 67001 || x5 >= 67003 && x5 <= 67004 || x5 >= 67008 && x5 <= 67059 || x5 >= 67072 && x5 <= 67382 || x5 >= 67392 && x5 <= 67413 || x5 >= 67424 && x5 <= 67431 || x5 >= 67456 && x5 <= 67461 || x5 >= 67463 && x5 <= 67504 || x5 >= 67506 && x5 <= 67514 || x5 >= 67584 && x5 <= 67589 || x5 == 67592 || x5 >= 67594 && x5 <= 67637 || x5 >= 67639 && x5 <= 67640 || x5 == 67644 || x5 >= 67647 && x5 <= 67669 || x5 >= 67680 && x5 <= 67702 || x5 >= 67712 && x5 <= 67742 || x5 >= 67808 && x5 <= 67826 || x5 >= 67828 && x5 <= 67829 || x5 >= 67840 && x5 <= 67861 || x5 >= 67872 && x5 <= 67897 || x5 >= 67904 && x5 <= 67929 || x5 >= 67968 && x5 <= 68023 || x5 >= 68030 && x5 <= 68031 || x5 == 68096 || x5 >= 68112 && x5 <= 68115 || x5 >= 68117 && x5 <= 68119 || x5 >= 68121 && x5 <= 68149 || x5 >= 68192 && x5 <= 68220 || x5 >= 68224 && x5 <= 68252 || x5 >= 68288 && x5 <= 68295 || x5 >= 68297 && x5 <= 68324 || x5 >= 68352 && x5 <= 68405 || x5 >= 68416 && x5 <= 68437 || x5 >= 68448 && x5 <= 68466 || x5 >= 68480 && x5 <= 68497 || x5 >= 68608 && x5 <= 68680 || x5 >= 68736 && x5 <= 68786 || x5 >= 68800 && x5 <= 68850 || x5 >= 68864 && x5 <= 68899 || x5 >= 68938 && x5 <= 68965 || x5 >= 68975 && x5 <= 68997 || x5 >= 69248 && x5 <= 69289 || x5 >= 69296 && x5 <= 69297 || x5 >= 69314 && x5 <= 69319 || x5 >= 69376 && x5 <= 69404 || x5 == 69415 || x5 >= 69424 && x5 <= 69445 || x5 >= 69488 && x5 <= 69505 || x5 >= 69552 && x5 <= 69572 || x5 >= 69600 && x5 <= 69622 || x5 >= 69635 && x5 <= 69687 || x5 >= 69745 && x5 <= 69746 || x5 == 69749 || x5 >= 69763 && x5 <= 69807 || x5 >= 69840 && x5 <= 69864 || x5 >= 69891 && x5 <= 69926 || x5 == 69956 || x5 == 69959 || x5 >= 69968 && x5 <= 70002 || x5 == 70006 || x5 >= 70019 && x5 <= 70066 || x5 >= 70081 && x5 <= 70084 || x5 == 70106 || x5 == 70108 || x5 >= 70144 && x5 <= 70161 || x5 >= 70163 && x5 <= 70187 || x5 >= 70207 && x5 <= 70208 || x5 >= 70272 && x5 <= 70278 || x5 == 70280 || x5 >= 70282 && x5 <= 70285 || x5 >= 70287 && x5 <= 70301 || x5 >= 70303 && x5 <= 70312 || x5 >= 70320 && x5 <= 70366 || x5 >= 70405 && x5 <= 70412 || x5 >= 70415 && x5 <= 70416 || x5 >= 70419 && x5 <= 70440 || x5 >= 70442 && x5 <= 70448 || x5 >= 70450 && x5 <= 70451 || x5 >= 70453 && x5 <= 70457 || x5 == 70461 || x5 == 70480 || x5 >= 70493 && x5 <= 70497 || x5 >= 70528 && x5 <= 70537 || x5 == 70539 || x5 == 70542 || x5 >= 70544 && x5 <= 70581 || x5 == 70583 || x5 == 70609 || x5 == 70611 || x5 >= 70656 && x5 <= 70708 || x5 >= 70727 && x5 <= 70730 || x5 >= 70751 && x5 <= 70753 || x5 >= 70784 && x5 <= 70831 || x5 >= 70852 && x5 <= 70853 || x5 == 70855 || x5 >= 71040 && x5 <= 71086 || x5 >= 71128 && x5 <= 71131 || x5 >= 71168 && x5 <= 71215 || x5 == 71236 || x5 >= 71296 && x5 <= 71338 || x5 == 71352 || x5 >= 71424 && x5 <= 71450 || x5 >= 71488 && x5 <= 71494 || x5 >= 71680 && x5 <= 71723 || x5 >= 71840 && x5 <= 71903 || x5 >= 71935 && x5 <= 71942 || x5 == 71945 || x5 >= 71948 && x5 <= 71955 || x5 >= 71957 && x5 <= 71958 || x5 >= 71960 && x5 <= 71983 || x5 == 71999 || x5 == 72001 || x5 >= 72096 && x5 <= 72103 || x5 >= 72106 && x5 <= 72144 || x5 == 72161 || x5 == 72163 || x5 == 72192 || x5 >= 72203 && x5 <= 72242 || x5 == 72250 || x5 == 72272 || x5 >= 72284 && x5 <= 72329 || x5 == 72349 || x5 >= 72368 && x5 <= 72440 || x5 >= 72640 && x5 <= 72672 || x5 >= 72704 && x5 <= 72712 || x5 >= 72714 && x5 <= 72750 || x5 == 72768 || x5 >= 72818 && x5 <= 72847 || x5 >= 72960 && x5 <= 72966 || x5 >= 72968 && x5 <= 72969 || x5 >= 72971 && x5 <= 73008 || x5 == 73030 || x5 >= 73056 && x5 <= 73061 || x5 >= 73063 && x5 <= 73064 || x5 >= 73066 && x5 <= 73097 || x5 == 73112 || x5 >= 73136 && x5 <= 73179 || x5 >= 73440 && x5 <= 73458 || x5 == 73474 || x5 >= 73476 && x5 <= 73488 || x5 >= 73490 && x5 <= 73523 || x5 == 73648 || x5 >= 73728 && x5 <= 74649 || x5 >= 74880 && x5 <= 75075 || x5 >= 77712 && x5 <= 77808 || x5 >= 77824 && x5 <= 78895 || x5 >= 78913 && x5 <= 78918 || x5 >= 78944 && x5 <= 82938 || x5 >= 82944 && x5 <= 83526 || x5 >= 90368 && x5 <= 90397 || x5 >= 92160 && x5 <= 92728 || x5 >= 92736 && x5 <= 92766 || x5 >= 92784 && x5 <= 92862 || x5 >= 92880 && x5 <= 92909 || x5 >= 92928 && x5 <= 92975 || x5 >= 92992 && x5 <= 92995 || x5 >= 93027 && x5 <= 93047 || x5 >= 93053 && x5 <= 93071 || x5 >= 93504 && x5 <= 93548 || x5 >= 93760 && x5 <= 93823 || x5 >= 93856 && x5 <= 93880 || x5 >= 93883 && x5 <= 93907 || x5 >= 93952 && x5 <= 94026 || x5 == 94032 || x5 >= 94099 && x5 <= 94111 || x5 >= 94176 && x5 <= 94177 || x5 == 94179 || x5 >= 94194 && x5 <= 94195 || x5 >= 94208 && x5 <= 101589 || x5 >= 101631 && x5 <= 101662 || x5 >= 101760 && x5 <= 101874 || x5 >= 110576 && x5 <= 110579 || x5 >= 110581 && x5 <= 110587 || x5 >= 110589 && x5 <= 110590 || x5 >= 110592 && x5 <= 110882 || x5 == 110898 || x5 >= 110928 && x5 <= 110930 || x5 == 110933 || x5 >= 110948 && x5 <= 110951 || x5 >= 110960 && x5 <= 111355 || x5 >= 113664 && x5 <= 113770 || x5 >= 113776 && x5 <= 113788 || x5 >= 113792 && x5 <= 113800 || x5 >= 113808 && x5 <= 113817 || x5 >= 119808 && x5 <= 119892 || x5 >= 119894 && x5 <= 119964 || x5 >= 119966 && x5 <= 119967 || x5 == 119970 || x5 >= 119973 && x5 <= 119974 || x5 >= 119977 && x5 <= 119980 || x5 >= 119982 && x5 <= 119993 || x5 == 119995 || x5 >= 119997 && x5 <= 120003 || x5 >= 120005 && x5 <= 120069 || x5 >= 120071 && x5 <= 120074 || x5 >= 120077 && x5 <= 120084 || x5 >= 120086 && x5 <= 120092 || x5 >= 120094 && x5 <= 120121 || x5 >= 120123 && x5 <= 120126 || x5 >= 120128 && x5 <= 120132 || x5 == 120134 || x5 >= 120138 && x5 <= 120144 || x5 >= 120146 && x5 <= 120485 || x5 >= 120488 && x5 <= 120512 || x5 >= 120514 && x5 <= 120538 || x5 >= 120540 && x5 <= 120570 || x5 >= 120572 && x5 <= 120596 || x5 >= 120598 && x5 <= 120628 || x5 >= 120630 && x5 <= 120654 || x5 >= 120656 && x5 <= 120686 || x5 >= 120688 && x5 <= 120712 || x5 >= 120714 && x5 <= 120744 || x5 >= 120746 && x5 <= 120770 || x5 >= 120772 && x5 <= 120779 || x5 >= 122624 && x5 <= 122654 || x5 >= 122661 && x5 <= 122666 || x5 >= 122928 && x5 <= 122989 || x5 >= 123136 && x5 <= 123180 || x5 >= 123191 && x5 <= 123197 || x5 == 123214 || x5 >= 123536 && x5 <= 123565 || x5 >= 123584 && x5 <= 123627 || x5 >= 124112 && x5 <= 124139 || x5 >= 124368 && x5 <= 124397 || x5 == 124400 || x5 >= 124608 && x5 <= 124638 || x5 >= 124640 && x5 <= 124642 || x5 >= 124644 && x5 <= 124645 || x5 >= 124647 && x5 <= 124653 || x5 >= 124656 && x5 <= 124660 || x5 >= 124670 && x5 <= 124671 || x5 >= 124896 && x5 <= 124902 || x5 >= 124904 && x5 <= 124907 || x5 >= 124909 && x5 <= 124910 || x5 >= 124912 && x5 <= 124926 || x5 >= 124928 && x5 <= 125124 || x5 >= 125184 && x5 <= 125251 || x5 == 125259 || x5 >= 126464 && x5 <= 126467 || x5 >= 126469 && x5 <= 126495 || x5 >= 126497 && x5 <= 126498 || x5 == 126500 || x5 == 126503 || x5 >= 126505 && x5 <= 126514 || x5 >= 126516 && x5 <= 126519 || x5 == 126521 || x5 == 126523 || x5 == 126530 || x5 == 126535 || x5 == 126537 || x5 == 126539 || x5 >= 126541 && x5 <= 126543 || x5 >= 126545 && x5 <= 126546 || x5 == 126548 || x5 == 126551 || x5 == 126553 || x5 == 126555 || x5 == 126557 || x5 == 126559 || x5 >= 126561 && x5 <= 126562 || x5 == 126564 || x5 >= 126567 && x5 <= 126570 || x5 >= 126572 && x5 <= 126578 || x5 >= 126580 && x5 <= 126583 || x5 >= 126585 && x5 <= 126588 || x5 == 126590 || x5 >= 126592 && x5 <= 126601 || x5 >= 126603 && x5 <= 126619 || x5 >= 126625 && x5 <= 126627 || x5 >= 126629 && x5 <= 126633 || x5 >= 126635 && x5 <= 126651 || x5 >= 131072 && x5 <= 173791 || x5 >= 173824 && x5 <= 178205 || x5 >= 178208 && x5 <= 183981 || x5 >= 183984 && x5 <= 191456 || x5 >= 191472 && x5 <= 192093 || x5 >= 194560 && x5 <= 195101 || x5 >= 196608 && x5 <= 201546 || x5 >= 201552 && x5 <= 210041)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 65)
 		goto L7
 	}
@@ -17268,7 +16875,7 @@ L2:
 L8:
 	p.Pos = x3
 L7:
-	if !(x6 && (x5 >= 1632 && x5 <= 1641 || x5 >= 1776 && x5 <= 1785 || x5 >= 1984 && x5 <= 1993 || x5 >= 2406 && x5 <= 2415 || x5 >= 2534 && x5 <= 2543 || x5 >= 2662 && x5 <= 2671 || x5 >= 2790 && x5 <= 2799 || x5 >= 2918 && x5 <= 2927 || x5 >= 3046 && x5 <= 3055 || x5 >= 3174 && x5 <= 3183 || x5 >= 3302 && x5 <= 3311 || x5 >= 3430 && x5 <= 3439 || x5 >= 3558 && x5 <= 3567 || x5 >= 3664 && x5 <= 3673 || x5 >= 3792 && x5 <= 3801 || x5 >= 3872 && x5 <= 3881 || x5 >= 4160 && x5 <= 4169 || x5 >= 4240 && x5 <= 4249 || x5 >= 6112 && x5 <= 6121 || x5 >= 6160 && x5 <= 6169 || x5 >= 6470 && x5 <= 6479 || x5 >= 6608 && x5 <= 6617 || x5 >= 6784 && x5 <= 6793 || x5 >= 6800 && x5 <= 6809 || x5 >= 6992 && x5 <= 7001 || x5 >= 7088 && x5 <= 7097 || x5 >= 7232 && x5 <= 7241 || x5 >= 7248 && x5 <= 7257 || x5 >= 42528 && x5 <= 42537 || x5 >= 43216 && x5 <= 43225 || x5 >= 43264 && x5 <= 43273 || x5 >= 43472 && x5 <= 43481 || x5 >= 43504 && x5 <= 43513 || x5 >= 43600 && x5 <= 43609 || x5 >= 44016 && x5 <= 44025 || x5 >= 65296 && x5 <= 65305 || x5 >= 66720 && x5 <= 66729 || x5 >= 68912 && x5 <= 68921 || x5 >= 68928 && x5 <= 68937 || x5 >= 69734 && x5 <= 69743 || x5 >= 69872 && x5 <= 69881 || x5 >= 69942 && x5 <= 69951 || x5 >= 70096 && x5 <= 70105 || x5 >= 70384 && x5 <= 70393 || x5 >= 70736 && x5 <= 70745 || x5 >= 70864 && x5 <= 70873 || x5 >= 71248 && x5 <= 71257 || x5 >= 71360 && x5 <= 71369 || x5 >= 71376 && x5 <= 71395 || x5 >= 71472 && x5 <= 71481 || x5 >= 71904 && x5 <= 71913 || x5 >= 72016 && x5 <= 72025 || x5 >= 72688 && x5 <= 72697 || x5 >= 72784 && x5 <= 72793 || x5 >= 73040 && x5 <= 73049 || x5 >= 73120 && x5 <= 73129 || x5 >= 73184 && x5 <= 73193 || x5 >= 73552 && x5 <= 73561 || x5 >= 90416 && x5 <= 90425 || x5 >= 92768 && x5 <= 92777 || x5 >= 92864 && x5 <= 92873 || x5 >= 93008 && x5 <= 93017 || x5 >= 93552 && x5 <= 93561 || x5 >= 118000 && x5 <= 118009 || x5 >= 120782 && x5 <= 120831 || x5 >= 123200 && x5 <= 123209 || x5 >= 123632 && x5 <= 123641 || x5 >= 124144 && x5 <= 124153 || x5 >= 124401 && x5 <= 124410 || x5 >= 125264 && x5 <= 125273 || x5 >= 130032 && x5 <= 130041)) && p.Depth+1 <= p.MaxDepth {
+	if !(x6 && (x5 >= 1632 && x5 <= 1641 || x5 >= 1776 && x5 <= 1785 || x5 >= 1984 && x5 <= 1993 || x5 >= 2406 && x5 <= 2415 || x5 >= 2534 && x5 <= 2543 || x5 >= 2662 && x5 <= 2671 || x5 >= 2790 && x5 <= 2799 || x5 >= 2918 && x5 <= 2927 || x5 >= 3046 && x5 <= 3055 || x5 >= 3174 && x5 <= 3183 || x5 >= 3302 && x5 <= 3311 || x5 >= 3430 && x5 <= 3439 || x5 >= 3558 && x5 <= 3567 || x5 >= 3664 && x5 <= 3673 || x5 >= 3792 && x5 <= 3801 || x5 >= 3872 && x5 <= 3881 || x5 >= 4160 && x5 <= 4169 || x5 >= 4240 && x5 <= 4249 || x5 >= 6112 && x5 <= 6121 || x5 >= 6160 && x5 <= 6169 || x5 >= 6470 && x5 <= 6479 || x5 >= 6608 && x5 <= 6617 || x5 >= 6784 && x5 <= 6793 || x5 >= 6800 && x5 <= 6809 || x5 >= 6992 && x5 <= 7001 || x5 >= 7088 && x5 <= 7097 || x5 >= 7232 && x5 <= 7241 || x5 >= 7248 && x5 <= 7257 || x5 >= 42528 && x5 <= 42537 || x5 >= 43216 && x5 <= 43225 || x5 >= 43264 && x5 <= 43273 || x5 >= 43472 && x5 <= 43481 || x5 >= 43504 && x5 <= 43513 || x5 >= 43600 && x5 <= 43609 || x5 >= 44016 && x5 <= 44025 || x5 >= 65296 && x5 <= 65305 || x5 >= 66720 && x5 <= 66729 || x5 >= 68912 && x5 <= 68921 || x5 >= 68928 && x5 <= 68937 || x5 >= 69734 && x5 <= 69743 || x5 >= 69872 && x5 <= 69881 || x5 >= 69942 && x5 <= 69951 || x5 >= 70096 && x5 <= 70105 || x5 >= 70384 && x5 <= 70393 || x5 >= 70736 && x5 <= 70745 || x5 >= 70864 && x5 <= 70873 || x5 >= 71248 && x5 <= 71257 || x5 >= 71360 && x5 <= 71369 || x5 >= 71376 && x5 <= 71395 || x5 >= 71472 && x5 <= 71481 || x5 >= 71904 && x5 <= 71913 || x5 >= 72016 && x5 <= 72025 || x5 >= 72688 && x5 <= 72697 || x5 >= 72784 && x5 <= 72793 || x5 >= 73040 && x5 <= 73049 || x5 >= 73120 && x5 <= 73129 || x5 >= 73184 && x5 <= 73193 || x5 >= 73552 && x5 <= 73561 || x5 >= 90416 && x5 <= 90425 || x5 >= 92768 && x5 <= 92777 || x5 >= 92864 && x5 <= 92873 || x5 >= 93008 && x5 <= 93017 || x5 >= 93552 && x5 <= 93561 || x5 >= 118000 && x5 <= 118009 || x5 >= 120782 && x5 <= 120831 || x5 >= 123200 && x5 <= 123209 || x5 >= 123632 && x5 <= 123641 || x5 >= 124144 && x5 <= 124153 || x5 >= 124401 && x5 <= 124410 || x5 >= 125264 && x5 <= 125273 || x5 >= 130032 && x5 <= 130041)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 66)
 		goto L9
 	}
@@ -17282,10 +16889,8 @@ L9:
 	goto fail
 L4:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -17304,7 +16909,6 @@ func v271(p *rt.TParser) (any, bool) {
 	var ok, x4 bool
 	var x3 rune
 	start = p.Pos
-	p.Enter()
 	if _, ok = s220(p); !ok {
 		goto fail
 	}
@@ -17372,10 +16976,8 @@ L13:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -17394,7 +16996,6 @@ func v272(p *rt.TParser) (any, bool) {
 	var ok, x4 bool
 	var x3 rune
 	start = p.Pos
-	p.Enter()
 	if _, ok = u217(p); !ok {
 		goto fail
 	}
@@ -17436,10 +17037,8 @@ L9:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -17449,7 +17048,6 @@ func s273(p *rt.TParser) (any, bool) {
 	var ch rune
 	var size int
 	var ok bool
-	p.Enter()
 	for {
 		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
@@ -17459,7 +17057,6 @@ func s273(p *rt.TParser) (any, bool) {
 		p.Pos += size
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -17477,7 +17074,6 @@ func v274(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 34)) && p.Depth <= p.MaxDepth {
@@ -17522,10 +17118,8 @@ L10:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -17757,15 +17351,12 @@ func s277(p *rt.TParser) (any, bool) {
 	var start int
 	var v any
 	start = p.Pos
-	p.Enter()
 	if !p.ClassFast(&cls354) && !p.ClassSkip(&cls354, 66) {
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -17784,7 +17375,6 @@ func v278(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4 = p.Pos
 	p.Silent++
@@ -17843,10 +17433,8 @@ L11:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -17857,7 +17445,6 @@ func s279(p *rt.TParser) (any, bool) {
 	var x4, ch rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36)) && p.Depth <= p.MaxDepth {
@@ -17890,10 +17477,8 @@ L8:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -17912,7 +17497,6 @@ func v280(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 39)) && p.Depth <= p.MaxDepth {
@@ -17988,10 +17572,8 @@ L14:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18011,7 +17593,6 @@ func i281(p *rt.TParser) (any, bool) {
 	var x1, x6, x13, x17, x19, x25, x32, x36, x38 int
 	var x9, x28 rune
 	var x10, ok, x29 bool
-	p.Enter()
 	x1 = p.Pos
 	x3 = k2
 	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Lookup("sv"), any(2)), any(0)) }) {
@@ -18159,10 +17740,8 @@ L24:
 	goto fail
 L4:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -18183,7 +17762,6 @@ func i282(p *rt.TParser) (any, bool) {
 	var v, k1, v7 any
 	var ok bool
 	var x3, x5, x8 int
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit230, "\\", 90, false); !ok {
@@ -18226,10 +17804,8 @@ L11:
 	goto fail
 L9:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -18239,7 +17815,6 @@ func s283(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 10)) && p.Depth <= p.MaxDepth {
@@ -18271,10 +17846,8 @@ L7:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18283,15 +17856,12 @@ func s284(p *rt.TParser) (any, bool) {
 	var start int
 	var v any
 	start = p.Pos
-	p.Enter()
 	if !p.ClassFast(&cls357) && !p.ClassSkip(&cls357, 65) {
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18309,7 +17879,6 @@ func v285(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = s254(p); !ok {
 		goto fail
 	}
@@ -18323,10 +17892,8 @@ func v285(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18345,7 +17912,6 @@ func v286(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 48)) && p.Depth <= p.MaxDepth {
@@ -18404,10 +17970,8 @@ L7:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18417,7 +17981,6 @@ func s287(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u163(p); !ok {
 		goto L3
@@ -18440,10 +18003,8 @@ L5:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18454,7 +18015,6 @@ func s288(p *rt.TParser) (any, bool) {
 	var ok, x6 bool
 	var x5, ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = s248(p); !ok {
@@ -18468,7 +18028,7 @@ L2:
 	p.Pos = x1
 	x3 = p.Pos
 	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x6 && (x5 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 54)
 		goto L7
 	}
@@ -18566,10 +18126,8 @@ L19:
 	goto fail
 L4:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18641,7 +18199,6 @@ func s290(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Lookup("sv"), any(2)), any(0)) }) {
 		goto L3
@@ -18664,10 +18221,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18678,11 +18233,10 @@ func s291(p *rt.TParser) (any, bool) {
 	var x6, x18 rune
 	var x7, ok, x19 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
-	if !(x7 && (x6 >= 49 && x6 <= 57)) && p.Depth+1 <= p.MaxDepth {
+	if !(x7 && (x6 >= 49 && x6 <= 57)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 58)
 		goto L8
 	}
@@ -18753,10 +18307,8 @@ L20:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18767,11 +18319,10 @@ func s292(p *rt.TParser) (any, bool) {
 	var x6, x18, x24 rune
 	var x7, ok, x19, x25 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
-	if !(x7 && (x6 >= 49 && x6 <= 57)) && p.Depth+1 <= p.MaxDepth {
+	if !(x7 && (x6 >= 49 && x6 <= 57)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 58)
 		goto L8
 	}
@@ -18816,7 +18367,7 @@ L3:
 	p.Pos = x1
 	x16 = p.Pos
 	x18, _, x19 = p.NextOrdinary()
-	if !(x19 && (x18 >= 49 && x18 <= 57)) && p.Depth+1 <= p.MaxDepth {
+	if !(x19 && (x18 >= 49 && x18 <= 57)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 58)
 		goto L20
 	}
@@ -18871,10 +18422,8 @@ L26:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }

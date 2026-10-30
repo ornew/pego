@@ -9,7 +9,7 @@ func init() {
 	// smaller than a goroutine's: a parse that nests too deeply, or the recursive encoding of a deep
 	// tree, ends with "Maximum call stack size exceeded" and stops the program. Measured with the
 	// examples (json, calculator, minilang), the stack of a Web Worker in Chromium 2026 overflowed
-	// at about 1,450 nested rule calls with the closure and bytecode backends and at trees nested
+	// at about 1,450 nested recursive rule calls with the closure and bytecode backends and at trees nested
 	// about 880 levels deep; Node 24's stack holds about twice as much. The limits leave a margin
 	// of more than two, because a rule call takes more stack in rules with more deeply nested
 	// expressions. See docs/design/records/016-web-site-and-playground.md.

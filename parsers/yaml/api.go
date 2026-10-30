@@ -72,7 +72,7 @@ type ParseOption = rt.ParseOption
 // WithUnit selects the unit of input positions (CodePoints by default).
 func WithUnit(unit PositionUnit) ParseOption { return rt.WithUnit(unit) }
 
-// WithMaxDepth limits nested rule calls. Zero selects the generated default;
+// WithMaxDepth limits nested recursive rule calls (rules on a cycle of calls). Zero selects the generated default;
 // a negative effective limit returns an error before parsing.
 // A larger limit does not guarantee that the host stack can accommodate it.
 func WithMaxDepth(n int) ParseOption { return rt.WithMaxDepth(n) }

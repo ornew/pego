@@ -516,9 +516,7 @@ func r2(p *rt.Parser) (*rt.Node, bool) {
 	start, trail := p.Pos, len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
-	p.Enter()
 	v, ok := e10(p, 0)
-	p.Depth--
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
 	if ok {
@@ -537,7 +535,6 @@ func r4(p *rt.Parser) (*rt.Node, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) {
 		p.Control.Take(1)
@@ -591,10 +588,8 @@ L9:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -644,7 +639,6 @@ func q1(p *rt.Parser) (*rt.Node, bool) {
 	var v *rt.Node
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	if !p.AtEndBatch() {
@@ -683,10 +677,8 @@ L2:
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -697,7 +689,6 @@ func q2(p *rt.Parser) (*rt.Node, bool) {
 	var x1, size, x8, x12, x14 int
 	var x3, ch rune
 	var x4, ok bool
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) {
 		p.Control.Take(1)
@@ -831,7 +822,6 @@ L5:
 	goto L2
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -842,7 +832,6 @@ func q3(p *rt.Parser) (*rt.Node, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) {
 		p.Control.Take(1)
@@ -896,10 +885,8 @@ L9:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -924,7 +911,6 @@ func i0(p *rt.TParser) (any, bool) {
 	var x2 []any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
@@ -965,10 +951,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "main"
 	v = tmk_File(c, true, c.Member(k6, "Value"))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -989,7 +973,6 @@ func i1(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	if !p.AtEndBatch() {
@@ -1042,10 +1025,8 @@ L2:
 		c.PushItems(k6)
 		v = tmk_Record(c, true, c.EndList(b_17))
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -1056,7 +1037,6 @@ func s2(p *rt.TParser) (any, bool) {
 	var x4, ch rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	if p.Pos < len(p.In) {
@@ -1197,7 +1177,6 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[2], v, bv)
-	p.Depth--
 	return v, true
 }
 
@@ -1208,7 +1187,6 @@ func s4(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) {
 		p.Control.Take(1)
@@ -1262,10 +1240,8 @@ L9:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }

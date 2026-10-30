@@ -158,7 +158,7 @@ type ruleExtra struct {
 
 var rulesSpec = [...]ruleSpec{
 	{"main", &sh4, 0, 0, 1, 0},
-	{"expr", nil, rt.RuleMemo, 1, 0, 0},
+	{"expr", nil, rt.RuleMemo | rt.RuleRec, 1, 0, 0},
 	{"number", &sh5, 0, 0, 0, 0},
 	{"ws", &sh5, 0, 0, 0, 0},
 	{"ws", &sh5, rt.RuleNovalue, 0, 0, 0},
@@ -185,7 +185,7 @@ var lit20 = []rune("^")
 
 var recRulesSpec = [...]ruleSpec{
 	{"main", &sh4, rt.RuleNovalue, 0, 0, 0},
-	{"expr", nil, rt.RuleMemo | rt.RuleNovalue, 1, 0, 0},
+	{"expr", nil, rt.RuleMemo | rt.RuleNovalue | rt.RuleRec, 1, 0, 0},
 	{"number", &sh5, rt.RuleNovalue, 0, 0, 0},
 	{"ws", &sh5, rt.RuleNovalue, 0, 0, 0},
 }
@@ -588,9 +588,7 @@ func r2(p *rt.Parser) (*rt.Node, bool) {
 	start, trail := p.Pos, len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
-	p.Enter()
 	v, ok := e3(p, 0)
-	p.Depth--
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
 	if ok {
@@ -608,7 +606,6 @@ func r4(p *rt.Parser) (*rt.Node, bool) {
 	var ch rune
 	var size int
 	var ok bool
-	p.Enter()
 	for {
 		if p.Pos < len(p.In) {
 			p.Control.Take(1)
@@ -623,7 +620,6 @@ func r4(p *rt.Parser) (*rt.Node, bool) {
 		p.Pos += size
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -861,7 +857,6 @@ func q2(p *rt.Parser) (*rt.Node, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = 0
 	for {
 		if p.Pos < len(p.In) {
@@ -909,10 +904,8 @@ L3:
 	p.Pos = x2
 L4:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -923,7 +916,6 @@ func q3(p *rt.Parser) (*rt.Node, bool) {
 	var ch rune
 	var size int
 	var ok bool
-	p.Enter()
 	for {
 		if p.Pos < len(p.In) {
 			p.Control.Take(1)
@@ -938,7 +930,6 @@ func q3(p *rt.Parser) (*rt.Node, bool) {
 		p.Pos += size
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -961,7 +952,6 @@ func i0(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = p.Call(trules[1], 0); !ok {
 		goto fail
 	}
@@ -977,10 +967,8 @@ func i0(p *rt.TParser) (any, bool) {
 	p.Where = "main"
 	v = k1
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -1232,7 +1220,6 @@ func s2(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = 0
 	for {
@@ -1287,10 +1274,8 @@ L5:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[2], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -1301,7 +1286,6 @@ func s4(p *rt.TParser) (any, bool) {
 	var ch rune
 	var size int
 	var ok bool
-	p.Enter()
 	for {
 		if p.Pos < len(p.In) {
 			p.Control.Take(1)
@@ -1316,7 +1300,6 @@ func s4(p *rt.TParser) (any, bool) {
 		p.Pos += size
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 

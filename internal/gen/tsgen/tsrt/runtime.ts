@@ -873,6 +873,8 @@ export interface Rule {
   memo: boolean;
   // leader is the leader of a left-recursive cycle; its results are always memoized.
   leader: boolean;
+  // rec means the rule is on a cycle of calls: its entries count against the nesting limit.
+  rec: boolean;
   // seen is the rule's index among the memoized rules whose memoization is deferred to the second
   // call at a position (firstCall), or -1.
   seen: number;
@@ -941,6 +943,7 @@ export function mkRule(
     value,
     memo,
     leader,
+    rec: false,
     seen,
     operatorsRule: null,
     novalue,
@@ -957,7 +960,7 @@ export function mkRule(
  * generated from one grammar owns one Grammar, so several grammars can share this runtime.
  */
 export interface Grammar {
-  // maxDepth is the default maximum nesting of rule calls.
+  // maxDepth is the default maximum nesting of recursive rule calls.
   readonly maxDepth: number;
   // sparse selects the sparse representation of the visited regions for large inputs.
   readonly sparse: boolean;
@@ -1134,7 +1137,7 @@ export function run(g: Grammar, r: Rule, seen: number, input: string | Uint8Arra
       // The JavaScript stack is smaller than the nesting limit allows.
       return {
         node: null,
-        error: new Error(`nesting too deep: the JavaScript stack overflowed at ${p === null ? 0 : p.depth} rule calls`),
+        error: new Error(`nesting too deep: the JavaScript stack overflowed at ${p === null ? 0 : p.depth} nested recursive rule calls`),
       };
     }
     throw x;
@@ -1479,7 +1482,7 @@ export class Parser {
   psize = 0; // the size of the character peek returned
 
   readonly maxDepth: number; // invocation-local maximum nesting
-  depth = 0; // nesting of rule calls
+  depth = 0; // nesting of recursive rule calls
   created: Node[] = []; // struct nodes made by the action being evaluated (from Actx.cbase)
   env: Env | null = null;
   bound: Set<string> | null = null; // names bound anywhere in this parse (a lookup hint)
@@ -2335,13 +2338,13 @@ export class Parser {
     const trail = this.trail.length;
     this.frame = f;
     this.cut = false;
-    if (++this.depth > this.maxDepth) {
+    if (r.rec && ++this.depth > this.maxDepth) {
       this.tooDeep();
     }
     const start = this.pos;
     this.observation?.evaluated();
     let v = r.body(this, min);
-    this.depth--;
+    if (r.rec) this.depth--;
     this.frame = prevFrame;
     this.cut = prevCut;
     this.trail.length = trail;
@@ -2376,12 +2379,12 @@ export class Parser {
     const prevEnv = this.env;
     const prevCut = this.cut;
     this.cut = false;
-    if (++this.depth > this.maxDepth) {
+    if (r.rec && ++this.depth > this.maxDepth) {
       this.tooDeep();
     }
     this.observation?.evaluated();
     let v = r.body(this, min);
-    this.depth--;
+    if (r.rec) this.depth--;
     this.cut = prevCut;
     this.trail.length = trail;
     if (v !== undefined) {
@@ -2396,7 +2399,7 @@ export class Parser {
 
   // tooDeep fails the parse for exceeding the nesting limit.
   tooDeep(): never {
-    throw new Fatal(new Error(`nesting too deep: more than ${this.maxDepth} rule calls`));
+    throw new Fatal(new Error(`nesting too deep: more than ${this.maxDepth} nested recursive rule calls`));
   }
 
   // finish makes the rule's value from the value of its body.
@@ -2824,7 +2827,7 @@ export class Parser {
 
   // operatorsRuleParse parses an expression with operators that bind tighter than min. Each level of its
   // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
-  // against the nesting limit, like a rule call. The call of the rule charges its entry; the loops
+  // against the nesting limit, like the entry of a recursive rule. The call of the rule charges its entry; the loops
   // of the expression charge each iteration.
   operatorsRuleParse(r: Rule, min: number): R {
     if (++this.depth > this.maxDepth) {

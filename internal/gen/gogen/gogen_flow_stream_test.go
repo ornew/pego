@@ -141,7 +141,7 @@ var (
 	methodRefRe    = regexp.MustCompile(`\be\d+\b`)
 	scopeVarRe     = regexp.MustCompile(`\bscope\d+\b`)
 	// streamStatements are the statements that the stream repetition adds to the batch body.
-	streamStatements = regexp.MustCompile(`(?m)^\t+if p\.Stream != nil && p\.Stream\.Emit != nil && p\.Depth == 1 \{\n(\t+p\.StreamStart\(\)\n|\t+p\.EmitStream\(.*\)\n\t+if p\.Pos == x\d+\.Pos \{\n\t+break\n\t+\}\n\t+continue\n)\t+\}\n`)
+	streamStatements = regexp.MustCompile(`(?m)^\t+if p\.StreamsIn\(\d+, (?:true|false)\) \{\n(\t+p\.StreamStart\(\)\n|\t+p\.EmitStream\(.*\)\n\t+if p\.Pos == x\d+\.Pos \{\n\t+break\n\t+\}\n\t+continue\n)\t+\}\n`)
 )
 
 // bodyClosure returns the text of the method that the first line of the generated code matching ref names,
@@ -590,8 +590,8 @@ func TestFlowStreamPlacementMutants(t *testing.T) {
 		if err := streamPlacement(src); err != nil {
 			t.Fatalf("the generated code: %v", err)
 		}
-		startBlock := regexp.MustCompile(`(?m)^\t+if p\.Stream != nil && p\.Stream\.Emit != nil && p\.Depth == 1 \{\n\t+p\.StreamStart\(\)\n\t+\}\n`)
-		emitBlock := regexp.MustCompile(`(?m)^\t+if p\.Stream != nil && p\.Stream\.Emit != nil && p\.Depth == 1 \{\n\t+p\.EmitStream\(.*\)\n\t+if p\.Pos == x\d+\.Pos \{\n\t+break\n\t+\}\n\t+continue\n\t+\}\n`)
+		startBlock := regexp.MustCompile(`(?m)^\t+if p\.StreamsIn\(\d+, (?:true|false)\) \{\n\t+p\.StreamStart\(\)\n\t+\}\n`)
+		emitBlock := regexp.MustCompile(`(?m)^\t+if p\.StreamsIn\(\d+, (?:true|false)\) \{\n\t+p\.EmitStream\(.*\)\n\t+if p\.Pos == x\d+\.Pos \{\n\t+break\n\t+\}\n\t+continue\n\t+\}\n`)
 		sb, eb := startBlock.FindString(src), emitBlock.FindString(src)
 		if sb == "" || eb == "" {
 			t.Fatal("no stream blocks in the generated code")

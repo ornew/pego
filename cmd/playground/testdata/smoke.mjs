@@ -145,7 +145,7 @@ for (const ex of manifest) {
       } catch (err) {
         res = { crash: String(err) };
       }
-      check(`nesting ${n} ${backend || "default"}`, res.matched === false && /^nesting too deep: more than \d+ rule calls$/.test(res.error),
+      check(`nesting ${n} ${backend || "default"}`, res.matched === false && /^nesting too deep: more than \d+ nested recursive rule calls$/.test(res.error),
         JSON.stringify(res).slice(0, 300));
     }
     let res;

@@ -239,8 +239,8 @@ for (const e of [internal, new RangeError("Maximum call stack size exceeded"), n
   }
 }
 `)
-	want := "nesting too deep: the JavaScript stack overflowed at 0 rule calls\n" +
-		"nesting too deep: the JavaScript stack overflowed at 0 rule calls\n" +
+	want := "nesting too deep: the JavaScript stack overflowed at 0 nested recursive rule calls\n" +
+		"nesting too deep: the JavaScript stack overflowed at 0 nested recursive rule calls\n" +
 		"threw TypeError: bad\n" +
 		"threw RangeError: Invalid array length\n"
 	if out != want {

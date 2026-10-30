@@ -49,7 +49,7 @@ pego gen -g <grammar> [-lang go|ts] [-module <import path>] [-pkg <package>]
 | `-source-info` | `SourceInfo` | Make the parser record [source information](nodes.md#source-information): the rule of each node and the names of captures. Without it, `Node.Rule`, `Node.Field` and `Node.Fields` of a parsed node are empty and the outputs omit them |
 | `-default-value` | `DefaultValue` | Make the parser return default values, as [Default Values](../language/actions.md#default-values) describes. Cannot be combined with `-types`, because the types come from the dropped actions |
 | `-nodoc` | `OmitPackageDoc` | Omit the package comment (Go only; rejected with `-lang ts`) |
-| `-max-depth` | `MaxDepth` | The default nested rule-call limit; zero selects 100,000, a positive value overrides it, a negative value fails generation. TypeScript also requires a safe integer |
+| `-max-depth` | `MaxDepth` | The default nested recursive rule-call limit; zero selects 100,000, a positive value overrides it, a negative value fails generation. TypeScript also requires a safe integer |
 
 - The output is deterministic: generating twice yields identical bytes. Omitted,
   zero and an explicit 100,000 depth default generate identical source.
@@ -113,9 +113,9 @@ const (
   points and the generated depth default.
 - A generated parser is safe for concurrent use: each call has its own state.
 - Errors in actions (such as division by zero) and exceeding the nesting limit
-  return plain errors as in the engine. The depth limit counts nested rule calls; a
-  larger limit does not guarantee stack capacity. The default error is
-  `nesting too deep: more than 100000 rule calls`.
+  return plain errors as in the engine. The depth limit counts nested entries of recursive rules
+  ([Limits](parsing.md#limits)); a larger limit does not guarantee stack capacity.
+  The default error is `nesting too deep: more than 100000 nested recursive rule calls`.
 - A Go parser generated with budget controls (`-budget-controls`, `BudgetControls`)
   exports `WithContext`, `WithLimits`, `Limits`, `LimitKind`,
   `LimitError`, `ErrLimit`, `LimitBudget`, `LimitInput` and `Unlimited`. A parser
@@ -379,8 +379,8 @@ engine, and not UTF-16 code units. The parser decodes the input first.
 | The input does not match | `SyntaxError` |
 | `#recover` skipped input | `SyntaxErrors`, and `node` is set |
 | A runtime error in an action | `Error` with the message of the engine |
-| More nested rule calls than the limit (default 100,000) | `Error`: `nesting too deep: more than 100000 rule calls` |
-| The JavaScript stack is exhausted before the limit | `Error`: `nesting too deep: the JavaScript stack overflowed at N rule calls` |
+| More nested recursive rule calls than the limit (default 100,000) | `Error`: `nesting too deep: more than 100000 nested recursive rule calls` |
+| The JavaScript stack is exhausted before the limit | `Error`: `nesting too deep: the JavaScript stack overflowed at N nested recursive rule calls` |
 
 The host stack of a JavaScript runtime is far smaller than the stack of a Go
 program, so a TypeScript parser can reject nesting that the engine accepts.
@@ -417,7 +417,7 @@ program, so a TypeScript parser can reject nesting that the engine accepts.
 | Streaming | `ParseStream`, `Iterate` with `-stream` | None; `#stream` is an ordinary repetition |
 | Incremental documents | A subset with `-document` | None |
 | Cancellation and budget limits | `WithContext`, `WithLimits` | `signal`, `budget`; `ParseInterruptionError`; with `-budget-controls` |
-| Nested rule-call limit | `WithMaxDepth`, `-max-depth` | `maxDepth`, `-max-depth`; the host stack also bounds nesting |
+| Nested recursive rule-call limit | `WithMaxDepth`, `-max-depth` | `maxDepth`, `-max-depth`; the host stack also bounds nesting |
 | Choice of backend, saved grammar, `Parser.Grammar()` | Not applicable | Not applicable |
 | Tracing and profiling | With `-observability` | With `-observability` (batch parsers) |
 

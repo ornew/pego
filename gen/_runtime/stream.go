@@ -26,6 +26,9 @@ type streamInput struct {
 	eof               bool
 	// maxInput, when positive, is the longest stream the parse accepts, in units (streamFill).
 	maxInput int
+	// start is the Id of the start rule of the stream parse, the one rule whose #stream repetition
+	// streams.
+	start int
 	// Emit receives the committed elements of the start rule's #stream
 	// repetition with the parse's budget control. Nil collects the repetition
 	// as a batch parse does.
@@ -142,7 +145,7 @@ func RunParseStreamWithBudget(r *Rule, reader io.Reader, emit func(*Node, *Budge
 	p.setGrammar(r.g)
 	p.Control = o.control
 	p.Observation = newObservation(&o.observe)
-	p.Stream = &streamInput{reader: bufio.NewReader(reader), baseLine: 1, baseCol: 1, Emit: emit, diagnostic: o.diagnostic}
+	p.Stream = &streamInput{reader: bufio.NewReader(reader), baseLine: 1, baseCol: 1, Emit: emit, diagnostic: o.diagnostic, start: r.Id}
 	p.Stream.tail.limit = o.diagnosticLimit
 	p.Stream.maxInput = o.maxInput
 	p.Control.Check()
@@ -756,3 +759,12 @@ func (p *Parser) streamLineCol(pos int) (int, int) {
 //
 // NewStreamIterator is for generated parsers; not a stable API.
 func NewStreamIterator(pull *StreamPull[*Node]) *StreamIterator { return &StreamIterator{pull} }
+
+// StreamsIn reports whether the #stream repetition of the rule id streams: the parse is a stream
+// parse with a callback, the rule is its start rule, and the rule runs at the top (a recursive
+// rule counts its entries, so its outermost entry is the first; any other rule is entered once).
+//
+// StreamsIn is for generated parsers; not a stable API.
+func (p *Parser) StreamsIn(id int, rec bool) bool {
+	return p.Stream != nil && p.Stream.Emit != nil && p.Stream.start == id && (!rec || p.Depth == 1)
+}

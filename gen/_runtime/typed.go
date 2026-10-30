@@ -408,6 +408,7 @@ const (
 	RuleNovalue
 	RuleDocMemo
 	RuleSplice
+	RuleRec
 )
 
 // RuleExtra holds the fields of the Rule with the Id that are rarely set.
@@ -450,7 +451,7 @@ func NewRules[S ~struct {
 			r.Value = *s.Value
 		}
 		r.Memo, r.Leader, r.Novalue = s.Flags&RuleMemo != 0, s.Flags&RuleLeader != 0, s.Flags&RuleNovalue != 0
-		r.DocMemo, r.Splice = s.Flags&RuleDocMemo != 0, s.Flags&RuleSplice != 0
+		r.DocMemo, r.Splice, r.Rec = s.Flags&RuleDocMemo != 0, s.Flags&RuleSplice != 0, s.Flags&RuleRec != 0
 		r.Scope, r.Vars = strs[s.Scope], strs[s.Vars]
 	}
 	for _, extra := range extras {
@@ -1314,14 +1315,15 @@ func (p *TParser) invoke(r *TRule, min int) (any, bool) {
 	f := p.NewFrame(len(r.Scope))
 	prevFrame, prevEnv, prevCut, trail := p.Frame, p.Env, p.Cut, len(p.Trail)
 	p.Frame, p.Cut = f, false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
+	if r.Rec {
+		p.Enter()
 	}
 	start := p.Pos
 	p.Observation.Evaluated()
 	v, ok := r.Body(p, min)
-	p.Depth--
+	if r.Rec {
+		p.Depth--
+	}
 	p.Frame, p.Cut = prevFrame, prevCut
 	p.DropTrail(trail)
 	if ok {
@@ -1354,13 +1356,14 @@ func (p *TParser) invokePlainBody(r *TRule, min int) (any, bool) {
 	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
+	if r.Rec {
+		p.Enter()
 	}
 	p.Observation.Evaluated()
 	v, ok := r.Body(p, min)
-	p.Depth--
+	if r.Rec {
+		p.Depth--
+	}
 	p.Cut = prevCut
 	p.DropTrail(trail)
 	if ok {

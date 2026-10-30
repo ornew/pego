@@ -48,6 +48,11 @@ rule one Word = t:(two) #atomic => Word{Text: text($t)}
 rule two Word = t:(three) #atomic => Word{Text: text($t)}
 rule three Word = t:(four) #atomic => Word{Text: text($t)}
 rule four Word = t:("é") #atomic => Word{Text: text($t)}`, Inputs: []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
+		{Name: "recursion through helpers", Src: `type Word = { Text string }
+rule main Word = t:(n) #atomic => Word{Text: text($t)}
+rule n Word = t:("(" n ")" / "a" one / "b" one / "é") #atomic => Word{Text: text($t)}
+rule one Word = t:(two) #atomic => Word{Text: text($t)}
+rule two Word = t:("é") #atomic => Word{Text: text($t)}`, Inputs: []string{"é", "aé", "(aé)", "((bé))", "(((aé)))", "((((é))))", "(a?)", "((b"}},
 		{Name: "action", Src: `type Word = { N int }
 rule main = x:"a"* #atomic => Word{N: 1 / len($x)}`, Inputs: []string{"", "a", "aa", "?"}},
 		{Name: "recovery", Src: `type Word = { Text string }

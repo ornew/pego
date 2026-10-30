@@ -682,6 +682,9 @@ func (g *Generator) rules() {
 			if r.Splice {
 				flags = append(flags, "RuleSplice")
 			}
+			if r.Rec {
+				flags = append(flags, "RuleRec")
+			}
 			flagsLit := "0"
 			if len(flags) > 0 {
 				flagsLit = strings.Join(flags, " | ")
@@ -928,11 +931,11 @@ func (g *Generator) typedCall(r *compile.Rule, body string, s *compile.Scope, d 
 			name = g.tracePlainWrapper(r, name)
 		}
 		fmt.Fprintf(m, "// %s, called as by invokePlain\nfunc %s(p *TParser) (any, bool) {\n", r.Name, name)
-		m.WriteString("\t" + g.saveRec(", trail") + " := " + g.saveRecValues(", len(p.Trail)") + "\n\tprevEnv, prevCut := p.Env, p.Cut\n\tp.Cut = false\n\tp.Enter()\n")
+		m.WriteString("\t" + g.saveRec(", trail") + " := " + g.saveRecValues(", len(p.Trail)") + "\n\tprevEnv, prevCut := p.Env, p.Cut\n\tp.Cut = false\n" + enterRec(r))
 		if g.Observability && (!r.Plain || g.directTypedDocument) {
 			m.WriteString("p.Observation.Evaluated()\n")
 		}
-		fmt.Fprintf(m, "\tv, ok := %s(p, 0)\n\tp.Depth--\n\tp.Cut = prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body)
+		fmt.Fprintf(m, "\tv, ok := %s(p, 0)\n%s\tp.Cut = prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body, leaveRec(r))
 		finish("EmptyTFrame")
 		m.WriteString("\t} else {\n\t\t" + g.restoreRec("start", "rec") + "\n\t}\n\tp.Env = prevEnv\n\treturn v, ok\n}\n\n")
 	}
@@ -986,11 +989,11 @@ func (g *Generator) typedCall(r *compile.Rule, body string, s *compile.Scope, d 
 		return
 	}
 	fmt.Fprintf(m, "// %s, invoked as by invoke\nfunc i%d(p *TParser) (any, bool) {\n", r.Name, r.ID)
-	fmt.Fprintf(m, "\tf := p.NewFrame(%d)\n\tprevFrame, prevEnv, prevCut, trail := p.Frame, p.Env, p.Cut, len(p.Trail)\n\tp.Frame, p.Cut = f, false\n\tp.Enter()\n\tstart := p.Pos\n\t_ = start\n", len(s.Names))
+	fmt.Fprintf(m, "\tf := p.NewFrame(%d)\n\tprevFrame, prevEnv, prevCut, trail := p.Frame, p.Env, p.Cut, len(p.Trail)\n\tp.Frame, p.Cut = f, false\n%s\tstart := p.Pos\n\t_ = start\n", len(s.Names), enterRec(r))
 	if g.Observability {
 		m.WriteString("p.Observation.Evaluated()\n")
 	}
-	fmt.Fprintf(m, "\tv, ok := %s(p, 0)\n\tp.Depth--\n\tp.Frame, p.Cut = prevFrame, prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body)
+	fmt.Fprintf(m, "\tv, ok := %s(p, 0)\n%s\tp.Frame, p.Cut = prevFrame, prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body, leaveRec(r))
 	finish("f")
 	m.WriteString("\t}\n\tp.Env = prevEnv\n\tp.FreeFrame(f)\n\treturn v, ok\n}\n\n")
 }
@@ -1155,10 +1158,9 @@ func (g *Generator) plainCall(r *compile.Rule, body string) {
 	g.Methods.WriteString("\t" + g.saveRec(", trail") + " := " + g.saveRecValues(", len(p.Trail)") + "\n")
 	g.Methods.WriteString(`	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
-	p.Enter()
-`)
+` + enterRec(r))
 	fmt.Fprintf(&g.Methods, "\tv, ok := %s(p, 0)\n", body)
-	g.Methods.WriteString("\tp.Depth--\n\tp.Cut = prevCut\n" + g.pick("\tp.Trail = p.Trail[:trail]\n", "\tp.DropTrail(trail)\n") + "\tif ok {\n")
+	g.Methods.WriteString(leaveRec(r) + "\tp.Cut = prevCut\n" + g.pick("\tp.Trail = p.Trail[:trail]\n", "\tp.DropTrail(trail)\n") + "\tif ok {\n")
 	if r.Novalue {
 		g.Methods.WriteString("\t\tv = nil\n")
 	} else {
@@ -1217,9 +1219,26 @@ func (g *Generator) first(e grammar.Expr, depth int, seen map[string]bool) (stri
 			break
 		}
 		seen[e.Name] = true
-		return g.first(r.Def.Expr, depth+1, seen)
+		return g.first(r.Def.Expr, depth+r.EntryDepth(), seen)
 	}
 	return "", 0, 0, false
+}
+
+// enterRec returns the statement that counts the entry of the rule r against the nesting limit: only
+// a rule on a cycle of calls counts.
+func enterRec(r *compile.Rule) string {
+	if r.Rec {
+		return "\tp.Enter()\n"
+	}
+	return ""
+}
+
+// leaveRec returns the statement that ends what enterRec counted.
+func leaveRec(r *compile.Rule) string {
+	if r.Rec {
+		return "\tp.Depth--\n"
+	}
+	return ""
 }
 
 // depthLimit returns the nesting guard needed before calling depth rules.

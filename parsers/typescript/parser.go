@@ -2949,129 +2949,129 @@ var rulesSpec = [...]ruleSpec{
 	{"topLevelAwaitFreeStart", &sh13, rt.RuleMemo, 1, 0, 0},
 	{"endOfFile", &sh23, 0, 0, 0, 0},
 	{"hashbang", &sh13, 0, 0, 0, 0},
-	{"statement", &sh494, rt.RuleMemo, 2, 4, 2},
-	{"specialStatement", &sh23, 0, 0, 0, 2},
+	{"statement", &sh494, rt.RuleMemo | rt.RuleRec, 2, 4, 2},
+	{"specialStatement", &sh23, rt.RuleRec, 0, 0, 2},
 	{"statementSpecialStart", &sh23, rt.RuleMemo, 3, 0, 0},
 	{"statementKeyword", &sh23, 0, 0, 0, 0},
-	{"plainStatement", &sh494, 0, 0, 4, 2},
-	{"plainFunctionDeclaration", &sh5, 0, 0, 5, 2},
-	{"plainClassDeclaration", &sh5, 0, 0, 5, 2},
-	{"decoratedDeclaration", &sh5, 0, 0, 5, 2},
-	{"contextualDeclaration", &sh5, 0, 0, 5, 2},
+	{"plainStatement", &sh494, rt.RuleRec, 0, 4, 2},
+	{"plainFunctionDeclaration", &sh5, rt.RuleRec, 0, 5, 2},
+	{"plainClassDeclaration", &sh5, rt.RuleRec, 0, 5, 2},
+	{"decoratedDeclaration", &sh5, rt.RuleRec, 0, 5, 2},
+	{"contextualDeclaration", &sh5, rt.RuleRec, 0, 5, 2},
 	{"declarationKeyword", &sh23, 0, 0, 0, 0},
-	{"block", &sh73, rt.RuleMemo, 4, 6, 2},
+	{"block", &sh73, rt.RuleMemo | rt.RuleRec, 4, 6, 2},
 	{"emptyStatement", &sh23, 0, 0, 0, 0},
-	{"variableStatement", &sh13, 0, 0, 7, 2},
+	{"variableStatement", &sh13, rt.RuleRec, 0, 7, 2},
 	{"variableStatementStart", &sh23, rt.RuleMemo, 5, 0, 0},
 	{"letFollows", &sh5, 0, 0, 0, 0},
 	{"usingFollows", &sh13, rt.RuleMemo, 6, 0, 0},
-	{"ifStatement", &sh479, 0, 0, 8, 2},
-	{"doStatement", &sh645, 0, 0, 9, 2},
-	{"whileStatement", &sh767, 0, 0, 10, 2},
-	{"withStatement", &sh767, 0, 0, 10, 2},
-	{"forStatement", &sh23, 0, 0, 0, 2},
-	{"forOfStatement", &sh768, 0, 0, 11, 2},
-	{"forInStatement", &sh645, 0, 0, 12, 2},
-	{"forClassicStatement", &sh769, 0, 0, 13, 2},
+	{"ifStatement", &sh479, rt.RuleRec, 0, 8, 2},
+	{"doStatement", &sh645, rt.RuleRec, 0, 9, 2},
+	{"whileStatement", &sh767, rt.RuleRec, 0, 10, 2},
+	{"withStatement", &sh767, rt.RuleRec, 0, 10, 2},
+	{"forStatement", &sh23, rt.RuleRec, 0, 0, 2},
+	{"forOfStatement", &sh768, rt.RuleRec, 0, 11, 2},
+	{"forInStatement", &sh645, rt.RuleRec, 0, 12, 2},
+	{"forClassicStatement", &sh769, rt.RuleRec, 0, 13, 2},
 	{"awaitToken", &sh23, 0, 0, 0, 0},
-	{"forInitializer", &sh5, rt.RuleMemo, 7, 14, 2},
-	{"forDeclarationList", &sh5, 0, 0, 7, 2},
+	{"forInitializer", &sh5, rt.RuleMemo | rt.RuleRec, 7, 14, 2},
+	{"forDeclarationList", &sh5, rt.RuleRec, 0, 7, 2},
 	{"forUsingFollows", &sh23, 0, 0, 0, 0},
 	{"continueStatement", &sh73, 0, 0, 15, 2},
 	{"breakStatement", &sh73, 0, 0, 15, 2},
-	{"returnStatement", &sh73, 0, 0, 16, 2},
-	{"throwStatement", &sh73, 0, 0, 17, 2},
+	{"returnStatement", &sh73, rt.RuleRec, 0, 16, 2},
+	{"throwStatement", &sh73, rt.RuleRec, 0, 17, 2},
 	{"missingIdentifier", &sh23, 0, 0, 0, 0},
 	{"debuggerStatement", &sh23, 0, 0, 0, 0},
-	{"switchStatement", &sh767, 0, 0, 18, 2},
-	{"caseBlock", &sh73, 0, 0, 19, 2},
-	{"caseOrDefaultClause", &sh23, 0, 0, 0, 2},
-	{"caseClause", &sh319, 0, 0, 20, 2},
-	{"defaultClause", &sh73, 0, 0, 6, 2},
-	{"clauseStatement", &sh5, rt.RuleMemo, 8, 4, 2},
-	{"tryStatement", &sh319, 0, 0, 21, 2},
-	{"catchClause", &sh73, 0, 0, 22, 2},
-	{"expressionOrLabeledStatement", &sh5, 0, 0, 4, 2},
-	{"labeledStatement", &sh73, rt.RuleMemo, 9, 23, 2},
-	{"expressionStatement", &sh13, rt.RuleMemo, 10, 16, 2},
-	{"declareStatement", &sh5, 0, 0, 24, 2},
+	{"switchStatement", &sh767, rt.RuleRec, 0, 18, 2},
+	{"caseBlock", &sh73, rt.RuleRec, 0, 19, 2},
+	{"caseOrDefaultClause", &sh23, rt.RuleRec, 0, 0, 2},
+	{"caseClause", &sh319, rt.RuleRec, 0, 20, 2},
+	{"defaultClause", &sh73, rt.RuleRec, 0, 6, 2},
+	{"clauseStatement", &sh5, rt.RuleMemo | rt.RuleRec, 8, 4, 2},
+	{"tryStatement", &sh319, rt.RuleRec, 0, 21, 2},
+	{"catchClause", &sh73, rt.RuleRec, 0, 22, 2},
+	{"expressionOrLabeledStatement", &sh5, rt.RuleRec, 0, 4, 2},
+	{"labeledStatement", &sh73, rt.RuleMemo | rt.RuleRec, 9, 23, 2},
+	{"expressionStatement", &sh13, rt.RuleMemo | rt.RuleRec, 10, 16, 2},
+	{"declareStatement", &sh5, rt.RuleRec, 0, 24, 2},
 	{"declareIdentifier", &sh23, 0, 0, 0, 0},
 	{"eos", &sh23, rt.RuleMemo, 11, 0, 0},
 	{"canParseSemicolon", &sh13, rt.RuleMemo, 12, 0, 0},
 	{"nlAhead", &sh13, rt.RuleMemo, 13, 0, 0},
-	{"declarationStart", &sh23, rt.RuleMemo, 14, 0, 2},
-	{"declaration", &sh23, rt.RuleMemo, 15, 0, 2},
-	{"variableStatementWithModifiers", &sh73, 0, 0, 25, 2},
-	{"variableDeclarationList", &sh13, rt.RuleMemo, 16, 26, 2},
+	{"declarationStart", &sh23, rt.RuleMemo | rt.RuleRec, 14, 0, 2},
+	{"declaration", &sh23, rt.RuleMemo | rt.RuleRec, 15, 0, 2},
+	{"variableStatementWithModifiers", &sh73, rt.RuleRec, 0, 25, 2},
+	{"variableDeclarationList", &sh13, rt.RuleMemo | rt.RuleRec, 16, 26, 2},
 	{"declarationListKeyword", &sh23, 0, 0, 0, 0},
-	{"variableDeclarations", &sh73, 0, 0, 27, 2},
-	{"variableDeclaration", &sh73, rt.RuleMemo, 17, 28, 2},
-	{"initializer", &sh13, rt.RuleMemo, 18, 16, 2},
-	{"typeAnnotation", &sh13, rt.RuleMemo, 19, 29, 2},
-	{"bindingName", &sh23, rt.RuleMemo, 20, 0, 2},
-	{"bindingPattern", &sh23, rt.RuleMemo, 21, 0, 2},
-	{"objectBindingPattern", &sh73, 0, 0, 30, 2},
-	{"bindingElement", &sh23, rt.RuleMemo, 22, 0, 2},
-	{"bindingElementWithPropertyName", &sh767, 0, 0, 31, 2},
-	{"bindingElementShorthand", &sh73, rt.RuleMemo, 23, 32, 2},
-	{"arrayBindingPattern", &sh73, 0, 0, 30, 2},
-	{"arrayBindingElement", &sh23, rt.RuleMemo, 24, 0, 2},
+	{"variableDeclarations", &sh73, rt.RuleRec, 0, 27, 2},
+	{"variableDeclaration", &sh73, rt.RuleMemo | rt.RuleRec, 17, 28, 2},
+	{"initializer", &sh13, rt.RuleMemo | rt.RuleRec, 18, 16, 2},
+	{"typeAnnotation", &sh13, rt.RuleMemo | rt.RuleRec, 19, 29, 2},
+	{"bindingName", &sh23, rt.RuleMemo | rt.RuleRec, 20, 0, 2},
+	{"bindingPattern", &sh23, rt.RuleMemo | rt.RuleRec, 21, 0, 2},
+	{"objectBindingPattern", &sh73, rt.RuleRec, 0, 30, 2},
+	{"bindingElement", &sh23, rt.RuleMemo | rt.RuleRec, 22, 0, 2},
+	{"bindingElementWithPropertyName", &sh767, rt.RuleRec, 0, 31, 2},
+	{"bindingElementShorthand", &sh73, rt.RuleMemo | rt.RuleRec, 23, 32, 2},
+	{"arrayBindingPattern", &sh73, rt.RuleRec, 0, 30, 2},
+	{"arrayBindingElement", &sh23, rt.RuleMemo | rt.RuleRec, 24, 0, 2},
 	{"omittedExpression", &sh23, 0, 0, 0, 0},
-	{"functionDeclaration", &sh768, rt.RuleMemo, 25, 33, 2},
-	{"defaultModifierScan", &sh13, 0, 0, 5, 2},
-	{"asyncModifierScan", &sh13, rt.RuleMemo, 26, 34, 2},
-	{"parameterList", &sh73, rt.RuleMemo, 27, 35, 2},
-	{"parameters", &sh73, rt.RuleMemo, 28, 27, 2},
-	{"parameter", &sh23, rt.RuleMemo, 29, 0, 2},
-	{"thisParameter", &sh13, 0, 0, 36, 2},
+	{"functionDeclaration", &sh768, rt.RuleMemo | rt.RuleRec, 25, 33, 2},
+	{"defaultModifierScan", &sh13, rt.RuleRec, 0, 5, 2},
+	{"asyncModifierScan", &sh13, rt.RuleMemo | rt.RuleRec, 26, 34, 2},
+	{"parameterList", &sh73, rt.RuleMemo | rt.RuleRec, 27, 35, 2},
+	{"parameters", &sh73, rt.RuleMemo | rt.RuleRec, 28, 27, 2},
+	{"parameter", &sh23, rt.RuleMemo | rt.RuleRec, 29, 0, 2},
+	{"thisParameter", &sh13, rt.RuleRec, 0, 36, 2},
 	{"thisIdentifier", &sh23, 0, 0, 0, 0},
-	{"regularParameter", &sh479, 0, 0, 37, 2},
-	{"returnType", &sh13, rt.RuleMemo, 30, 29, 2},
-	{"classDeclaration", &sh768, rt.RuleMemo, 31, 38, 2},
-	{"classExpression", &sh768, 0, 0, 38, 2},
+	{"regularParameter", &sh479, rt.RuleRec, 0, 37, 2},
+	{"returnType", &sh13, rt.RuleMemo | rt.RuleRec, 30, 29, 2},
+	{"classDeclaration", &sh768, rt.RuleMemo | rt.RuleRec, 31, 38, 2},
+	{"classExpression", &sh768, rt.RuleRec, 0, 38, 2},
 	{"className", &sh5, rt.RuleMemo, 32, 14, 0},
-	{"heritageClauses", &sh13, rt.RuleMemo, 33, 27, 2},
-	{"heritageClause", &sh13, rt.RuleMemo, 34, 39, 2},
+	{"heritageClauses", &sh13, rt.RuleMemo | rt.RuleRec, 33, 27, 2},
+	{"heritageClause", &sh13, rt.RuleMemo | rt.RuleRec, 34, 39, 2},
 	{"heritageElementStart", &sh23, rt.RuleMemo, 35, 0, 2},
 	{"leftHandSideExpressionStart", &sh23, 0, 0, 0, 0},
-	{"heritageTypes", &sh73, 0, 0, 27, 2},
-	{"expressionWithTypeArguments", &sh13, rt.RuleMemo, 36, 40, 2},
-	{"classMembers", &sh494, rt.RuleMemo, 37, 41, 2},
+	{"heritageTypes", &sh73, rt.RuleRec, 0, 27, 2},
+	{"expressionWithTypeArguments", &sh13, rt.RuleMemo | rt.RuleRec, 36, 40, 2},
+	{"classMembers", &sh494, rt.RuleMemo | rt.RuleRec, 37, 41, 2},
 	{"classMemberStart", &sh23, 0, 0, 0, 0},
 	{"nonMemberModifier", &sh5, rt.RuleMemo, 38, 0, 0},
 	{"memberModifier", &sh5, 0, 0, 0, 0},
 	{"classMemberNameFollows", &sh23, rt.RuleMemo, 39, 0, 0},
-	{"classElement", &sh23, 0, 0, 0, 2},
-	{"classAccessor", &sh5, 0, 0, 42, 2},
-	{"classMemberNotAccessor", &sh5, 0, 0, 42, 2},
+	{"classElement", &sh23, rt.RuleRec, 0, 0, 2},
+	{"classAccessor", &sh5, rt.RuleRec, 0, 42, 2},
+	{"classMemberNotAccessor", &sh5, rt.RuleRec, 0, 42, 2},
 	{"accessorKeyword", &sh5, rt.RuleMemo, 40, 0, 0},
 	{"semicolonClassElement", &sh23, 0, 0, 0, 0},
-	{"classStaticBlock", &sh73, 0, 0, 43, 2},
-	{"getAccessor", &sh645, 0, 0, 44, 2},
-	{"setAccessor", &sh645, 0, 0, 44, 2},
+	{"classStaticBlock", &sh73, rt.RuleRec, 0, 43, 2},
+	{"getAccessor", &sh645, rt.RuleRec, 0, 44, 2},
+	{"setAccessor", &sh645, rt.RuleRec, 0, 44, 2},
 	{"canFollowGetOrSet", &sh23, rt.RuleMemo, 41, 0, 0},
-	{"constructorDeclaration", &sh479, 0, 0, 45, 2},
+	{"constructorDeclaration", &sh479, rt.RuleRec, 0, 45, 2},
 	{"constructorName", &sh23, rt.RuleMemo, 42, 0, 0},
-	{"classIndexSignature", &sh479, 0, 0, 46, 2},
-	{"methodDeclaration", &sh768, 0, 0, 47, 2},
-	{"propertyDeclaration", &sh479, 0, 0, 48, 2},
-	{"interfaceDeclaration", &sh479, 0, 0, 49, 2},
-	{"typeAliasDeclaration", &sh645, 0, 0, 50, 2},
+	{"classIndexSignature", &sh479, rt.RuleRec, 0, 46, 2},
+	{"methodDeclaration", &sh768, rt.RuleRec, 0, 47, 2},
+	{"propertyDeclaration", &sh479, rt.RuleRec, 0, 48, 2},
+	{"interfaceDeclaration", &sh479, rt.RuleRec, 0, 49, 2},
+	{"typeAliasDeclaration", &sh645, rt.RuleRec, 0, 50, 2},
 	{"intrinsicKeyword", &sh23, 0, 0, 0, 0},
-	{"enumDeclaration", &sh479, 0, 0, 51, 2},
-	{"enumMember", &sh13, rt.RuleMemo, 43, 52, 2},
-	{"moduleDeclaration", &sh23, 0, 0, 0, 2},
-	{"namespaceDeclaration", &sh319, 0, 0, 53, 2},
-	{"namespaceBody", &sh494, rt.RuleMemo, 44, 5, 2},
-	{"nestedNamespace", &sh13, 0, 0, 54, 2},
-	{"externalModuleDeclaration", &sh319, 0, 0, 55, 2},
-	{"globalDeclaration", &sh73, 0, 0, 55, 2},
+	{"enumDeclaration", &sh479, rt.RuleRec, 0, 51, 2},
+	{"enumMember", &sh13, rt.RuleMemo | rt.RuleRec, 43, 52, 2},
+	{"moduleDeclaration", &sh23, rt.RuleRec, 0, 0, 2},
+	{"namespaceDeclaration", &sh319, rt.RuleRec, 0, 53, 2},
+	{"namespaceBody", &sh494, rt.RuleMemo | rt.RuleRec, 44, 5, 2},
+	{"nestedNamespace", &sh13, rt.RuleRec, 0, 54, 2},
+	{"externalModuleDeclaration", &sh319, rt.RuleRec, 0, 55, 2},
+	{"globalDeclaration", &sh73, rt.RuleRec, 0, 55, 2},
 	{"globalIdentifier", &sh23, 0, 0, 0, 0},
-	{"moduleBlock", &sh73, rt.RuleMemo, 45, 6, 2},
-	{"importEqualsDeclaration", &sh645, 0, 0, 56, 2},
-	{"moduleReference", &sh23, 0, 0, 0, 2},
-	{"externalModuleReference", &sh319, 0, 0, 16, 2},
-	{"importDeclaration", &sh479, 0, 0, 57, 2},
+	{"moduleBlock", &sh73, rt.RuleMemo | rt.RuleRec, 45, 6, 2},
+	{"importEqualsDeclaration", &sh645, rt.RuleRec, 0, 56, 2},
+	{"moduleReference", &sh23, rt.RuleRec, 0, 0, 2},
+	{"externalModuleReference", &sh319, rt.RuleRec, 0, 16, 2},
+	{"importDeclaration", &sh479, rt.RuleRec, 0, 57, 2},
 	{"importClause", &sh13, 0, 0, 58, 2},
 	{"importPhase", &sh23, 0, 0, 0, 2},
 	{"namedImportBindings", &sh23, rt.RuleMemo, 46, 0, 2},
@@ -3089,15 +3089,15 @@ var rulesSpec = [...]ruleSpec{
 	{"asIdentifier", &sh23, rt.RuleMemo, 50, 0, 0},
 	{"moduleExportName", &sh23, rt.RuleMemo, 51, 0, 0},
 	{"moduleExportNameStart", &sh23, rt.RuleMemo, 52, 0, 0},
-	{"moduleSpecifier", &sh23, rt.RuleMemo, 53, 0, 2},
-	{"importAttributes", &sh13, rt.RuleMemo, 54, 60, 2},
-	{"importAttributesBraces", &sh73, rt.RuleMemo, 55, 30, 2},
-	{"importAttribute", &sh73, rt.RuleMemo, 56, 52, 2},
-	{"exportAssignment", &sh767, 0, 0, 61, 2},
-	{"namespaceExportDeclaration", &sh479, 0, 0, 62, 2},
-	{"exportDeclaration", &sh23, 0, 0, 0, 2},
-	{"exportStarDeclaration", &sh768, 0, 0, 63, 2},
-	{"exportNamedDeclaration", &sh479, 0, 0, 63, 2},
+	{"moduleSpecifier", &sh23, rt.RuleMemo | rt.RuleRec, 53, 0, 2},
+	{"importAttributes", &sh13, rt.RuleMemo | rt.RuleRec, 54, 60, 2},
+	{"importAttributesBraces", &sh73, rt.RuleMemo | rt.RuleRec, 55, 30, 2},
+	{"importAttribute", &sh73, rt.RuleMemo | rt.RuleRec, 56, 52, 2},
+	{"exportAssignment", &sh767, rt.RuleRec, 0, 61, 2},
+	{"namespaceExportDeclaration", &sh479, rt.RuleRec, 0, 62, 2},
+	{"exportDeclaration", &sh23, rt.RuleRec, 0, 0, 2},
+	{"exportStarDeclaration", &sh768, rt.RuleRec, 0, 63, 2},
+	{"exportNamedDeclaration", &sh479, rt.RuleRec, 0, 63, 2},
 	{"namespaceExport", &sh73, 0, 0, 15, 0},
 	{"namedExports", &sh73, 0, 0, 30, 0},
 	{"exportSpecifier", &sh23, rt.RuleMemo, 57, 0, 0},
@@ -3106,8 +3106,8 @@ var rulesSpec = [...]ruleSpec{
 	{"exportSpecifierTypeAs", &sh13, 0, 0, 15, 0},
 	{"exportSpecifierType", &sh13, 0, 0, 59, 0},
 	{"exportSpecifierPlain", &sh494, 0, 0, 59, 0},
-	{"modifiers", &sh73, rt.RuleMemo, 58, 64, 2},
-	{"decoratorList", &sh494, rt.RuleMemo, 59, 65, 2},
+	{"modifiers", &sh73, rt.RuleMemo | rt.RuleRec, 58, 64, 2},
+	{"decoratorList", &sh494, rt.RuleMemo | rt.RuleRec, 59, 65, 2},
 	{"modifierList", &sh73, rt.RuleMemo, 60, 66, 0},
 	{"staticModifierList", &sh5, rt.RuleMemo, 61, 42, 0},
 	{"modifier", &sh23, rt.RuleMemo, 62, 0, 0},
@@ -3117,40 +3117,40 @@ var rulesSpec = [...]ruleSpec{
 	{"defaultModifierFollows", &sh23, rt.RuleMemo, 65, 0, 0},
 	{"canFollowModifier", &sh23, rt.RuleMemo, 66, 0, 0},
 	{"literalPropertyNameStart", &sh23, rt.RuleMemo, 67, 0, 0},
-	{"classModifiers", &sh73, rt.RuleMemo, 68, 64, 2},
+	{"classModifiers", &sh73, rt.RuleMemo | rt.RuleRec, 68, 64, 2},
 	{"classModifierList", &sh73, rt.RuleMemo, 69, 66, 0},
 	{"classStaticModifierList", &sh5, 0, 0, 42, 0},
 	{"classModifier", &sh23, rt.RuleMemo, 70, 0, 0},
 	{"classStaticModifier", &sh23, 0, 0, 0, 0},
 	{"typeMemberModifiers", &sh494, rt.RuleMemo, 71, 41, 0},
 	{"typeParameterModifiers", &sh73, 0, 0, 66, 0},
-	{"decorator", &sh13, rt.RuleMemo, 72, 16, 2},
-	{"expression", &sh5, rt.RuleMemo, 73, 16, 2},
-	{"expressionAllowIn", &sh5, rt.RuleMemo, 74, 16, 2},
-	{"commaExpression", &sh13, rt.RuleMemo, 75, 27, 2},
-	{"assignmentExpression", &sh5, rt.RuleMemo, 76, 16, 2},
-	{"assignmentExpressionAllowIn", &sh5, rt.RuleMemo, 77, 16, 2},
-	{"assignmentExpressionInner", &sh494, rt.RuleMemo, 78, 16, 2},
-	{"yieldExpression", &sh13, 0, 0, 67, 2},
+	{"decorator", &sh13, rt.RuleMemo | rt.RuleRec, 72, 16, 2},
+	{"expression", &sh5, rt.RuleMemo | rt.RuleRec, 73, 16, 2},
+	{"expressionAllowIn", &sh5, rt.RuleMemo | rt.RuleRec, 74, 16, 2},
+	{"commaExpression", &sh13, rt.RuleMemo | rt.RuleRec, 75, 27, 2},
+	{"assignmentExpression", &sh5, rt.RuleMemo | rt.RuleRec, 76, 16, 2},
+	{"assignmentExpressionAllowIn", &sh5, rt.RuleMemo | rt.RuleRec, 77, 16, 2},
+	{"assignmentExpressionInner", &sh494, rt.RuleMemo | rt.RuleRec, 78, 16, 2},
+	{"yieldExpression", &sh13, rt.RuleRec, 0, 67, 2},
 	{"identifierOrKeywordOrLiteralStart", &sh23, rt.RuleMemo, 79, 0, 0},
 	{"nlStart", &sh23, 0, 0, 0, 0},
-	{"assignment", &sh73, 0, 0, 68, 2},
+	{"assignment", &sh73, rt.RuleRec, 0, 68, 2},
 	{"assignmentOperator", &sh23, 0, 0, 0, 0},
-	{"conditionalOrBinaryExpression", &sh13, 0, 0, 69, 2},
-	{"conditionalWhenTrue", &sh5, 0, 0, 16, 2},
-	{"conditionalWhenFalse", &sh494, 0, 0, 16, 2},
+	{"conditionalOrBinaryExpression", &sh13, rt.RuleRec, 0, 69, 2},
+	{"conditionalWhenTrue", &sh5, rt.RuleRec, 0, 16, 2},
+	{"conditionalWhenFalse", &sh494, rt.RuleRec, 0, 16, 2},
 	{"conditionalQuestionToken", &sh23, 0, 0, 0, 0},
-	{"arrowFunction", &sh479, 0, 0, 70, 2},
+	{"arrowFunction", &sh479, rt.RuleRec, 0, 70, 2},
 	{"arrowAsyncModifier", &sh5, 0, 0, 42, 0},
 	{"asyncKeywordModifier", &sh23, rt.RuleMemo, 80, 0, 0},
-	{"arrowTypeParameters", &sh5, 0, 0, 71, 2},
+	{"arrowTypeParameters", &sh5, rt.RuleRec, 0, 71, 2},
 	{"tsxArrowTypeParametersStart", &sh319, 0, 0, 0, 2},
 	{"arrowParenthesisIsNotParameterList", &sh13, 0, 0, 0, 2},
-	{"simpleArrowFunction", &sh73, 0, 0, 72, 2},
+	{"simpleArrowFunction", &sh73, rt.RuleRec, 0, 72, 2},
 	{"simpleArrowParameter", &sh494, rt.RuleMemo, 81, 15, 2},
-	{"asyncSimpleArrowFunction", &sh319, 0, 0, 73, 2},
-	{"arrowBody", &sh23, rt.RuleMemo, 82, 0, 2},
-	{"binaryExpression", nil, 0, 0, 0, 2},
+	{"asyncSimpleArrowFunction", &sh319, rt.RuleRec, 0, 73, 2},
+	{"arrowBody", &sh23, rt.RuleMemo | rt.RuleRec, 82, 0, 2},
+	{"binaryExpression", nil, rt.RuleRec, 0, 0, 2},
 	{"coalesceOrToken", &sh23, 0, 0, 0, 0},
 	{"ampersandAmpersandToken", &sh23, 0, 0, 0, 0},
 	{"barToken", &sh23, 0, 0, 0, 0},
@@ -3163,78 +3163,78 @@ var rulesSpec = [...]ruleSpec{
 	{"multiplicativeToken", &sh23, 0, 0, 0, 0},
 	{"asteriskAsteriskToken", &sh23, 0, 0, 0, 0},
 	{"binaryOperatorStart", &sh23, rt.RuleMemo, 84, 0, 2},
-	{"unaryExpression", &sh494, rt.RuleMemo, 85, 74, 2},
+	{"unaryExpression", &sh494, rt.RuleMemo | rt.RuleRec, 85, 74, 2},
 	{"unaryOperatorStart", &sh5, rt.RuleMemo, 86, 0, 2},
-	{"simpleUnaryExpression", &sh23, rt.RuleMemo, 87, 0, 2},
-	{"prefixUnaryExpression", &sh13, 0, 0, 75, 2},
-	{"deleteExpression", &sh13, 0, 0, 16, 2},
-	{"typeOfExpression", &sh13, 0, 0, 16, 2},
-	{"voidExpression", &sh13, 0, 0, 16, 2},
-	{"awaitExpression", &sh13, 0, 0, 16, 2},
-	{"typeAssertion", &sh319, 0, 0, 76, 2},
-	{"jsxUnaryExpression", &sh5, 0, 0, 16, 2},
-	{"updateExpression", &sh494, rt.RuleMemo, 88, 16, 2},
-	{"postfixOrLeftHandSideExpression", &sh13, 0, 0, 77, 2},
-	{"prefixUpdateExpression", &sh13, 0, 0, 75, 2},
-	{"jsxPrimaryExpression", &sh5, 0, 0, 16, 2},
-	{"leftHandSideExpression", nil, rt.RuleMemo, 89, 0, 2},
-	{"heritageExpression", nil, 0, 0, 0, 2},
-	{"newTarget", nil, 0, 0, 0, 2},
+	{"simpleUnaryExpression", &sh23, rt.RuleMemo | rt.RuleRec, 87, 0, 2},
+	{"prefixUnaryExpression", &sh13, rt.RuleRec, 0, 75, 2},
+	{"deleteExpression", &sh13, rt.RuleRec, 0, 16, 2},
+	{"typeOfExpression", &sh13, rt.RuleRec, 0, 16, 2},
+	{"voidExpression", &sh13, rt.RuleRec, 0, 16, 2},
+	{"awaitExpression", &sh13, rt.RuleRec, 0, 16, 2},
+	{"typeAssertion", &sh319, rt.RuleRec, 0, 76, 2},
+	{"jsxUnaryExpression", &sh5, rt.RuleRec, 0, 16, 2},
+	{"updateExpression", &sh494, rt.RuleMemo | rt.RuleRec, 88, 16, 2},
+	{"postfixOrLeftHandSideExpression", &sh13, rt.RuleRec, 0, 77, 2},
+	{"prefixUpdateExpression", &sh13, rt.RuleRec, 0, 75, 2},
+	{"jsxPrimaryExpression", &sh5, rt.RuleRec, 0, 16, 2},
+	{"leftHandSideExpression", nil, rt.RuleMemo | rt.RuleRec, 89, 0, 2},
+	{"heritageExpression", nil, rt.RuleRec, 0, 0, 2},
+	{"newTarget", nil, rt.RuleRec, 0, 0, 2},
 	{"memberName", &sh23, rt.RuleMemo, 90, 0, 0},
 	{"questionDotToken", &sh23, 0, 0, 0, 0},
-	{"typeArgumentsInExpression", &sh73, rt.RuleMemo, 91, 78, 2},
+	{"typeArgumentsInExpression", &sh73, rt.RuleMemo | rt.RuleRec, 91, 78, 2},
 	{"typeArgumentsCanFollow", &sh23, 0, 0, 0, 2},
 	{"expressionStart", &sh23, rt.RuleMemo, 92, 0, 2},
-	{"arguments", &sh73, rt.RuleMemo, 93, 79, 2},
-	{"argumentList", &sh73, 0, 0, 27, 2},
-	{"argument", &sh23, rt.RuleMemo, 94, 0, 2},
-	{"spreadElement", &sh13, rt.RuleMemo, 95, 16, 2},
+	{"arguments", &sh73, rt.RuleMemo | rt.RuleRec, 93, 79, 2},
+	{"argumentList", &sh73, rt.RuleRec, 0, 27, 2},
+	{"argument", &sh23, rt.RuleMemo | rt.RuleRec, 94, 0, 2},
+	{"spreadElement", &sh13, rt.RuleMemo | rt.RuleRec, 95, 16, 2},
 	{"superExpression", &sh23, rt.RuleMemo, 96, 0, 0},
 	{"superKeyword", &sh23, 0, 0, 0, 0},
 	{"importCallee", &sh23, rt.RuleMemo, 97, 0, 0},
 	{"importMetaProperty", &sh73, rt.RuleMemo, 98, 15, 0},
-	{"primaryExpression", &sh494, rt.RuleMemo, 99, 16, 2},
-	{"wordPrimary", &sh494, 0, 0, 16, 2},
-	{"symbolPrimary", &sh23, 0, 0, 0, 2},
+	{"primaryExpression", &sh494, rt.RuleMemo | rt.RuleRec, 99, 16, 2},
+	{"wordPrimary", &sh494, rt.RuleRec, 0, 16, 2},
+	{"symbolPrimary", &sh23, rt.RuleRec, 0, 0, 2},
 	{"numericOrBigIntLiteral", &sh5, 0, 0, 16, 0},
 	{"thisKeyword", &sh23, 0, 0, 0, 0},
 	{"nullKeyword", &sh23, rt.RuleMemo, 100, 0, 0},
 	{"booleanKeyword", &sh23, rt.RuleMemo, 101, 0, 0},
-	{"parenthesizedExpression", &sh73, 0, 0, 16, 2},
-	{"arrayLiteralExpression", &sh73, 0, 0, 30, 2},
-	{"arrayElement", &sh23, rt.RuleMemo, 102, 0, 2},
-	{"objectLiteralExpression", &sh73, 0, 0, 35, 2},
-	{"objectLiteralElement", &sh23, rt.RuleMemo, 103, 0, 2},
-	{"objectAccessor", &sh5, 0, 0, 42, 2},
-	{"objectMemberNotAccessor", &sh5, 0, 0, 42, 2},
+	{"parenthesizedExpression", &sh73, rt.RuleRec, 0, 16, 2},
+	{"arrayLiteralExpression", &sh73, rt.RuleRec, 0, 30, 2},
+	{"arrayElement", &sh23, rt.RuleMemo | rt.RuleRec, 102, 0, 2},
+	{"objectLiteralExpression", &sh73, rt.RuleRec, 0, 35, 2},
+	{"objectLiteralElement", &sh23, rt.RuleMemo | rt.RuleRec, 103, 0, 2},
+	{"objectAccessor", &sh5, rt.RuleRec, 0, 42, 2},
+	{"objectMemberNotAccessor", &sh5, rt.RuleRec, 0, 42, 2},
 	{"objectLiteralElementStart", &sh23, rt.RuleMemo, 104, 0, 0},
-	{"spreadAssignment", &sh13, 0, 0, 16, 2},
-	{"objectGetAccessor", &sh645, 0, 0, 44, 2},
-	{"objectSetAccessor", &sh645, 0, 0, 44, 2},
-	{"objectMethod", &sh769, 0, 0, 80, 2},
-	{"shorthandPropertyAssignment", &sh767, 0, 0, 81, 2},
-	{"propertyAssignment", &sh479, 0, 0, 82, 2},
-	{"functionExpression", &sh768, 0, 0, 83, 2},
+	{"spreadAssignment", &sh13, rt.RuleRec, 0, 16, 2},
+	{"objectGetAccessor", &sh645, rt.RuleRec, 0, 44, 2},
+	{"objectSetAccessor", &sh645, rt.RuleRec, 0, 44, 2},
+	{"objectMethod", &sh769, rt.RuleRec, 0, 80, 2},
+	{"shorthandPropertyAssignment", &sh767, rt.RuleRec, 0, 81, 2},
+	{"propertyAssignment", &sh479, rt.RuleRec, 0, 82, 2},
+	{"functionExpression", &sh768, rt.RuleRec, 0, 83, 2},
 	{"asyncFunctionModifier", &sh5, 0, 0, 42, 0},
-	{"classExpressionPrimary", &sh5, rt.RuleMemo, 105, 84, 2},
-	{"newExpression", &sh23, 0, 0, 0, 2},
+	{"classExpressionPrimary", &sh5, rt.RuleMemo | rt.RuleRec, 105, 84, 2},
+	{"newExpression", &sh23, rt.RuleRec, 0, 0, 2},
 	{"newTargetMetaProperty", &sh73, 0, 0, 15, 0},
-	{"newExpressionWithTarget", &sh319, 0, 0, 85, 2},
-	{"templateExpression", &sh13, 0, 0, 86, 2},
-	{"templateSpans", &sh13, 0, 0, 87, 2},
-	{"templateSpanMiddle", &sh13, 0, 0, 88, 2},
-	{"templateSpanTail", &sh13, 0, 0, 88, 2},
-	{"taggedTemplate", &sh23, rt.RuleMemo, 106, 0, 2},
-	{"rawTemplateExpression", &sh13, 0, 0, 86, 2},
-	{"rawTemplateSpans", &sh13, 0, 0, 87, 2},
-	{"rawTemplateSpanMiddle", &sh13, 0, 0, 88, 2},
-	{"rawTemplateSpanTail", &sh13, 0, 0, 88, 2},
-	{"jsxElementOrFragment", &sh23, rt.RuleMemo, 107, 0, 2},
-	{"jsxSelfClosingElement", &sh479, rt.RuleMemo, 108, 89, 2},
-	{"jsxElement", &sh73, rt.RuleMemo, 109, 90, 2},
-	{"jsxOpeningElement", &sh767, 0, 0, 89, 2},
+	{"newExpressionWithTarget", &sh319, rt.RuleRec, 0, 85, 2},
+	{"templateExpression", &sh13, rt.RuleRec, 0, 86, 2},
+	{"templateSpans", &sh13, rt.RuleRec, 0, 87, 2},
+	{"templateSpanMiddle", &sh13, rt.RuleRec, 0, 88, 2},
+	{"templateSpanTail", &sh13, rt.RuleRec, 0, 88, 2},
+	{"taggedTemplate", &sh23, rt.RuleMemo | rt.RuleRec, 106, 0, 2},
+	{"rawTemplateExpression", &sh13, rt.RuleRec, 0, 86, 2},
+	{"rawTemplateSpans", &sh13, rt.RuleRec, 0, 87, 2},
+	{"rawTemplateSpanMiddle", &sh13, rt.RuleRec, 0, 88, 2},
+	{"rawTemplateSpanTail", &sh13, rt.RuleRec, 0, 88, 2},
+	{"jsxElementOrFragment", &sh23, rt.RuleMemo | rt.RuleRec, 107, 0, 2},
+	{"jsxSelfClosingElement", &sh479, rt.RuleMemo | rt.RuleRec, 108, 89, 2},
+	{"jsxElement", &sh73, rt.RuleMemo | rt.RuleRec, 109, 90, 2},
+	{"jsxOpeningElement", &sh767, rt.RuleRec, 0, 89, 2},
 	{"jsxClosingElement", &sh73, 0, 0, 15, 0},
-	{"jsxFragment", &sh73, rt.RuleMemo, 110, 91, 2},
+	{"jsxFragment", &sh73, rt.RuleMemo | rt.RuleRec, 110, 91, 2},
 	{"jsxOpeningFragment", &sh23, 0, 0, 0, 0},
 	{"jsxClosingFragment", &sh23, 0, 0, 0, 0},
 	{"jsxElementName", &sh23, rt.RuleMemo, 111, 0, 0},
@@ -3243,117 +3243,117 @@ var rulesSpec = [...]ruleSpec{
 	{"jsxThis", &sh23, 0, 0, 0, 0},
 	{"jsxIdentifier", &sh23, rt.RuleMemo, 112, 0, 0},
 	{"jsxNamespacedName", &sh73, rt.RuleMemo, 113, 92, 0},
-	{"jsxAttributes", &sh494, rt.RuleMemo, 114, 35, 2},
-	{"jsxAttributeLike", &sh23, rt.RuleMemo, 115, 0, 2},
-	{"jsxAttribute", &sh13, 0, 0, 93, 2},
+	{"jsxAttributes", &sh494, rt.RuleMemo | rt.RuleRec, 114, 35, 2},
+	{"jsxAttributeLike", &sh23, rt.RuleMemo | rt.RuleRec, 115, 0, 2},
+	{"jsxAttribute", &sh13, rt.RuleRec, 0, 93, 2},
 	{"jsxAttributeName", &sh23, 0, 0, 0, 0},
-	{"jsxAttributeValue", &sh23, 0, 0, 0, 2},
-	{"jsxElementOrFragmentValue", &sh23, 0, 0, 0, 2},
+	{"jsxAttributeValue", &sh23, rt.RuleRec, 0, 0, 2},
+	{"jsxElementOrFragmentValue", &sh23, rt.RuleRec, 0, 0, 2},
 	{"jsxAttributeString", &sh23, 0, 0, 0, 0},
-	{"jsxAttributeExpression", &sh73, 0, 0, 16, 2},
-	{"jsxSpreadAttribute", &sh319, 0, 0, 16, 2},
-	{"jsxChild", &sh23, rt.RuleMemo, 116, 0, 2},
+	{"jsxAttributeExpression", &sh73, rt.RuleRec, 0, 16, 2},
+	{"jsxSpreadAttribute", &sh319, rt.RuleRec, 0, 16, 2},
+	{"jsxChild", &sh23, rt.RuleMemo | rt.RuleRec, 116, 0, 2},
 	{"jsxText", &sh23, 0, 0, 0, 0},
-	{"jsxChildExpression", &sh319, 0, 0, 94, 2},
-	{"jsxChildElement", &sh5, 0, 0, 16, 2},
-	{"typeNode", &sh5, rt.RuleMemo, 117, 29, 2},
-	{"typeInner", &sh23, rt.RuleMemo, 118, 0, 2},
-	{"typeNoConditional", &sh5, rt.RuleMemo, 119, 29, 2},
-	{"typeAllowConditional", &sh5, rt.RuleMemo, 120, 29, 2},
-	{"conditionalOrHigher", &sh13, 0, 0, 69, 2},
-	{"typeOrTypePredicate", &sh23, rt.RuleMemo, 121, 0, 2},
-	{"typePredicate", &sh73, 0, 0, 36, 2},
-	{"functionType", &sh319, 0, 0, 95, 2},
-	{"constructorType", &sh479, 0, 0, 96, 2},
+	{"jsxChildExpression", &sh319, rt.RuleRec, 0, 94, 2},
+	{"jsxChildElement", &sh5, rt.RuleRec, 0, 16, 2},
+	{"typeNode", &sh5, rt.RuleMemo | rt.RuleRec, 117, 29, 2},
+	{"typeInner", &sh23, rt.RuleMemo | rt.RuleRec, 118, 0, 2},
+	{"typeNoConditional", &sh5, rt.RuleMemo | rt.RuleRec, 119, 29, 2},
+	{"typeAllowConditional", &sh5, rt.RuleMemo | rt.RuleRec, 120, 29, 2},
+	{"conditionalOrHigher", &sh13, rt.RuleRec, 0, 69, 2},
+	{"typeOrTypePredicate", &sh23, rt.RuleMemo | rt.RuleRec, 121, 0, 2},
+	{"typePredicate", &sh73, rt.RuleRec, 0, 36, 2},
+	{"functionType", &sh319, rt.RuleRec, 0, 95, 2},
+	{"constructorType", &sh479, rt.RuleRec, 0, 96, 2},
 	{"abstractModifier", &sh494, 0, 0, 42, 0},
 	{"abstractKeywordModifier", &sh23, 0, 0, 0, 0},
-	{"returnTypeOfType", &sh5, rt.RuleMemo, 122, 29, 2},
-	{"unionOrHigher", &sh494, 0, 0, 74, 2},
-	{"leadingUnionType", &sh73, 0, 0, 97, 2},
-	{"plainOrUnionType", &sh13, 0, 0, 98, 2},
-	{"intersectionOrHigher", &sh494, rt.RuleMemo, 123, 74, 2},
-	{"leadingIntersectionType", &sh73, 0, 0, 97, 2},
-	{"plainOrIntersectionType", &sh13, 0, 0, 98, 2},
-	{"typeOperatorOrHigher", &sh494, rt.RuleMemo, 124, 29, 2},
-	{"postfixTypeAllowConditional", &sh5, 0, 0, 29, 2},
-	{"typeOperator", &sh13, 0, 0, 99, 2},
-	{"inferType", &sh13, 0, 0, 100, 2},
-	{"inferTypeParameter", &sh13, 0, 0, 101, 2},
-	{"postfixType", nil, 0, 0, 0, 2},
-	{"postfixTypeNoQuestion", nil, 0, 0, 0, 2},
-	{"nonArrayType", &sh494, rt.RuleMemo, 125, 29, 2},
-	{"wordType", &sh494, 0, 0, 29, 2},
-	{"specialWordType", &sh23, 0, 0, 0, 2},
-	{"symbolType", &sh23, 0, 0, 0, 2},
+	{"returnTypeOfType", &sh5, rt.RuleMemo | rt.RuleRec, 122, 29, 2},
+	{"unionOrHigher", &sh494, rt.RuleRec, 0, 74, 2},
+	{"leadingUnionType", &sh73, rt.RuleRec, 0, 97, 2},
+	{"plainOrUnionType", &sh13, rt.RuleRec, 0, 98, 2},
+	{"intersectionOrHigher", &sh494, rt.RuleMemo | rt.RuleRec, 123, 74, 2},
+	{"leadingIntersectionType", &sh73, rt.RuleRec, 0, 97, 2},
+	{"plainOrIntersectionType", &sh13, rt.RuleRec, 0, 98, 2},
+	{"typeOperatorOrHigher", &sh494, rt.RuleMemo | rt.RuleRec, 124, 29, 2},
+	{"postfixTypeAllowConditional", &sh5, rt.RuleRec, 0, 29, 2},
+	{"typeOperator", &sh13, rt.RuleRec, 0, 99, 2},
+	{"inferType", &sh13, rt.RuleRec, 0, 100, 2},
+	{"inferTypeParameter", &sh13, rt.RuleRec, 0, 101, 2},
+	{"postfixType", nil, rt.RuleRec, 0, 0, 2},
+	{"postfixTypeNoQuestion", nil, rt.RuleRec, 0, 0, 2},
+	{"nonArrayType", &sh494, rt.RuleMemo | rt.RuleRec, 125, 29, 2},
+	{"wordType", &sh494, rt.RuleRec, 0, 29, 2},
+	{"specialWordType", &sh23, rt.RuleRec, 0, 0, 2},
+	{"symbolType", &sh23, rt.RuleRec, 0, 0, 2},
 	{"keywordType", &sh23, 0, 0, 0, 0},
 	{"literalType", &sh494, rt.RuleMemo, 126, 7, 0},
 	{"negativeLiteral", &sh13, 0, 0, 7, 0},
 	{"thisType", &sh23, rt.RuleMemo, 127, 0, 0},
-	{"thisTypePredicate", &sh73, 0, 0, 36, 2},
-	{"assertsTypePredicate", &sh73, 0, 0, 102, 2},
+	{"thisTypePredicate", &sh73, rt.RuleRec, 0, 36, 2},
+	{"assertsTypePredicate", &sh73, rt.RuleRec, 0, 102, 2},
 	{"assertsToken", &sh23, 0, 0, 0, 0},
 	{"identifierOrKeywordStart", &sh23, rt.RuleMemo, 128, 0, 0},
-	{"typeQuery", &sh73, 0, 0, 36, 2},
-	{"importType", &sh768, 0, 0, 103, 2},
-	{"importTypeAttributes", &sh494, 0, 0, 34, 2},
-	{"typeReference", &sh73, rt.RuleMemo, 129, 36, 2},
+	{"typeQuery", &sh73, rt.RuleRec, 0, 36, 2},
+	{"importType", &sh768, rt.RuleRec, 0, 103, 2},
+	{"importTypeAttributes", &sh494, rt.RuleRec, 0, 34, 2},
+	{"typeReference", &sh73, rt.RuleMemo | rt.RuleRec, 129, 36, 2},
 	{"functionTypeReference", &sh5, 0, 0, 15, 0},
 	{"functionIdentifier", &sh23, 0, 0, 0, 0},
-	{"parenthesizedType", &sh73, 0, 0, 29, 2},
-	{"unambiguousFunctionTypeStart", &sh13, rt.RuleMemo, 130, 0, 2},
-	{"templateLiteralType", &sh13, 0, 0, 86, 2},
-	{"templateTypeSpans", &sh13, 0, 0, 87, 2},
-	{"templateTypeSpanMiddle", &sh13, 0, 0, 39, 2},
-	{"templateTypeSpanTail", &sh13, 0, 0, 39, 2},
+	{"parenthesizedType", &sh73, rt.RuleRec, 0, 29, 2},
+	{"unambiguousFunctionTypeStart", &sh13, rt.RuleMemo | rt.RuleRec, 130, 0, 2},
+	{"templateLiteralType", &sh13, rt.RuleRec, 0, 86, 2},
+	{"templateTypeSpans", &sh13, rt.RuleRec, 0, 87, 2},
+	{"templateTypeSpanMiddle", &sh13, rt.RuleRec, 0, 39, 2},
+	{"templateTypeSpanTail", &sh13, rt.RuleRec, 0, 39, 2},
 	{"jsdocAllType", &sh23, 0, 0, 0, 0},
 	{"jsdocUnknownType", &sh23, 0, 0, 0, 0},
-	{"jsdocNullableType", &sh13, 0, 0, 29, 2},
-	{"jsdocNonNullableType", &sh13, 0, 0, 29, 2},
-	{"jsdocFunctionType", &sh767, 0, 0, 104, 2},
-	{"jsdocParameter", &sh13, rt.RuleMemo, 131, 105, 2},
+	{"jsdocNullableType", &sh13, rt.RuleRec, 0, 29, 2},
+	{"jsdocNonNullableType", &sh13, rt.RuleRec, 0, 29, 2},
+	{"jsdocFunctionType", &sh767, rt.RuleRec, 0, 104, 2},
+	{"jsdocParameter", &sh13, rt.RuleMemo | rt.RuleRec, 131, 105, 2},
 	{"jsdocParameterName", &sh23, 0, 0, 0, 0},
 	{"entityName", &sh13, 0, 0, 27, 2},
 	{"entityNameAllowReserved", &sh13, rt.RuleMemo, 132, 27, 0},
-	{"typeArguments", &sh73, rt.RuleMemo, 133, 78, 2},
-	{"typeList", &sh73, rt.RuleMemo, 134, 27, 2},
-	{"typeParameters", &sh73, rt.RuleMemo, 135, 35, 2},
-	{"typeParameter", &sh319, rt.RuleMemo, 136, 106, 2},
-	{"tupleType", &sh73, 0, 0, 30, 2},
-	{"tupleElement", &sh23, rt.RuleMemo, 137, 0, 2},
-	{"namedTupleMember", &sh767, 0, 0, 107, 2},
-	{"tupleElementType", &sh23, rt.RuleMemo, 138, 0, 2},
-	{"restType", &sh13, 0, 0, 29, 2},
-	{"optionalType", &sh13, 0, 0, 29, 2},
-	{"typeLiteral", &sh5, 0, 0, 42, 2},
-	{"objectTypeMembers", &sh73, rt.RuleMemo, 139, 41, 2},
+	{"typeArguments", &sh73, rt.RuleMemo | rt.RuleRec, 133, 78, 2},
+	{"typeList", &sh73, rt.RuleMemo | rt.RuleRec, 134, 27, 2},
+	{"typeParameters", &sh73, rt.RuleMemo | rt.RuleRec, 135, 35, 2},
+	{"typeParameter", &sh319, rt.RuleMemo | rt.RuleRec, 136, 106, 2},
+	{"tupleType", &sh73, rt.RuleRec, 0, 30, 2},
+	{"tupleElement", &sh23, rt.RuleMemo | rt.RuleRec, 137, 0, 2},
+	{"namedTupleMember", &sh767, rt.RuleRec, 0, 107, 2},
+	{"tupleElementType", &sh23, rt.RuleMemo | rt.RuleRec, 138, 0, 2},
+	{"restType", &sh13, rt.RuleRec, 0, 29, 2},
+	{"optionalType", &sh13, rt.RuleRec, 0, 29, 2},
+	{"typeLiteral", &sh5, rt.RuleRec, 0, 42, 2},
+	{"objectTypeMembers", &sh73, rt.RuleMemo | rt.RuleRec, 139, 41, 2},
 	{"typeMemberStart", &sh23, rt.RuleMemo, 140, 0, 0},
 	{"typeMemberNameFollows", &sh23, rt.RuleMemo, 141, 0, 0},
 	{"literalPropertyNameToken", &sh23, rt.RuleMemo, 142, 0, 0},
 	{"mappedTypeStart", &sh13, rt.RuleMemo, 143, 0, 2},
-	{"mappedType", &sh770, 0, 0, 108, 2},
-	{"mappedTypeParameter", &sh73, 0, 0, 109, 2},
+	{"mappedType", &sh770, rt.RuleRec, 0, 108, 2},
+	{"mappedTypeParameter", &sh73, rt.RuleRec, 0, 109, 2},
 	{"mappedReadonlyToken", &sh494, 0, 0, 29, 0},
 	{"mappedPlusMinusReadonly", &sh13, 0, 0, 29, 0},
 	{"mappedQuestionToken", &sh494, 0, 0, 29, 0},
 	{"mappedPlusMinusQuestion", &sh13, 0, 0, 29, 0},
 	{"plusMinusToken", &sh23, 0, 0, 0, 0},
 	{"readonlyToken", &sh23, 0, 0, 0, 0},
-	{"typeMember", &sh23, rt.RuleMemo, 144, 0, 2},
-	{"typeAccessor", &sh5, 0, 0, 42, 2},
-	{"typeMemberNotAccessor", &sh5, 0, 0, 42, 2},
-	{"callSignature", &sh319, 0, 0, 110, 2},
-	{"constructSignature", &sh767, 0, 0, 110, 2},
-	{"typeGetAccessor", &sh645, 0, 0, 44, 2},
-	{"typeSetAccessor", &sh645, 0, 0, 44, 2},
-	{"typeIndexSignature", &sh479, 0, 0, 46, 2},
+	{"typeMember", &sh23, rt.RuleMemo | rt.RuleRec, 144, 0, 2},
+	{"typeAccessor", &sh5, rt.RuleRec, 0, 42, 2},
+	{"typeMemberNotAccessor", &sh5, rt.RuleRec, 0, 42, 2},
+	{"callSignature", &sh319, rt.RuleRec, 0, 110, 2},
+	{"constructSignature", &sh767, rt.RuleRec, 0, 110, 2},
+	{"typeGetAccessor", &sh645, rt.RuleRec, 0, 44, 2},
+	{"typeSetAccessor", &sh645, rt.RuleRec, 0, 44, 2},
+	{"typeIndexSignature", &sh479, rt.RuleRec, 0, 46, 2},
 	{"indexSignatureStart", &sh13, rt.RuleMemo, 145, 0, 2},
 	{"modifierKeyword", &sh5, rt.RuleMemo, 146, 0, 0},
-	{"methodSignature", &sh645, 0, 0, 111, 2},
-	{"propertySignature", &sh479, 0, 0, 112, 2},
+	{"methodSignature", &sh645, rt.RuleRec, 0, 111, 2},
+	{"propertySignature", &sh479, rt.RuleRec, 0, 112, 2},
 	{"typeMemberSemicolon", &sh23, rt.RuleMemo, 147, 0, 0},
-	{"typeStart", &sh23, rt.RuleMemo, 148, 0, 0},
-	{"propertyName", &sh23, rt.RuleMemo, 149, 0, 2},
-	{"computedPropertyName", &sh73, 0, 0, 16, 2},
+	{"typeStart", &sh23, rt.RuleMemo | rt.RuleRec, 148, 0, 0},
+	{"propertyName", &sh23, rt.RuleMemo | rt.RuleRec, 149, 0, 2},
+	{"computedPropertyName", &sh73, rt.RuleRec, 0, 16, 2},
 	{"questionToken", &sh23, 0, 0, 0, 0},
 	{"exclamationToken", &sh23, 0, 0, 0, 0},
 	{"asteriskToken", &sh23, 0, 0, 0, 0},
@@ -3405,18 +3405,18 @@ var rulesSpec = [...]ruleSpec{
 	{"regularExpressionLiteral", &sh23, 0, 0, 0, 0},
 	{"ws", &sh23, 0, 0, 0, 0},
 	{"sp", &sh23, 0, 0, 0, 0},
-	{"arrayBindingElementList", &sh73, 0, 0, 97, 2},
-	{"arrayElementList", &sh73, 0, 0, 97, 2},
-	{"bindingElementList", &sh73, 0, 0, 97, 2},
-	{"enumMemberList", &sh73, 0, 0, 97, 2},
+	{"arrayBindingElementList", &sh73, rt.RuleRec, 0, 97, 2},
+	{"arrayElementList", &sh73, rt.RuleRec, 0, 97, 2},
+	{"bindingElementList", &sh73, rt.RuleRec, 0, 97, 2},
+	{"enumMemberList", &sh73, rt.RuleRec, 0, 97, 2},
 	{"exportSpecifierList", &sh73, 0, 0, 97, 0},
-	{"importAttributeList", &sh73, 0, 0, 97, 2},
+	{"importAttributeList", &sh73, rt.RuleRec, 0, 97, 2},
 	{"importSpecifierList", &sh73, 0, 0, 97, 2},
-	{"jsdocParameterList", &sh13, 0, 0, 97, 2},
-	{"jsxAttributeLikeList", &sh13, 0, 0, 97, 2},
-	{"objectLiteralElementList", &sh73, 0, 0, 97, 2},
-	{"tupleElementList", &sh73, 0, 0, 97, 2},
-	{"typeParameterList", &sh73, 0, 0, 97, 2},
+	{"jsdocParameterList", &sh13, rt.RuleRec, 0, 97, 2},
+	{"jsxAttributeLikeList", &sh13, rt.RuleRec, 0, 97, 2},
+	{"objectLiteralElementList", &sh73, rt.RuleRec, 0, 97, 2},
+	{"tupleElementList", &sh73, rt.RuleRec, 0, 97, 2},
+	{"typeParameterList", &sh73, rt.RuleRec, 0, 97, 2},
 	{"typeParameterStart", &sh23, rt.RuleMemo, 174, 0, 2},
 	{"uniIdStart", &sh5, 0, 0, 0, 0},
 	{"uniIdPart", &sh5, 0, 0, 0, 0},
@@ -3426,7 +3426,7 @@ var rulesSpec = [...]ruleSpec{
 	{"idPart", &sh23, rt.RuleMemo | rt.RuleNovalue, 176, 0, 0},
 	{"statementSpecialStart", &sh23, rt.RuleMemo | rt.RuleNovalue, 177, 0, 0},
 	{"declarationKeyword", &sh23, rt.RuleNovalue, 0, 0, 0},
-	{"declarationStart", &sh23, rt.RuleMemo | rt.RuleNovalue, 178, 0, 2},
+	{"declarationStart", &sh23, rt.RuleMemo | rt.RuleNovalue | rt.RuleRec, 178, 0, 2},
 	{"variableStatementStart", &sh23, rt.RuleMemo | rt.RuleNovalue, 179, 0, 0},
 	{"eos", &sh23, rt.RuleMemo | rt.RuleNovalue, 180, 0, 0},
 	{"forUsingFollows", &sh23, rt.RuleNovalue, 0, 0, 0},
@@ -3462,10 +3462,10 @@ var rulesSpec = [...]ruleSpec{
 	{"unaryOperatorStart", &sh5, rt.RuleMemo | rt.RuleNovalue, 203, 0, 2},
 	{"typeArgumentsCanFollow", &sh23, rt.RuleNovalue, 0, 0, 2},
 	{"jsxElementName", &sh23, rt.RuleMemo | rt.RuleNovalue, 204, 0, 0},
-	{"unambiguousFunctionTypeStart", &sh13, rt.RuleMemo | rt.RuleNovalue, 205, 0, 2},
+	{"unambiguousFunctionTypeStart", &sh13, rt.RuleMemo | rt.RuleNovalue | rt.RuleRec, 205, 0, 2},
 	{"barToken", &sh23, rt.RuleNovalue, 0, 0, 0},
 	{"ampersandToken", &sh23, rt.RuleNovalue, 0, 0, 0},
-	{"typeStart", &sh23, rt.RuleMemo | rt.RuleNovalue, 206, 0, 0},
+	{"typeStart", &sh23, rt.RuleMemo | rt.RuleNovalue | rt.RuleRec, 206, 0, 0},
 	{"identifierOrKeywordStart", &sh23, rt.RuleMemo | rt.RuleNovalue, 207, 0, 0},
 	{"mappedTypeStart", &sh13, rt.RuleMemo | rt.RuleNovalue, 208, 0, 2},
 	{"typeMemberStart", &sh23, rt.RuleMemo | rt.RuleNovalue, 209, 0, 0},
@@ -3495,7 +3495,7 @@ var rulesSpec = [...]ruleSpec{
 	{"identifierStartEscape", &sh23, rt.RuleNovalue, 0, 0, 0},
 	{"uniIdStart", &sh5, rt.RuleNovalue, 0, 0, 0},
 	{"canFollowExportModifier", &sh23, rt.RuleMemo | rt.RuleNovalue, 222, 0, 0},
-	{"bindingPattern", &sh23, rt.RuleMemo | rt.RuleNovalue, 223, 0, 2},
+	{"bindingPattern", &sh23, rt.RuleMemo | rt.RuleNovalue | rt.RuleRec, 223, 0, 2},
 	{"typeMemberNameFollows", &sh23, rt.RuleMemo | rt.RuleNovalue, 224, 0, 0},
 	{"hex", &sh23, rt.RuleNovalue, 0, 0, 0},
 	{"decimalDigits", &sh13, rt.RuleNovalue, 0, 0, 0},
@@ -4286,7 +4286,6 @@ func i0(p *rt.TParser) (any, bool) {
 	var x5, ok bool
 	start = p.Pos
 	prevEnv = p.Env
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Env
 	x4, _, x5 = p.NextOrdinary()
@@ -4339,11 +4338,9 @@ L12:
 	p.Where = "main"
 	v = k13
 	v = c.Finish(v)
-	p.Depth--
 	p.Env = prevEnv
 	return v, true
 fail:
-	p.Depth--
 	p.Env = prevEnv
 	return nil, false
 }
@@ -4365,7 +4362,6 @@ func i1(p *rt.TParser) (any, bool) {
 	var ok bool
 	var x13 []any
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = s479(p); !ok {
 		goto L2
@@ -4412,10 +4408,8 @@ L3:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "sourceFile"
 	v = tmk_SourceFile(c, true, c.MapList(k4, func(l_772 any) any { return c.Member((l_772), "$s") }), k20)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -4424,7 +4418,6 @@ func s2(p *rt.TParser) (any, bool) {
 	var v, v2, v5, v7 any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if v5, ok = u4(p); !ok {
 		goto L4
@@ -4446,10 +4439,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -4470,7 +4461,6 @@ func i3(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	if !p.Predicate(func(c *rt.TActCtx) any {
@@ -4495,10 +4485,8 @@ L2:
 	p.Where = "otherTopLevelStatement"
 	v = k3
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -4520,7 +4508,6 @@ func i4(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
-	p.Enter()
 	if !p.Predicate(func(c *rt.TActCtx) any {
 		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(1))
 	}) {
@@ -4550,11 +4537,9 @@ L3:
 	p.Where = "awaitFreeTopLevelStatement"
 	v = k4
 	v = c.Finish(v)
-	p.Depth--
 	p.Env = prevEnv
 	return v, true
 fail:
-	p.Depth--
 	p.Env = prevEnv
 	return nil, false
 }
@@ -4563,7 +4548,6 @@ func s6(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if !p.AtEndBatchOrdinary() {
 		p.ExpectOrdinary(p.Pos, rt.IdEndInput)
@@ -4576,10 +4560,8 @@ func s6(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[6], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -4680,7 +4662,7 @@ func s9(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-	if !(x5 && (x4 == 59)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 59)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 21)
 		goto L9
 	}
@@ -4756,7 +4738,7 @@ L24:
 	goto L3
 L27:
 	p.Pos = x1
-	if !(x5 && (x4 == 99)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 99)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 25)
 		goto L29
 	}
@@ -4768,7 +4750,7 @@ L27:
 L30:
 	p.Pos = x1
 L29:
-	if !(x5 && (x4 == 98)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 98)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 26)
 		goto L32
 	}
@@ -4840,7 +4822,7 @@ L44:
 L48:
 	p.Pos = x1
 L47:
-	if !(x5 && (x4 == 100)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 100)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 32)
 		goto L50
 	}
@@ -5269,7 +5251,6 @@ func s19(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
 		p.Pos++
@@ -5283,10 +5264,8 @@ func s19(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[19], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -6091,7 +6070,6 @@ func s32(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit31, "await", 38, false); !ok {
 		goto fail
@@ -6114,10 +6092,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[32], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -6365,7 +6341,6 @@ func i36(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit38, "continue", 25, false); !ok {
 		goto fail
 	}
@@ -6411,10 +6386,8 @@ L7:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "continueStatement"
 	v = tmk_ContinueStatement(c, true, k4)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -6434,7 +6407,6 @@ func i37(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit39, "break", 26, false); !ok {
 		goto fail
 	}
@@ -6480,10 +6452,8 @@ L7:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "breakStatement"
 	v = tmk_BreakStatement(c, true, k4)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -6695,7 +6665,6 @@ func s40(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v2)
@@ -6704,7 +6673,6 @@ func s40(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[40], v, bv)
-	p.Depth--
 	return v, true
 }
 
@@ -6713,7 +6681,6 @@ func s41(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit45, "debugger", 32, false); !ok {
 		goto fail
@@ -6739,10 +6706,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[41], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -7677,7 +7642,6 @@ func s54(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit55, "declare", 45, false); !ok {
 		goto fail
@@ -7700,10 +7664,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[54], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -8155,7 +8117,6 @@ func s62(p *rt.TParser) (any, bool) {
 	var x7, x19 rune
 	var x8, ok, x20 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x5 = p.Pos
@@ -8260,10 +8221,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9076,7 +9035,6 @@ func s75(p *rt.TParser) (any, bool) {
 	var v, v5, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	p.Silent++
@@ -9100,10 +9058,8 @@ L4:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[75], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -9391,7 +9347,7 @@ func i77(p *rt.TParser) (any, bool) {
 		goto L9
 	L14:
 		p.Pos = x8
-		if !(x11 && (x10 == 115)) && p.Depth+1 <= p.MaxDepth {
+		if !(x11 && (x10 == 115)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 52)
 			goto L15
 		}
@@ -9507,7 +9463,7 @@ func i78(p *rt.TParser) (any, bool) {
 		goto L9
 	L14:
 		p.Pos = x8
-		if !(x11 && (x10 == 115)) && p.Depth+1 <= p.MaxDepth {
+		if !(x11 && (x10 == 115)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 52)
 			goto L15
 		}
@@ -9717,7 +9673,7 @@ func v81(p *rt.TParser) (any, bool) {
 	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 116)) && p.Depth+2 <= p.MaxDepth {
+	if !(x5 && (x4 == 116)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 82)
 		goto L6
 	}
@@ -9797,7 +9753,6 @@ func s83(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 104 && p.In[p.Pos+2] == 105 && p.In[p.Pos+3] == 115 {
 		p.Pos += 4
@@ -9822,10 +9777,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[83], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -10206,7 +10159,6 @@ func i88(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = p.Parser.MatchLiteral(lit162, "implements", 83, false); !ok {
@@ -10244,10 +10196,8 @@ L2:
 	v = k5
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[88], v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -10803,7 +10753,7 @@ func s100(p *rt.TParser) (any, bool) {
 	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 59)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 59)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 21)
 		goto L6
 	}
@@ -10991,7 +10941,6 @@ func s104(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
 		p.Pos++
@@ -11005,10 +10954,8 @@ func s104(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[104], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -12142,7 +12089,7 @@ L15:
 	}
 	x20 = p.Pos
 	x23, _, x24 = p.NextOrdinary()
-	if !(x24 && (x23 == 105)) && p.Depth+1 <= p.MaxDepth {
+	if !(x24 && (x23 == 105)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 106)
 		goto L25
 	}
@@ -12182,7 +12129,6 @@ func s116(p *rt.TParser) (any, bool) {
 	var v, v6, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit207, "intrinsic", 106, false); !ok {
 		goto fail
@@ -12221,10 +12167,8 @@ L5:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[116], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -12749,7 +12693,6 @@ func s125(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit19, "global", 17, false); !ok {
 		goto fail
@@ -12772,10 +12715,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[125], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13286,7 +13227,6 @@ func i131(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3 = k2
 	if v7, ok = s132(p); !ok {
@@ -13349,10 +13289,8 @@ L13:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importClause"
 	v = tmk_ImportClause(c, true, k9, k11, c.Text(k2))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -13362,7 +13300,6 @@ func s132(p *rt.TParser) (any, bool) {
 	var x4, x15, x23, x42, x55, ch rune
 	var x5, ok, x16, x24, x43, x56 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -13660,10 +13597,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13682,10 +13617,9 @@ func v133(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 42)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 42)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 81)
 		goto L6
 	}
@@ -13697,7 +13631,7 @@ func v133(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-	if !(x5 && (x4 == 123)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 123)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 20)
 		goto L9
 	}
@@ -13715,10 +13649,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13739,7 +13671,6 @@ func i134(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit148, "*", 81, false); !ok {
@@ -13774,10 +13705,8 @@ L2:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceImport"
 	v = tmk_NamespaceImport(c, true, k3)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -13797,7 +13726,6 @@ func i135(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit65, "{", 20, false); !ok {
@@ -13828,10 +13756,8 @@ L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namedImports"
 	v = tmk_NamedImports(c, true, c.Concat(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -13849,10 +13775,9 @@ func v136(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 116)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 10)
 		goto L6
 	}
@@ -13864,7 +13789,7 @@ func v136(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-	if !(x5 && (x4 == 116)) && p.Depth+2 <= p.MaxDepth {
+	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 10)
 		goto L9
 	}
@@ -13876,7 +13801,7 @@ L6:
 L10:
 	p.Pos = x1
 L9:
-	if !(x5 && (x4 == 116)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 10)
 		goto L12
 	}
@@ -13888,7 +13813,7 @@ L9:
 L13:
 	p.Pos = x1
 L12:
-	if !(x5 && (x4 == 116)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 10)
 		goto L15
 	}
@@ -13913,10 +13838,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -13937,7 +13860,6 @@ func i137(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -13990,10 +13912,8 @@ L7:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierTypeAsAs"
 	v = tmk_ImportSpecifier(c, true, k3, k8, any(true))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -14013,7 +13933,6 @@ func i138(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u142(p); !ok {
 		goto fail
 	}
@@ -14047,10 +13966,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierTypeAsName"
 	v = tmk_ImportSpecifier(c, true, k1, k6, nil)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -14070,7 +13987,6 @@ func i139(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -14111,10 +14027,8 @@ L7:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierTypeAs"
 	v = tmk_ImportSpecifier(c, true, nil, k3, any(true))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -14134,7 +14048,6 @@ func i140(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -14219,10 +14132,8 @@ L11:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierType"
 	v = tmk_ImportSpecifier(c, true, k7, k9, any(true))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -14242,7 +14153,6 @@ func i141(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3 = k2
 	x5 = k4
@@ -14295,10 +14205,8 @@ L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierPlain"
 	v = tmk_ImportSpecifier(c, true, k2, k4, nil)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -14315,7 +14223,6 @@ func v142(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
@@ -14340,10 +14247,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[142], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -14362,7 +14267,6 @@ func v143(p *rt.TParser) (any, bool) {
 	var ok, x6 bool
 	var x5 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	if _, ok = u421(p); !ok {
@@ -14372,7 +14276,7 @@ func v143(p *rt.TParser) (any, bool) {
 L4:
 	p.Pos = x2
 	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 35)) && p.Depth+1 <= p.MaxDepth {
+	if !(x6 && (x5 == 35)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 112)
 		goto L7
 	}
@@ -14392,10 +14296,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[143], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -14413,7 +14315,6 @@ func v145(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 115 {
 		p.Pos += 2
@@ -14438,10 +14339,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[145], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -14459,7 +14358,6 @@ func v146(p *rt.TParser) (any, bool) {
 	var v, v2, v5, v7 any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if v5, ok = u449(p); !ok {
 		goto L4
@@ -14481,10 +14379,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -15071,7 +14967,7 @@ L10:
 	x16 = p.Pos
 	x18 = k17
 	x20, _, x21 = p.NextOrdinary()
-	if !(x21 && (x20 == 42)) && p.Depth+1 <= p.MaxDepth {
+	if !(x21 && (x20 == 42)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 81)
 		goto L22
 	}
@@ -15320,7 +15216,6 @@ func i157(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit148, "*", 81, false); !ok {
@@ -15355,10 +15250,8 @@ L2:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceExport"
 	v = tmk_NamespaceExport(c, true, k3)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -15378,7 +15271,6 @@ func i158(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit65, "{", 20, false); !ok {
@@ -15409,10 +15301,8 @@ L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namedExports"
 	v = tmk_NamedExports(c, true, c.Concat(k1))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -15430,10 +15320,9 @@ func v159(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 116)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 10)
 		goto L6
 	}
@@ -15445,7 +15334,7 @@ func v159(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-	if !(x5 && (x4 == 116)) && p.Depth+2 <= p.MaxDepth {
+	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 10)
 		goto L9
 	}
@@ -15457,7 +15346,7 @@ L6:
 L10:
 	p.Pos = x1
 L9:
-	if !(x5 && (x4 == 116)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 10)
 		goto L12
 	}
@@ -15469,7 +15358,7 @@ L9:
 L13:
 	p.Pos = x1
 L12:
-	if !(x5 && (x4 == 116)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 10)
 		goto L15
 	}
@@ -15494,10 +15383,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -15518,7 +15405,6 @@ func i160(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -15571,10 +15457,8 @@ L7:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierTypeAsAs"
 	v = tmk_ExportSpecifier(c, true, k3, k8, any(true))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -15594,7 +15478,6 @@ func i161(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u142(p); !ok {
 		goto fail
 	}
@@ -15628,10 +15511,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierTypeAsName"
 	v = tmk_ExportSpecifier(c, true, k1, k6, nil)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -15651,7 +15532,6 @@ func i162(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -15692,10 +15572,8 @@ L7:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierTypeAs"
 	v = tmk_ExportSpecifier(c, true, nil, k3, any(true))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -15715,7 +15593,6 @@ func i163(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -15800,10 +15677,8 @@ L11:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierType"
 	v = tmk_ExportSpecifier(c, true, k7, k9, any(true))
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -15823,7 +15698,6 @@ func i164(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3 = k2
 	x5 = k4
@@ -15876,10 +15750,8 @@ L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierPlain"
 	v = tmk_ExportSpecifier(c, true, k2, k4, nil)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -16053,7 +15925,6 @@ func i167(p *rt.TParser) (any, bool) {
 	var x10, x36 []any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3, x4 = p.Pos, len(p.KidStack)
 	for {
 		x6 = p.Pos
@@ -16156,10 +16027,8 @@ L25:
 	p.Where = "modifierList"
 	v = c.Concat(c.MapList(k1, func(l_789 any) any { return c.Member((l_789), "$m") }), k20, c.MapList(k27, func(l_790 any) any { return c.Member((l_790), "$m") }))
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -16182,7 +16051,6 @@ func i168(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 115 {
@@ -16209,10 +16077,8 @@ L3:
 	p.Where = "staticModifierList"
 	v = c.List(k4)
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -16230,7 +16096,6 @@ func v169(p *rt.TParser) (any, bool) {
 	var x4, x32 rune
 	var x5, ok, x33 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -16529,10 +16394,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[169], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16550,7 +16413,6 @@ func v170(p *rt.TParser) (any, bool) {
 	var v, v7, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit62, "static", 52, false); !ok {
 		goto fail
@@ -16589,10 +16451,8 @@ L6:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[170], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16709,7 +16569,6 @@ func i177(p *rt.TParser) (any, bool) {
 	var x10, x36 []any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3, x4 = p.Pos, len(p.KidStack)
 	for {
 		x6 = p.Pos
@@ -16812,10 +16671,8 @@ L25:
 	p.Where = "classModifierList"
 	v = c.Concat(c.MapList(k1, func(l_793 any) any { return c.Member((l_793), "$m") }), k20, c.MapList(k27, func(l_794 any) any { return c.Member((l_794), "$m") }))
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -16835,7 +16692,6 @@ func i178(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 115 {
@@ -16862,10 +16718,8 @@ L3:
 	p.Where = "classStaticModifierList"
 	v = c.List(k4)
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -16883,7 +16737,6 @@ func v179(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -16940,10 +16793,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[179], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -16953,7 +16804,6 @@ func s180(p *rt.TParser) (any, bool) {
 	var v, v9, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit62, "static", 52, false); !ok {
 		goto fail
@@ -17008,10 +16858,8 @@ L8:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[180], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -17035,7 +16883,6 @@ func i181(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	if v7, ok = u167(p); !ok {
 		goto L5
@@ -17051,7 +16898,6 @@ L6:
 	p.Where = "typeMemberModifiers"
 	v = c.Concat(k1)
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 }
 
@@ -17072,7 +16918,6 @@ func i182(p *rt.TParser) (any, bool) {
 	var x10, x36 []any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x3, x4 = p.Pos, len(p.KidStack)
 	for {
 		x6 = p.Pos
@@ -17170,7 +17015,6 @@ L25:
 	p.Where = "typeParameterModifiers"
 	v = c.Concat(c.MapList(k1, func(l_797 any) any { return c.Member((l_797), "$m") }), k20, c.MapList(k27, func(l_798 any) any { return c.Member((l_798), "$m") }))
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 }
 
@@ -17825,7 +17669,6 @@ func s194(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if !p.SkipTerminal(term816) {
 		goto fail
@@ -17837,10 +17680,8 @@ func s194(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[194], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18014,7 +17855,6 @@ func s198(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 63 {
 		p.Pos++
@@ -18068,10 +17908,8 @@ L5:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[198], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18247,7 +18085,6 @@ func i200(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u201(p); !ok {
 		goto fail
 	}
@@ -18275,10 +18112,8 @@ L6:
 	p.Where = "arrowAsyncModifier"
 	v = c.List(k1)
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -18295,7 +18130,6 @@ func v201(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit53, "async", 43, false); !ok {
 		goto fail
@@ -18318,10 +18152,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[201], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -18505,7 +18337,6 @@ func i206(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u421(p); !ok {
 		goto fail
 	}
@@ -18513,10 +18344,8 @@ func i206(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "simpleArrowParameter"
 	v = tmk_Parameter(c, true, nil, nil, k1, nil, nil, nil)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -19260,7 +19089,6 @@ func s210(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -19325,10 +19153,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[210], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -19338,7 +19164,6 @@ func s211(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 38 {
 		p.Pos += 2
@@ -19365,10 +19190,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[211], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -19379,7 +19202,6 @@ func s212(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 124 {
 		p.Pos++
@@ -19407,10 +19229,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[212], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -19420,7 +19240,6 @@ func s213(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 94 {
 		p.Pos++
@@ -19447,10 +19266,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[213], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -19461,7 +19278,6 @@ func s214(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 38 {
 		p.Pos++
@@ -19489,10 +19305,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[214], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -19503,7 +19317,6 @@ func s215(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -19568,10 +19381,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[215], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -19590,7 +19401,6 @@ func v216(p *rt.TParser) (any, bool) {
 	var x4, ch rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -19758,10 +19568,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[216], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -19772,7 +19580,6 @@ func s217(p *rt.TParser) (any, bool) {
 	var x4, ch rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -19864,10 +19671,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[217], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -19878,7 +19683,6 @@ func s218(p *rt.TParser) (any, bool) {
 	var x4, ch rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -19945,10 +19749,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[218], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -19959,7 +19761,6 @@ func s219(p *rt.TParser) (any, bool) {
 	var x4, ch rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -20051,10 +19852,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[219], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -20064,7 +19863,6 @@ func s220(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
@@ -20091,10 +19889,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[220], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -21864,10 +21660,9 @@ func v239(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 35)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 35)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 112)
 		goto L6
 	}
@@ -21892,10 +21687,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -21906,7 +21699,6 @@ func s240(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 63 && p.In[p.Pos+1] == 46 {
 		p.Pos += 2
@@ -21934,10 +21726,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[240], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -22298,7 +22088,6 @@ func v248(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit170, "super", 89, false); !ok {
 		goto fail
@@ -22340,10 +22129,8 @@ L6:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[248], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -22353,7 +22140,6 @@ func s249(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit170, "super", 89, false); !ok {
 		goto fail
@@ -22376,10 +22162,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[249], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -22398,7 +22182,6 @@ func v250(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit10, "import", 7, false); !ok {
 		goto fail
@@ -22440,10 +22223,8 @@ L6:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[250], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -22467,7 +22248,6 @@ func i251(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit10, "import", 7, false); !ok {
 		goto fail
 	}
@@ -22500,10 +22280,8 @@ L2:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importMetaProperty"
 	v = tmk_MetaProperty(c, true, any("import"), k3)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -22650,7 +22428,7 @@ L5:
 	p.Pos = x1
 	k2 = x3
 	x14, _, x15 = p.NextOrdinary()
-	if !(x15 && (x14 == 116)) && p.Depth+1 <= p.MaxDepth {
+	if !(x15 && (x14 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 82)
 		goto L16
 	}
@@ -22663,7 +22441,7 @@ L17:
 	p.Pos = x1
 	k2 = x3
 L16:
-	if !(x15 && (x14 == 110)) && p.Depth+1 <= p.MaxDepth {
+	if !(x15 && (x14 == 110)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 90)
 		goto L20
 	}
@@ -22744,7 +22522,7 @@ L4:
 L6:
 	p.Pos = x1
 	x8, _, x9 = p.NextOrdinary()
-	if !(x9 && (x8 == 96)) && p.Depth+1 <= p.MaxDepth {
+	if !(x9 && (x8 == 96)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 188)
 		goto L10
 	}
@@ -22756,7 +22534,7 @@ L6:
 L11:
 	p.Pos = x1
 L10:
-	if !(x9 && (x8 == 96)) && p.Depth+2 <= p.MaxDepth {
+	if !(x9 && (x8 == 96)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 188)
 		goto L13
 	}
@@ -22811,7 +22589,7 @@ L22:
 	goto L3
 L25:
 	p.Pos = x1
-	if !(x9 && (x8 == 47)) && p.Depth+1 <= p.MaxDepth {
+	if !(x9 && (x8 == 47)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 158)
 		goto L27
 	}
@@ -22823,7 +22601,7 @@ L25:
 L28:
 	p.Pos = x1
 L27:
-	if !(x9 && (x8 == 35)) && p.Depth+1 <= p.MaxDepth {
+	if !(x9 && (x8 == 35)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 112)
 		goto L30
 	}
@@ -22866,7 +22644,6 @@ func i255(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
@@ -22905,10 +22682,8 @@ L8:
 	p.Where = "numericOrBigIntLiteral"
 	v = k4
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -22917,7 +22692,6 @@ func s256(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 104 && p.In[p.Pos+2] == 105 && p.In[p.Pos+3] == 115 {
 		p.Pos += 4
@@ -22942,10 +22716,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[256], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -22963,7 +22735,6 @@ func v257(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108 {
 		p.Pos += 4
@@ -22988,10 +22759,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[257], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -23010,7 +22779,6 @@ func v258(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -23058,10 +22826,8 @@ L11:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[258], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -24403,7 +24169,6 @@ func i274(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u201(p); !ok {
 		goto fail
 	}
@@ -24439,10 +24204,8 @@ L6:
 	p.Where = "asyncFunctionModifier"
 	v = c.List(k1)
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -24540,7 +24303,7 @@ func s276(p *rt.TParser) (any, bool) {
 	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 110)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 110)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 93)
 		goto L6
 	}
@@ -24594,7 +24357,6 @@ func i277(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 119 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit174, "new", 93, false); !ok {
@@ -24629,10 +24391,8 @@ L2:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "newTargetMetaProperty"
 	v = tmk_MetaProperty(c, true, any("new"), k3)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -24935,7 +24695,7 @@ func v283(p *rt.TParser) (any, bool) {
 	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 96)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 96)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 188)
 		goto L6
 	}
@@ -24947,7 +24707,7 @@ func v283(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-	if !(x5 && (x4 == 96)) && p.Depth+2 <= p.MaxDepth {
+	if !(x5 && (x4 == 96)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 188)
 		goto L9
 	}
@@ -25182,7 +24942,7 @@ L6:
 	goto L3
 L9:
 	p.Pos = x1
-	if !(x5 && (x4 == 60)) && p.Depth+2 <= p.MaxDepth {
+	if !(x5 && (x4 == 60)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 140)
 		goto L11
 	}
@@ -25478,7 +25238,6 @@ func i292(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 47 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit446, "</", 191, false); !ok {
@@ -25502,10 +25261,8 @@ func i292(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxClosingElement"
 	v = tmk_JsxClosingElement(c, true, k1)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -25570,7 +25327,6 @@ func s294(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 		p.Pos++
@@ -25592,10 +25348,8 @@ func s294(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[294], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -25605,7 +25359,6 @@ func s295(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 47 {
 		p.Pos += 2
@@ -25627,10 +25380,8 @@ func s295(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[295], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -25648,7 +25399,6 @@ func v296(p *rt.TParser) (any, bool) {
 	var v, v2, v5, v7 any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if v5, ok = u301(p); !ok {
 		goto L4
@@ -25670,10 +25420,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -25695,7 +25443,6 @@ func i297(p *rt.TParser) (any, bool) {
 	var ok bool
 	var x13 []any
 	start = p.Pos
-	p.Enter()
 	if v3, ok = s298(p); !ok {
 		goto fail
 	}
@@ -25745,10 +25492,8 @@ func i297(p *rt.TParser) (any, bool) {
 		return tmk_PropertyAccessExpression(c, false, (l_830), nil, c.Member((l_831), "$n"))
 	})
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -25758,10 +25503,9 @@ func s298(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 116)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 82)
 		goto L6
 	}
@@ -25786,10 +25530,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -25800,7 +25542,6 @@ func s299(p *rt.TParser) (any, bool) {
 	var ok, x8 bool
 	var x7 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 104 && p.In[p.Pos+2] == 105 && p.In[p.Pos+3] == 115 {
 		p.Pos += 4
@@ -25845,10 +25586,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[299], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -25867,7 +25606,6 @@ func v300(p *rt.TParser) (any, bool) {
 	var ok, x12 bool
 	var x11 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
@@ -25922,10 +25660,8 @@ L4:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[300], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -25949,7 +25685,6 @@ func i301(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u300(p); !ok {
 		goto fail
 	}
@@ -25972,10 +25707,8 @@ func i301(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxNamespacedName"
 	v = tmk_JsxNamespacedName(c, true, k1, k4)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -26125,7 +25858,6 @@ func s305(p *rt.TParser) (any, bool) {
 	var v, v2, v5, v7 any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if v5, ok = u301(p); !ok {
 		goto L4
@@ -26147,10 +25879,8 @@ L3:
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -26232,7 +25962,7 @@ L6:
 	goto L3
 L9:
 	p.Pos = x1
-	if !(x5 && (x4 == 60)) && p.Depth+2 <= p.MaxDepth {
+	if !(x5 && (x4 == 60)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 140)
 		goto L11
 	}
@@ -26264,7 +25994,6 @@ func s308(p *rt.TParser) (any, bool) {
 	var x4, ch rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -26329,10 +26058,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[308], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -26509,7 +26236,6 @@ func s312(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = 0
 	for {
@@ -26531,10 +26257,8 @@ func s312(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[312], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -26659,7 +26383,7 @@ L10:
 	goto L7
 L13:
 	p.Pos = x5
-	if !(x9 && (x8 == 60)) && p.Depth+2 <= p.MaxDepth {
+	if !(x9 && (x8 == 60)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 140)
 		goto L15
 	}
@@ -27366,7 +27090,6 @@ func i324(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = s325(p); !ok {
 		goto fail
 	}
@@ -27375,10 +27098,8 @@ func i324(p *rt.TParser) (any, bool) {
 	p.Where = "abstractModifier"
 	v = c.List(k1)
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -27387,7 +27108,6 @@ func s325(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit60, "abstract", 50, false); !ok {
 		goto fail
@@ -27410,10 +27130,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[325], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -27483,7 +27201,7 @@ func i327(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	x3 = k2
 	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 124)) && p.Depth+2 <= p.MaxDepth {
+	if !(x6 && (x5 == 124)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 146)
 		goto L7
 	}
@@ -27743,7 +27461,7 @@ func i330(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	x3 = k2
 	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 38)) && p.Depth+2 <= p.MaxDepth {
+	if !(x6 && (x5 == 38)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 149)
 		goto L7
 	}
@@ -28832,7 +28550,7 @@ L4:
 L6:
 	p.Pos = x1
 	x8, _, x9 = p.NextOrdinary()
-	if !(x9 && (x8 == 116)) && p.Depth+2 <= p.MaxDepth {
+	if !(x9 && (x8 == 116)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 82)
 		goto L10
 	}
@@ -28844,7 +28562,7 @@ L6:
 L11:
 	p.Pos = x1
 L10:
-	if !(x9 && (x8 == 116)) && p.Depth+1 <= p.MaxDepth {
+	if !(x9 && (x8 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 82)
 		goto L13
 	}
@@ -28875,7 +28593,7 @@ L16:
 L19:
 	p.Pos = x1
 L18:
-	if !(x9 && (x8 == 97)) && p.Depth+2 <= p.MaxDepth {
+	if !(x9 && (x8 == 97)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 212)
 		goto L21
 	}
@@ -28899,7 +28617,7 @@ L21:
 L25:
 	p.Pos = x1
 L24:
-	if !(x9 && (x8 == 102)) && p.Depth+2 <= p.MaxDepth {
+	if !(x9 && (x8 == 102)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 39)
 		goto L27
 	}
@@ -28981,7 +28699,7 @@ L12:
 	goto L3
 L15:
 	p.Pos = x1
-	if !(x11 && (x10 == 96)) && p.Depth+2 <= p.MaxDepth {
+	if !(x11 && (x10 == 96)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 188)
 		goto L17
 	}
@@ -28993,7 +28711,7 @@ L15:
 L18:
 	p.Pos = x1
 L17:
-	if !(x11 && (x10 == 42)) && p.Depth+1 <= p.MaxDepth {
+	if !(x11 && (x10 == 42)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 81)
 		goto L20
 	}
@@ -29005,7 +28723,7 @@ L17:
 L21:
 	p.Pos = x1
 L20:
-	if !(x11 && (x10 == 63)) && p.Depth+1 <= p.MaxDepth {
+	if !(x11 && (x10 == 63)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 139)
 		goto L23
 	}
@@ -29068,7 +28786,6 @@ func s344(p *rt.TParser) (any, bool) {
 	var x7, x33 rune
 	var x8, ok, x34 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x5 = p.Pos
@@ -29251,10 +28968,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[344], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -29279,7 +28994,6 @@ func i345(p *rt.TParser) (any, bool) {
 	var ok, x15 bool
 	var x14 rune
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	if v7, ok = u449(p); !ok {
 		goto L6
@@ -29310,7 +29024,7 @@ L10:
 L12:
 	p.Pos = x3
 	x14, _, x15 = p.NextOrdinary()
-	if !(x15 && (x14 == 110)) && p.Depth+1 <= p.MaxDepth {
+	if !(x15 && (x14 == 110)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 90)
 		goto L16
 	}
@@ -29322,7 +29036,7 @@ L12:
 L17:
 	p.Pos = x3
 L16:
-	if !(x15 && (x14 == 96)) && p.Depth+1 <= p.MaxDepth {
+	if !(x15 && (x14 == 96)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 188)
 		goto L19
 	}
@@ -29334,7 +29048,7 @@ L16:
 L20:
 	p.Pos = x3
 L19:
-	if !(x15 && (x14 == 45)) && p.Depth+1 <= p.MaxDepth {
+	if !(x15 && (x14 == 45)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 167)
 		goto L22
 	}
@@ -29352,10 +29066,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "literalType"
 	v = tmk_LiteralType(c, true, k1)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -29375,7 +29087,6 @@ func i346(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit363, "-", 167, false); !ok {
@@ -29405,10 +29116,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "negativeLiteral"
 	v = tmk_PrefixUnaryExpression(c, true, any("-"), k1)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -29425,7 +29134,6 @@ func v347(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 104 && p.In[p.Pos+2] == 105 && p.In[p.Pos+3] == 115 {
 		p.Pos += 4
@@ -29450,10 +29158,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[347], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -29558,7 +29264,7 @@ L6:
 	}
 	x9 = p.Pos
 	x12, _, x13 = p.NextOrdinary()
-	if !(x13 && (x12 == 116)) && p.Depth+1 <= p.MaxDepth {
+	if !(x13 && (x12 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 82)
 		goto L14
 	}
@@ -29628,7 +29334,6 @@ func s350(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit521, "asserts", 212, false); !ok {
 		goto fail
@@ -29651,10 +29356,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[350], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -30308,7 +30011,6 @@ func i356(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = s357(p); !ok {
 		goto fail
 	}
@@ -30332,10 +30034,8 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "functionTypeReference"
 	v = tmk_TypeReference(c, true, k1, nil)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -30344,7 +30044,6 @@ func s357(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit32, "function", 39, false); !ok {
 		goto fail
@@ -30367,10 +30066,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[357], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -30611,7 +30308,6 @@ func s364(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
@@ -30638,10 +30334,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[364], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -30651,7 +30345,6 @@ func s365(p *rt.TParser) (any, bool) {
 	var v, v5, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 63 {
 		p.Pos++
@@ -30681,10 +30374,8 @@ L4:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[365], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -30911,7 +30602,6 @@ func s370(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -30961,10 +30651,8 @@ L11:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[370], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -30986,7 +30674,6 @@ func i371(p *rt.TParser) (any, bool) {
 	var ok bool
 	var x13 []any
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u421(p); !ok {
 		goto fail
 	}
@@ -31034,10 +30721,8 @@ func i371(p *rt.TParser) (any, bool) {
 	p.Where = "entityName"
 	v = c.Fold("foldl", false, k1, k4, func(l_867, l_868 any) any { return tmk_QualifiedName(c, false, (l_867), c.Member((l_868), "$n")) })
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -31061,7 +30746,6 @@ func i372(p *rt.TParser) (any, bool) {
 	var ok bool
 	var x13 []any
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u425(p); !ok {
 		goto fail
 	}
@@ -31109,10 +30793,8 @@ func i372(p *rt.TParser) (any, bool) {
 	p.Where = "entityNameAllowReserved"
 	v = c.Fold("foldl", false, k1, k4, func(l_870, l_871 any) any { return tmk_QualifiedName(c, false, (l_870), c.Member((l_871), "$n")) })
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -32229,10 +31911,9 @@ func i391(p *rt.TParser) (any, bool) {
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
-	if !(x7 && (x6 == 43 || x6 == 45)) && p.Depth+2 <= p.MaxDepth {
+	if !(x7 && (x6 == 43 || x6 == 45)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 180)
 		goto L8
 	}
@@ -32244,7 +31925,7 @@ func i391(p *rt.TParser) (any, bool) {
 L9:
 	p.Pos = x3
 L8:
-	if !(x7 && (x6 == 114)) && p.Depth+1 <= p.MaxDepth {
+	if !(x7 && (x6 == 114)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 53)
 		goto L11
 	}
@@ -32264,10 +31945,8 @@ L5:
 	v = k1
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[391], v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -32287,7 +31966,6 @@ func i392(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = s395(p); !ok {
 		goto fail
 	}
@@ -32314,10 +31992,8 @@ L5:
 	v = k1
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[392], v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -32338,10 +32014,9 @@ func i393(p *rt.TParser) (any, bool) {
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
-	p.Enter()
 	x3 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
-	if !(x7 && (x6 == 43 || x6 == 45)) && p.Depth+2 <= p.MaxDepth {
+	if !(x7 && (x6 == 43 || x6 == 45)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 180)
 		goto L8
 	}
@@ -32353,7 +32028,7 @@ func i393(p *rt.TParser) (any, bool) {
 L9:
 	p.Pos = x3
 L8:
-	if !(x7 && (x6 == 63)) && p.Depth+1 <= p.MaxDepth {
+	if !(x7 && (x6 == 63)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 139)
 		goto L11
 	}
@@ -32373,10 +32048,8 @@ L5:
 	v = k1
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[393], v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -32396,7 +32069,6 @@ func i394(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = s395(p); !ok {
 		goto fail
 	}
@@ -32414,10 +32086,8 @@ func i394(p *rt.TParser) (any, bool) {
 	v = k1
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[394], v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -32427,7 +32097,6 @@ func s395(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 43 || ch == 45) {
@@ -32442,10 +32111,8 @@ func s395(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[395], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -32455,7 +32122,6 @@ func s396(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit63, "readonly", 53, false); !ok {
 		goto fail
@@ -32478,10 +32144,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[396], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -33423,7 +33087,7 @@ L8:
 L13:
 	p.Pos = x1
 L12:
-	if !(x11 && (x10 == 35)) && p.Depth+1 <= p.MaxDepth {
+	if !(x11 && (x10 == 35)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 112)
 		goto L15
 	}
@@ -33508,7 +33172,6 @@ func s413(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 63 {
 		p.Pos++
@@ -33522,10 +33185,8 @@ func s413(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[413], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -33535,7 +33196,6 @@ func s414(p *rt.TParser) (any, bool) {
 	var v, v4, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 33 {
 		p.Pos++
@@ -33562,10 +33222,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[414], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -33575,7 +33233,6 @@ func s415(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
@@ -33589,10 +33246,8 @@ func s415(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[415], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -33602,7 +33257,6 @@ func s416(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 && p.In[p.Pos+2] == 46 {
 		p.Pos += 3
@@ -33616,10 +33270,8 @@ func s416(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[416], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -33629,7 +33281,6 @@ func s417(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 61 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
@@ -33643,10 +33294,8 @@ func s417(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[417], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -33656,7 +33305,6 @@ func s418(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
@@ -33670,10 +33318,8 @@ func s418(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[418], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -33684,7 +33330,6 @@ func s419(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
@@ -33712,10 +33357,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[419], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -33725,7 +33368,6 @@ func s420(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
@@ -33739,10 +33381,8 @@ func s420(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[420], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -33766,7 +33406,6 @@ func i421(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	x3 = p.Pos
@@ -33852,10 +33491,8 @@ L11:
 	v = k14
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[421], v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -33878,7 +33515,6 @@ func i422(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	x3 = p.Pos
@@ -33912,10 +33548,8 @@ L2:
 	v = k6
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[422], v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -33933,7 +33567,6 @@ func v423(p *rt.TParser) (any, bool) {
 	var x5 rune
 	var x6, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x5, x4, x6 = p.NextOrdinary()
@@ -33962,10 +33595,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[423], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -33984,7 +33615,6 @@ func v424(p *rt.TParser) (any, bool) {
 	var ok, x6 bool
 	var x5 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
 		p.Pos++
@@ -34018,10 +33648,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[424], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34040,7 +33668,6 @@ func v425(p *rt.TParser) (any, bool) {
 	var ok, x9 bool
 	var x8 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
@@ -34079,10 +33706,8 @@ L6:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[425], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34101,11 +33726,10 @@ func v440(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L6
 	}
@@ -34116,7 +33740,7 @@ func v440(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x2
 L6:
-	if !(x5 && (x4 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L8
 	}
@@ -34127,7 +33751,7 @@ L6:
 L9:
 	p.Pos = x2
 L8:
-	if !(x5 && (x4 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L10
 	}
@@ -34164,10 +33788,8 @@ L14:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[440], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34186,11 +33808,10 @@ func v441(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L6
 	}
@@ -34201,7 +33822,7 @@ func v441(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x2
 L6:
-	if !(x5 && (x4 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L8
 	}
@@ -34212,7 +33833,7 @@ L6:
 L9:
 	p.Pos = x2
 L8:
-	if !(x5 && (x4 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L10
 	}
@@ -34254,10 +33875,8 @@ L14:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[441], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34276,7 +33895,6 @@ func v449(p *rt.TParser) (any, bool) {
 	var x4, ch, x15, x28 rune
 	var x5, ok, x16, x29 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -34309,7 +33927,7 @@ func v449(p *rt.TParser) (any, bool) {
 	L13:
 		p.Pos = x11
 		x15, _, x16 = p.NextOrdinary()
-		if !(x16 && (x15 == 92)) && p.Depth+1 <= p.MaxDepth {
+		if !(x16 && (x15 == 92)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 262)
 			goto L17
 		}
@@ -34368,7 +33986,7 @@ L6:
 	L26:
 		p.Pos = x24
 		x28, _, x29 = p.NextOrdinary()
-		if !(x29 && (x28 == 92)) && p.Depth+1 <= p.MaxDepth {
+		if !(x29 && (x28 == 92)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 262)
 			goto L30
 		}
@@ -34407,10 +34025,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[449], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34428,7 +34044,6 @@ func v451(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 96 {
 		p.Pos++
@@ -34450,10 +34065,8 @@ func v451(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[451], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34471,7 +34084,6 @@ func v452(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 96 {
 		p.Pos++
@@ -34493,10 +34105,8 @@ func v452(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[452], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34514,7 +34124,6 @@ func v453(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
@@ -34536,10 +34145,8 @@ func v453(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[453], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34557,7 +34164,6 @@ func v454(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
@@ -34579,10 +34185,8 @@ func v454(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[454], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34592,7 +34196,6 @@ func s456(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 96 {
 		p.Pos++
@@ -34614,10 +34217,8 @@ func s456(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[456], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34627,7 +34228,6 @@ func s457(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 96 {
 		p.Pos++
@@ -34649,10 +34249,8 @@ func s457(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[457], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34662,7 +34260,6 @@ func s458(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
@@ -34684,10 +34281,8 @@ func s458(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[458], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34697,7 +34292,6 @@ func s459(p *rt.TParser) (any, bool) {
 	var v, v2, bv any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
@@ -34719,10 +34313,8 @@ func s459(p *rt.TParser) (any, bool) {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[459], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -34733,7 +34325,6 @@ func s461(p *rt.TParser) (any, bool) {
 	var ok, x12, x25, x35 bool
 	var ch, x11, x24, x34 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
 		p.Pos++
@@ -34914,10 +34505,8 @@ L3:
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[461], v, bv)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -35268,7 +34857,6 @@ func i468(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u159(p); !ok {
 		goto fail
 	}
@@ -35325,10 +34913,8 @@ L16:
 		v = c.EndList(b_882)
 	}
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -35428,7 +35014,6 @@ func i470(p *rt.TParser) (any, bool) {
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if v3, ok = u136(p); !ok {
 		goto fail
 	}
@@ -35485,10 +35070,8 @@ L16:
 		v = c.EndList(b_884)
 	}
 	v = c.Finish(v)
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -35952,7 +35535,6 @@ func s479(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 35 && p.In[p.Pos+1] == 33 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit22, "#!", 18, false); !ok {
@@ -35967,10 +35549,8 @@ func s479(p *rt.TParser) (any, bool) {
 		p.Pos += size
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -35980,7 +35560,6 @@ func s480(p *rt.TParser) (any, bool) {
 	var x2, x4, x7, size, x10, x18, x20 int
 	var ch, x11 rune
 	var ok, x12 bool
-	p.Enter()
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -36093,7 +35672,6 @@ func s480(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -36111,7 +35689,6 @@ func v481(p *rt.TParser) (any, bool) {
 	var ok, x7, x30, x41 bool
 	var x6, ch, x29, x40 rune
 	start = p.Pos
-	p.Enter()
 	for {
 		x2 = p.Pos
 		if _, ok = u517(p); !ok {
@@ -36339,10 +35916,8 @@ L37:
 	goto fail
 L5:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -36361,7 +35936,6 @@ func v482(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 >= 48 && x4 <= 57 || x4 == 36 || x4 == 95)) && p.Depth <= p.MaxDepth {
@@ -36396,10 +35970,8 @@ L10:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -36418,7 +35990,6 @@ func v483(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 123 || x4 == 59 || x4 == 64)) && p.Depth <= p.MaxDepth {
@@ -36473,10 +36044,8 @@ L8:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -36485,15 +36054,12 @@ func s484(p *rt.TParser) (any, bool) {
 	var start int
 	var v any
 	start = p.Pos
-	p.Enter()
 	if !p.SkipTerminal(term901) {
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -37283,7 +36849,6 @@ func v486(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 118)) && p.Depth <= p.MaxDepth {
@@ -37407,10 +36972,8 @@ L17:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -37428,7 +36991,6 @@ func v487(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = s480(p); !ok {
 		goto L3
@@ -37460,10 +37022,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -37474,7 +37034,6 @@ func s488(p *rt.TParser) (any, bool) {
 	var ok, x15 bool
 	var ch, x14 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = s480(p); !ok {
 		goto L3
@@ -37563,10 +37122,8 @@ L6:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -37585,7 +37142,6 @@ func v489(p *rt.TParser) (any, bool) {
 	var ok, x5 bool
 	var x4 rune
 	start = p.Pos
-	p.Enter()
 	if _, ok = s494(p); !ok {
 		goto fail
 	}
@@ -37613,10 +37169,8 @@ L6:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -37635,7 +37189,6 @@ func v490(p *rt.TParser) (any, bool) {
 	var ok, x5 bool
 	var x4 rune
 	start = p.Pos
-	p.Enter()
 	if _, ok = s494(p); !ok {
 		goto fail
 	}
@@ -37671,10 +37224,8 @@ L10:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -37693,7 +37244,6 @@ func v491(p *rt.TParser) (any, bool) {
 	var ok, x5 bool
 	var x4 rune
 	start = p.Pos
-	p.Enter()
 	if _, ok = s494(p); !ok {
 		goto fail
 	}
@@ -37722,10 +37272,8 @@ L8:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -37743,7 +37291,6 @@ func v492(p *rt.TParser) (any, bool) {
 	var ch, x9 rune
 	var size, x2, x4, x7 int
 	var ok, x10 bool
-	p.Enter()
 	for {
 		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 36 || ch == 95) {
@@ -37813,7 +37360,6 @@ func v492(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -37830,7 +37376,6 @@ func v493(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if !p.SkipTerminal(term906) {
 		goto fail
 	}
@@ -37846,10 +37391,8 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -37859,7 +37402,6 @@ func s494(p *rt.TParser) (any, bool) {
 	var x2, x4, x7, size, x10, x18, x20 int
 	var ch, x11 rune
 	var ok, x12 bool
-	p.Enter()
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -37972,7 +37514,6 @@ func s494(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -37990,7 +37531,6 @@ func v495(p *rt.TParser) (any, bool) {
 	var x3, x31 rune
 	var x4, ok, x32 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 101)) && p.Depth <= p.MaxDepth {
@@ -38282,10 +37822,8 @@ L28:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -38303,7 +37841,6 @@ func v496(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit62, "static", 52, false); !ok {
 		goto fail
 	}
@@ -38335,10 +37872,8 @@ L4:
 	goto fail
 L5:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -38357,7 +37892,6 @@ func v497(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36 || x4 == 95)) && p.Depth <= p.MaxDepth {
@@ -38376,10 +37910,8 @@ L8:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -38398,7 +37930,6 @@ func v498(p *rt.TParser) (any, bool) {
 	var x3, x14, x21, x36 rune
 	var x4, ok, x15, x22, x37 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 123)) && p.Depth <= p.MaxDepth {
@@ -38565,10 +38096,8 @@ L29:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -38587,7 +38116,6 @@ func v499(p *rt.TParser) (any, bool) {
 	var x4, ch, x25 rune
 	var x5, ok, x26 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 >= 48 && x4 <= 57 || x4 == 34 || x4 == 39 || x4 == 96 || x4 == 40 || x4 == 91 || x4 == 123 || x4 == 47 || x4 == 126 || x4 == 33 || x4 == 35 || x4 == 64)) && p.Depth <= p.MaxDepth {
@@ -38901,10 +38429,8 @@ L58:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -38923,7 +38449,6 @@ func v500(p *rt.TParser) (any, bool) {
 	var ok, x14, x32, x48, x64, x80, x96, x112, x124, x142, x154 bool
 	var x13, x31, x47, x63, x79, x95, x111, x123, x141, x153 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4 = p.Pos
 	p.Silent++
@@ -39605,10 +39130,8 @@ L160:
 	p.Silent--
 	p.Pos = x159
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -39619,7 +39142,6 @@ func s501(p *rt.TParser) (any, bool) {
 	var x3, x15, x23 rune
 	var x4, ok, x16, x24 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 64)) && p.Depth <= p.MaxDepth {
@@ -39783,10 +39305,8 @@ L35:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -39805,7 +39325,6 @@ func v502(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 103)) && p.Depth <= p.MaxDepth {
@@ -39864,10 +39383,8 @@ L12:
 	goto fail
 L13:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -39886,7 +39403,6 @@ func v503(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 91)) && p.Depth <= p.MaxDepth {
@@ -39911,10 +39427,8 @@ L7:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -39933,7 +39447,6 @@ func v504(p *rt.TParser) (any, bool) {
 	var x3, x12 rune
 	var x4, ok, x13 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 99)) && p.Depth <= p.MaxDepth {
@@ -40008,10 +39521,8 @@ L9:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40030,7 +39541,6 @@ func v505(p *rt.TParser) (any, bool) {
 	var ok, x4, x15 bool
 	var x3, x14, ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit143, "[", 79, false); !ok {
@@ -40124,10 +39634,8 @@ L10:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40145,7 +39653,6 @@ func v506(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = s480(p); !ok {
 		goto L3
@@ -40167,10 +39674,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40189,7 +39694,6 @@ func v507(p *rt.TParser) (any, bool) {
 	var ok, x6 bool
 	var x5 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u497(p); !ok {
 		goto L4
@@ -40221,10 +39725,8 @@ L9:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40235,7 +39737,6 @@ func s508(p *rt.TParser) (any, bool) {
 	var ok, x5 bool
 	var x4 rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit239, "#", 112, false); !ok {
@@ -40262,10 +39763,8 @@ L2:
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40284,7 +39783,6 @@ func v509(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 92)) && p.Depth <= p.MaxDepth {
@@ -40312,10 +39810,8 @@ L7:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40326,7 +39822,6 @@ func s510(p *rt.TParser) (any, bool) {
 	var x3, x18 rune
 	var x4, ok, x19 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 100)) && p.Depth <= p.MaxDepth {
@@ -40443,10 +39938,8 @@ L13:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40465,7 +39958,6 @@ func v511(p *rt.TParser) (any, bool) {
 	var x6, x16 rune
 	var x7, ok, x17 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
@@ -40613,10 +40105,8 @@ L26:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40635,7 +40125,6 @@ func v512(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 91 || x4 == 123 || x4 == 42)) && p.Depth <= p.MaxDepth {
@@ -40667,10 +40156,8 @@ L10:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40689,7 +40176,6 @@ func v513(p *rt.TParser) (any, bool) {
 	var ok, x6 bool
 	var x5, ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u497(p); !ok {
 		goto L4
@@ -40740,10 +40226,8 @@ L11:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40754,7 +40238,6 @@ func s514(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 10 || x4 == 13 || x4 == 8232 || x4 == 8233)) && p.Depth <= p.MaxDepth {
@@ -40780,10 +40263,8 @@ L8:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40794,7 +40275,6 @@ func s515(p *rt.TParser) (any, bool) {
 	var ok, x4, x24 bool
 	var x3, x23 rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit77, "(", 58, false); !ok {
@@ -40950,10 +40430,8 @@ L13:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -40964,7 +40442,6 @@ func s516(p *rt.TParser) (any, bool) {
 	var ok, x10 bool
 	var x9, ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit328, "<", 140, false); !ok {
@@ -41052,10 +40529,8 @@ L17:
 	goto fail
 L7:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -41074,7 +40549,6 @@ func v517(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 97)) && p.Depth <= p.MaxDepth {
@@ -41260,10 +40734,8 @@ L36:
 	p.Silent--
 	p.Pos = x35
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -41282,7 +40754,6 @@ func v518(p *rt.TParser) (any, bool) {
 	var x7, x22 rune
 	var x8, ok, x23 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	if !p.ClassFast(&cls820) && !p.ClassSkip(&cls820, 173) {
@@ -41435,10 +40906,8 @@ L34:
 	goto fail
 L5:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -41449,7 +40918,6 @@ func s519(p *rt.TParser) (any, bool) {
 	var ok, x10 bool
 	var ch, x9 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = s480(p); !ok {
 		goto L3
@@ -41673,10 +41141,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -41694,7 +41160,6 @@ func v520(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u301(p); !ok {
 		goto L3
@@ -41711,10 +41176,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -41868,7 +41331,6 @@ func s522(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 124 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit341, "|", 146, false); !ok {
@@ -41889,10 +41351,8 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -41903,7 +41363,6 @@ func s523(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 38 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit345, "&", 149, false); !ok {
@@ -41924,10 +41383,8 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -42138,7 +41595,6 @@ func v525(p *rt.TParser) (any, bool) {
 	var ok, x5 bool
 	var x4 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u497(p); !ok {
 		goto L3
@@ -42163,10 +41619,8 @@ L6:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -42185,7 +41639,6 @@ func v526(p *rt.TParser) (any, bool) {
 	var ok, x5 bool
 	var x4 rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit65, "{", 20, false); !ok {
@@ -42280,10 +41733,8 @@ L10:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -42302,7 +41753,6 @@ func v527(p *rt.TParser) (any, bool) {
 	var x4, x11 rune
 	var x5, x12, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 40 || x4 == 60)) && p.Depth <= p.MaxDepth {
@@ -42433,10 +41883,8 @@ L27:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -42445,15 +41893,12 @@ func s528(p *rt.TParser) (any, bool) {
 	var start int
 	var v any
 	start = p.Pos
-	p.Enter()
 	if !p.ClassesSkip(steps912) {
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -42472,7 +41917,6 @@ func v529(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit631, "0", 239, false); !ok {
@@ -42511,10 +41955,8 @@ func v529(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -42525,7 +41967,6 @@ func s530(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit631, "0", 239, false); !ok {
@@ -42561,10 +42002,8 @@ func s530(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -42575,7 +42014,6 @@ func s531(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit631, "0", 239, false); !ok {
@@ -42611,10 +42049,8 @@ func s531(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -42625,7 +42061,6 @@ func s532(p *rt.TParser) (any, bool) {
 	var ok, x14 bool
 	var x13 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = s533(p); !ok {
 		goto L3
@@ -42687,10 +42122,8 @@ L15:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -42701,7 +42134,6 @@ func s533(p *rt.TParser) (any, bool) {
 	var x4, ch rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
@@ -42767,10 +42199,8 @@ L10:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -42789,7 +42219,6 @@ func v534(p *rt.TParser) (any, bool) {
 	var ok, x5 bool
 	var x4, ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit659, "\\", 262, false); !ok {
@@ -42889,10 +42318,8 @@ L18:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -42910,7 +42337,6 @@ func v535(p *rt.TParser) (any, bool) {
 	var x2, x4, size, x7, x12 int
 	var ch, x8 rune
 	var ok, x9 bool
-	p.Enter()
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -42957,7 +42383,7 @@ func v535(p *rt.TParser) (any, bool) {
 	L11:
 		p.Pos = x4
 	L10:
-		if !(x9 && (x8 == 92)) && p.Depth+1 <= p.MaxDepth {
+		if !(x9 && (x8 == 92)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 262)
 			goto L14
 		}
@@ -42979,7 +42405,6 @@ func v535(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -42988,7 +42413,6 @@ func s536(p *rt.TParser) (any, bool) {
 	var x2, x4, size, x7, x12 int
 	var ch, x8 rune
 	var ok, x9 bool
-	p.Enter()
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -43065,7 +42489,6 @@ func s536(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 }
 
@@ -43075,7 +42498,6 @@ func s537(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
@@ -43096,10 +42518,8 @@ L3:
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -43118,7 +42538,6 @@ func v538(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 91 || x4 == 42 || x4 == 46)) && p.Depth <= p.MaxDepth {
@@ -43137,10 +42556,8 @@ L8:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -43159,7 +42576,6 @@ func v539(p *rt.TParser) (any, bool) {
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
@@ -43212,10 +42628,8 @@ L14:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -43234,7 +42648,6 @@ func v540(p *rt.TParser) (any, bool) {
 	var x3, x10, ch, x29 rune
 	var x4, ok, x11, x30 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 48)) && p.Depth <= p.MaxDepth {
@@ -43416,10 +42829,8 @@ L21:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -43428,15 +42839,12 @@ func s541(p *rt.TParser) (any, bool) {
 	var start int
 	var v any
 	start = p.Pos
-	p.Enter()
 	if !p.SkipTerminal(term920) {
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -43455,7 +42863,6 @@ func v542(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36 || x4 == 95)) && p.Depth <= p.MaxDepth {
@@ -43477,10 +42884,8 @@ L2:
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -43491,7 +42896,6 @@ func s543(p *rt.TParser) (any, bool) {
 	var ok, x6 bool
 	var x5 rune
 	start = p.Pos
-	p.Enter()
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -43513,10 +42917,8 @@ L7:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -43527,7 +42929,6 @@ func s544(p *rt.TParser) (any, bool) {
 	var x4, ch, x13 rune
 	var x5, ok, x14 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 >= 48 && x4 <= 57 || x4 == 34 || x4 == 39 || x4 == 96 || x4 == 40 || x4 == 91 || x4 == 123 || x4 == 47)) && p.Depth <= p.MaxDepth {
@@ -43721,10 +43122,8 @@ L37:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -43743,7 +43142,6 @@ func v545(p *rt.TParser) (any, bool) {
 	var ok, x5, x25 bool
 	var x4, x24 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = s562(p); !ok {
 		goto L3
@@ -43752,7 +43150,7 @@ func v545(p *rt.TParser) (any, bool) {
 L3:
 	p.Pos = x1
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 38)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 38)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 145)
 		goto L6
 	}
@@ -43763,7 +43161,7 @@ L3:
 L7:
 	p.Pos = x1
 L6:
-	if !(x5 && (x4 == 124)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 124)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 146)
 		goto L8
 	}
@@ -43774,7 +43172,7 @@ L6:
 L9:
 	p.Pos = x1
 L8:
-	if !(x5 && (x4 == 94)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 94)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 148)
 		goto L10
 	}
@@ -43785,7 +43183,7 @@ L8:
 L11:
 	p.Pos = x1
 L10:
-	if !(x5 && (x4 == 38)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 38)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 149)
 		goto L12
 	}
@@ -43826,7 +43224,7 @@ L17:
 	goto L2
 L18:
 	p.Pos = x1
-	if !(x5 && (x4 == 42)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 42)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 171)
 		goto L19
 	}
@@ -43882,10 +43280,8 @@ L21:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -43904,7 +43300,6 @@ func v546(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 97)) && p.Depth <= p.MaxDepth {
@@ -44013,10 +43408,8 @@ L22:
 	p.Silent--
 	p.Pos = x21
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44027,7 +43420,6 @@ func s547(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 112)) && p.Depth <= p.MaxDepth {
@@ -44121,10 +43513,8 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44143,7 +43533,6 @@ func v548(p *rt.TParser) (any, bool) {
 	var ok, x5 bool
 	var x4 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u542(p); !ok {
 		goto L3
@@ -44152,7 +43541,7 @@ func v548(p *rt.TParser) (any, bool) {
 L3:
 	p.Pos = x1
 	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 35)) && p.Depth+1 <= p.MaxDepth {
+	if !(x5 && (x4 == 35)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 112)
 		goto L6
 	}
@@ -44184,10 +43573,8 @@ L10:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44205,7 +43592,6 @@ func v549(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = s480(p); !ok {
 		goto L3
@@ -44225,10 +43611,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44247,7 +43631,6 @@ func v550(p *rt.TParser) (any, bool) {
 	var ok, x6 bool
 	var x5, ch rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u497(p); !ok {
 		goto L4
@@ -44298,10 +43681,8 @@ L11:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44312,7 +43693,6 @@ func s551(p *rt.TParser) (any, bool) {
 	var x3, ch rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 48)) && p.Depth <= p.MaxDepth {
@@ -44443,10 +43823,8 @@ L14:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44457,7 +43835,6 @@ func s552(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
@@ -44478,10 +43855,8 @@ L3:
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44500,7 +43875,6 @@ func v553(p *rt.TParser) (any, bool) {
 	var x3, x13 rune
 	var x4, ok, x14 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 64)) && p.Depth <= p.MaxDepth {
@@ -44568,10 +43942,8 @@ L7:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44640,7 +44012,6 @@ func v555(p *rt.TParser) (any, bool) {
 	var ok, x9 bool
 	var x8 rune
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	if _, ok = u491(p); !ok {
 		goto L3
@@ -44675,10 +44046,8 @@ L4:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44689,7 +44058,6 @@ func s556(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 		p.ExpectOrdinary(p.Pos, 251)
@@ -44697,10 +44065,8 @@ func s556(p *rt.TParser) (any, bool) {
 	}
 	p.Pos += size
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44711,7 +44077,6 @@ func s557(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57) {
 		p.ExpectOrdinary(p.Pos, 88)
@@ -44745,10 +44110,8 @@ func s557(p *rt.TParser) (any, bool) {
 		break
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44767,7 +44130,6 @@ func v558(p *rt.TParser) (any, bool) {
 	var ch rune
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 101 || ch == 69) {
 		p.ExpectOrdinary(p.Pos, 255)
@@ -44789,10 +44151,8 @@ L3:
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44803,10 +44163,9 @@ func s559(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
-	if !(x4 && (x3 >= 48 && x3 <= 57 || x3 >= 97 && x3 <= 102 || x3 >= 65 && x3 <= 70)) && p.Depth+1 <= p.MaxDepth {
+	if !(x4 && (x3 >= 48 && x3 <= 57 || x3 >= 97 && x3 <= 102 || x3 >= 65 && x3 <= 70)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 251)
 		goto L5
 	}
@@ -44826,7 +44185,7 @@ func s559(p *rt.TParser) (any, bool) {
 L6:
 	p.Pos = x1
 L5:
-	if !(x4 && (x3 == 123)) && p.Depth+1 <= p.MaxDepth {
+	if !(x4 && (x3 == 123)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 20)
 		goto L7
 	}
@@ -44840,10 +44199,8 @@ L7:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44854,7 +44211,6 @@ func s560(p *rt.TParser) (any, bool) {
 	var x3, ch rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 50)) && p.Depth <= p.MaxDepth {
@@ -44968,10 +44324,8 @@ L15:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -44990,7 +44344,6 @@ func v561(p *rt.TParser) (any, bool) {
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 56 || x4 == 57 || x4 >= 97 && x4 <= 102 || x4 >= 65 && x4 <= 70)) && p.Depth <= p.MaxDepth {
@@ -45079,10 +44432,8 @@ L16:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45093,7 +44444,6 @@ func s562(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 63)) && p.Depth <= p.MaxDepth {
@@ -45151,10 +44501,8 @@ L9:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45164,7 +44512,6 @@ func s563(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 38 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit339, "&&", 145, false); !ok {
@@ -45184,10 +44531,8 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45197,7 +44542,6 @@ func s564(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 94 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit343, "^", 148, false); !ok {
@@ -45217,10 +44561,8 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45231,7 +44573,6 @@ func s565(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 61)) && p.Depth <= p.MaxDepth {
@@ -45289,10 +44630,8 @@ L11:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45311,7 +44650,6 @@ func v566(p *rt.TParser) (any, bool) {
 	var x3, ch rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 60)) && p.Depth <= p.MaxDepth {
@@ -45472,10 +44810,8 @@ L25:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45486,7 +44822,6 @@ func s567(p *rt.TParser) (any, bool) {
 	var x3, ch rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 62)) && p.Depth <= p.MaxDepth {
@@ -45571,10 +44906,8 @@ L13:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45585,7 +44918,6 @@ func s568(p *rt.TParser) (any, bool) {
 	var x3, ch rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 43)) && p.Depth <= p.MaxDepth {
@@ -45645,10 +44977,8 @@ L9:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45659,7 +44989,6 @@ func s569(p *rt.TParser) (any, bool) {
 	var x3, ch rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 42)) && p.Depth <= p.MaxDepth {
@@ -45744,10 +45073,8 @@ L13:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45757,7 +45084,6 @@ func s570(p *rt.TParser) (any, bool) {
 	var v any
 	var ok bool
 	start = p.Pos
-	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit367, "**", 171, false); !ok {
@@ -45777,10 +45103,8 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45799,7 +45123,6 @@ func v571(p *rt.TParser) (any, bool) {
 	var ok, x5 bool
 	var x4 rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit239, "#", 112, false); !ok {
@@ -45826,10 +45149,8 @@ L2:
 		goto fail
 	}
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45848,7 +45169,6 @@ func v572(p *rt.TParser) (any, bool) {
 	var x3, ch, x14, x27 rune
 	var x4, ok, x15, x28 bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 34)) && p.Depth <= p.MaxDepth {
@@ -45880,7 +45200,7 @@ func v572(p *rt.TParser) (any, bool) {
 	L12:
 		p.Pos = x10
 		x14, _, x15 = p.NextOrdinary()
-		if !(x15 && (x14 == 92)) && p.Depth+1 <= p.MaxDepth {
+		if !(x15 && (x14 == 92)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 262)
 			goto L16
 		}
@@ -45939,7 +45259,7 @@ L5:
 	L25:
 		p.Pos = x23
 		x27, _, x28 = p.NextOrdinary()
-		if !(x28 && (x27 == 92)) && p.Depth+1 <= p.MaxDepth {
+		if !(x28 && (x27 == 92)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 262)
 			goto L29
 		}
@@ -45972,10 +45292,8 @@ L18:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -45994,10 +45312,9 @@ func v573(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
-	if !(x4 && (x3 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x4 && (x3 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L5
 	}
@@ -46008,7 +45325,7 @@ func v573(p *rt.TParser) (any, bool) {
 L6:
 	p.Pos = x1
 L5:
-	if !(x4 && (x3 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x4 && (x3 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L7
 	}
@@ -46019,7 +45336,7 @@ L5:
 L8:
 	p.Pos = x1
 L7:
-	if !(x4 && (x3 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x4 && (x3 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L9
 	}
@@ -46050,10 +45367,8 @@ L13:
 	p.Silent--
 	p.Pos = x12
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -46072,10 +45387,9 @@ func v574(p *rt.TParser) (any, bool) {
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
-	p.Enter()
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
-	if !(x4 && (x3 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x4 && (x3 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L5
 	}
@@ -46086,7 +45400,7 @@ func v574(p *rt.TParser) (any, bool) {
 L6:
 	p.Pos = x1
 L5:
-	if !(x4 && (x3 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x4 && (x3 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L7
 	}
@@ -46097,7 +45411,7 @@ L5:
 L8:
 	p.Pos = x1
 L7:
-	if !(x4 && (x3 == 48)) && p.Depth+1 <= p.MaxDepth {
+	if !(x4 && (x3 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 239)
 		goto L9
 	}
@@ -46133,10 +45447,8 @@ L13:
 	p.Silent--
 	p.Pos = x12
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }
@@ -46147,7 +45459,6 @@ func s575(p *rt.TParser) (any, bool) {
 	var ok bool
 	var ch rune
 	start = p.Pos
-	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit65, "{", 20, false); !ok {
@@ -46286,10 +45597,8 @@ L23:
 	goto fail
 L2:
 	v = nil
-	p.Depth--
 	return v, true
 fail:
-	p.Depth--
 	p.Pos = start
 	return nil, false
 }

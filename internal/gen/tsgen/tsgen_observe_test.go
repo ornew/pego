@@ -117,7 +117,13 @@ rule part W = t:("input, o.unit, o.maxDepth, control)") #atomic => W{Text: text(
 				typedConsumer = tsTraceTypedConsumer
 				typedRoute = `routes.push((input,o)=>{const r=p.parseASTWithOptions(input,o);return {value:r.value,error:r.error}});`
 			}
-			consumer := strings.NewReplacer("PARSER", name, "INPUT", fmt.Sprintf("%q", fixture.input), "RULES", strings.Join(names, ","), "CHECKS", fixture.checks, "TYPEDCHECKS", typedConsumer, "TYPEDROUTE", typedRoute).Replace(tsTraceConsumer)
+			// Only rules in a call cycle count toward the depth limit, so a limit of 1 raises no depth error here. The depth option tests check the limit on recursive grammars.
+			deepCheck := `tooDeep.error===null||!tooDeep.error.message.includes("nesting too deep")`
+			if fixture.name == "operators" {
+				// Every level of an operators rule counts, whether or not the rule recurses.
+				deepCheck = `tooDeep.error!==null&&tooDeep.error.message.includes("nesting too deep")`
+			}
+			consumer := strings.NewReplacer("DEEPCHECK", deepCheck, "PARSER", name, "INPUT", fmt.Sprintf("%q", fixture.input), "RULES", strings.Join(names, ","), "CHECKS", fixture.checks, "TYPEDCHECKS", typedConsumer, "TYPEDROUTE", typedRoute).Replace(tsTraceConsumer)
 			write(name+"_consumer.ts", consumer)
 			files = append(files, name+".ts", name+"_reference.ts", name+"_consumer.ts")
 			fmt.Fprintf(&harness, "await import(%q);\n", "./"+name+"_consumer.ts")
@@ -225,7 +231,7 @@ for(const route of routes)for(const controlled of [false,true]){
  const canceled=route(source,{signal:{aborted:true},trace:()=>{throw new Error("pre-canceled delivery")}});check(canceled.value===null&&canceled.error instanceof p.ParseInterruptionError,"pre-cancel");
  const limited=route(source,{budget:1,trace:()=>{}});check(limited.value===null&&limited.error instanceof p.ParseInterruptionError,"budget withholding");
  let aborted=false;const late=route(source,{signal:{get aborted(){return aborted}},trace:()=>{aborted=true}});check(late.value===null&&late.error instanceof p.ParseInterruptionError,"callback cancellation");
- const tooDeep=route(source,{maxDepth:1,trace:()=>{}});check(tooDeep.value===null&&tooDeep.error!==null&&tooDeep.error.message.includes("nesting too deep"),"depth error unchanged");
+ const tooDeep=route(source,{maxDepth:1,trace:()=>{}});check(DEEPCHECK,"depth error unchanged");
  check(p.testReleased(),"lifecycle observer release");
 }
 for(const traceMaxDepth of [NaN,Infinity,1.5]){const r=p.parseRuleWithOptions("not-defined",source,{traceMaxDepth});check(r.node===null&&r.error?.message.includes("trace max depth"),"options validated before lookup")}

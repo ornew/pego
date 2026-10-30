@@ -546,6 +546,9 @@ func (g *Generator) rules() {
 		if r.Splice {
 			fmt.Fprintf(init, "%s.splice = true;\n", g.ruleVar(r))
 		}
+		if r.Rec {
+			fmt.Fprintf(init, "%s.rec = true;\n", g.ruleVar(r))
+		}
 		if w := r.WhereName(); w != r.Name {
 			fmt.Fprintf(init, "%s.where = %s;\n", g.ruleVar(r), TsString(w))
 		}
@@ -624,13 +627,15 @@ func (g *Generator) plainCall(r *compile.Rule, body string) {
   const prevEnv = p.env;
   const prevCut = p.cut;
   p.cut = false;
-  if (++p.depth > p.maxDepth) {
-    p.tooDeep();
-  }
 `)
+	if r.Rec {
+		m.WriteString("  if (++p.depth > p.maxDepth) {\n    p.tooDeep();\n  }\n")
+	}
 	fmt.Fprintf(m, "  let v = %s;\n", body)
-	m.WriteString(`  p.depth--;
-  p.cut = prevCut;
+	if r.Rec {
+		m.WriteString("  p.depth--;\n")
+	}
+	m.WriteString(`  p.cut = prevCut;
   p.trail.length = trail;
   if (v !== undefined) {
 `)

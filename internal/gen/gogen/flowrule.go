@@ -154,17 +154,17 @@ func (g *Generator) flatMethod(r *compile.Rule, d *flatRule, name, comment strin
 	if d.binds {
 		m.WriteString("\tprevEnv = p.Env\n")
 	}
-	m.WriteString("\tp.Enter()\n")
+	m.WriteString(enterRec(r))
 	m.WriteString(d.body)
 	if d.succeed {
-		m.WriteString("\tp.Depth--\n")
+		m.WriteString(leaveRec(r))
 		if d.binds {
 			m.WriteString("\tp.Env = prevEnv\n")
 		}
 		m.WriteString("\treturn v, true\n")
 	}
 	if d.fail {
-		m.WriteString("fail" + ":\n\tp.Depth--\n")
+		m.WriteString("fail" + ":\n" + leaveRec(r))
 		if rec {
 			m.WriteString("\tp.Restore(start, rec)\n")
 		} else if restore {

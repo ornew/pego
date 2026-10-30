@@ -84,8 +84,8 @@ type parseRequest struct {
 	// DefaultValue drops value actions and declared rule types, so the tree is the default node
 	// tree, as pego parse -default-value does. Predicates still run.
 	DefaultValue bool `json:"defaultValue,omitempty"`
-	// MaxDepth limits the nesting of rule calls (pego.WithMaxDepth); 0 selects the playground's
-	// limit, maxDepth, for the backends that nest rule calls on the stack.
+	// MaxDepth limits the nesting of recursive rule calls (pego.WithMaxDepth); 0 selects the
+	// playground's limit, maxDepth, for the backends that nest rule calls on the stack.
 	MaxDepth int `json:"maxDepth,omitempty"`
 	// Runs is the number of times the parse is timed (Micros is then the median); 0 or 1 parses once.
 	// It is limited to maxParseRuns.
@@ -228,7 +228,7 @@ func errorResponse(err error) []byte {
 // of the engine apply, and trees are limited by encoding/json, which refuses to nest more than 10,000
 // levels (two per node level). main_js.go lowers both for WebAssembly.
 var (
-	maxDepth     = 0    // nesting of rule calls (pego.WithMaxDepth); 0 is the engine's default
+	maxDepth     = 0    // nesting of recursive rule calls (pego.WithMaxDepth); 0 is the engine's default
 	maxTreeDepth = 4000 // nesting of nodes in a tree that is encoded and displayed
 )
 
