@@ -66,12 +66,15 @@ var randomInput = func() string {
 
 // randomCostGrammar returns a random grammar over the alphabet abc with the start rule main.
 // The shapes are those of the measured families: choices whose alternatives share prefixes,
-// repetitions of them, scans, lookaheads, recursion in either direction, cuts and recovery.
+// repetitions of them, scans, lookaheads, recursion in either direction, cuts and recovery;
+// repetitions with a minimum, of expressions that can match nothing; calls shared by alternatives
+// after a common prefix; and the rules s of type string and l of type []string, whose actions copy,
+// pass on, index, measure and compare the values of their recursions.
 func randomCostGrammar(rng *rand.Rand) string {
+	pick := func(xs ...string) string { return xs[rng.IntN(len(xs))] }
 	atom := func() string {
-		atoms := []string{`"a"`, `"b"`, `"c"`, `"ab"`, `"aa"`, `[a-b]`, `[^c]`, `.`,
-			`"a"*`, `[ab]*`, `"b"+`, "r1", "r2", "r3", "r1", "r2", "r3"}
-		return atoms[rng.IntN(len(atoms))]
+		return pick(`"a"`, `"b"`, `"c"`, `"ab"`, `"aa"`, `[a-b]`, `[^c]`, `.`,
+			`"a"*`, `[ab]*`, `"b"+`, "r1", "r2", "r3", "r1", "r2", "r3", "s", "l")
 	}
 	var expr func(depth int) string
 	expr = func(depth int) string {
@@ -85,7 +88,7 @@ func randomCostGrammar(rng *rand.Rand) string {
 			}
 			return ps
 		}
-		switch rng.IntN(10) {
+		switch rng.IntN(13) {
 		case 0, 1, 2:
 			ps := parts()
 			if rng.IntN(8) == 0 {
@@ -95,13 +98,57 @@ func randomCostGrammar(rng *rand.Rand) string {
 		case 3, 4, 5:
 			return "(" + strings.Join(parts(), " / ") + ")"
 		case 6:
-			return "(" + expr(depth-1) + ")" + []string{"*", "+", "?"}[rng.IntN(3)]
+			return "(" + expr(depth-1) + ")" + pick("*", "+", "?")
 		case 7:
-			return []string{"!", "&"}[rng.IntN(2)] + "(" + expr(depth-1) + ")"
+			return pick("!", "&") + "(" + expr(depth-1) + ")"
 		case 8:
-			return "(" + expr(depth-1) + ") #recover(skip=" + []string{"[a-b]+", "[^c]", `"c"`}[rng.IntN(3)] + ")"
+			return "(" + expr(depth-1) + ") #recover(skip=" + pick("[a-b]+", "[^c]", `"c"`) + ")"
+		case 9:
+			// A repetition with a minimum, often of an expression that can match nothing: it stops
+			// at its first empty iteration, so it can fail after that or an earlier iteration
+			// scanned.
+			return "(" + pick(`"a"*`, `[ab]*`, `&("a"*)`, `&[ab]*`, `"b"?`, expr(depth-1)) + ") " + pick("#repeat(2)", "#repeat(3)", "#repeat(3, 5)")
+		case 10:
+			// A call shared by alternatives that start alike, not at their start.
+			pre, call := pick(`"a"`, `"ab"`, `[ab]`), pick("r1", "r2", "r3", "s", "l")
+			return "(" + pre + " " + call + " " + expr(depth-1) + " / " + pre + " " + call + " " + expr(depth-1) + ")"
+		case 11:
+			// A predicate on the size of a capture, often of a value, and what follows it.
+			return "(x:(" + pick(expr(depth-1), "s", "l") + ")" + pick("", " #atomic") + " {len($x) > 1} " + atom() + ")"
 		}
 		return "(" + expr(depth-1) + ") #atomic"
+	}
+	// The alternatives of s and l recurse after a prefix, which can match nothing.
+	prefix := func() string { return pick(`"a"`, `"b"`, `"("`, expr(1)) }
+	str := []string{
+		`x:s => $x + "a"`,
+		`x:s => $x`,
+		`x:s => "a"`,
+		`x:s y:s {$x == $y} => $x`,
+		`x:s {$x != "a"} => $x`,
+		`x:s {len($x) > 0} => "a"`,
+		`x:s {len($x) > 0} => $x`,
+		`x:l => $x[0]`,
+		`x:l => $x[0] + "b"`,
+		`x:s => text($x)`,
+	}
+	list := []string{
+		`x:l => list($x[0] + "a")`,
+		`x:l => concat(list("a"), $x)`,
+		`x:l => $x`,
+		`x:l {len($x) > 0} => list("a")`,
+		`x:l {len($x) > 0} => $x`,
+		`x:l y:l {$x[0] == $y[0]} => $x`,
+		`x:s => list($x)`,
+		`x:s => list($x + "c")`,
+	}
+	rule := func(name, typ string, alts []string, base ...string) string {
+		var as []string
+		for range 1 + rng.IntN(3) {
+			as = append(as, "("+prefix()+" "+alts[rng.IntN(len(alts))]+")")
+		}
+		as = append(as, "("+pick(base...)+")")
+		return fmt.Sprintf("rule %s %s = %s\n", name, typ, strings.Join(as, " / "))
 	}
 	var b strings.Builder
 	if rng.IntN(3) == 0 {
@@ -112,12 +159,14 @@ func randomCostGrammar(rng *rand.Rand) string {
 	for _, r := range []string{"r1", "r2", "r3"} {
 		fmt.Fprintf(&b, "rule %s = %s\n", r, expr(3))
 	}
+	b.WriteString(rule("s", "string", str, `"c" => "c"`, `t:[ab]* => text($t)`, `"" => ""`))
+	b.WriteString(rule("l", "[]string", list, `"c" => list("c")`, `x:s => list($x)`, `"" => list("")`))
 	return b.String()
 }
 
 // linearClaims generates count random grammars, keeps those that compile, and checks every one
 // that claimsLinear classifies as linear against the measured cost on the input families on the
-// closure backend. It returns the number of grammars checked and the failures; it stops at the
+// closure and bytecode backends. It returns the number of grammars checked and the failures; it stops at the
 // first failure if firstOnly is set.
 func linearClaims(t *testing.T, count int, claimsLinear func(*grammar.Grammar) bool, firstOnly bool) (int, []string) {
 	t.Helper()
@@ -139,22 +188,25 @@ func linearClaims(t *testing.T, count int, claimsLinear func(*grammar.Grammar) b
 			continue
 		}
 		checked++
-		for i, build := range differentialInputs {
-			s := Series{Sizes: differentialSizes}
-			for _, size := range differentialSizes {
-				c, err := StepsLenient(p, build(size), pego.Closure, differentialCap)
-				if err != nil {
-					t.Fatalf("grammar %d, input %d, size %d: %v\n%s", n, i, size, err, src)
+	measure:
+		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode} {
+			for i, build := range differentialInputs {
+				s := Series{Sizes: differentialSizes}
+				for _, size := range differentialSizes {
+					c, err := StepsLenient(p, build(size), backend, differentialCap)
+					if err != nil {
+						t.Fatalf("grammar %d, %v, input %d, size %d: %v\n%s", n, backend, i, size, err, src)
+					}
+					s.Costs = append(s.Costs, c)
 				}
-				s.Costs = append(s.Costs, c)
-			}
-			if !measuresLinear(s) {
-				failures = append(failures, fmt.Sprintf("grammar %d, input %d: steps %v, slopes %.2f\n%s",
-					n, i, s.Costs, s.Slopes(), src))
-				if firstOnly {
-					return checked, failures
+				if !measuresLinear(s) {
+					failures = append(failures, fmt.Sprintf("grammar %d, %v, input %d: steps %v, slopes %.2f\n%s",
+						n, backend, i, s.Costs, s.Slopes(), src))
+					if firstOnly {
+						return checked, failures
+					}
+					break measure
 				}
-				break
 			}
 		}
 	}

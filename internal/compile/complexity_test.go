@@ -123,6 +123,9 @@ func TestClassifyComplexity(t *testing.T) {
 		// A repetition ends at its first empty iteration, so it can fail after scanning even
 		// when its expression always succeeds.
 		{"repetition below its minimum", "rule main = (p / \"a\")* $$\nrule p = (\"a\"*) #repeat(3)\n", ClassPoly, 2},
+		// With a minimum of two, "a"* fails only when its first iteration is empty, after a
+		// constant examination; the classifier does not tell this from a body that can be empty
+		// after scanning, as &"a"* can, and stays pessimistic.
 		{"repetition of two below its minimum", "rule main = (p / \"a\")* $$\nrule p = (\"a\"*) #repeat(2)\n", ClassPoly, 2},
 		{"repetition below its minimum without a retry", "rule main = (\"a\"*) #repeat(3) $$\n", ClassLinear, 0},
 		{"self-growing variable", "var s string = \"a\"\nrule main = r $$\nrule r = \"x\" {s := s + s} r / {len(s) > 0}\n", ClassExp, 0},

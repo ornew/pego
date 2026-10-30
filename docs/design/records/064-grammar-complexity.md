@@ -349,10 +349,11 @@ not, so E1, E2, E7, E8 and E9 remain negative controls.
 - **Classifier verdicts on the controls.** Each control has an expected class: a positive control is classified
   `Linear` or `Linear·Env`, a negative control never is, and a polynomial degree matches the measured order.
 - **Classifier soundness by differential testing.** Random grammars over a small alphabet, in the shapes of the
-  E-series, are classified, and every grammar classified linear is measured on several input families: its cost per
-  byte at 4n stays within 1.2 times that at n or 2n. A `Linear` verdict with super-linear growth is a classifier bug.
-  A negative control treats the grammars classified `Poly` or `Exp` as linear and must fail, so the test can catch a
-  classifier that claims too much.
+  E-series and with string and list rules whose actions and predicates copy, index, measure and compare the values of
+  their recursions, are classified, and every grammar classified linear is measured on several input families on the
+  closure and bytecode backends: its cost per byte at 4n stays within 1.2 times that at n or 2n. A `Linear` verdict
+  with super-linear growth is a classifier bug. A negative control treats the grammars classified `Poly` or `Exp` as
+  linear and must fail, so the test can catch a classifier that claims too much.
 
 Not yet in place:
 
