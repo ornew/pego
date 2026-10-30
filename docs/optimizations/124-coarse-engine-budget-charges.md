@@ -15,6 +15,9 @@ operator loop iteration and per recursion level), and the steps proportional to 
 values it builds. Between two charges only the straight-line code of one rule body runs, whose
 length is bounded by the size of the grammar, so the charges still bound the work: a repetition
 that matches many times, an unbounded scan and recursion without consuming input are all charged.
+A repetition ends at an iteration that consumes no input, and every input read is charged, so what
+the bound needs beyond the reads are the rule-call and Operators Rule level charges; the iteration
+charges keep the cost of a loop proportional to its iterations whatever their bodies read.
 
 The compiler no longer wraps every expression in a charging step. The closure builder charges in its
 repetition matchers (only in the metered graph, so the unmetered graph is unchanged). The VM
@@ -44,3 +47,10 @@ seven interleaved rounds (the parse without a limit moved by at most 2%):
 | XML | 1.504 to 1.252 | 1.348 to 1.224 | 1.364 to 1.197 |
 | YAML | 1.544 to 1.247 | 1.406 to 1.244 | 1.400 to 1.218 |
 | CSV | 1.493 to 1.331 | 1.359 to 1.227 | 1.358 to 1.233 |
+
+## Correctness
+
+A test parses one more element of a plain repetition, a class scan, a rule call, a call of a rule
+with captures, a projected repetition and an Operators Rule loop and recursion level on each
+backend, with and without building the tree, and requires the smallest budget that parses to grow
+by an exact amount, so a lost charge on any of these paths fails it.
