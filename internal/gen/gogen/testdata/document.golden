@@ -124,6 +124,7 @@ corpus/0/leader with memoized callers	59fb2e933beaa7779b6820e6
 corpus/0/leader wrapped in a recovery	73a9e9d51064c5696651e923
 corpus/0/left recursion	244240a280a12d04b8d3aee7
 corpus/0/left recursion in recovery skip	ab02d53ffb3eedd7df504d4d
+corpus/0/len of nodes and strings	80f0fdeb1d67571cd51f92f0
 corpus/0/line choice of rules	b66247574685415fcec6550b
 corpus/0/line choice with captures and skip	41b07121290efbf3f6ab1129
 corpus/0/literal text different captures control	d3cb6074324c6ae8b8c40c00
@@ -470,6 +471,7 @@ corpus/1/leader with memoized callers	59fb2e933beaa7779b6820e6
 corpus/1/leader wrapped in a recovery	73a9e9d51064c5696651e923
 corpus/1/left recursion	244240a280a12d04b8d3aee7
 corpus/1/left recursion in recovery skip	ab02d53ffb3eedd7df504d4d
+corpus/1/len of nodes and strings	80f0fdeb1d67571cd51f92f0
 corpus/1/line choice of rules	b66247574685415fcec6550b
 corpus/1/line choice with captures and skip	41b07121290efbf3f6ab1129
 corpus/1/literal text different captures control	d3cb6074324c6ae8b8c40c00

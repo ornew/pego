@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
@@ -57,6 +58,65 @@ rule main = s:.* #atomic => N{N: len($s) + len(text($s))}`)
 		n, err := prog.ParseWith("main", "日本", ParseOptions{Unit: unit})
 		if err != nil || n.Field("N") != want {
 			t.Errorf("%v: got %v %v", unit, n, err)
+		}
+	}
+}
+
+// TestLenOfNodes checks that len of a string node and of a node of a named node type is the length
+// of its text, as len of the text measures it, on every backend and in both units, and that len of
+// tuple and list nodes counts their elements; and that a Document gives the same lengths after
+// edits as a fresh parse.
+func TestLenOfNodes(t *testing.T) {
+	t.Parallel()
+	var c gentest.Case
+	for _, x := range gentest.GenCorpus(t) {
+		if x.Name == "len of nodes and strings" {
+			c = x
+		}
+	}
+	prog := mustCompile(t, c.Src)
+	for _, input := range c.Inputs {
+		checkBackends(t, prog, "main", input)
+	}
+	for unit, want := range map[PositionUnit][7]int{CodePoints: {2, 2, 2, 3, 3, 3, 2}, Bytes: {4, 6, 4, 6, 3, 3, 2}} {
+		n, err := prog.ParseWith("main", c.Inputs[1], ParseOptions{Unit: unit})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got [7]int
+		for i, f := range []string{"S", "I", "V", "T", "N", "Q", "R"} {
+			got[i], _ = n.Field(f).(int)
+		}
+		if got != want {
+			t.Errorf("%v: S I V T N Q R = %v, want %v", unit, got, want)
+		}
+	}
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
+		doc, err := prog.NewDocumentWith("main", c.Inputs[0], ParseOptions{Unit: unit})
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc.Parse()
+		// at is the offset of the end of s in the unit.
+		at := func(s string) int {
+			if unit == Bytes {
+				return len(s)
+			}
+			return utf8.RuneCountInString(s)
+		}
+		// Each edit keeps the nodes before and after it for reuse, at shifted positions.
+		for _, e := range []struct {
+			start, end string
+			text       string
+		}{{"", "", "\u00e9"}, {"\u00e9ab,", "\u00e9ab,", "\u65e5"}, {"\u00e9ab,\u65e5cd,12;", "\u00e9ab,\u65e5cd,12;x", "\u00e9\u00e9"}, {"", "\u00e9", ""}} {
+			if err := doc.Edit(at(e.start), at(e.end), e.text); err != nil {
+				t.Fatal(err)
+			}
+			n, err := doc.Parse()
+			fn, ferr := prog.ParseWith("main", doc.Text(), ParseOptions{Unit: unit})
+			if a, b := gentest.ResultJSON(n, err), gentest.ResultJSON(fn, ferr); a != b {
+				t.Fatalf("%v: text %q\n got  %s\n want %s", unit, doc.Text(), a, b)
+			}
 		}
 	}
 }

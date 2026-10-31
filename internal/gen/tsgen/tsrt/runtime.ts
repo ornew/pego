@@ -3310,7 +3310,9 @@ export class Actx {
     }
     if (x instanceof Node) {
       if (x.terminal) {
-        return this.p.unitLen(x.text);
+        // The text of a string node is the input of its range, whose length the range holds in
+        // the position unit.
+        return x.end - x.start;
       }
       return x.children.length;
     }

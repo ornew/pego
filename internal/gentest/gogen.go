@@ -29,6 +29,14 @@ rule main R = {s := s + "!"} g:grow "," h:grow "," t:test $$ => R{N: n + $g + $h
 rule grow int = {n := n + 1} "a" => n
 rule test bool = "y" {b == false} => b == false
 `, []string{"a,a,y", "a,a,x", "a,a,", "a,", "y", ""}},
+		// len of string nodes, of a node of a named node type, of tuple and list nodes and of
+		// string values, on multi-byte text, which differs between the units.
+		{"len of nodes and strings", `type Ident = node[string]
+type L = { S int; I int; V int; T int; N int; Q int; R int }
+rule main = s:word "," i:ident "," n:num? ";" q:(word ":" word) r:("." word)* $$ => L{S: len($s), I: len($i), V: len($s.Value), T: len(text($q)), N: len($n), Q: len($q), R: len($r)}
+rule word = [^,;:.]* #atomic
+rule ident Ident = [^,]+ #atomic
+rule num = [0-9]+`, []string{"ab,cd,12;x:y", "\u00e9\u00e9,\u65e5\u672c,123;\u00e9:\u65e5.a.\u00e9\u00e9", ",\U0001F600,;:.", "a,b,1;:", "a,b,x;:", ""}},
 		// Case-insensitive literals: a suffix and a pragma. Their first characters are both cases, so a
 		// guard of such an alternative must test both.
 		{"case-insensitive literal alternatives", `rule main = (kw / id)+ !.

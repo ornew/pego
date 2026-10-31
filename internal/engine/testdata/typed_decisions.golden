@@ -1600,6 +1600,14 @@ guard	3	4	1	0	0	"\"v\""	165
 grammar	lean,lean observable,controlled,lean boxed	"left recursion in recovery skip"
 guard	1	1	0	0	0	""	48
 guard	1	4	1	0	0	"\"y\""	168
+grammar	lean,lean observable,lean boxed	"len of nodes and strings"
+scan	1	1
+scan	2	1
+term	0	-1	new-in-order(call:len(capture) call:len(capture) call:len(member(capture)) call:len(call:text(capture)) call:len(capture) call:len(capture) call:len(capture))
+grammar	controlled	"len of nodes and strings"
+scan	1	1
+scan	2	1
+term	0	-1	new(call:len(capture) call:len(capture) call:len(member(capture)) call:len(call:text(capture)) call:len(capture) call:len(capture) call:len(capture))
 grammar	lean,lean observable,lean boxed	"literal text different captures control"
 term	0	-1	new-in-order(capture)
 term	0	7	binary:||(binary:==(call:text(capture) const) binary:==(call:text(capture) const))

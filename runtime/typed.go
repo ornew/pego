@@ -2027,8 +2027,11 @@ func (c *TActCtx) Length(x any) any {
 		return 0
 	}
 	if n, ok := x.(TVal); ok {
-		if text, ok := n.TText(); ok {
-			return c.P.unitLen(text)
+		if _, ok := n.TText(); ok {
+			// The text of a string node or an error value is the input of its range, whose
+			// length the range holds in the position unit.
+			start, end := n.TSpan()
+			return end - start
 		}
 		return len(n.TKids())
 	}

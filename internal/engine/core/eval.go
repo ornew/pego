@@ -323,8 +323,10 @@ func (c *EvalCtx) Builtin(fn string, args []any) (any, error) {
 			if x == nil {
 				return 0, nil
 			}
-			if value.D(x).Terminal {
-				return c.P.ValueTextLen(value.D(x).Text), nil
+			if d := value.D(x); d.Terminal {
+				// The text of a string node is the input of its range, whose length the range
+				// holds in the position unit.
+				return int(d.End - d.Start), nil
 			}
 			return len(value.D(x).Children), nil
 		case nil:

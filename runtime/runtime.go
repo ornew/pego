@@ -3693,7 +3693,9 @@ func (c *ActCtx) Length(x any) any {
 			return 0
 		}
 		if x.RawTerminal {
-			return c.P.unitLen(x.RawText)
+			// The text of a string node is the input of its range, whose length the range holds
+			// in the position unit.
+			return int(x.RawEnd - x.RawStart)
 		}
 		return len(x.RawChildren)
 	case nil:

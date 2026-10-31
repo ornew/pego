@@ -912,6 +912,10 @@ guard	3	4	1	0	0	"\"v\""	165
 grammar	lean,controlled	"left recursion in recovery skip"
 guard	1	1	0	0	0	""	48
 guard	1	4	1	0	0	"\"y\""	168
+grammar	lean,controlled	"len of nodes and strings"
+scan	1	1
+scan	2	1
+scan	3	0
 grammar	lean,controlled	"literal text different captures control"
 grammar	lean,controlled	"literal text missing capture"
 grammar	lean,controlled	"literal text mixed control"
