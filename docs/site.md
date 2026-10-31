@@ -100,7 +100,7 @@ To deliberately reset retention, pass `-previous-site ''`. See [the asset-retent
 for the format, bounds and bootstrap limitations.
 
 The official site, [zeroparse.dev](https://zeroparse.dev/), is a Cloudflare Worker with static assets and no Worker
-script. [`wrangler.jsonc`](../wrangler.jsonc) at the root of the repository names the Worker (`zeroparse-site`) and its
+script. [`wrangler.jsonc`](../wrangler.jsonc) at the root of the repository names the Worker (`zeroparse`) and its
 assets directory, `site/dist`, the output of the site build; each build runs the link check, so a broken link fails
 the deploy instead of publishing it. Cloudflare serves directory index files with a trailing slash
 (`html_handling` is `auto-trailing-slash`); the site emits no `404.html`, so unknown paths get Cloudflare's plain 404
@@ -108,7 +108,7 @@ response (`not_found_handling` is `none`).
 
 ### Workers Builds Settings
 
-Connect the Worker to the Git repository in the Cloudflare dashboard (Workers & Pages, the `zeroparse-site` Worker,
+Connect the Worker to the Git repository in the Cloudflare dashboard (Workers & Pages, the `zeroparse` Worker,
 Settings, Builds) with these values:
 
 | Setting | Value |

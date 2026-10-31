@@ -1,7 +1,7 @@
 // Cloudflare Worker with static assets that serves https://zeroparse.dev. There is no Worker
 // script: Cloudflare serves the files that `sh site/build.sh` writes. See docs/site.md.
 {
-  "name": "zeroparse-site",
+  "name": "zeroparse",
   // Pins the Workers runtime behavior to the date this configuration was written.
   "compatibility_date": "2026-10-30",
   "assets": {
