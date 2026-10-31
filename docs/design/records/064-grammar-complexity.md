@@ -363,6 +363,123 @@ Not yet in place:
 - **Equivalence.** The runtime changes keep values, errors and recovered errors identical with and without them, on
   every backend, in Documents across edits, and under interruption during left-recursion growth.
 
+## Classification of the Bundled Grammars
+
+The grammars in `parsers/` and `examples/`, except json and the two calculators, are classified `Poly`, `Exp` or
+`Unknown`. The verdicts are upper bounds and the witnesses are paths, not slow inputs, and the corpus inputs are benign,
+so a verdict alone does not tell whether a cause is imprecision of the classifier, a cost that the runtime can remove,
+or a cost inherent in the language. Every cause is therefore sorted by measurement.
+
+The causes of each grammar are grouped by shape, and every witness and every reason belongs to exactly one group.
+`internal/complexitytest/testdata/triage/<grammar>.txt` lists the causes of each group, and `TestTriageCoverage` keeps
+the lists complete and current. Each group has adversarial input families derived from its witness paths, in
+`internal/complexitytest/triage_*.go`. Each family is measured at three or four doubling sizes, with steps found by
+bisection over the budget limit, on the closure backend, both bytecode VMs and a generated Go parser:
+
+```sh
+ZP_TRIAGE=. ZP_TRIAGE_GO=1 go test -run TestTriageMeasure -v ./internal/complexitytest
+```
+
+The variable is a regular expression over `grammar/group/family`. The test prints one row per family and backend, and
+fails when a measured order differs from the recorded one. The exponent is the logarithm of the cost ratio over the
+logarithm of the input length ratio between consecutive sizes, so families whose length is not proportional to their
+size parameter, such as indentation staircases, are judged against the input length. The four backends agree on the
+order of every family. The table gives the worst exponent of each group over its families and backends.
+
+The groups are addressed by these mechanisms:
+
+- **Token-scan refinement of the classifier.** Token alternatives that scan the same prefix again, and whitespace,
+  comment or name scans that a failed alternative gives back to a continuation starting with the same characters,
+  cost a bounded amount per position. They measure linear.
+- **Memo-bound refinement of the classifier.** Units that are not committing, nested through a memoized recursion,
+  are bounded by the memo, because a memoized call is evaluated at most twice per position. The same bound covers a
+  source reached again at one position through memoized calls. They measure linear.
+- **Bounded-binding refinement of the classifier.** A binding that reads its own earlier value is not exponential when
+  its values at a position come from a bounded set, or when the recursive call follows consumed input. TypeScript's
+  context flags stay within seven bits, since every capture that a binding measures is bounded (`"*"`, `"async"`,
+  `list($m)`). The profile shows a constant number of evaluations per byte and at most four evaluations of a memoized
+  rule per position at every nesting depth, so no exponential input exists. Memoizing across variable values that a
+  rule does not read would lower a constant, not the order.
+- **Single-element fold refinement of the classifier.** A fold or map over a list of at most one element copies a
+  bounded amount.
+- **Recovery-skip refinement of the classifier.** A `#recover` skip is not a scanning source once repetition-run reuse
+  records the ends of skips per position.
+- **Constant-cost text in the cost model.** Every backend takes the text of a capture as a slice of the input, and a
+  string comparison stops at the shorter operand, but the cost model counts both in proportion to size. The cost
+  model is to make both a guarantee that every backend meets; the classifier then counts them accordingly.
+- **Repetition-run reuse.** duckdb's operator lookahead reads the run of `+` and `-` after an operator character, and a
+  prefix operator at each character of the run reads the rest again: `SELECT ` + `+`^n + `1` costs 282k, 1.04M and
+  4.01M steps for 210, 410 and 810 bytes. The later stages of run reuse make this linear.
+- **In-place fold accumulators.** Python folds that copy their accumulator in each step (`acc + "." + name`,
+  `concat(acc, x)`) are quadratic in the list length: a dotted import name of 2k, 4k and 8k bytes costs 2.07M, 8.15M
+  and 32.3M steps. Extending the accumulator in place when the old one is dead makes them linear.
+- **Grammar rewrites.** Python's `try_stmt` maps its `except*` handlers inside a fold over the same handlers
+  (1.63M, 5.78M and 21.6M steps for 6k, 12k and 24k bytes), and CUE builds the elements of an interpolation by a right
+  recursion whose action copies the list of the rest at every level (1.26M, 4.70M and 18.1M steps for 4k, 8.2k and
+  17k bytes). Replacing the action of the CUE recursion with its tail alone measures 205k, 410k and 824k steps for the
+  multi-line family, so a repetition with one flat concatenation is linear. The classifier reports this copy of a
+  recursion's own value only through the unknown reason of the nested recursion, which the memo-bound refinement
+  removes. After that refinement, the classifier must still report the copy.
+
+| Grammar | Group | Causes | Addressed by | Families | Worst exponent | Order |
+|:--|:--|--:|:--|--:|--:|:--|
+| csv | quoted-field | 1 | token-scan refinement | 2 | 1.00 | n |
+| xml | nested | 4 | memo-bound refinement | 3 | 1.02 | n |
+| xml | pi-copy | 1 | memo-bound refinement | 2 | 1.00 | n |
+| xml | mixed | 1 | token-scan refinement | 1 | 1.00 | n |
+| xml | name-scan | 4 | token-scan refinement | 3 | 1.00 | n |
+| xml | ws-option | 4 | token-scan refinement | 2 | 1.00 | n |
+| cel | nested | 12 | memo-bound refinement | 6 | 1.00 | n |
+| cel | names-and-space | 3 | token-scan refinement | 3 | 1.00 | n |
+| cel | number-tokens | 3 | token-scan refinement | 2 | 1.00 | n |
+| cel | string-tokens | 2 | token-scan refinement | 1 | 1.04 | n |
+| outline | nested | 2 | memo-bound refinement | 1 | 0.97 | n |
+| outline | blank-lines | 2 | token-scan refinement | 2 | 1.00 | n |
+| minilang | recover | 2 | recovery-skip refinement | 3 | 1.01 | n |
+| golang | nested | 166 | memo-bound refinement | 12 | 1.01 | n |
+| golang | comments | 16 | token-scan refinement | 7 | 1.01 | n |
+| golang | identifiers | 1 | token-scan refinement | 2 | 1.00 | n |
+| golang | line-directives | 4 | token-scan refinement | 2 | 1.01 | n |
+| golang | numbers | 3 | token-scan refinement | 2 | 1.00 | n |
+| duckdb | nested | 675 | memo-bound refinement | 16 | 1.01 | n |
+| duckdb | operator-tails | 15 | repetition-run reuse | 5 | 2.00 | n² |
+| duckdb | strings | 4 | token-scan refinement | 5 | 1.00 | n |
+| python | bounded-variables | 42 | bounded-binding refinement | 5 | 1.01 | n |
+| python | field-text | 2 | constant-cost text in the cost model | 2 | 1.00 | n |
+| python | except-star-handlers | 3 | grammar rewrite | 2 | 1.91 | n² |
+| python | fold-copies | 16 | in-place fold accumulators | 4 | 2.00 | n² |
+| python | nested | 183 | memo-bound refinement | 10 | 1.03 | n |
+| python | bounded-lambda-copies | 8 | single-element fold refinement | 3 | 0.98 | n |
+| python | module-whitespace | 4 | token-scan refinement | 1 | 1.00 | n |
+| python | tokens | 20 | token-scan refinement | 6 | 1.00 | n |
+| python | whitespace | 70 | token-scan refinement | 5 | 1.00 | n |
+| typescript | ctx-bindings | 38 | bounded-binding refinement | 19 | 1.01 | n |
+| typescript | nested | 266 | memo-bound refinement | 4 | 1.00 | n |
+| typescript | identifiers | 239 | token-scan refinement | 5 | 1.00 | n |
+| typescript | whitespace-and-templates | 3 | token-scan refinement | 3 | 1.00 | n |
+| cue | hash-count | 1 | bounded-binding refinement | 2 | 1.00 | n |
+| cue | multi-line-indentation | 3 | constant-cost text in the cost model | 2 | 1.00 | n |
+| cue | string-text | 9 | constant-cost text in the cost model | 5 | 1.00 | n |
+| cue | interpolation-lists | 4 | grammar rewrite | 3 | 1.88 | n² |
+| cue | file-clauses | 2 | memo-bound refinement | 2 | 0.99 | n |
+| cue | nested | 52 | memo-bound refinement | 8 | 1.01 | n |
+| cue | definitions | 3 | token-scan refinement | 2 | 1.00 | n |
+| cue | numbers | 7 | token-scan refinement | 6 | 1.00 | n |
+| cue | raw-strings | 10 | token-scan refinement | 5 | 1.00 | n |
+| cue | whitespace | 12 | token-scan refinement | 5 | 1.00 | n |
+| yaml | indentation-bindings | 2 | bounded-binding refinement | 3 | 0.99 | n |
+| yaml | nested | 38 | memo-bound refinement | 5 | 1.00 | n |
+| yaml | block-scalars | 3 | token-scan refinement | 3 | 1.00 | n |
+| yaml | directives-and-tags | 3 | token-scan refinement | 3 | 1.00 | n |
+| yaml | scalars | 4 | token-scan refinement | 4 | 1.00 | n |
+| yaml | separation | 22 | token-scan refinement | 6 | 1.00 | n |
+| yaml | stream-prefix | 1 | token-scan refinement | 1 | 1.00 | n |
+
+No cause is inherent. Every group either measures linear on every family derived from its witnesses, or its
+super-linear cost comes from a construct of the grammar or the runtime (a restarted scan, a copied accumulator, a
+recursion that copies its own list) that a linear formulation of the same language avoids. No family needs a budget
+beyond the linear one, so no group carries budget guidance.
+
 ## Literature
 
 Citations are from memory and are not verified against the publications; titles and venues should be checked before
