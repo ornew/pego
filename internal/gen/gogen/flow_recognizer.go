@@ -41,6 +41,9 @@ func (g *Generator) flowRecRule(r *compile.Rule) *flatRule {
 	defer func() { g.Proj = nil }()
 	p := newFlowPrinter(g, false)
 	p.document = f.Document
+	if g.execRoute() {
+		return g.execRecRule(p, f)
+	}
 	p.stmts(f.Body)
 	if p.reads[f.Start] || p.reads[f.Ctx] {
 		return nil

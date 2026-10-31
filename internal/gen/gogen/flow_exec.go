@@ -17,17 +17,18 @@ import (
 	"github.com/ornew/pego/internal/ir/flow"
 )
 
-// Typed Go rules printed from Exec IR.
+// Go rules printed from Exec IR.
 //
-// With the Exec IR switch on (core.Enabled), the rules of the typed table in the ordinary form are
-// lowered from Flow IR to Exec IR (lower.Flow) and printed by the Go backend of Exec IR
-// (execgo.Body), which prints the compositions of the runtime too. The primitives of Flow IR are
+// With the Exec IR switch on (core.Enabled), the rules of every table in the ordinary form (the
+// typed table, the Node table and the recognizer, and the stream body) are lowered from Flow IR to
+// Exec IR (lower.Flow) and printed by the Go backend of Exec IR (execgo.Body), which prints the
+// compositions of the runtime too. The primitives of Flow IR are
 // transitional operations there, which the flow printer prints as it prints them from Flow IR. The
 // printed code is the same as from Flow IR.
 
 // execRoute reports whether the functions of the current table print from Exec IR.
 func (g *Generator) execRoute() bool {
-	return (core.Enabled || g.hooks.ExecRoute) && g.Ordinary && g.Table == "trules"
+	return (core.Enabled || g.hooks.ExecRoute) && g.Ordinary
 }
 
 // execBody prints the body of the Flow IR function f from Exec IR with the flow printer p.
@@ -38,10 +39,24 @@ func (p *flowPrinter) execBody(f *flow.Func) execgo.BodyResult {
 	}
 	res := execgo.Body(l.Module, l.Func, p.execTarget(), l.Vars)
 	p.g.ExecFuncs++
+	if p.g.ExecTables == nil {
+		p.g.ExecTables = map[string]int{}
+	}
+	p.g.ExecTables[p.g.Table]++
 	if p.g.hooks.FlowVarsMutant {
 		// The locals that the body names stay undeclared.
 		for _, v := range l.Vars {
 			res.Stores.Dead[v] = true
+		}
+		return res
+	}
+	if p.g.hooks.FlowVarsMutantUses {
+		// The locals that only the values of assignments read stay undeclared.
+		hard := otherReads(l.Func.Body)
+		for _, v := range l.Vars {
+			if !hard[v] {
+				res.Stores.Dead[v] = true
+			}
 		}
 		return res
 	}
@@ -54,6 +69,63 @@ func (p *flowPrinter) execBody(f *flow.Func) execgo.BodyResult {
 		}
 	}
 	return res
+}
+
+// otherReads returns the locals that the statements of b other than assignments read, whatever
+// their reachability: the reads that Hooks.FlowVarsMutantUses keeps.
+func otherReads(b *exec.Block) map[string]bool {
+	out := map[string]bool{}
+	read := func(x exec.Expr) {
+		if x == nil {
+			return
+		}
+		exec.Walk(&exec.Block{Stmts: []exec.Stmt{&exec.Assert{Cond: x}}}, nil, func(e exec.Expr) {
+			if l, ok := e.(*exec.Local); ok {
+				out[l.Name] = true
+			}
+		})
+	}
+	header := func(s *exec.Set) {
+		if s != nil {
+			for _, x := range s.Values {
+				read(x)
+			}
+		}
+	}
+	var block func(*exec.Block)
+	block = func(b *exec.Block) {
+		if b == nil {
+			return
+		}
+		for _, st := range b.Stmts {
+			switch st := st.(type) {
+			case *exec.Block:
+				block(st)
+			case *exec.Loop:
+				header(st.Init)
+				read(st.Cond)
+				header(st.Post)
+				block(st.Body)
+			case *exec.If:
+				header(st.Init)
+				read(st.Cond)
+				block(st.Then)
+				block(st.Else)
+			case *exec.Let:
+				read(st.Value)
+			case *exec.Do:
+				read(st.Call)
+			case *exec.Assert:
+				read(st.Cond)
+			case *exec.Return:
+				for _, x := range st.Values {
+					read(x)
+				}
+			}
+		}
+	}
+	block(b)
+	return out
 }
 
 // execTarget returns the Go implementation of the operations of lowered grammar code: the flow
@@ -143,6 +215,41 @@ func (g *Generator) execFlatRule(p *flowPrinter, f *flow.Func) *flatRule {
 	var unread []string
 	for _, v := range f.Vars {
 		out.vars = append(out.vars, dvar{v.Name, goType(v.Type)})
+		switch {
+		case st.Dead[v.Name]:
+			out.markVar(v.Name, true)
+		case !st.Named[v.Name]:
+			unread = append(unread, v.Name)
+		case !st.Read[v.Name]:
+			out.markVar(v.Name, false)
+		}
+	}
+	out.body = res.Text
+	if len(unread) > 0 {
+		out.body = "\t" + strings.Repeat("_, ", len(unread)-1) + "_ = " + strings.Join(unread, ", ") + "\n" + out.body
+	}
+	g.FlowRules++
+	return out
+}
+
+// execRecRule prints the local function f of a rule of the Node runtime from Exec IR as a flat rule,
+// or returns nil where flowRecRule does: if the printed function reads its start or its context, or
+// a variable has a type that untypedGoType cannot name.
+func (g *Generator) execRecRule(p *flowPrinter, f *flow.Func) *flatRule {
+	res := p.execBody(f)
+	st := res.Stores
+	read := func(v *flow.Var) bool { return v != nil && st.Named[v.Name] }
+	if read(f.Start) || read(f.Ctx) {
+		return nil
+	}
+	out := &flatRule{fail: res.Exited, succeed: res.End}
+	var unread []string
+	for _, v := range f.Vars {
+		t, ok := untypedGoType(v.Type)
+		if !ok {
+			return nil
+		}
+		out.vars = append(out.vars, dvar{v.Name, t})
 		switch {
 		case st.Dead[v.Name]:
 			out.markVar(v.Name, true)

@@ -77,8 +77,9 @@ type Hooks struct {
 	// then fail to compile, which shows that the tests of generated code catch a wrong decision.
 	FlowVarsMutant bool
 	// FlowVarsMutantUses ignores the reads of the values of assignments that stay, which leaves
-	// variables that only they read undeclared: the generated code must then fail to compile. It
-	// changes the functions printed from Flow IR, not those printed from Exec IR (execRoute).
+	// variables that only they read undeclared: the generated code must then fail to compile. In the
+	// functions printed from Exec IR (execRoute) it leaves undeclared the locals that no statement
+	// other than an assignment reads.
 	FlowVarsMutantUses bool
 	// ExecRoute prints the functions that the Exec IR switch routes through Exec IR that way even
 	// with the switch off (core.Enabled), so that a test compares the code of both routes.
@@ -452,7 +453,8 @@ type Generator struct {
 	disableTypedOutputBootstrap bool
 	FlowRules                   int
 	FlowFrames                  int
-	ExecFuncs                   int // the functions printed from Exec IR (execRoute)
+	ExecFuncs                   int            // the functions printed from Exec IR (execRoute)
+	ExecTables                  map[string]int // ExecFuncs by table
 	// NodeScopes records the frame layouts shared by typed rule metadata.
 	NodeScopes map[*compile.Rule][]string
 	// typedOnly leaves out the untyped Node family: the rule table keeps only the metadata the
