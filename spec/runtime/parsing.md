@@ -578,15 +578,15 @@ The conditions below use these terms.
   no more than the unit paid, so a restart repeats no scan.
   A unit is also committing for a continuation that its **words exclude**. The
   word of a path of a unit is the text with which the path begins after the
-  shared calls, through groups, captures, `#atomic`, actions, choices and
-  calls of rules that read no variable and have no level restriction: a
-  case-sensitive literal `w` that is not empty, optionally followed by a
-  negative lookahead `!Y`, where `Y` is a character class or a call of a rule
-  whose body is one, as in `"let" !idchar`. Every path of the unit must have a
-  word. A unit that fails within a word examines no more of the input than the
-  word and the character after it. After a unit matches a word, the input at
-  its start begins with `w`, followed, when the word has `!Y`, by a character
-  outside `Y` or by the end of the input.
+  shared calls, through groups, captures, discarded expressions `-e`,
+  `#atomic`, actions, choices and calls of rules that read no variable and
+  have no level restriction: a case-sensitive literal `w` that is not empty,
+  optionally followed by a negative lookahead `!Y`, where `Y` is a character
+  class or a call of a rule whose body is one, as in `"let" !idchar`. Every
+  path of the unit must have a word. A unit that fails within a word examines
+  no more of the input than the word and the character after it. After a unit
+  matches a word, the input at its start begins with `w`, followed, when the
+  word has `!Y`, by a character outside `Y` or by the end of the input.
   A word excludes a continuation when every path of the continuation,
   evaluated at the same position on that input, fails, examines nothing more,
   or evaluates a negative lookahead `!K` where `K` is known to match, before

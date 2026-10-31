@@ -154,7 +154,10 @@ func (k *classifier) oneChar(e grammar.Expr) (charset, bool) {
 }
 
 // plainRef reports whether r calls a rule of the grammar without a level restriction, and the
-// rule reads no variable, so that the call matches as the rule body does.
+// rule reads no variable, so that the call matches as the rule body does. Both checks are
+// defensive: the body under a level restriction is an Operators Rule, whose start paths do not
+// depend on the level, and variables change matching only through predicates, which no word or
+// proven lookahead accepts. They keep the reasoning valid if either of those changes.
 func (k *classifier) plainRef(r *grammar.Ref) bool {
 	return r.Level == "" && k.byName[r.Name] != nil && len(k.vars[r.Name]) == 0
 }

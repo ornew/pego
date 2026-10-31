@@ -197,6 +197,12 @@ func Controls() []Control {
 			Sizes:  double(200), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
 		},
 		{
+			Name: "Literal longer than the text", Family: "word exclusion",
+			Source: "rule main = (s / \" \")* $$\nrule s = \"let\" [a-z ]* \"q\" / \"lett\" [a-z]*\n",
+			Input:  func(n int) string { return rep("lett ", n) },
+			Sizes:  double(200), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
+		},
+		{
 			Name: "E2 cycle members behind a leader, safe", Family: "E2", Positive: true,
 			Source: "rule main = c $$\nrule a = \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n",
 			Input:  parens, Sizes: double(64), ShortSizes: double(32), Order: Linear, Class: ClassLinear,
