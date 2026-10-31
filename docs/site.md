@@ -121,6 +121,10 @@ Settings, Builds) with these values:
 | Build variable | `GO_VERSION` = `1.27.1` (the `go` directive of `go.mod` and `site/go.mod`) |
 | Custom domain | `zeroparse.dev` (Settings, Domains & Routes) |
 
+Automatic builds on push are off, because pushes to `main` are frequent and each build counts against the Workers
+Builds allowance. A maintainer deploys the head of `main` from the dashboard (or with `npx wrangler deploy` after a
+local build) when the site should change.
+
 The build image has Node, so `npx` fetches Wrangler on demand. With preview builds enabled, branches other than
 the production branch run the preview command, which defaults to `npx wrangler preview`; it creates or updates a
 Preview without changing production. Builds of the
