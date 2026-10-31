@@ -73,6 +73,10 @@ func generationsIn(t *testing.T, dir string) []generation {
 				g.config.BudgetControls = true
 			case "-typed-only":
 				g.config.TypedOnly = true
+			case "-document":
+				g.config.Document = true
+			case "-stream":
+				g.config.Stream = true
 			case "-nodoc":
 				g.config.OmitPackageDoc = true
 			default:

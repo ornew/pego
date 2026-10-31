@@ -4,10 +4,12 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"github.com/ornew/pego/internal/bench/inputs"
 	"go/parser"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -16,10 +18,14 @@ import (
 	gcalc "github.com/ornew/pego/internal/bench/gen/calc"
 	gcalclr "github.com/ornew/pego/internal/bench/gen/calclr"
 	gcsv "github.com/ornew/pego/internal/bench/gen/csv"
+	gcsvdoc "github.com/ornew/pego/internal/bench/gen/csvdoc"
+	gcsvstream "github.com/ornew/pego/internal/bench/gen/csvstream"
 	gjson "github.com/ornew/pego/internal/bench/gen/json"
 	gminilang "github.com/ornew/pego/internal/bench/gen/minilang"
+	gminilangdoc "github.com/ornew/pego/internal/bench/gen/minilangdoc"
 	goutline "github.com/ornew/pego/internal/bench/gen/outline"
 	gxml "github.com/ornew/pego/internal/bench/gen/xml"
+	rt "github.com/ornew/pego/runtime"
 )
 
 // workload is the grammar and input of one benchmark.
@@ -252,6 +258,81 @@ func TestWorkloads(t *testing.T) {
 	}
 }
 
+// TestGeneratedDocumentAndStream checks, on reduced inputs, that the generated Document parsers of
+// BenchmarkIncremental and BenchmarkIncrementalLong return the tree of a fresh parse after each edit,
+// and that the generated stream parser of BenchmarkStream emits the records of the engine's stream.
+func TestGeneratedDocumentAndStream(t *testing.T) {
+	type document interface {
+		Edit(start, end int, text string) error
+		Parse(...rt.ParseOption) (*rt.Node, error)
+	}
+	check := func(t *testing.T, input, marker string, newDoc func(string) (document, error), parse func(string, ...rt.ParseOption) (*rt.Node, error)) {
+		at := utf8.RuneCountInString(input[:strings.Index(input, marker)+len(marker)])
+		doc, err := newDoc(input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := []rune(input)
+		same := func(step string) {
+			t.Helper()
+			got, err := doc.Parse()
+			if err != nil {
+				t.Fatalf("%s: %v", step, err)
+			}
+			want, err := parse(string(text))
+			if err != nil {
+				t.Fatalf("%s: fresh parse: %v", step, err)
+			}
+			g, _ := json.Marshal(got)
+			w, _ := json.Marshal(want)
+			if string(g) != string(w) {
+				t.Errorf("%s: Document tree differs from a fresh parse", step)
+			}
+		}
+		same("initial parse")
+		for i, e := range []struct {
+			start, end int
+			text       string
+		}{{at, at, "z"}, {at, at + 1, ""}, {at, at, "zz"}} {
+			if err := doc.Edit(e.start, e.end, e.text); err != nil {
+				t.Fatal(err)
+			}
+			text = append(text[:e.start:e.start], append([]rune(e.text), text[e.end:]...)...)
+			same(fmt.Sprintf("edit %d", i))
+		}
+	}
+	t.Run("Incremental", func(t *testing.T) {
+		check(t, inputs.MinilangInput(30, 0), "fn f15(",
+			func(s string) (document, error) { return gminilangdoc.NewDocument(s) }, gminilang.Parse)
+	})
+	t.Run("IncrementalLong", func(t *testing.T) {
+		check(t, inputs.CSVInput(500), "\n250,",
+			func(s string) (document, error) { return gcsvdoc.NewDocument(s) }, gcsv.Parse)
+	})
+	t.Run("Stream", func(t *testing.T) {
+		input := inputs.CSVInput(500)
+		p := load(t, "../parsers/csv/csv.pego")
+		var want, got []string
+		if err := p.ParseStream(strings.NewReader(input), func(n *pego.Node) error {
+			b, err := json.Marshal(n)
+			want = append(want, string(b))
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if err := gcsvstream.ParseStream(strings.NewReader(input), func(n *gcsvstream.Node) error {
+			b, err := json.Marshal(n)
+			got = append(got, string(b))
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != 501 || !slices.Equal(got, want) {
+			t.Errorf("generated stream emits %d records, engine %d; equal %v", len(got), len(want), slices.Equal(got, want))
+		}
+	})
+}
+
 // BenchmarkParse parses each workload with every PEGO backend (closure, recursive and iterative bytecode,
 // generated Go) in both position units, and with the standard library parser where one exists.
 func BenchmarkParse(b *testing.B) {
@@ -354,8 +435,35 @@ func BenchmarkRecognize(b *testing.B) {
 	}
 }
 
+// documentEdits repeats a one-character edit at a followed by a parse: it adds a character, then
+// removes it, keeping the text size stable.
+func documentEdits(b *testing.B, at int, edit func(start, end int, text string) error, parse func() error) {
+	b.Helper()
+	if err := parse(); err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	i := 0
+	for b.Loop() {
+		var err error
+		if i%2 == 0 {
+			err = edit(at, at, "z")
+		} else {
+			err = edit(at, at+1, "")
+		}
+		i++
+		if err != nil {
+			b.Fatal(err)
+		}
+		if err := parse(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // BenchmarkIncremental repeats a one-character edit to a large program followed by a parse, with a
-// Document (incremental) and with a fresh parse each time.
+// Document (incremental) and with a fresh parse each time, on every backend and with the generated
+// parser (generated with -document; its fresh parse is the same package's Parse).
 func BenchmarkIncremental(b *testing.B) {
 	p := load(b, "../examples/minilang/minilang.pego")
 	input := inputs.MinilangInput(300, 0)
@@ -394,10 +502,26 @@ func BenchmarkIncremental(b *testing.B) {
 			}
 		})
 	}
+	b.Run("generated/document", func(b *testing.B) {
+		doc, err := gminilangdoc.NewDocument(input)
+		if err != nil {
+			b.Fatal(err)
+		}
+		documentEdits(b, at, doc.Edit, func() error { return genErr(doc.Parse()) })
+	})
+	b.Run("generated/fresh", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			if _, err := gminilangdoc.Parse(input); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 }
 
 // BenchmarkIncrementalLong repeats a one-character edit in the middle of a long CSV file (50000
-// records) followed by a parse with a Document.
+// records) followed by a parse with a Document, on every backend and with the generated parser
+// (generated with -document).
 func BenchmarkIncrementalLong(b *testing.B) {
 	p := load(b, "../parsers/csv/csv.pego")
 	input := inputs.CSVInput(50000)
@@ -426,9 +550,17 @@ func BenchmarkIncrementalLong(b *testing.B) {
 			}
 		})
 	}
+	b.Run("generated", func(b *testing.B) {
+		doc, err := gcsvdoc.NewDocument(input)
+		if err != nil {
+			b.Fatal(err)
+		}
+		documentEdits(b, at, doc.Edit, func() error { return genErr(doc.Parse()) })
+	})
 }
 
-// BenchmarkStream parses CSV as a stream, receiving one record at a time.
+// BenchmarkStream parses CSV as a stream, receiving one record at a time, on every backend, with the
+// generated parser (generated with -stream) and with encoding/csv.
 func BenchmarkStream(b *testing.B) {
 	p := load(b, "../parsers/csv/csv.pego")
 	input := inputs.CSVInput(50000)
@@ -445,6 +577,17 @@ func BenchmarkStream(b *testing.B) {
 			}
 		})
 	}
+	b.Run("generated", func(b *testing.B) {
+		b.SetBytes(int64(len(input)))
+		b.ReportAllocs()
+		for b.Loop() {
+			n := 0
+			err := gcsvstream.ParseStream(strings.NewReader(input), func(*gcsvstream.Node) error { n++; return nil })
+			if err != nil || n != 50001 {
+				b.Fatalf("%d records: %v", n, err)
+			}
+		}
+	})
 	b.Run("encoding_csv", func(b *testing.B) {
 		b.SetBytes(int64(len(input)))
 		b.ReportAllocs()
