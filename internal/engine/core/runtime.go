@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // SharedProgram is the part of a program that the parses of every backend read: the static
@@ -58,13 +58,13 @@ type Parser struct {
 	Diagnostic     func(*SyntaxError) error
 	DiagnosticTail StreamDiagnosticTail
 
-	Env     *Env            // predicate variables
-	envLevels int          // the depth of Env (Prog.envLevels)
-	initEnv *Env            // the initial environment of the variables (Parser.SeedVars), or nil
-	Frame   *Frame          // current capture frame
-	Trail   []Undo          // capture writes to undo on backtracking
-	Cut     bool            // whether a cut has been passed in the current alternative
-	Memo    *MemoTable
+	Env       *Env   // predicate variables
+	envLevels int    // the depth of Env (Prog.envLevels)
+	initEnv   *Env   // the initial environment of the variables (Parser.SeedVars), or nil
+	Frame     *Frame // current capture frame
+	Trail     []Undo // capture writes to undo on backtracking
+	Cut       bool   // whether a cut has been passed in the current alternative
+	Memo      *MemoTable
 
 	// While silent is positive (inside a lookahead), expectations are not recorded.
 	Silent   int

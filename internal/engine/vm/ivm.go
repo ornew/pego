@@ -1,11 +1,11 @@
 package vm
 
 import (
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/engine/core"
 
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // NewIterative prepares a module for execution with the iterative model.

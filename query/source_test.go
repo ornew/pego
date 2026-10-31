@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/value"
-	"github.com/ornew/pego/query"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/value"
+	"github.com/ornew/zeroparse/query"
 )
 
 func TestStructuralQueryRuleNeedsSourceInfo(t *testing.T) {
@@ -15,9 +15,9 @@ func TestStructuralQueryRuleNeedsSourceInfo(t *testing.T) {
 rule item = [a-z]`
 	pattern := query.Pattern{Rule: "item", Capture: "item"}
 	for _, sourceInfo := range []bool{false, true} {
-		var opts []pego.CompileOption
+		var opts []zeroparse.CompileOption
 		if sourceInfo {
-			opts = append(opts, pego.WithSourceInfo())
+			opts = append(opts, zeroparse.WithSourceInfo())
 		}
 		p := mustCompile(t, src, opts...)
 		s := mustSchema(t, p)
@@ -32,8 +32,8 @@ rule item = [a-z]`
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-			root, err := p.Parse("a,b,c", pego.WithBackend(backend))
+		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+			root, err := p.Parse("a,b,c", zeroparse.WithBackend(backend))
 			if err != nil {
 				t.Fatal(err)
 			}

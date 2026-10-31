@@ -4,9 +4,9 @@ A backend is the way a compiled grammar is executed. This guide compares them, h
 nesting limit that bounds recursion. [Recognition Mode](recognition-mode.md) and [Memoization](memoization.md) apply to every
 backend.
 
-The examples use `pairs.pego` and a parser `p` compiled as in [Running Parsers](running-parsers.md):
+The examples use `pairs.zp` and a parser `p` compiled as in [Running Parsers](running-parsers.md):
 
-```pego
+```zp
 type Pair = { Key node[string]; Value node[string] }
 
 @start
@@ -25,25 +25,25 @@ closure backend serves as the reference. They differ in speed, memory, how they 
 
 | Backend | Option | How it runs | Needs the grammar AST |
 |:--|:--|:--|:--|
-| Closure | `pego.Closure` | Compiles Rule Expressions into Go closures | Yes |
-| Bytecode (recursive) | `pego.Bytecode` | A VM running [portable bytecode](../../spec/bytecode/README.md); rule calls use Go recursion | No |
-| Bytecode (iterative) | `pego.BytecodeIterative` | The same bytecode on a VM with its own call stack | No |
-| Generated Go | (not an option) | A Go parser generated ahead of time by `pego gen` | At generation time |
+| Closure | `zeroparse.Closure` | Compiles Rule Expressions into Go closures | Yes |
+| Bytecode (recursive) | `zeroparse.Bytecode` | A VM running [portable bytecode](../../spec/bytecode/README.md); rule calls use Go recursion | No |
+| Bytecode (iterative) | `zeroparse.BytecodeIterative` | The same bytecode on a VM with its own call stack | No |
+| Generated Go | (not an option) | A Go parser generated ahead of time by `zp gen` | At generation time |
 
 The first three are selected per parse:
 
 ```go
-n, err := p.Parse("abc=12", pego.WithBackend(pego.BytecodeIterative))
+n, err := p.Parse("abc=12", zeroparse.WithBackend(zeroparse.BytecodeIterative))
 ```
 
-`pego.DefaultBackend`, used when you give no option, is the **closure backend for a parser compiled from a grammar and
-recursive bytecode for a parser loaded from a `.pegoc` file**, which runs on the bytecode backends only. On the command
+`zeroparse.DefaultBackend`, used when you give no option, is the **closure backend for a parser compiled from a grammar and
+recursive bytecode for a parser loaded from a `.zpc` file**, which runs on the bytecode backends only. On the command
 line, `-backend closure|bytecode|bytecode-iterative` does the same.
 
 ### Which One
 
 The measurements are in [benchmarks.md](../benchmarks.md) and their analysis in
-[performance.md](../performance.md#where-pego-stands); the figures below are summarized from them (one machine, so
+[performance.md](../performance.md#where-zeroparse-stands); the figures below are summarized from them (one machine, so
 treat them as orders of magnitude rather than promises). Run `go test ./bench -bench . -benchmem` to measure your own
 grammar and input.
 
@@ -52,7 +52,7 @@ grammar and input.
 | The best default for a Go program that loads a grammar at start-up | Closure (the default) | It is faster than both VMs on every benchmarked workload. |
 | The fastest parsing, with a fixed grammar | [Generated Go](code-generation.md) | Current benchmarks show it at 0.44–0.61× closure time in CodePoints and 0.50–0.66× in Bytes; direct typed values are 0.69–0.98× generated `Parse`. |
 | Input that can nest very deeply (untrusted JSON-like data, generated code) | Bytecode (iterative) | Recursive rule calls live on the VM's own stack, not the Go stack. |
-| A grammar distributed as a data file, not source | Bytecode, from a `.pegoc` | See the [compiled grammars guide](compiled-grammars.md). |
+| A grammar distributed as a data file, not source | Bytecode, from a `.zpc` | See the [compiled grammars guide](compiled-grammars.md). |
 | Checking validity only | Any backend with [`RecognizeOnly`](recognition-mode.md) | No tree is built. |
 
 Across both units, the recursive bytecode VM is 1.13–1.35× slower than the closure backend in the benchmarks and the iterative VM 1.33–1.76×
@@ -78,7 +78,7 @@ of parentheses, plus the innermost one):
 | 1,000,000 deep | same error | same error | ok |
 
 ```go
-n, err := p.Parse(input, pego.WithBackend(pego.BytecodeIterative), pego.WithMaxDepth(100))
+n, err := p.Parse(input, zeroparse.WithBackend(zeroparse.BytecodeIterative), zeroparse.WithMaxDepth(100))
 // nesting too deep: more than 100 nested recursive rule calls
 ```
 
@@ -98,7 +98,7 @@ Two things to know:
   `WithMaxDepth(1_000_000)`, but 1,000,000 levels with `WithMaxDepth(2_000_000)` on the recursive bytecode backend
   crashed. If you need depth beyond the default, use `BytecodeIterative` rather than raising the limit.
 
-Generated parsers have the same default of 100,000. The `MaxDepth` field of `gen.Go` or `pego gen -max-depth` sets a
+Generated parsers have the same default of 100,000. The `MaxDepth` field of `gen.Go` or `zp gen -max-depth` sets a
 generated default; generated Go `WithMaxDepth` and TypeScript options-aware entry points override it per invocation
 (see [code generation](generated-go-api.md#invocation-options) and
 [TypeScript depth options](typescript.md#deep-nesting-and-the-javascript-stack)). Their recursive host stacks still

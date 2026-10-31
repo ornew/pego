@@ -3,8 +3,8 @@ package engine
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestHiddenRulesSpliceTheirExpression(t *testing.T) {

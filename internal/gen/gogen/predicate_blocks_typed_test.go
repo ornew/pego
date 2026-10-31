@@ -5,8 +5,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // These declared typed-result fixtures force typed runtime execution; ordinary

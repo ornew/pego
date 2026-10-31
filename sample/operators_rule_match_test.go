@@ -1,8 +1,8 @@
 package sample
 
 import (
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/grammar"
 	"testing"
 )
 
@@ -24,7 +24,7 @@ func TestOperatorsRuleStopSelectionStatus(t *testing.T) {
 		{"unsupported part", `level { postfix "!?" #cut }; level { postfix "!" }`, "!?a", 1, false, true, unknown},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			ast, err := pego.ParseGrammar(`rule main = e $$
+			ast, err := zeroparse.ParseGrammar(`rule main = e $$
 rule e = #operators { skip " "*; operand "a"; ` + c.levels + ` }`)
 			if err != nil {
 				t.Fatal(err)

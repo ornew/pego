@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/typescript"
-	"github.com/ornew/pego/parsers/typescript/types"
+	"github.com/ornew/zeroparse/parsers/typescript"
+	"github.com/ornew/zeroparse/parsers/typescript/types"
 )
 
 func TestStringValue(t *testing.T) {

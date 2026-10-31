@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 // TestSubstituteMethods checks that the printed compositions replace the hand-written methods of

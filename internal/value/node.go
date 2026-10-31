@@ -463,7 +463,7 @@ func (n *Node) Len() int {
 // match. It panics if i is out of the range [0, Len()).
 func (n *Node) Elem(i int) *Node {
 	if i < 0 || i >= n.Len() {
-		panic(fmt.Sprintf("pego: element %d of a node with %d elements", i, n.Len()))
+		panic(fmt.Sprintf("zp: element %d of a node with %d elements", i, n.Len()))
 	}
 	return n.d.Children[i]
 }

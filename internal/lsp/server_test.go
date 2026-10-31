@@ -31,7 +31,7 @@ func TestLifecycle(t *testing.T) {
 	caps := init.Capabilities
 	if caps.PositionEncoding != "utf-16" || !caps.TextDocumentSync.OpenClose || caps.TextDocumentSync.Change != 2 ||
 		!caps.DocumentFormattingProvider || !caps.DefinitionProvider || !caps.RenameProvider.PrepareProvider ||
-		init.ServerInfo.Name != "pego" {
+		init.ServerInfo.Name != "zp" {
 		t.Errorf("initialize result %+v", init)
 	}
 	c.notify("initialized", map[string]any{})
@@ -41,7 +41,7 @@ func TestLifecycle(t *testing.T) {
 	if r := c.request("shutdown", nil); string(r) != "null" {
 		t.Errorf("shutdown result %s", r)
 	}
-	if e := c.requestError("textDocument/hover", at("file:///a.pego", 0, 0)); e.Code != codeInvalidRequest {
+	if e := c.requestError("textDocument/hover", at("file:///a.zp", 0, 0)); e.Code != codeInvalidRequest {
 		t.Errorf("request after shutdown: %+v", e)
 	}
 	c.notify("exit", nil)
@@ -50,18 +50,18 @@ func TestLifecycle(t *testing.T) {
 
 func TestRequestBeforeInitialize(t *testing.T) {
 	c := newServer(t)
-	if e := c.requestError("textDocument/hover", at("file:///a.pego", 0, 0)); e.Code != codeServerNotInitialized {
+	if e := c.requestError("textDocument/hover", at("file:///a.zp", 0, 0)); e.Code != codeServerNotInitialized {
 		t.Errorf("error %+v", e)
 	}
 	// Notifications before initialize are dropped: no diagnostics are published for this document.
 	c.notify("textDocument/didOpen", map[string]any{
-		"textDocument": map[string]any{"uri": "file:///early.pego", "languageId": "pego", "version": 1, "text": "rule"},
+		"textDocument": map[string]any{"uri": "file:///early.zp", "languageId": "zp", "version": 1, "text": "rule"},
 	})
 	c.request("initialize", map[string]any{"capabilities": map[string]any{}})
-	if diags := c.open("file:///late.pego", "@start\nrule main = \"a\""); len(diags) != 0 {
+	if diags := c.open("file:///late.zp", "@start\nrule main = \"a\""); len(diags) != 0 {
 		t.Errorf("diagnostics %v", diags)
 	}
-	if e := c.requestError("textDocument/hover", at("file:///early.pego", 0, 0)); e.Code != codeRequestFailed {
+	if e := c.requestError("textDocument/hover", at("file:///early.zp", 0, 0)); e.Code != codeRequestFailed {
 		t.Errorf("hover on a document opened before initialize: %+v", e)
 	}
 	c.exit()
@@ -114,11 +114,11 @@ func TestMalformedMessages(t *testing.T) {
 	if e := c.requestError("textDocument/hover", map[string]any{"textDocument": 1}); e.Code != codeInvalidParams {
 		t.Errorf("invalid params: %+v", e)
 	}
-	if e := c.requestError("textDocument/hover", at("file:///closed.pego", 0, 0)); e.Code != codeRequestFailed {
+	if e := c.requestError("textDocument/hover", at("file:///closed.zp", 0, 0)); e.Code != codeRequestFailed {
 		t.Errorf("document not open: %+v", e)
 	}
 	// A string id is echoed back.
-	c.sendRaw(`{"jsonrpc": "2.0", "id": "abc", "method": "textDocument/documentSymbol", "params": {"textDocument": {"uri": "file:///closed.pego"}}}`)
+	c.sendRaw(`{"jsonrpc": "2.0", "id": "abc", "method": "textDocument/documentSymbol", "params": {"textDocument": {"uri": "file:///closed.zp"}}}`)
 	if m := c.next(); string(m["id"]) != `"abc"` {
 		t.Errorf("string id: %v", m)
 	}
@@ -168,7 +168,7 @@ func TestClientCapabilities(t *testing.T) {
 	completion := func(c *testClient) CompletionItem {
 		t.Helper()
 		var list completionList
-		c.requestInto("textDocument/completion", at("file:///caps.pego", 1, 19), &list)
+		c.requestInto("textDocument/completion", at("file:///caps.zp", 1, 19), &list)
 		for _, it := range list.Items {
 			if it.Label == "len" {
 				return it
@@ -180,12 +180,12 @@ func TestClientCapabilities(t *testing.T) {
 
 	// A client with snippets and hierarchical symbols.
 	c := newInitialized(t)
-	c.open("file:///caps.pego", src)
+	c.open("file:///caps.zp", src)
 	if it := completion(c); it.InsertText != "len($1)" || it.InsertTextFormat != insertSnippet {
 		t.Errorf("with snippets: %+v", it)
 	}
 	var syms []DocumentSymbol
-	c.requestInto("textDocument/documentSymbol", docParams("file:///caps.pego"), &syms)
+	c.requestInto("textDocument/documentSymbol", docParams("file:///caps.zp"), &syms)
 	if len(syms) != 2 || len(syms[0].Children) != 1 {
 		t.Errorf("hierarchical symbols %+v", syms)
 	}
@@ -206,13 +206,13 @@ func TestClientCapabilities(t *testing.T) {
 	if r := string(init.Capabilities.RenameProvider); r != "true" {
 		t.Errorf("renameProvider %s", r)
 	}
-	c.open("file:///caps.pego", src)
+	c.open("file:///caps.zp", src)
 	if it := completion(c); it.InsertText != "" || it.InsertTextFormat != 0 {
 		t.Errorf("without snippets: %+v", it)
 	}
 	var flat []symbolInformation
-	c.requestInto("textDocument/documentSymbol", docParams("file:///caps.pego"), &flat)
-	uri := "file:///caps.pego"
+	c.requestInto("textDocument/documentSymbol", docParams("file:///caps.zp"), &flat)
+	uri := "file:///caps.zp"
 	want := []symbolInformation{
 		{Name: "P", Kind: symbolKindStruct, Location: Location{URI: uri, Range: rng(0, 0, 0, 27)}},
 		{Name: "A", Kind: symbolKindField, Location: Location{URI: uri, Range: rng(0, 11, 0, 25)}, ContainerName: "P"},

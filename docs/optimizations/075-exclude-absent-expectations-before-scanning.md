@@ -85,4 +85,4 @@
   0.988–1.000× across the eight workloads. These noninterleaved snapshots
   do not isolate this method's effect; use the paired controls above for
   attribution. The current backend, recognition, incremental, stream and
-  preparation comparisons are under [Where PEGO stands](../performance.md#where-pego-stands).
+  preparation comparisons are under [Where ZeroParse stands](../performance.md#where-zeroparse-stands).

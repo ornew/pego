@@ -1,6 +1,6 @@
 # Left-Recursion Detection and Handling in Pegen
 
-This reference note explains how CPython's pegen parser generator detects and handles left recursion. PEGO's handling of left recursion follows the same approach (see [development.md](development.md#runtime)).
+This reference note explains how CPython's pegen parser generator detects and handles left recursion. ZeroParse's handling of left recursion follows the same approach (see [development.md](development.md#runtime)).
 
 ## 1. Introduction
 

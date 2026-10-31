@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { treeView, wide } from "./tree_harness.mjs";
 
-const app = process.env.PEGO_TREE_APP;
+const app = process.env.ZP_TREE_APP;
 const setup = () => treeView({ app });
 
 test("initial wide siblings obey the row budget and expose a child page", async () => {

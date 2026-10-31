@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/tsgen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/tsgen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func runTypedTSFixture(t *testing.T, src, consumer string, opts gen.GenOptions, keep string) {
@@ -230,7 +230,7 @@ for (const unit of [CodePoints, Bytes]) for (const size of [1, 8, 6000]) {
 check(stable(parseAST("xx").value).includes("Branch"), "small DAG value");
 `
 			keep := ""
-			if out := os.Getenv("PEGO_TS_TYPED_DIR"); out != "" {
+			if out := os.Getenv("ZP_TS_TYPED_DIR"); out != "" {
 				keep = filepath.Join(out, name)
 			}
 			runTypedTSFixture(t, gentest.TSTypedDAGTypes+body, consumer, gen.GenOptions{Recognize: true}, keep)
@@ -302,7 +302,7 @@ rule item Good = x:[a-zé😀]+ #atomic ";" => Good{Token: $x}`, "a;1;", strings
   else check(stable(r.value).includes('"type":"string"'), "string node value");
 }`
 			keep := ""
-			if dir := os.Getenv("PEGO_TS_TYPED_DIR"); dir != "" {
+			if dir := os.Getenv("ZP_TS_TYPED_DIR"); dir != "" {
 				keep = filepath.Join(dir, c.name)
 			}
 			runTypedTSFixture(t, c.src, consumer, gen.GenOptions{Recognize: true}, keep)

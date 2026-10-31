@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/core"
-	"github.com/ornew/pego/internal/ir/exec/exects"
-	"github.com/ornew/pego/internal/ir/exec/lower"
-	"github.com/ornew/pego/internal/ir/exec/pass"
-	"github.com/ornew/pego/internal/ir/flow"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/ir/exec/exects"
+	"github.com/ornew/zeroparse/internal/ir/exec/lower"
+	"github.com/ornew/zeroparse/internal/ir/exec/pass"
+	"github.com/ornew/zeroparse/internal/ir/flow"
 )
 
 // Rules printed from Exec IR.

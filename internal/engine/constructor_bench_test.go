@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // BenchmarkNodeListConstruction compares explicit element types with the

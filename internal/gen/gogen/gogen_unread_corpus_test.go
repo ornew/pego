@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // localErrors type-checks the Go files of a generated package against empty stand-ins for its

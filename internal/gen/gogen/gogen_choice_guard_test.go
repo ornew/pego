@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // guardedClassCases are grammars whose choices have alternatives that begin with character

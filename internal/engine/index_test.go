@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func TestIndexAcrossBackends(t *testing.T) {

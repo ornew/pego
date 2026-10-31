@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gentest"
-	ischema "github.com/ornew/pego/internal/schema"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gentest"
+	ischema "github.com/ornew/zeroparse/internal/schema"
 )
 
 // schemaJSON exports the schema of p for start, or every rule with allRules, as canonical JSON.

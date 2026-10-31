@@ -3,7 +3,7 @@ package cel
 import (
 	"fmt"
 
-	"github.com/ornew/pego/parsers/cel/types"
+	"github.com/ornew/zeroparse/parsers/cel/types"
 )
 
 // CheckError reports what the grammar cannot: a literal out of range, an expression over a limit, or a macro call

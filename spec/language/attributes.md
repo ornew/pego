@@ -15,7 +15,7 @@ specification defines `@error` and `@diagnostic`; unknown attribute names and
 invalid arguments or targets are grammar errors. No user-defined attribute
 extension mechanism is specified.
 
-```pego
+```zp
 rule stmt = (let / expr) @error("expected a statement")
 ```
 
@@ -41,7 +41,7 @@ recorded inside it are kept as usual. An opt-in `#missing` insertion has its own
 recovered diagnostic and inherits the outermost enclosing explicit `@error` label.
 This does not change labels on successful consuming `#recover`.
 
-```pego
+```zp
 rule let = "let" " " name @error("expected a name") ";"
 ```
 
@@ -67,7 +67,7 @@ that recovery handles; a diagnostic name outside recovery sees the recovery
 result instead. When both `@diagnostic` and `@error` apply to a failure,
 the explicit `@error` message remains visible.
 
-```pego
+```zp
 rule number Number = ([0-9]+ "." [0-9]+) @diagnostic(name="number")
 ```
 

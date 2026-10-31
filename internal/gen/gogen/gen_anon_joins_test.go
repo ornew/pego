@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // An anonymous join of declared node types is an interface named after its members; the same

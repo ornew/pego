@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/parsers/duckdb/types"
+	"github.com/ornew/zeroparse/parsers/duckdb/types"
 )
 
 // A StatementText is a statement with the text DuckDB gives it when it splits a script.

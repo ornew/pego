@@ -1,4 +1,4 @@
-# PEGO Cookbook
+# ZeroParse Cookbook
 
 Short recipes for concrete problems. Each one is a complete solution: the problem in a sentence or two, the grammar and
 the Go program, the output they print, and a few lines on how it works and what to change. They differ from the other
@@ -12,18 +12,18 @@ documents in how they are organized:
 ## Running a Recipe
 
 Every program is a `main` package that you can run as it is. Put the files in a directory (a block whose first line is
-`// name.go` or `// name.pego` is a file of that name, without that line), make it a module that uses PEGO, and run it:
+`// name.go` or `// name.zp` is a file of that name, without that line), make it a module that uses ZeroParse, and run it:
 
 ```bash
 mkdir recipe && cd recipe
 go mod init example.com/recipe
-go get github.com/ornew/pego
+go get github.com/ornew/zeroparse
 go run .
 ```
 
 The recipes need Go 1.27 or later and nothing else, except where a recipe says otherwise (the ones that generate code
-install the `pego` tool with `go get -tool`, and the one about ready-made parsers adds a module). The grammars are
-embedded in the programs with `go:embed`, so the `.pego` files are real files that `pego fmt`, `pego parse` and the
+install the `zp` tool with `go get -tool`, and the one about ready-made parsers adds a module). The grammars are
+embedded in the programs with `go:embed`, so the `.zp` files are real files that `zp fmt`, `zp parse` and the
 editor support work with. Every output was produced by running the code shown, with Go 1.27.1 on an Apple M3 Max;
 times differ from machine to machine.
 
@@ -52,10 +52,10 @@ times differ from machine to machine.
 
 | Recipe | What it shows |
 |:--|:--|
-| [Report an error with its source line and a caret](error-carets.md) | `@error` messages and the position of a `*pego.SyntaxError`, printed like a compiler |
+| [Report an error with its source line and a caret](error-carets.md) | `@error` messages and the position of a `*zeroparse.SyntaxError`, printed like a compiler |
 | [Report several errors in one run](several-errors.md) | `#recover`: a tree of what could be read, the errors, and what to watch for in the `skip` |
 | [Keep going after a bad statement in nested blocks](recover-statements.md) | Recovery at the statement rule shared by every block: errors from all levels and the statements that were fine |
-| [Find out why a grammar is slow](slow-grammar.md) | `pego profile` on a 20,000-line input: which rule wastes input, the change that fixes it, and the profile that proves it |
+| [Find out why a grammar is slow](slow-grammar.md) | `zp profile` on a 20,000-line input: which rule wastes input, the change that fixes it, and the profile that proves it |
 
 ## Build Tools
 
@@ -70,12 +70,12 @@ times differ from machine to machine.
 | Recipe | What it shows |
 |:--|:--|
 | [Embed a grammar in a program and share the parser](embed-grammar.md) | `go:embed`, one compiled parser used from many goroutines with `WithStart`, and a `-race` test |
-| [Ship a parser and keep it up to date](ship-a-parser.md) | `pego gen` with `go generate`, a test that fails when the generated file is stale, and `.pegoc` for grammars that stay data |
+| [Ship a parser and keep it up to date](ship-a-parser.md) | `zp gen` with `go generate`, a test that fails when the generated file is stale, and `.zpc` for grammars that stay data |
 | [Validate a YAML file and point at the problem](ready-made-parsers.md) | A ready-made parser of [parsers/](../../parsers/README.md): syntax errors with positions, and your own checks with the positions of the typed tree |
 | [Test hand-written code against a grammar](test-with-samples.md) | Inputs and near misses generated from the grammar, a differential test and a fuzz test |
 | [Fuzz the edits of a grammar in your tests](edit-fuzz-grammar.md) | `editfuzz` in `go test`: random edits, undos and redos checked against fresh parses, saved failures as regression tests, and a case written by hand |
-| [Check a file in a TypeScript tool with the same grammar](typescript-parser.md) | `pego gen -lang ts -types`: a dependency-free module, typed values, recovered syntax errors and a check of the tool's own |
-| [Check grammars in continuous integration](lint-in-ci.md) | One script for `pego fmt -check`, `pego lint -strict` and `pego test`, and a workflow that runs it |
+| [Check a file in a TypeScript tool with the same grammar](typescript-parser.md) | `zp gen -lang ts -types`: a dependency-free module, typed values, recovered syntax errors and a check of the tool's own |
+| [Check grammars in continuous integration](lint-in-ci.md) | One script for `zp fmt -check`, `zp lint -strict` and `zp test`, and a workflow that runs it |
 
 ## Where to Go Next
 

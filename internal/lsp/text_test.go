@@ -8,7 +8,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestTextIndexPositions(t *testing.T) {
@@ -60,7 +60,7 @@ func TestTextIndexPositions(t *testing.T) {
 	}
 }
 
-func TestTextIndexPegoPositions(t *testing.T) {
+func TestTextIndexZPPositions(t *testing.T) {
 	// Columns count code points, and the \r of \r\n is a column of its line.
 	text := "a😀b\r\n名\rx\nz"
 	idx := newTextIndex(text)
@@ -78,21 +78,21 @@ func TestTextIndexPegoPositions(t *testing.T) {
 		{grammar.Pos{Line: 4, Col: 1}, 14},
 		{grammar.Pos{Line: 4, Col: 2}, 15},
 	} {
-		if got := idx.pegoOffset(tc.pos); got != tc.off {
-			t.Errorf("pegoOffset(%v) = %d, want %d", tc.pos, got, tc.off)
+		if got := idx.zpOffset(tc.pos); got != tc.off {
+			t.Errorf("zpOffset(%v) = %d, want %d", tc.pos, got, tc.off)
 		}
 	}
-	if got := idx.pegoOffset(grammar.Pos{Line: 1, Col: 99}); got != 7 {
+	if got := idx.zpOffset(grammar.Pos{Line: 1, Col: 99}); got != 7 {
 		t.Errorf("past the end of the line: %d", got)
 	}
-	if got := idx.pegoOffset(grammar.Pos{Line: 9, Col: 1}); got != len(text) {
+	if got := idx.zpOffset(grammar.Pos{Line: 9, Col: 1}); got != len(text) {
 		t.Errorf("past the last line: %d", got)
 	}
-	if got := idx.pegoOffset(grammar.Pos{Line: 2, Col: 9}); got != 11 {
+	if got := idx.zpOffset(grammar.Pos{Line: 2, Col: 9}); got != 11 {
 		t.Errorf("past the end of a line that ends with \\r: %d", got)
 	}
 	// The x after the lone \r is on LSP line 2.
-	if got := idx.position(idx.pegoOffset(grammar.Pos{Line: 3, Col: 1})); got != (Position{2, 0}) {
+	if got := idx.position(idx.zpOffset(grammar.Pos{Line: 3, Col: 1})); got != (Position{2, 0}) {
 		t.Errorf("x at %v", got)
 	}
 }
@@ -176,7 +176,7 @@ func naivePosition(t *textIndex, off int) Position {
 	return Position{Line: line, Character: col}
 }
 
-func naivePegoOffset(t *textIndex, p grammar.Pos) int {
+func naiveZPOffset(t *textIndex, p grammar.Pos) int {
 	if p.Line < 1 {
 		return 0
 	}
@@ -222,8 +222,8 @@ func TestTextIndexMatchesNaive(t *testing.T) {
 				t.Fatalf("text %q: offset(%v) = %d, want %d", text, p, got, want)
 			}
 			pp := grammar.Pos{Line: rnd.IntN(len(idx.lines) + 1), Col: rnd.IntN(1000) + 1}
-			if got, want := idx.pegoOffset(pp), naivePegoOffset(idx, pp); got != want {
-				t.Fatalf("text %q: pegoOffset(%v) = %d, want %d", text, pp, got, want)
+			if got, want := idx.zpOffset(pp), naiveZPOffset(idx, pp); got != want {
+				t.Fatalf("text %q: zpOffset(%v) = %d, want %d", text, pp, got, want)
 			}
 		}
 	}
@@ -234,7 +234,7 @@ func TestTextIndexMatchesNaive(t *testing.T) {
 // seconds and one of 1 MB did not open.
 func TestLongLine(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///long.pego"
+	uri := "file:///long.zp"
 	const n = 1 << 17
 	text := "rule a = " + strings.Repeat(`"😀" b `, n) + "\nrule b = \"x\"" // 1 MB, 260,000 tokens
 	start := time.Now()

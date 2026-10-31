@@ -1,7 +1,7 @@
-// The PEGO playground: edit a grammar and an input, and see the parse result as you type.
-// Parsing runs in a Web Worker (worker.js) with pego.wasm; see docs/guide/playground.md.
+// The ZeroParse playground: edit a grammar and an input, and see the parse result as you type.
+// Parsing runs in a Web Worker (worker.js) with zp.wasm; see docs/guide/playground.md.
 
-import { PegoClient, siteRoot } from "../assets/pego-client.js";
+import { ZPClient, siteRoot } from "../assets/zp-client.js";
 import { escapeHTML, highlight, highlightJSON, tokenize } from "../assets/highlight.js";
 import { decodeState, encodeState } from "../assets/state.js";
 import { describeResult, fmtTime } from "./status.js";
@@ -16,7 +16,7 @@ const unavailableError = "TinyGo is unavailable in this site build. Select Go or
 const client = unavailableTinyGo ? {
   start: async () => { throw new Error(unavailableError); },
   call: async () => { throw new Error(unavailableError); },
-} : new PegoClient(siteRoot() + "playground/", compiler === "tinygo" ? { wasm: new URL(tinygoWasm, location.href).href } : {});
+} : new ZPClient(siteRoot() + "playground/", compiler === "tinygo" ? { wasm: new URL(tinygoWasm, location.href).href } : {});
 const compilerSelect = $("pg-compiler");
 compilerSelect.value = compiler;
 $("pg-compiler-tinygo").disabled = !tinygoWasm;
@@ -229,7 +229,7 @@ function lineOf(text, offset) {
 
 // ---------------------------------------------------------------- State
 
-const grammarEditor = new Editor($("pg-grammar-editor"), { language: "pego", indent: "    " });
+const grammarEditor = new Editor($("pg-grammar-editor"), { language: "zp", indent: "    " });
 const inputEditor = new Editor($("pg-input-editor"), { indent: "\t" });
 const startSelect = $("pg-start");
 const unitSelect = $("pg-unit");
@@ -569,7 +569,7 @@ async function generate() {
   if (req.start && req.start !== defaultStart) flags.push(`-s ${req.start}`);
   if (req.types) flags.push("-types");
   if (req.recognize) flags.push("-recognize");
-  $("gen-cmd").innerHTML = `<code>pego gen -g grammar.pego ${escapeHTML(flags.join(" "))}</code>`;
+  $("gen-cmd").innerHTML = `<code>zp gen -g grammar.zp ${escapeHTML(flags.join(" "))}</code>`;
   try {
     const res = await client.call("generate", req, { key: "generate" });
     if (n !== genSeq || key !== generationKey()) return;
@@ -819,7 +819,7 @@ async function writeHash() {
   try {
     hash = "#" + (await encodeState(s));
   } catch (err) {
-    if (version === stateVersion) console.warn("pego: cannot save the state in the URL:", err);
+    if (version === stateVersion) console.warn("zp: cannot save the state in the URL:", err);
     return null;
   }
   if (version !== stateVersion || loadingVersion !== null) return null;
@@ -836,7 +836,7 @@ async function loadHash(hash, version, initial = false) {
   try {
     s = await decodeState(hash);
   } catch (err) {
-    if (version === stateVersion) console.warn("pego: cannot read the state in the URL:", err);
+    if (version === stateVersion) console.warn("zp: cannot read the state in the URL:", err);
   }
   if (initial || s?.example) await examplesReady;
   if (version !== stateVersion || location.hash !== hash) return;
@@ -966,7 +966,7 @@ window.addEventListener("hashchange", () => {
 });
 
 client.onrestart = (reason) => {
-  if (reason !== "timeout") console.warn("pego: restarting the parser:", reason);
+  if (reason !== "timeout") console.warn("zp: restarting the parser:", reason);
 };
 
 async function init() {
@@ -992,7 +992,7 @@ async function init() {
   try {
     const v = await client.start();
     const rev = v.revision && !v.module.includes(v.revision.slice(0, 12)) ? ` · revision <code>${escapeHTML(v.revision.slice(0, 12))}${v.modified ? "+" : ""}</code>` : "";
-    $("pg-version").innerHTML = `PEGO ${escapeHTML(v.module)} running as WebAssembly, built with ${escapeHTML(v.go)}${rev}. Everything runs in your browser.`;
+    $("pg-version").innerHTML = `ZeroParse ${escapeHTML(v.module)} running as WebAssembly, built with ${escapeHTML(v.go)}${rev}. Everything runs in your browser.`;
   } catch (err) {
     setStatus("error", `✗ The parser could not be loaded: ${escapeHTML(err.message || String(err))}`);
     return;

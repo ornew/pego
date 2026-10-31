@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // TestCompiledRoundTrip checks that a program loaded from a compiled grammar returns the same
@@ -146,7 +146,7 @@ func TestCompiledErrors(t *testing.T) {
 		data []byte
 		want string
 	}{
-		{"not compiled", []byte("rule main = x"), "not a compiled PEGO grammar"},
+		{"not compiled", []byte("rule main = x"), "not a compiled ZeroParse grammar"},
 		{"too short", []byte(compiledMagic), "too short"},
 		{"version", version, "unsupported compiled grammar version 99"},
 		{"isa version", isa, fmt.Sprintf("unsupported instruction set version %d", bytecode.ISAVersion+1)},
@@ -276,7 +276,7 @@ func FuzzLoadProgram(f *testing.F) {
 
 // BenchmarkLoad compares compiling from source with loading a compiled grammar.
 func BenchmarkLoad(b *testing.B) {
-	src, err := os.ReadFile("../../examples/minilang/minilang.pego")
+	src, err := os.ReadFile("../../examples/minilang/minilang.zp")
 	if err != nil {
 		b.Fatal(err)
 	}

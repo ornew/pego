@@ -1,13 +1,13 @@
 {
-  "name": "pego",
-  "displayName": "PEGO",
-  "description": "PEGO grammar files: syntax highlighting, and diagnostics, formatting, navigation, hover, rename and completion from the pego language server",
+  "name": "zp",
+  "displayName": "ZeroParse",
+  "description": "ZeroParse grammar files: syntax highlighting, and diagnostics, formatting, navigation, hover, rename and completion from the zp language server",
   "version": "0.1.0",
   "publisher": "ornew",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ornew/pego",
+    "url": "https://github.com/ornew/zeroparse",
     "directory": "editors/vscode"
   },
   "engines": {
@@ -20,9 +20,9 @@
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "In an untrusted workspace, the workspace cannot choose the command that runs the language server (pego.server.path).",
+      "description": "In an untrusted workspace, the workspace cannot choose the command that runs the language server (zp.server.path).",
       "restrictedConfigurations": [
-        "pego.server.path"
+        "zp.server.path"
       ]
     }
   },
@@ -30,39 +30,39 @@
   "contributes": {
     "languages": [
       {
-        "id": "pego",
+        "id": "zp",
         "aliases": [
-          "PEGO",
-          "pego"
+          "ZeroParse",
+          "zp"
         ],
         "extensions": [
-          ".pego"
+          ".zp"
         ],
         "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
       {
-        "language": "pego",
-        "scopeName": "source.pego",
-        "path": "./syntaxes/pego.tmLanguage.json"
+        "language": "zp",
+        "scopeName": "source.zp",
+        "path": "./syntaxes/zp.tmLanguage.json"
       }
     ],
     "configuration": {
-      "title": "PEGO",
+      "title": "ZeroParse",
       "properties": {
-        "pego.server.enabled": {
+        "zp.server.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Start the PEGO language server (pego lsp) for .pego files. Syntax highlighting works without it."
+          "description": "Start the ZeroParse language server (zp lsp) for .zp files. Syntax highlighting works without it."
         },
-        "pego.server.path": {
+        "zp.server.path": {
           "type": "string",
-          "default": "pego",
-          "description": "The pego command that runs the language server: a name looked up on the PATH, or an absolute path. In an untrusted workspace, the workspace's value is ignored.",
+          "default": "zp",
+          "description": "The zp command that runs the language server: a name looked up on the PATH, or an absolute path. In an untrusted workspace, the workspace's value is ignored.",
           "scope": "machine-overridable"
         },
-        "pego.trace.server": {
+        "zp.trace.server": {
           "type": "string",
           "enum": [
             "off",
@@ -70,9 +70,9 @@
             "verbose"
           ],
           "default": "off",
-          "description": "Log the messages between VS Code and the language server in the PEGO Language Server output channel."
+          "description": "Log the messages between VS Code and the language server in the ZeroParse Language Server output channel."
         },
-        "pego.server.experimentalLint": {
+        "zp.server.experimentalLint": {
           "type": "boolean",
           "default": false,
           "description": "Enable experimental lint diagnostics, guarded explanations, version-checked quick fixes (suppression, merging overlapping character-class ranges, removing a lookahead that always succeeds, and deleting an unused rule) and responsive analysis. Restart the language server when this setting changes."
@@ -81,9 +81,9 @@
     },
     "commands": [
       {
-        "command": "pego.restartServer",
+        "command": "zp.restartServer",
         "title": "Restart Language Server",
-        "category": "PEGO"
+        "category": "ZeroParse"
       }
     ]
   },

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // stripActions returns g written without value actions and rule types, which it removes from the
@@ -65,8 +65,8 @@ func stripActions(t *testing.T, g *grammar.Grammar) *grammar.Grammar {
 // when it matches the grammar without actions (if that compiles).
 func TestDefaultValueCorpus(t *testing.T) {
 	chdirModuleRoot(t)
-	grammars, _ := filepath.Glob("examples/*/*.pego")
-	more, _ := filepath.Glob("parsers/*/*.pego")
+	grammars, _ := filepath.Glob("examples/*/*.zp")
+	more, _ := filepath.Glob("parsers/*/*.zp")
 	grammars = append(grammars, more...)
 	if len(grammars) == 0 {
 		t.Fatal("no grammars")
@@ -77,16 +77,16 @@ func TestDefaultValueCorpus(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			g, err := pego.ParseGrammar(string(src))
+			g, err := zeroparse.ParseGrammar(string(src))
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := pego.Compile(g, "main", pego.WithDefaultValue(), pego.WithSourceInfo())
+			got, err := zeroparse.Compile(g, "main", zeroparse.WithDefaultValue(), zeroparse.WithSourceInfo())
 			if err != nil {
 				t.Fatalf("default values: %v", err)
 			}
 			exact := strings.HasPrefix(path, "examples/")
-			want, err := pego.Compile(stripActions(t, g), "main", pego.WithSourceInfo())
+			want, err := zeroparse.Compile(stripActions(t, g), "main", zeroparse.WithSourceInfo())
 			if err != nil {
 				if exact {
 					t.Fatalf("stripped: %v", err)
@@ -103,16 +103,16 @@ func TestDefaultValueCorpus(t *testing.T) {
 				if err != nil || len(data) > 200_000 {
 					continue
 				}
-				ref := render(got.Parse(string(data), pego.WithBackend(pego.Closure)))
-				for _, b := range []pego.Backend{pego.Bytecode, pego.BytecodeIterative} {
-					if gotTree := render(got.Parse(string(data), pego.WithBackend(b))); gotTree != ref {
+				ref := render(got.Parse(string(data), zeroparse.WithBackend(zeroparse.Closure)))
+				for _, b := range []zeroparse.Backend{zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+					if gotTree := render(got.Parse(string(data), zeroparse.WithBackend(b))); gotTree != ref {
 						t.Errorf("%s (%v): differs from the closure backend\n got  %.300s\n want %.300s", in, b, gotTree, ref)
 					}
 				}
 				if want == nil {
 					continue
 				}
-				wantTree := render(want.Parse(string(data), pego.WithBackend(pego.Closure)))
+				wantTree := render(want.Parse(string(data), zeroparse.WithBackend(zeroparse.Closure)))
 				if !exact {
 					_, e1 := got.Parse(string(data))
 					_, e2 := want.Parse(string(data))
@@ -126,7 +126,7 @@ func TestDefaultValueCorpus(t *testing.T) {
 	}
 }
 
-func render(n *pego.Node, err error) string {
+func render(n *zeroparse.Node, err error) string {
 	s := ""
 	if n != nil {
 		s = n.String()

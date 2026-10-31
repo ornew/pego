@@ -1,4 +1,4 @@
-//go:build !pego_reference_document_vm_values
+//go:build !zp_reference_document_vm_values
 
 package document
 

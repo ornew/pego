@@ -1,0 +1,1038 @@
+// Python 3.14 as CPython 3.14.0 parses it (Grammar/python.gram and the tokenizer), parsed into a
+// typed AST modeled on Python's ast module.
+//
+// The grammar works on characters: there is no separate tokenizer. What CPython's tokenizer does is
+// done here as follows.
+//
+//   - Whitespace. `ws` skips spaces, tabs, form feeds and backslash continuations between tokens, and
+//     inside brackets also newlines and comments. Rules never consume whitespace at their start or
+//     end, so the span of every node is exactly its text.
+//   - Brackets. The low part of the variable `lv` (lv % 512) is twice the bracket depth, plus one at the
+//     top level of an f-string or t-string replacement field (where a lambda would end at the ':' of
+//     the format spec, and CPython rejects it). Every rule that opens a bracket defines `lv` anew, so
+//     the depth is restored when it returns; CPython allows 200 levels.
+//   - Indentation. The variable `ind` packs the indentation of the current block: its column (tabs to
+//     the next multiple of 8, a form feed resets it), its column with tabs counted as one (CPython's
+//     "altcol", which detects inconsistent use of tabs: TabError), and the number of enclosing blocks
+//     (at most 99): ind = col + 2^22 * altcol + 2^44 * depth. A statement must start at exactly the
+//     block's indentation; a block opens a deeper one by defining `ind` in its own rule, so returning
+//     restores the enclosing one (INDENT and DEDENT without tokens). A line that matches no enclosing
+//     indentation is an error, as in CPython.
+//   - Line ends. A statement does not consume the end of its line: the separator before the next
+//     statement does, so compound statements end with their last statement.
+//   - Tokens. Operators are matched with the longest-match rule of the tokenizer written out as
+//     lookaheads (`"<" !(?<=>)`), keywords and names with `!idcont` after them, and numbers with the
+//     tokenizer's check of what may follow them.
+//   - f-strings and t-strings (PEP 701, 750). The rest of `lv` (lv / 512) holds the kind of the
+//     innermost string's quote (1 ', 2 ", 3 ''', 4 """; lv / 512 % 8), whether it is raw (lv / 4096 % 2),
+//     and the number of enclosing format specs (lv / 8192; fields may be nested in format specs
+//     twice). Replacement fields contain any expression, including strings with the same quotes.
+//
+// All the state but the indentation is packed in `lv` because a rule is memoized once for every value
+// of the variables it reads: with the separate variables the grammar once had (the quote kind, whether
+// the parameters of a lambda are being parsed, whether `barry_as_FLUFL` was imported), the parser was
+// 10% slower and allocated 25% more on the standard library's largest modules. `from __future__
+// import barry_as_FLUFL` (which makes '<>' the inequality operator and '!=' an error) is checked
+// after the parse, in Check; the grammar accepts both operators.
+//
+// The AST follows Python's ast module, with these differences: identifiers are strings, and an absent
+// one (Python's None) is ""; ctx is the string "Load", "Store" or "Del"; operators are the source
+// tokens (`Op`); booleans replace the ints of AnnAssign.simple and comprehension.is_async; constants,
+// and the literal parts of f-strings and t-strings, are their source text (see python.go for their
+// values); FormattedValue and Interpolation keep the source text of their expression (Str) and of
+// their `=` (Debug) and their conversion character as a string. Python's List and Match are ListExpr
+// and MatchStmt (List and Match are reserved in ZeroParse), and its Expr statement is ExprStmt.
+package python
+
+// lv packs the lexical state of the parse: the nesting level and the flags that depend on it.
+var lv int
+// ind is the indentation of the current block.
+var ind int
+// isdict reports whether the braces being read are a dict.
+var isdict bool
+
+type Module = { Body []Stmt }
+
+// --- Statements ---
+type FunctionDef = {
+    Name          string
+    Args          Arguments
+    Body          []Stmt
+    DecoratorList []Expr
+    Returns       *Expr
+    TypeParams    []TypeParam
+}
+type AsyncFunctionDef = {
+    Name          string
+    Args          Arguments
+    Body          []Stmt
+    DecoratorList []Expr
+    Returns       *Expr
+    TypeParams    []TypeParam
+}
+type ClassDef = {
+    Name          string
+    Bases         []Expr
+    Keywords      []Keyword
+    Body          []Stmt
+    DecoratorList []Expr
+    TypeParams    []TypeParam
+}
+type Return = { Value *Expr }
+type Delete = { Targets []Expr }
+type Assign = { Targets []Expr; Value Expr }
+type TypeAlias = { Name Name; TypeParams []TypeParam; Value Expr }
+type AugAssign = { Target Expr; Op Op; Value Expr }
+type AnnAssign = { Target Expr; Annotation Expr; Value *Expr; Simple bool }
+type For = { Target Expr; Iter Expr; Body []Stmt; OrElse []Stmt }
+type AsyncFor = { Target Expr; Iter Expr; Body []Stmt; OrElse []Stmt }
+type While = { Test Expr; Body []Stmt; OrElse []Stmt }
+type If = { Test Expr; Body []Stmt; OrElse []Stmt }
+type With = { Items []WithItem; Body []Stmt }
+type AsyncWith = { Items []WithItem; Body []Stmt }
+type MatchStmt = { Subject Expr; Cases []MatchCase }
+type Raise = { Exc *Expr; Cause *Expr }
+type Try = { Body []Stmt; Handlers []ExceptHandler; OrElse []Stmt; FinalBody []Stmt }
+type TryStar = { Body []Stmt; Handlers []ExceptHandler; OrElse []Stmt; FinalBody []Stmt }
+type Assert = { Test Expr; Msg *Expr }
+type Import = { Names []Alias }
+type ImportFrom = { Module string; Names []Alias; Level int }
+type Global = { Names []Identifier }
+type Nonlocal = { Names []Identifier }
+type ExprStmt = { Value Expr }
+type Pass = {}
+type Break = {}
+type Continue = {}
+type Stmt ~ FunctionDef | AsyncFunctionDef | ClassDef | Return | Delete | Assign | TypeAlias | AugAssign | AnnAssign | For | AsyncFor | While | If | With | AsyncWith | MatchStmt | Raise | Try | TryStar | Assert | Import | ImportFrom | Global | Nonlocal | ExprStmt | Pass | Break | Continue
+
+// --- Expressions ---
+type BoolOp = { Op Op; Values []Expr }
+type NamedExpr = { Target Name; Value Expr }
+type BinOp = { Left Expr; Op Op; Right Expr }
+type UnaryOp = { Op Op; Operand Expr }
+type Lambda = { Args Arguments; Body Expr }
+type IfExp = { Test Expr; Body Expr; OrElse Expr }
+// Keys has a nil key for each `**` item.
+type Dict = { Keys []*Expr; Values []Expr }
+type Set = { Elts []Expr }
+type ListComp = { Elt Expr; Generators []Comprehension }
+type SetComp = { Elt Expr; Generators []Comprehension }
+type DictComp = { Key Expr; Value Expr; Generators []Comprehension }
+type GeneratorExp = { Elt Expr; Generators []Comprehension }
+type Await = { Value Expr }
+type Yield = { Value *Expr }
+type YieldFrom = { Value Expr }
+type Compare = { Left Expr; Ops []Op; Comparators []Expr }
+type Call = { Func Expr; Args []Expr; Keywords []Keyword }
+// A replacement field of an f-string, or of a format spec. Str is the source of the expression
+// (from after the '{'), Debug the '=' with the whitespace around it ("" without), Conversion the
+// conversion character ("" without).
+type FormattedValue = { Value Expr; Str string; Debug string; Conversion string; FormatSpec *JoinedStr }
+// A replacement field of a t-string, like FormattedValue.
+type Interpolation = { Value Expr; Str string; Debug string; Conversion string; FormatSpec *JoinedStr }
+// Adjacent f-strings and string literals, or a format spec. The values are the parts in source
+// order: whole string literals (Constant), the literal text of f-strings (FStringMiddle, or
+// FStringRawMiddle in raw f-strings) and replacement fields.
+type JoinedStr = { Values []StrPart }
+// Adjacent t-strings: their literal text and Interpolations.
+type TemplateStr = { Values []StrPart }
+// A number, True, False, None, `...`, or adjacent string or bytes literals: the source text.
+type Constant = node[string]
+type Attribute = { Value Expr; Attr string; Ctx string }
+type Subscript = { Value Expr; Slice Expr; Ctx string }
+type Starred = { Value Expr; Ctx string }
+type Name = { Id string; Ctx string }
+type ListExpr = { Elts []Expr; Ctx string }
+type Tuple = { Elts []Expr; Ctx string }
+type Slice = { Lower *Expr; Upper *Expr; Step *Expr }
+type Expr ~ BoolOp | NamedExpr | BinOp | UnaryOp | Lambda | IfExp | Dict | Set | ListComp | SetComp | DictComp | GeneratorExp | Await | Yield | YieldFrom | Compare | Call | FormattedValue | Interpolation | JoinedStr | TemplateStr | Constant | Attribute | Subscript | Starred | Name | ListExpr | Tuple | Slice
+
+// The literal text of an f-string or t-string between replacement fields, with its escape
+// sequences and doubled braces as written.
+type FStringMiddle = node[string]
+// The same in a raw f-string or t-string.
+type FStringRawMiddle = node[string]
+type StrPart ~ Constant | FStringMiddle | FStringRawMiddle | FormattedValue | Interpolation
+
+// --- Patterns ---
+type MatchCase = { Pattern Pattern; Guard *Expr; Body []Stmt }
+type MatchValue = { Value Expr }
+type MatchSingleton = { Value Constant }
+type MatchSequence = { Patterns []Pattern }
+type MatchMapping = { Keys []Expr; Patterns []Pattern; Rest string }
+type MatchClass = { Cls Expr; Patterns []Pattern; KwdAttrs []Identifier; KwdPatterns []Pattern }
+type MatchStar = { Name string }
+type MatchAs = { Pattern *Pattern; Name string }
+type MatchOr = { Patterns []Pattern }
+type Pattern ~ MatchValue | MatchSingleton | MatchSequence | MatchMapping | MatchClass | MatchStar | MatchAs | MatchOr
+
+// --- Other nodes ---
+// The parameters of a function or lambda. Defaults are those of the last positional parameters;
+// KwDefaults has one entry per keyword-only parameter, nil where it has no default.
+type Arguments = {
+    PosOnlyArgs []Arg
+    Args        []Arg
+    VarArg      *Arg
+    KwOnlyArgs  []Arg
+    KwDefaults  []*Expr
+    KwArg       *Arg
+    Defaults    []Expr
+}
+type Arg = { Arg string; Annotation *Expr }
+// Arg is "" for `**value`.
+type Keyword = { Arg string; Value Expr }
+type Alias = { Name string; AsName string }
+type WithItem = { ContextExpr Expr; OptionalVars *Expr }
+type Comprehension = { Target Expr; Iter Expr; Ifs []Expr; IsAsync bool }
+type ExceptHandler = { Type *Expr; Name string; Body []Stmt }
+type TypeVar = { Name string; Bound *Expr; DefaultValue *Expr }
+type ParamSpec = { Name string; DefaultValue *Expr }
+type TypeVarTuple = { Name string; DefaultValue *Expr }
+type TypeParam ~ TypeVar | ParamSpec | TypeVarTuple
+// A name in a list of names (Global, Nonlocal, MatchClass.KwdAttrs).
+type Identifier = node[string]
+// An operator as written: "+", "not in", "+=", "and", ...
+type Op = node[string]
+
+// ============================================================================
+// Module, blocks and lines
+// ============================================================================
+
+@start
+rule main Module = (
+    {ind := 0} {lv := 0}
+    -blank* b:first_stmts? -module_end $$ @error(message="invalid syntax")
+) => Module{Body: concat($b)}
+// The first statement must not be indented.
+rule first_stmts = (
+    i:indentation
+    {foldl(0, $i.$segs, (a, s) => (a + len(s.$sp)) / 8 * 8 + 8) + len($i.$tail) == 0 && foldl(0, $i.$segs, (a, s) => a + len(s.$sp) + 1) + len($i.$tail) == 0}
+    @error(message="unexpected indent")
+    s:stmts (-ws -";")?
+) => $s
+
+// After the last statement (and its ';'): the end of its line, blank lines, and whitespace, a
+// continuation (not at the very end) or a comment on a last line without a newline.
+rule module_end = (eol blank*)? [ \t\u{c}]* ("\\" newline !$$ [ \t\u{c}]*)* comment?
+
+// The statements of a block, the first at the current position (its indentation consumed by the
+// caller). Simple statements on one line are separated by ';'; lines by stmt_sep, which requires the
+// block's indentation.
+rule stmts = (
+    f:stmt r:(-ws -";" -ws s:simple_stmt / -stmt_sep s:stmt)*
+) => concat(list($f), map($r, (x) => x.$s))
+rule stmt_sep = (
+    (ws ";")? eol blank* i:indentation
+    {foldl(0, $i.$segs, (a, s) => (a + len(s.$sp)) / 8 * 8 + 8) + len($i.$tail) + 4194304 * (foldl(0, $i.$segs, (a, s) => a + len(s.$sp) + 1) + len($i.$tail)) == ind % (4194304 * 4194304)}
+)
+
+// The body of a compound statement, after its ':': simple statements on the same line, or an
+// indented block on the following lines.
+rule block = -ws b:(indented_block / simple_stmts) => $b
+rule indented_block = (
+    -eol -blank* i:indentation
+    {foldl(0, $i.$segs, (a, s) => (a + len(s.$sp)) / 8 * 8 + 8) + len($i.$tail) > ind % 4194304 && foldl(0, $i.$segs, (a, s) => a + len(s.$sp) + 1) + len($i.$tail) > ind / 4194304 % 4194304}
+    @error(message="expected an indented block")
+    {ind / (4194304 * 4194304) < 99} @error(message="too many levels of indentation")
+    {ind := foldl(0, $i.$segs, (a, s) => (a + len(s.$sp)) / 8 * 8 + 8) + len($i.$tail) + 4194304 * (foldl(0, $i.$segs, (a, s) => a + len(s.$sp) + 1) + len($i.$tail)) + (ind / (4194304 * 4194304) + 1) * (4194304 * 4194304)}
+    s:stmts
+) => $s
+rule simple_stmts = f:simple_stmt r:(-ws -";" -ws s:simple_stmt)* => concat(list($f), map($r, (x) => x.$s))
+
+// The line end, blank lines and indentation before a clause that continues a compound statement
+// (elif, else, except, finally, case) or before the next decorator: the indentation of the block.
+rule clause_sep = (
+    (ws ";")? eol blank* i:indentation
+    {foldl(0, $i.$segs, (a, s) => (a + len(s.$sp)) / 8 * 8 + 8) + len($i.$tail) + 4194304 * (foldl(0, $i.$segs, (a, s) => a + len(s.$sp) + 1) + len($i.$tail)) == ind % (4194304 * 4194304)}
+)
+
+// The indentation of a line: segments of spaces ended by a tab, then spaces. Only what follows the
+// last form feed counts. A backslash continuation at the start of the line is skipped (CPython then
+// counts the whitespace after it); continuations after some whitespace end the indentation (CPython
+// keeps the column of the first one).
+rule indentation = (
+    -([ \t]* "\u{c}")* -("\\" newline !$$ ([ \t]* "\u{c}")*)*
+    segs:(sp:" "* #atomic "\t")* tail:" "* #atomic -("\\" newline !$$ [ \t\u{c}]*)*
+)
+
+rule blank = [ \t\u{c}]* ("\\" newline !$$ [ \t\u{c}]*)* comment? newline
+rule eol = ws comment? (newline / $$)
+rule newline = "\r\n" / [\n\r]
+rule comment = "#" [^\n\r\u{0}]*
+
+// Whitespace between tokens: spaces, tabs, form feeds and backslash continuations, and inside
+// brackets newlines and comments. A continuation must not end the input.
+rule ws = ([ \t\u{c}]+ / "\\" ("\r\n" / [\n\r]) !$$ / &[#\n\r] {lv % 512 >= 2} ("#" [^\n\r\u{0}]* / "\r\n" / [\n\r]))*
+
+// ============================================================================
+// Statements
+// ============================================================================
+
+rule stmt Stmt = compound_stmt / simple_stmt
+
+rule simple_stmt Stmt = (
+    pass_stmt / break_stmt / continue_stmt / return_stmt / raise_stmt
+    / global_stmt / nonlocal_stmt / del_stmt / assert_stmt / import_stmt / from_stmt / yield_stmt
+    / type_alias / expr_stmt / assignment
+)
+
+// An expression statement is parsed first, since most statements are: the expression is parsed
+// once. Only if it is followed by '=', an augmented assignment operator or ':' is the statement an
+// assignment, parsed again from its start (as CPython's assignment rule, which it tries first).
+rule expr_stmt ExprStmt = e:star_expressions !(ws ("=" !"=" / ":" !"=" / augassign_op)) => ExprStmt{Value: $e}
+
+rule assignment Stmt = ann_simple / ann_complex / assign_one / assign_chain / aug_assign
+rule ann_simple AnnAssign = (
+    t:store_name -ws ":" !"=" -ws a:expression (-ws "=" !"=" -ws x:annotated_rhs)?
+) => AnnAssign{Target: $t, Annotation: $a, Value: $x, Simple: true}
+rule ann_complex AnnAssign = (
+    t:(paren_single_target / single_subscript_attribute_target) -ws ":" !"=" -ws a:expression
+    (-ws "=" !"=" -ws x:annotated_rhs)?
+) => AnnAssign{Target: $t, Annotation: $a, Value: $x, Simple: false}
+// `x = value` is parsed with one target first, so that the value is not first tried as a target.
+rule assign_one Assign = (
+    t:star_targets -ws "=" !"=" -ws v:annotated_rhs !(ws "=" !"=")
+) => Assign{Targets: list($t), Value: $v}
+rule assign_chain Assign = (
+    ts:(t:star_targets -ws "=" !"=" -ws)+ v:annotated_rhs !(ws "=" !"=")
+) => Assign{Targets: map($ts, (x) => x.$t), Value: $v}
+rule aug_assign AugAssign = (
+    t:single_target -ws o:augassign_op -ws v:annotated_rhs
+) => AugAssign{Target: $t, Op: $o, Value: $v}
+rule augassign_op Op = ("+=" / "-=" / "*=" / "@=" / "/=" / "%=" / "&=" / "|=" / "^=" / "<<=" / ">>=" / "**=" / "//=") #atomic
+rule annotated_rhs Expr = yield_expr / star_expressions
+
+rule pass_stmt Pass = kw_pass => Pass{}
+rule break_stmt Break = kw_break => Break{}
+rule continue_stmt Continue = kw_continue => Continue{}
+rule return_stmt Return = kw_return (-ws e:star_expressions)? => Return{Value: $e}
+rule raise_stmt Raise = kw_raise (-ws e:expression (-ws kw_from -ws c:expression)?)? => Raise{Exc: $e, Cause: $c}
+rule global_stmt Global = (
+    kw_global -ws f:identifier r:(-ws -"," -ws n:identifier)*
+) => Global{Names: concat(list($f), map($r, (x) => x.$n))}
+rule nonlocal_stmt Nonlocal = (
+    kw_nonlocal -ws f:identifier r:(-ws -"," -ws n:identifier)*
+) => Nonlocal{Names: concat(list($f), map($r, (x) => x.$n))}
+rule del_stmt Delete = (
+    kw_del -ws f:del_target r:(-ws -"," -ws t:del_target)* (-ws -",")? &(ws (";" / "#" / newline / $$))
+) => Delete{Targets: concat(list($f), map($r, (x) => x.$t))}
+rule assert_stmt Assert = kw_assert -ws t:expression (-ws "," -ws m:expression)? => Assert{Test: $t, Msg: $m}
+rule yield_stmt ExprStmt = y:yield_expr => ExprStmt{Value: $y}
+rule type_alias TypeAlias = (
+    kw_type -ws n:store_name (-ws p:type_params)? -ws "=" !"=" -ws v:expression
+) => TypeAlias{Name: $n, TypeParams: concat($p), Value: $v}
+
+rule import_stmt Import = (
+    kw_import -ws f:dotted_as_name r:(-ws -"," -ws a:dotted_as_name)*
+) => Import{Names: concat(list($f), map($r, (x) => x.$a))}
+rule dotted_as_name Alias = (
+    d:dotted_name (-ws kw_as -ws a:ident)?
+) => Alias{Name: foldl(text($d.$f), $d.$r, (acc, x) => acc + "." + text(x.$n)), AsName: text($a)}
+rule dotted_name = f:ident r:(-ws -"." -ws n:ident)*
+// `from` dots and an optional module (at least one of them), `import` and the names.
+rule from_stmt ImportFrom = (
+    kw_from ds:(-ws d:("..." / "."))* m:from_module {len($ds) > 0 || $m.$f != nil}
+    -ws kw_import -ws ns:import_from_targets
+) => ImportFrom{Module: foldl(text($m.$f), $m.$r, (acc, x) => acc + "." + text(x.$n)), Names: $ns, Level: foldl(0, $ds, (acc, x) => acc + len(x.$d))}
+// Always a record (the empty match `_` makes it one), with the fields f and r when there is a module.
+rule from_module = _ (-ws f:ident r:(-ws -"." -ws n:ident)*)?
+rule import_from_targets = paren_import_names / plain_import_names / star_import
+rule paren_import_names = (
+    "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:import_from_as_name
+    r:(-ws -"," -ws a:import_from_as_name)* (-ws -",")? -ws ")"
+) => concat(list($f), map($r, (x) => x.$a))
+rule plain_import_names = (
+    f:import_from_as_name r:(-ws -"," -ws a:import_from_as_name)* !(ws ",")
+) => concat(list($f), map($r, (x) => x.$a))
+rule star_import = a:star_alias => list($a)
+rule star_alias Alias = "*" => Alias{Name: "*"}
+rule import_from_as_name Alias = n:ident (-ws kw_as -ws a:ident)? => Alias{Name: text($n), AsName: text($a)}
+
+// ============================================================================
+// Compound statements
+// ============================================================================
+
+rule compound_stmt Stmt = (
+    if_stmt / while_stmt / for_stmt / try_stmt / with_stmt / funcdef / classdef
+    / async_funcdef / async_for / async_with / match_stmt
+)
+
+rule if_stmt If = (
+    kw_if -ws t:named_expression -ws ":" b:block o:(elif_part / else_part)?
+) => If{Test: $t, Body: $b, OrElse: concat($o)}
+rule elif_part = -clause_sep e:elif_stmt => list($e)
+rule elif_stmt If = (
+    kw_elif -ws t:named_expression -ws ":" b:block o:(elif_part / else_part)?
+) => If{Test: $t, Body: $b, OrElse: concat($o)}
+rule else_part = -clause_sep kw_else -ws ":" b:block => $b
+
+rule while_stmt While = (
+    kw_while -ws t:named_expression -ws ":" b:block o:else_part?
+) => While{Test: $t, Body: $b, OrElse: concat($o)}
+
+rule for_stmt For = (
+    kw_for -ws t:star_targets -ws kw_in -ws i:star_expressions -ws ":" b:block o:else_part?
+) => For{Target: $t, Iter: $i, Body: $b, OrElse: concat($o)}
+rule async_for AsyncFor = (
+    kw_async -ws kw_for -ws t:star_targets -ws kw_in -ws i:star_expressions -ws ":" b:block
+    o:else_part?
+) => AsyncFor{Target: $t, Iter: $i, Body: $b, OrElse: concat($o)}
+
+rule with_stmt With = kw_with -ws is:with_items -ws ":" b:block => With{Items: $is, Body: $b}
+rule async_with AsyncWith = kw_async -ws kw_with -ws is:with_items -ws ":" b:block => AsyncWith{Items: $is, Body: $b}
+// `with (a as b, c):` is tried before taking the parenthesis as part of an expression.
+rule with_items = paren_with_items / plain_with_items
+rule paren_with_items = (
+    "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:with_item r:(-ws -"," -ws w:with_item)*
+    (-ws -",")? -ws ")" &(ws ":")
+) => concat(list($f), map($r, (x) => x.$w))
+rule plain_with_items = f:with_item r:(-ws -"," -ws w:with_item)* => concat(list($f), map($r, (x) => x.$w))
+rule with_item WithItem = with_item_as / with_item_plain
+rule with_item_as WithItem = (
+    e:expression -ws kw_as -ws t:star_target &(ws [,):])
+) => WithItem{ContextExpr: $e, OptionalVars: $t}
+rule with_item_plain WithItem = e:expression => WithItem{ContextExpr: $e}
+
+// The handlers are either all `except` or all `except*`; with `except*` the statement is a TryStar
+// (made once for each handler: the last is the result).
+rule try_stmt Stmt = (
+    kw_try -ws ":" b:block hs:(-clause_sep h:except_handler)* xs:(-clause_sep h:except_star_handler)*
+    e:else_part? f:finally_part?
+    {len($hs) == 0 || len($xs) == 0} {len($hs) + len($xs) > 0 || $f != nil && $e == nil}
+    @error(message="expected 'except' or 'finally' block")
+) => foldl(Try{Body: $b, Handlers: map($hs, (x) => x.$h), OrElse: concat($e), FinalBody: concat($f)}, $xs, (acc, y) => TryStar{Body: $b, Handlers: map($xs, (x) => x.$h), OrElse: concat($e), FinalBody: concat($f)})
+rule finally_part = -clause_sep kw_finally -ws ":" b:block => $b
+rule except_handler ExceptHandler = except_as / except_plain / except_bare
+rule except_as ExceptHandler = (
+    kw_except -ws t:expression -ws kw_as -ws n:ident -ws ":" b:block
+) => ExceptHandler{Type: $t, Name: text($n), Body: $b}
+// Several types without parentheses (PEP 758) make a tuple.
+rule except_plain ExceptHandler = kw_except -ws t:expressions -ws ":" b:block => ExceptHandler{Type: $t, Body: $b}
+rule except_bare ExceptHandler = kw_except -ws ":" b:block => ExceptHandler{Body: $b}
+rule except_star_handler ExceptHandler = except_star_as / except_star_plain
+rule except_star_as ExceptHandler = (
+    kw_except -ws "*" -ws t:expression -ws kw_as -ws n:ident -ws ":" b:block
+) => ExceptHandler{Type: $t, Name: text($n), Body: $b}
+rule except_star_plain ExceptHandler = (
+    kw_except -ws "*" -ws t:expressions -ws ":" b:block
+) => ExceptHandler{Type: $t, Body: $b}
+
+// Decorators are lines of their own, at the indentation of the definition. The span of a decorated
+// definition starts at its first decorator.
+rule decorators = ds:("@" -ws e:named_expression -dec_sep)* => map($ds, (x) => x.$e)
+rule dec_sep = (
+    eol blank* i:indentation
+    {foldl(0, $i.$segs, (a, s) => (a + len(s.$sp)) / 8 * 8 + 8) + len($i.$tail) + 4194304 * (foldl(0, $i.$segs, (a, s) => a + len(s.$sp) + 1) + len($i.$tail)) == ind % (4194304 * 4194304)}
+)
+
+rule funcdef FunctionDef = (
+    ds:decorators kw_def -ws n:ident (-ws p:type_params)? -ws a:def_params
+    (-ws "->" -ws r:expression)? -ws ":" b:block
+) => FunctionDef{Name: text($n), Args: $a, Body: $b, DecoratorList: $ds, Returns: $r, TypeParams: concat($p)}
+rule async_funcdef AsyncFunctionDef = (
+    ds:decorators kw_async -ws kw_def -ws n:ident (-ws p:type_params)? -ws a:def_params
+    (-ws "->" -ws r:expression)? -ws ":" b:block
+) => AsyncFunctionDef{Name: text($n), Args: $a, Body: $b, DecoratorList: $ds, Returns: $r, TypeParams: concat($p)}
+rule def_params Arguments = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws a:params -ws ")" => $a
+
+rule classdef Stmt = classdef_args / classdef_plain
+rule classdef_args ClassDef = (
+    ds:decorators kw_class -ws n:ident (-ws p:type_params)? -ws c:call_args -ws ":" b:block
+) => ClassDef{Name: text($n), Bases: concat(map($c.$pos, (x) => x.$a), foldl(list(), $c.$kw1, (acc, x) => concat(acc, x.$ss))), Keywords: concat(foldl(list(), $c.$kw1, (acc, x) => concat(acc, x.$ks)), map($c.$kw2, (x) => x.$k)), Body: $b, DecoratorList: $ds, TypeParams: concat($p)}
+rule classdef_plain ClassDef = (
+    ds:decorators kw_class -ws n:ident (-ws p:type_params)? -ws ":" b:block
+) => ClassDef{Name: text($n), Body: $b, DecoratorList: $ds, TypeParams: concat($p)}
+
+// The cases are lines of their own in a deeper block.
+rule match_stmt MatchStmt = kw_match -ws s:subject_expr -ws ":" cs:case_blocks => MatchStmt{Subject: $s, Cases: $cs}
+rule subject_expr Expr = subject_tuple / named_expression
+rule subject_tuple Tuple = (
+    f:star_named_expression -ws "," r:(-ws x:star_named_expression -ws -",")*
+    l:(-ws y:star_named_expression) #repeat(,1)
+) => Tuple{Elts: concat(list($f), map($r, (z) => z.$x), map($l, (z) => z.$y)), Ctx: "Load"}
+rule case_blocks = (
+    -ws -eol -blank* i:indentation
+    {foldl(0, $i.$segs, (a, s) => (a + len(s.$sp)) / 8 * 8 + 8) + len($i.$tail) > ind % 4194304 && foldl(0, $i.$segs, (a, s) => a + len(s.$sp) + 1) + len($i.$tail) > ind / 4194304 % 4194304}
+    @error(message="expected an indented block")
+    {ind / (4194304 * 4194304) < 99} @error(message="too many levels of indentation")
+    {ind := foldl(0, $i.$segs, (a, s) => (a + len(s.$sp)) / 8 * 8 + 8) + len($i.$tail) + 4194304 * (foldl(0, $i.$segs, (a, s) => a + len(s.$sp) + 1) + len($i.$tail)) + (ind / (4194304 * 4194304) + 1) * (4194304 * 4194304)}
+    f:case_block r:(-clause_sep c:case_block)*
+) => concat(list($f), map($r, (x) => x.$c))
+rule case_block MatchCase = (
+    kw_case -ws p:patterns (-ws kw_if -ws g:named_expression)? -ws ":" b:block
+) => MatchCase{Pattern: $p, Guard: $g, Body: $b}
+
+// ============================================================================
+// Patterns
+// ============================================================================
+
+rule patterns Pattern = open_sequence_pattern / pattern
+rule open_sequence_pattern MatchSequence = (
+    s:open_seq_items
+) => MatchSequence{Patterns: concat(list($s.$f), map($s.$r, (x) => x.$p), map($s.$l, (x) => x.$q))}
+// A sequence pattern without brackets: at least one comma.
+rule open_seq_items = f:maybe_star_pattern -ws "," r:(-ws p:maybe_star_pattern -ws -",")* l:(-ws q:maybe_star_pattern) #repeat(,1)
+rule pattern Pattern = as_pattern / or_pattern
+rule as_pattern MatchAs = p:or_pattern -ws kw_as -ws n:capture_name => MatchAs{Pattern: $p, Name: text($n)}
+rule or_pattern Pattern = (
+    f:closed_pattern t:(rs:(-ws -"|" !"=" -ws p:closed_pattern)+) #repeat(,1)
+) => foldl($f, $t, (acc, x) => MatchOr{Patterns: concat(list($f), map(x.$rs, (y) => y.$p))})
+rule closed_pattern Pattern = (
+    literal_pattern / capture_pattern / wildcard_pattern / value_pattern
+    / group_pattern / sequence_pattern / mapping_pattern / class_pattern
+)
+
+rule literal_pattern Pattern = signed_number_pattern / complex_pattern / string_pattern / singleton_pattern
+rule signed_number_pattern MatchValue = v:signed_number !(ws [+\-]) => MatchValue{Value: $v}
+rule complex_pattern MatchValue = v:complex_number => MatchValue{Value: $v}
+rule string_pattern MatchValue = v:strings => MatchValue{Value: $v}
+rule singleton_pattern MatchSingleton = v:singleton => MatchSingleton{Value: $v}
+rule singleton Constant = (("None" / "True" / "False") !idcont) #atomic
+// The keys of mapping patterns.
+rule literal_expr Expr = signed_number_lit / complex_number / strings / singleton
+rule signed_number_lit Expr = v:signed_number !(ws [+\-]) => $v
+rule signed_number Expr = number / neg_number
+rule neg_number UnaryOp = o:minus_op -ws n:number => UnaryOp{Op: $o, Operand: $n}
+// The real part must be a real number and the imaginary part an imaginary one.
+rule complex_number BinOp = r:signed_real_number -ws o:plus_minus_op -ws i:imag_number => BinOp{Left: $r, Op: $o, Right: $i}
+rule signed_real_number Expr = real_number / neg_real_number
+rule neg_real_number UnaryOp = o:minus_op -ws n:real_number => UnaryOp{Op: $o, Operand: $n}
+rule minus_op Op = ("-" ![=>]) #atomic
+rule plus_minus_op Op = ("+" !"=" / "-" ![=>]) #atomic
+
+rule capture_pattern MatchAs = n:capture_name => MatchAs{Name: text($n)}
+rule capture_name = !("_" !idcont) n:ident !(ws ("." !".." / "(" / "=" !"=")) => $n
+rule wildcard_pattern MatchAs = "_" !idcont => MatchAs{}
+rule value_pattern MatchValue = a:attr !(ws ("." !".." / "(" / "=" !"=")) => MatchValue{Value: $a}
+// A dotted name of at least two names. (The spans of the inner attributes cover only their value.)
+rule attr Expr = (
+    f:name r:(-ws -"." !".." -ws n:ident)+
+) => foldl($f, $r, (acc, x) => Attribute{Value: acc, Attr: text(x.$n), Ctx: "Load"})
+rule name_or_attr Expr = attr / name
+rule group_pattern Pattern = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws p:pattern -ws ")" => $p
+rule sequence_pattern MatchSequence = list_pattern / empty_tuple_pattern / tuple_pattern
+rule empty_tuple_pattern MatchSequence = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws ")" => MatchSequence{}
+rule list_pattern MatchSequence = (
+    "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws ps:star_patterns? -ws "]"
+) => MatchSequence{Patterns: concat($ps)}
+rule star_patterns = (
+    f:maybe_star_pattern r:(-ws -"," -ws p:maybe_star_pattern)* (-ws -",")?
+) => concat(list($f), map($r, (x) => x.$p))
+rule tuple_pattern MatchSequence = (
+    "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws s:open_seq_items -ws ")"
+) => MatchSequence{Patterns: concat(list($s.$f), map($s.$r, (x) => x.$p), map($s.$l, (x) => x.$q))}
+rule maybe_star_pattern Pattern = star_pattern / pattern
+rule star_pattern MatchStar = "*" -ws (n:capture_name / "_" !idcont) => MatchStar{Name: text($n)}
+
+rule mapping_pattern MatchMapping = (
+    "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws
+    (ks:kv_patterns (-ws -"," -ws "**" -ws r:capture_name)? / "**" -ws r:capture_name)?
+    (-ws -",")? -ws "}"
+) => MatchMapping{Keys: map($ks, (x) => x.$k), Patterns: map($ks, (x) => x.$v), Rest: text($r)}
+rule kv_patterns = f:key_value_pattern r:(-ws -"," -ws p:key_value_pattern)* => concat(list($f), map($r, (x) => x.$p))
+rule key_value_pattern = k:(literal_expr / attr) -ws ":" -ws v:pattern
+
+rule class_pattern MatchClass = (
+    c:name_or_attr -ws "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws
+    (ps:positional_patterns (-ws -"," -ws ks:keyword_patterns)? / ks:keyword_patterns)?
+    (-ws -",")? -ws ")"
+) => MatchClass{Cls: $c, Patterns: concat($ps), KwdAttrs: map($ks, (x) => x.$n), KwdPatterns: map($ks, (x) => x.$v)}
+rule positional_patterns = f:pattern r:(-ws -"," -ws p:pattern)* => concat(list($f), map($r, (x) => x.$p))
+rule keyword_patterns = f:keyword_pattern r:(-ws -"," -ws p:keyword_pattern)* => concat(list($f), map($r, (x) => x.$p))
+rule keyword_pattern = n:identifier -ws "=" !"=" -ws v:pattern
+
+// ============================================================================
+// Type parameters
+// ============================================================================
+
+rule type_params = (
+    "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:type_param r:(-ws -"," -ws p:type_param)* (-ws -",")? -ws "]"
+) => concat(list($f), map($r, (x) => x.$p))
+rule type_param TypeParam = type_var / type_var_tuple / param_spec
+rule type_var TypeVar = (
+    n:ident (-ws ":" -ws b:expression)? (-ws "=" !"=" -ws d:expression)?
+) => TypeVar{Name: text($n), Bound: $b, DefaultValue: $d}
+rule type_var_tuple TypeVarTuple = (
+    "*" !"*" -ws n:ident (-ws "=" !"=" -ws d:star_expression)?
+) => TypeVarTuple{Name: text($n), DefaultValue: $d}
+rule param_spec ParamSpec = (
+    "**" -ws n:ident (-ws "=" !"=" -ws d:expression)?
+) => ParamSpec{Name: text($n), DefaultValue: $d}
+
+// ============================================================================
+// Parameters
+// ============================================================================
+
+// The parameters of a def (the lambda's, without annotations and ended by ':', are lambda_params):
+// positional ones, optionally '/' after which the ones before it are positional-only and more
+// positional ones may follow, then '*' with the keyword-only ones, and '**'. A positional parameter
+// without a default may not follow one with a default. (`$sl` has one element if there is a '/'.)
+rule params Arguments = (
+    g1nd:param_nd* g1wd:param_wd* sl:slash #repeat(,1) g2nd:param_nd* g2wd:param_wd* st:star_etc
+    {len($sl) == 0 || len($g1nd) + len($g1wd) > 0} @error(message="at least one argument must precede /")
+    {len($sl) > 0 || len($g2nd) + len($g2wd) == 0} {len($g1wd) == 0 || len($g2nd) == 0}
+    @error(message="parameter without a default follows parameter with a default")
+) => Arguments{PosOnlyArgs: foldl(list(), $sl, (acc, x) => concat($g1nd, map($g1wd, (y) => y.$p))), Args: concat(foldl(concat($g1nd, map($g1wd, (y) => y.$p)), $sl, (acc, x) => list()), $g2nd, map($g2wd, (y) => y.$p)), VarArg: $st.$va, KwOnlyArgs: map($st.$ko, (x) => x.$p), KwDefaults: map($st.$ko, (x) => x.$d), KwArg: $st.$kw, Defaults: concat(map($g1wd, (y) => y.$d), map($g2wd, (y) => y.$d))}
+rule param_nd Arg = p:param -pend => $p
+rule param_wd = p:param -ws "=" !"=" -ws d:expression -pend
+rule slash = s:"/" -pend
+// After '*': a parameter (the var-positional one) or a comma and at least one keyword-only
+// parameter. The rule always matches, so that its record always exists.
+rule star_etc = (
+    _ ("*" ![*=] -ws (va:vararg_param -pend / "," -ws) ko:(p:param (-ws "=" !"=" -ws d:expression)? -pend)* {$va != nil || len($ko) > 0} @error(message="named arguments must follow bare *"))?
+    (kw:kwds)?
+)
+rule kwds Arg = "**" -ws p:param -pend => $p
+rule param Arg = n:ident (-ws ":" !"=" -ws a:expression)? => Arg{Arg: text($n), Annotation: $a}
+// The annotation of *args may be starred (*args: *Ts).
+rule vararg_param Arg = n:ident (-ws ":" !"=" -ws a:star_expression)? => Arg{Arg: text($n), Annotation: $a}
+// A parameter is followed by a comma, or ends the list.
+rule pend = -ws ("," -ws / &")")
+
+// ============================================================================
+// Expressions
+// ============================================================================
+
+// Comma-separated expressions make a Tuple; one expression without a comma is returned as is.
+rule expressions Expr = (
+    f:expression t:(rs:(-ws -"," -ws x:expression)+ (-ws -",")? / -ws c:",") #repeat(,1)
+) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.$rs, (z) => z.$x)), Ctx: "Load"})
+rule star_expressions Expr = (
+    f:star_expression t:(rs:(-ws -"," -ws x:star_expression)+ (-ws -",")? / -ws c:",") #repeat(,1)
+) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.$rs, (z) => z.$x)), Ctx: "Load"})
+rule star_expression Expr = starred_bitor / expression
+rule star_named_expression Expr = starred_bitor / named_expression
+rule starred_bitor Starred = "*" ![*=] -ws v:bitwise_or => Starred{Value: $v, Ctx: "Load"}
+rule starred_expression Starred = "*" ![*=] -ws v:expression => Starred{Value: $v, Ctx: "Load"}
+rule named_expression Expr = walrus / plain_named_expression
+rule plain_named_expression Expr = e:expression !(ws ":=") => $e
+rule walrus NamedExpr = n:store_name -ws ":=" -ws v:expression => NamedExpr{Target: $n, Value: $v}
+rule expression Expr = conditional / lambdef
+rule conditional Expr = (
+    d:disjunction t:(-ws kw_if -ws c:disjunction -ws kw_else -ws o:expression) #repeat(,1)
+) => foldl($d, $t, (acc, x) => IfExp{Test: x.$c, Body: $d, OrElse: x.$o})
+// A lambda may not be at the top level of a replacement field, where its ':' starts the format spec.
+rule lambdef Lambda = (
+    kw_lambda {lv % 2 == 0} @error(message="f-string: lambda expressions are not allowed without parentheses")
+    -ws a:lambda_params -ws ":" !"=" -ws b:expression
+) => Lambda{Args: $a, Body: $b}
+// The parameters of a lambda: as those of a def, without annotations, and ended by ':'.
+rule lambda_params Arguments = (
+    g1nd:lparam_nd* g1wd:lparam_wd* sl:lslash #repeat(,1) g2nd:lparam_nd* g2wd:lparam_wd* st:lstar_etc
+    {len($sl) == 0 || len($g1nd) + len($g1wd) > 0} @error(message="at least one argument must precede /")
+    {len($sl) > 0 || len($g2nd) + len($g2wd) == 0} {len($g1wd) == 0 || len($g2nd) == 0}
+    @error(message="parameter without a default follows parameter with a default")
+) => Arguments{PosOnlyArgs: foldl(list(), $sl, (acc, x) => concat($g1nd, map($g1wd, (y) => y.$p))), Args: concat(foldl(concat($g1nd, map($g1wd, (y) => y.$p)), $sl, (acc, x) => list()), $g2nd, map($g2wd, (y) => y.$p)), VarArg: $st.$va, KwOnlyArgs: map($st.$ko, (x) => x.$p), KwDefaults: map($st.$ko, (x) => x.$d), KwArg: $st.$kw, Defaults: concat(map($g1wd, (y) => y.$d), map($g2wd, (y) => y.$d))}
+rule lparam_nd Arg = p:lparam -lpend => $p
+rule lparam_wd = p:lparam -ws "=" !"=" -ws d:expression -lpend
+rule lslash = s:"/" -lpend
+rule lstar_etc = (
+    _ ("*" ![*=] -ws (va:lparam -lpend / "," -ws) ko:(p:lparam (-ws "=" !"=" -ws d:expression)? -lpend)* {$va != nil || len($ko) > 0} @error(message="named arguments must follow bare *"))?
+    (kw:lkwds)?
+)
+rule lkwds Arg = "**" -ws p:lparam -lpend => $p
+rule lparam Arg = n:ident => Arg{Arg: text($n)}
+rule lpend = -ws ("," -ws / &(":" !"="))
+
+rule yield_expr Expr = yield_from / yield_plain
+rule yield_from YieldFrom = kw_yield -ws kw_from -ws v:expression => YieldFrom{Value: $v}
+rule yield_plain Yield = kw_yield (-ws v:star_expressions)? => Yield{Value: $v}
+
+// Boolean operations are flat (BoolOp with all the operands), as in Python; Op is the first
+// operator.
+rule disjunction Expr = (
+    f:conjunction t:(-ws o:or_op -ws c:conjunction rs:(-ws -or_op -ws x:conjunction)*) #repeat(,1)
+) => foldl($f, $t, (acc, y) => BoolOp{Op: y.$o, Values: concat(list($f), list(y.$c), map(y.$rs, (z) => z.$x))})
+rule conjunction Expr = (
+    f:inversion t:(-ws o:and_op -ws c:inversion rs:(-ws -and_op -ws x:inversion)*) #repeat(,1)
+) => foldl($f, $t, (acc, y) => BoolOp{Op: y.$o, Values: concat(list($f), list(y.$c), map(y.$rs, (z) => z.$x))})
+rule or_op Op = ("or" !idcont) #atomic
+rule and_op Op = ("and" !idcont) #atomic
+rule inversion Expr = not_expr / comparison
+rule not_expr UnaryOp = o:not_op -ws v:inversion => UnaryOp{Op: $o, Operand: $v}
+rule not_op Op = ("not" !idcont) #atomic
+
+// Chained comparisons are one Compare, as in Python.
+rule comparison Expr = (
+    f:bitwise_or t:(rs:(-ws o:comp_op -ws x:bitwise_or)+) #repeat(,1)
+) => foldl($f, $t, (acc, y) => Compare{Left: $f, Ops: map(y.$rs, (z) => z.$o), Comparators: map(y.$rs, (z) => z.$x)})
+rule comp_op Op = (
+    "==" / "!=" / "<>" / "<=" / ">=" / "<" ![<=>] / ">" ![>=]
+    / "not" !idcont ws "in" !idcont / "in" !idcont / "is" !idcont ws "not" !idcont / "is" !idcont
+) #atomic
+
+// The arithmetic and bitwise operators are one Operators Rule, which parses the operand once
+// instead of descending through a rule for each of the nine levels. `**` binds tighter than the
+// unary operators on its left (-x ** y is -(x ** y)) and takes a unary operator on its right
+// (x ** -y), as in Python's grammar. This is 3 to 8% faster than a rule for each level.
+rule bitwise_or Expr = #operators {
+    skip ws
+    operand await_expr
+    operand primary
+    level { infix left o:bor_op => BinOp{Left: $lhs, Op: $o, Right: $rhs} }
+    level { infix left o:bxor_op => BinOp{Left: $lhs, Op: $o, Right: $rhs} }
+    level { infix left o:band_op => BinOp{Left: $lhs, Op: $o, Right: $rhs} }
+    level { infix left o:shift_op => BinOp{Left: $lhs, Op: $o, Right: $rhs} }
+    level { infix left o:sum_op => BinOp{Left: $lhs, Op: $o, Right: $rhs} }
+    level { infix left o:term_op => BinOp{Left: $lhs, Op: $o, Right: $rhs} }
+    level { prefix o:unary_op => UnaryOp{Op: $o, Operand: $rhs} }
+    level { infix right o:pow_op => BinOp{Left: $lhs, Op: $o, Right: $rhs} }
+}
+rule bor_op Op = ("|" !"=") #atomic
+rule bxor_op Op = ("^" !"=") #atomic
+rule band_op Op = ("&" !"=") #atomic
+rule shift_op Op = ("<<" !"=" / ">>" !"=") #atomic
+rule sum_op Op = ("+" !"=" / "-" ![=>]) #atomic
+rule term_op Op = ("*" ![*=] / "//" !"=" / "/" ![/=] / "%" !"=" / "@" !"=") #atomic
+rule unary_op Op = ("+" !"=" / "-" ![=>] / "~") #atomic
+rule pow_op Op = ("**" !"=") #atomic
+rule await_expr Await = kw_await -ws v:primary => Await{Value: $v}
+
+// An atom followed by attributes, calls and subscripts. Most atoms are followed by none, and are
+// returned without running the Operators Rule.
+rule primary Expr = atom_only / primary_chain
+rule atom_only Expr = a:atom !(ws ([(\[] / "." !"..")) => $a
+rule primary_chain Expr = #operators {
+    skip ws
+    operand atom
+    level {
+        postfix "." !".." -ws n:ident => Attribute{Value: $lhs, Attr: text($n), Ctx: "Load"}
+        postfix g:genexp => Call{Func: $lhs, Args: list($g)}
+        postfix c:call_args => Call{Func: $lhs, Args: concat(map($c.$pos, (x) => x.$a), foldl(list(), $c.$kw1, (acc, x) => concat(acc, x.$ss))), Keywords: concat(foldl(list(), $c.$kw1, (acc, x) => concat(acc, x.$ks)), map($c.$kw2, (x) => x.$k))}
+        postfix s:subscript => Subscript{Value: $lhs, Slice: $s, Ctx: "Load"}
+    }
+}
+
+// Call arguments: positional ones (and *x), then keyword arguments and *x, then keyword
+// arguments and **x. Starred arguments among the keyword arguments are positional arguments of
+// the Call, after the others.
+rule call_args = (
+    "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws
+    pos:(a:pos_arg -arg_sep)*
+    kw1:((ks:kwarg_list / ss:starred_list) -arg_sep)*
+    kw2:(k:(kwarg / dstar_arg) -arg_sep)*
+    ")"
+)
+rule arg_sep = -ws ("," -ws / &")")
+rule pos_arg Expr = starred_expression / positional_named
+rule positional_named Expr = e:named_expression !(ws "=" !"=") => $e
+rule kwarg_list = k:kwarg => list($k)
+rule starred_list = s:starred_expression => list($s)
+rule kwarg Keyword = n:ident -ws "=" !"=" -ws v:expression => Keyword{Arg: text($n), Value: $v}
+rule dstar_arg Keyword = "**" -ws v:expression => Keyword{Value: $v}
+// A generator expression as the only argument needs no parentheses of its own: f(x for x in y).
+rule genexp GeneratorExp = (
+    "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws e:named_expression -ws g:for_if_clauses -ws ")"
+) => GeneratorExp{Elt: $e, Generators: $g}
+
+rule subscript = "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws s:slices -ws "]" => $s
+// Several items, or a starred one, make a Tuple.
+rule slices Expr = star_first_slices / plain_slices
+rule star_first_slices Tuple = (
+    f:starred_expression rs:(-ws -"," -ws x:slice_or_star)* (-ws -",")?
+) => Tuple{Elts: concat(list($f), map($rs, (y) => y.$x)), Ctx: "Load"}
+rule plain_slices Expr = (
+    f:slice t:(rs:(-ws -"," -ws x:slice_or_star)+ (-ws -",")? / -ws c:",") #repeat(,1)
+) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.$rs, (z) => z.$x)), Ctx: "Load"})
+rule slice_or_star Expr = slice / starred_expression
+rule slice Expr = slice_colon / named_expression
+rule slice_colon Slice = (
+    (l:expression -ws)? ":" !"=" (-ws u:expression)? (-ws ":" !"=" (-ws s:expression)?)?
+) => Slice{Lower: $l, Upper: $u, Step: $s}
+
+// --- Comprehensions ---
+rule for_if_clauses = f:for_if_clause r:(-ws c:for_if_clause)* => concat(list($f), map($r, (x) => x.$c))
+rule for_if_clause Comprehension = (
+    a:(kw_async -ws)? kw_for -ws t:star_targets -ws kw_in -ws i:disjunction
+    ifs:(-ws kw_if -ws c:disjunction)*
+) => Comprehension{Target: $t, Iter: $i, Ifs: map($ifs, (x) => x.$c), IsAsync: $a != nil}
+
+// --- Atoms ---
+rule atom Expr = strings / name / number / constant_kw / paren / list_display / braces / ellipsis
+rule name Name = n:ident => Name{Id: text($n), Ctx: "Load"}
+rule constant_kw Constant = (("True" / "False" / "None") !idcont) #atomic
+rule ellipsis Constant = ("...") #atomic
+
+// (), (x), (x,), (x, y), (*x, y), (x for x in y), (yield x)
+rule paren Expr = empty_tuple / yield_group / star_first_tuple / paren_named
+rule empty_tuple Tuple = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws ")" => Tuple{Ctx: "Load"}
+rule yield_group Expr = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws y:yield_expr -ws ")" => $y
+rule star_first_tuple Tuple = (
+    "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:starred_bitor
+    rs:(-ws -"," -ws x:star_named_expression)* c:(-ws ",")? -ws ")" {len($rs) > 0 || $c != nil}
+) => Tuple{Elts: concat(list($f), map($rs, (y) => y.$x)), Ctx: "Load"}
+// The first element is parsed once; what follows it decides the node.
+rule paren_named Expr = (
+    "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws e:named_expression
+    t:(rs:(-ws -"," -ws x:star_named_expression)+ (-ws -",")? / -ws c:",") #repeat(,1)
+    g:(-ws cs:for_if_clauses) #repeat(,1)
+    -ws ")" {len($t) + len($g) <= 1}
+) => foldl(foldl($e, $t, (acc, y) => Tuple{Elts: concat(list($e), map(y.$rs, (z) => z.$x)), Ctx: "Load"}), $g, (acc, y) => GeneratorExp{Elt: $e, Generators: y.$cs})
+
+// [], [x, *y], [x for x in y]
+rule list_display Expr = empty_list / list_items
+rule empty_list ListExpr = "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws "]" => ListExpr{Ctx: "Load"}
+rule list_items Expr = (
+    "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:(s:starred_bitor / named_expression)
+    rs:(-ws -"," -ws x:star_named_expression)* c:(-ws ",")?
+    g:(-ws cs:for_if_clauses) #repeat(,1)
+    -ws "]" {len($g) == 0 || $s == nil && len($rs) == 0 && $c == nil}
+) => foldl(ListExpr{Elts: concat(list($f), map($rs, (y) => y.$x)), Ctx: "Load"}, $g, (acc, y) => ListComp{Elt: $f, Generators: y.$cs})
+
+// {}, {k: v, **d}, {k: v for ...}, {x, *y}, {x for ...}
+rule braces Expr = empty_dict / dict_unpack_first / set_star_first / brace_items
+rule empty_dict Dict = "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws "}" => Dict{}
+rule dict_unpack_first Dict = (
+    "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws "**" -ws f:bitwise_or
+    rs:(-ws -"," -ws (-"**" -ws v:bitwise_or / k:expression -ws -":" !"=" -ws v:expression))* (-ws -",")? -ws "}"
+) => Dict{Keys: concat(list(nil), map($rs, (y) => y.$k)), Values: concat(list($f), map($rs, (y) => y.$v))}
+rule set_star_first Set = (
+    "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:starred_bitor
+    rs:(-ws -"," -ws x:star_named_expression)* (-ws -",")? -ws "}"
+) => Set{Elts: concat(list($f), map($rs, (y) => y.$x))}
+// The first element is parsed once. A ':' after it makes the display a dict (whose key may not be
+// an assignment expression), and comprehension clauses after it (and its value) a comprehension.
+rule brace_items Expr = (
+    "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:(w:walrus / expression)
+    kv:(-ws ":" !"=" -ws v:expression) #repeat(,1)
+    {isdict := len($kv) > 0} {$w == nil || !isdict}
+    g:(-ws cs:for_if_clauses) #repeat(,1)
+    dr:({isdict} -ws -"," -ws (-"**" -ws v:bitwise_or / k:expression -ws -":" !"=" -ws v:expression))*
+    sr:({!isdict} -ws -"," -ws x:star_named_expression)*
+    c:(-ws ",")?
+    -ws "}" {len($g) == 0 || len($dr) + len($sr) == 0 && $c == nil}
+) => foldl(foldl(Set{Elts: concat(list($f), map($sr, (y) => y.$x))}, $kv, (acc, x) => Dict{Keys: concat(list($f), map($dr, (y) => y.$k)), Values: concat(list(x.$v), map($dr, (y) => y.$v))}), $g, (acc, y) => foldl(SetComp{Elt: $f, Generators: y.$cs}, $kv, (acc2, x) => DictComp{Key: $f, Value: x.$v, Generators: y.$cs}))
+
+// ============================================================================
+// Assignment targets
+// ============================================================================
+
+rule star_targets Expr = (
+    f:star_target t:(rs:(-ws -"," -ws x:star_target)+ (-ws -",")? / -ws c:",") #repeat(,1)
+) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.$rs, (z) => z.$x)), Ctx: "Store"})
+rule star_target Expr = starred_target / target_with_star_atom
+rule starred_target Starred = "*" ![*=] -ws !"*" t:star_target => Starred{Value: $t, Ctx: "Store"}
+rule target_with_star_atom Expr = attr_target / subscript_target / star_atom
+rule attr_target Attribute = (
+    t:t_primary -ws "." !".." -ws n:ident !(ws t_lookahead)
+) => Attribute{Value: $t, Attr: text($n), Ctx: "Store"}
+rule subscript_target Subscript = (
+    t:t_primary -ws s:subscript !(ws t_lookahead)
+) => Subscript{Value: $t, Slice: $s, Ctx: "Store"}
+rule star_atom Expr = store_name / paren_target / empty_tuple_target / star_tuple_target / empty_list_target / star_list_target
+rule paren_target Expr = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws t:target_with_star_atom -ws ")" => $t
+rule empty_tuple_target Tuple = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws ")" => Tuple{Ctx: "Store"}
+rule star_tuple_target Tuple = (
+    "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:star_target
+    rs:(-ws -"," -ws x:star_target)* c:(-ws ",")? -ws ")" {len($rs) > 0 || $c != nil}
+) => Tuple{Elts: concat(list($f), map($rs, (y) => y.$x)), Ctx: "Store"}
+rule empty_list_target ListExpr = "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws "]" => ListExpr{Ctx: "Store"}
+rule star_list_target ListExpr = (
+    "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:star_target
+    rs:(-ws -"," -ws x:star_target)* (-ws -",")? -ws "]"
+) => ListExpr{Elts: concat(list($f), map($rs, (y) => y.$x)), Ctx: "Store"}
+rule single_target Expr = single_subscript_attribute_target / store_name / paren_single_target
+rule single_subscript_attribute_target Expr = attr_target / subscript_target
+rule paren_single_target Expr = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws t:single_target -ws ")" => $t
+rule store_name Name = n:ident => Name{Id: text($n), Ctx: "Store"}
+
+// The value of an attribute or subscript target: a primary followed by another trailer.
+rule t_primary Expr = #operators {
+    skip ws
+    operand a:atom &(ws t_lookahead) => $a
+    level {
+        postfix "." !".." -ws n:ident &(ws t_lookahead) => Attribute{Value: $lhs, Attr: text($n), Ctx: "Load"}
+        postfix g:genexp &(ws t_lookahead) => Call{Func: $lhs, Args: list($g)}
+        postfix c:call_args &(ws t_lookahead) => Call{Func: $lhs, Args: concat(map($c.$pos, (x) => x.$a), foldl(list(), $c.$kw1, (acc, x) => concat(acc, x.$ss))), Keywords: concat(foldl(list(), $c.$kw1, (acc, x) => concat(acc, x.$ks)), map($c.$kw2, (x) => x.$k))}
+        postfix s:subscript &(ws t_lookahead) => Subscript{Value: $lhs, Slice: $s, Ctx: "Load"}
+    }
+}
+rule t_lookahead = [(\[] / "." !".."
+
+rule del_target Expr = del_attr / del_subscript / del_name / paren_del_target / del_tuple / del_list
+rule del_attr Attribute = (
+    t:t_primary -ws "." !".." -ws n:ident !(ws t_lookahead)
+) => Attribute{Value: $t, Attr: text($n), Ctx: "Del"}
+rule del_subscript Subscript = (
+    t:t_primary -ws s:subscript !(ws t_lookahead)
+) => Subscript{Value: $t, Slice: $s, Ctx: "Del"}
+rule del_name Name = n:ident => Name{Id: text($n), Ctx: "Del"}
+rule paren_del_target Expr = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws t:del_target -ws ")" => $t
+rule del_tuple Tuple = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws ts:del_targets? -ws ")" => Tuple{Elts: concat($ts), Ctx: "Del"}
+rule del_list ListExpr = "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws ts:del_targets? -ws "]" => ListExpr{Elts: concat($ts), Ctx: "Del"}
+rule del_targets = f:del_target r:(-ws -"," -ws t:del_target)* (-ws -",")? => concat(list($f), map($r, (x) => x.$t))
+
+// ============================================================================
+// Strings
+// ============================================================================
+
+// Adjacent literals form one node: a Constant for string or bytes literals (bytes and others may
+// not be mixed), a JoinedStr if one of them is an f-string, a TemplateStr for t-strings (which
+// may not be mixed with others).
+rule strings Expr = &string_start s:(tstrings / plain_strings / bytes_strings / fjoined) => $s
+rule string_start = [rRbBuUfFtT] #repeat(,2) ['"]
+rule plain_strings Constant = (str_lit (ws str_lit)* !(ws string_start)) #atomic
+rule bytes_strings Constant = (bytes_lit (ws bytes_lit)* !(ws string_start)) #atomic
+rule fjoined JoinedStr = (
+    f:fjoin_item r:(-ws p:fjoin_item)* !(ws string_start)
+) => JoinedStr{Values: foldl($f, $r, (acc, x) => concat(acc, x.$p))}
+rule fjoin_item = fstring / str_part
+rule str_part = c:str_constant => list($c)
+rule str_constant Constant = (str_lit) #atomic
+rule tstrings TemplateStr = (
+    f:tstring r:(-ws p:tstring)* !(ws string_start)
+) => TemplateStr{Values: foldl($f, $r, (acc, x) => concat(acc, x.$p))}
+
+rule str_lit = [uU] str_body / [rR] raw_str_body / str_body
+rule bytes_lit = ([bB] [rR] / [rR] [bB]) raw_bytes_body / [bB] bytes_body
+rule str_body = (
+    "'''" ([^'\\\u{0}]+ / !"'''" "'" / str_esc)* "'''"
+    / "\"\"\"" ([^"\\\u{0}]+ / !"\"\"\"" "\"" / str_esc)* "\"\"\""
+    / !"'''" "'" ([^'\\\n\r\u{0}]+ / str_esc)* "'"
+    / !"\"\"\"" "\"" ([^"\\\n\r\u{0}]+ / str_esc)* "\""
+)
+// Escape sequences: those that CPython rejects (a \x, \u or \U escape with too few digits or out
+// of range, a malformed \N{...}) fail; an unknown escape is the backslash and the character.
+rule str_esc = "\\" (newline / "x" hex hex / "u" hex hex hex hex / "U" ("0010" hex hex hex hex / "000" hex hex hex hex hex) / "N{" [A-Za-z0-9 \-]+ "}" / [^xuUN\n\r\u{0}])
+rule raw_str_body = (
+    "'''" ([^'\\\u{0}]+ / !"'''" "'" / "\\" [^\u{0}])* "'''"
+    / "\"\"\"" ([^"\\\u{0}]+ / !"\"\"\"" "\"" / "\\" [^\u{0}])* "\"\"\""
+    / !"'''" "'" ([^'\\\n\r\u{0}]+ / "\\" ("\r\n" / [^\u{0}]))* "'"
+    / !"\"\"\"" "\"" ([^"\\\n\r\u{0}]+ / "\\" ("\r\n" / [^\u{0}]))* "\""
+)
+// Bytes literals may contain only ASCII characters.
+rule bytes_body = (
+    "'''" ([^'\\\u{0}\u{80}-\u{10ffff}]+ / !"'''" "'" / bytes_esc)* "'''"
+    / "\"\"\"" ([^"\\\u{0}\u{80}-\u{10ffff}]+ / !"\"\"\"" "\"" / bytes_esc)* "\"\"\""
+    / !"'''" "'" ([^'\\\n\r\u{0}\u{80}-\u{10ffff}]+ / bytes_esc)* "'"
+    / !"\"\"\"" "\"" ([^"\\\n\r\u{0}\u{80}-\u{10ffff}]+ / bytes_esc)* "\""
+)
+rule bytes_esc = "\\" (newline / "x" hex hex / [^x\n\r\u{0}\u{80}-\u{10ffff}])
+rule raw_bytes_body = (
+    "'''" ([^'\\\u{0}\u{80}-\u{10ffff}]+ / !"'''" "'" / "\\" [^\u{0}\u{80}-\u{10ffff}])* "'''"
+    / "\"\"\"" ([^"\\\u{0}\u{80}-\u{10ffff}]+ / !"\"\"\"" "\"" / "\\" [^\u{0}\u{80}-\u{10ffff}])* "\"\"\""
+    / !"'''" "'" ([^'\\\n\r\u{0}\u{80}-\u{10ffff}]+ / "\\" ("\r\n" / [^\u{0}\u{80}-\u{10ffff}]))* "'"
+    / !"\"\"\"" "\"" ([^"\\\n\r\u{0}\u{80}-\u{10ffff}]+ / "\\" ("\r\n" / [^\u{0}\u{80}-\u{10ffff}]))* "\""
+)
+rule hex = [0-9a-fA-F]
+
+// --- f-strings and t-strings ---
+// The prefix and the opening quote define the quote and the rawness in lv (see the top of the file); the parts are the literal
+// text between replacement fields and the fields.
+rule fstring = (
+    ([rR] [fF] {lv := lv % 512 + 4096} / [fF] [rR] {lv := lv % 512 + 4096} / [fF] {lv := lv % 512})
+    ("'''" {lv := lv + 3 * 512} / "\"\"\"" {lv := lv + 4 * 512} / "'" {lv := lv + 512} / "\"" {lv := lv + 2 * 512})
+    ps:fpart* fclose @error(message="unterminated f-string literal")
+) => $ps.Value
+rule tstring = (
+    ([rR] [tT] {lv := lv % 512 + 4096} / [tT] [rR] {lv := lv % 512 + 4096} / [tT] {lv := lv % 512})
+    ("'''" {lv := lv + 3 * 512} / "\"\"\"" {lv := lv + 4 * 512} / "'" {lv := lv + 512} / "\"" {lv := lv + 2 * 512})
+    ps:tpart* fclose @error(message="unterminated t-string literal")
+) => $ps.Value
+rule fclose = {lv / 512 % 8 == 1} "'" / {lv / 512 % 8 == 2} "\"" / {lv / 512 % 8 == 3} "'''" / {lv / 512 % 8 == 4} "\"\"\""
+rule fpart StrPart = fraw_text / ftext / ffield
+rule tpart StrPart = fraw_text / ftext / tfield
+// Literal text: doubled braces stand for braces; a single '}' is an error.
+rule ftext FStringMiddle = ({lv / 4096 % 2 == 0} ([^'"\\{}\n\r\u{0}]+ / fquote / "{{" / "}}" / fesc)+) #atomic
+rule fraw_text FStringRawMiddle = ({lv / 4096 % 2 == 1} ([^'"\\{}\n\r\u{0}]+ / fquote / "{{" / "}}" / frawesc)+) #atomic
+// The quotes and newlines that do not end the string.
+rule fquote = (
+    {lv / 512 % 8 == 1} "\"" / {lv / 512 % 8 == 2} "'"
+    / {lv / 512 % 8 == 3} (!"'''" "'" / "\"" / newline) / {lv / 512 % 8 == 4} (!"\"\"\"" "\"" / "'" / newline)
+)
+// As in string literals, except that a backslash before a brace is a character of its own and the
+// brace is not escaped.
+rule fesc = "\\" (newline / "x" hex hex / "u" hex hex hex hex / "U" ("0010" hex hex hex hex / "000" hex hex hex hex hex) / "N{" [A-Za-z0-9 \-]+ "}" / [^xuUN{}\n\r\u{0}] / &[{}])
+rule frawesc = "\\" ("\r\n" / [^{}\u{0}] / &[{}])
+
+// A replacement field: the expression (any expression, including strings with the same quotes;
+// inside the braces, newlines are whitespace), an optional '=', conversion and format spec.
+rule ffield FormattedValue = (
+    "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 3}
+    {lv / 8192 <= 2} @error(message="f-string: expressions nested too deeply")
+    s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec / -ws) "}"
+) => FormattedValue{Value: $v, Str: text($s), Debug: text($d), Conversion: text($c), FormatSpec: $f}
+rule tfield Interpolation = (
+    "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 3}
+    {lv / 8192 <= 2} @error(message="t-string: expressions nested too deeply")
+    s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec / -ws) "}"
+) => Interpolation{Value: $v, Str: text($s), Debug: text($d), Conversion: text($c), FormatSpec: $f}
+rule fdebug = ws "=" ws
+// The conversion character must follow the '!' immediately.
+rule fconv = -ws "!" c:[sra] #atomic !idcont => $c
+// A format spec: literal text (no doubled braces) and replacement fields.
+rule fspec JoinedStr = ":" {lv := lv + 8192} ps:fspec_part* => JoinedStr{Values: $ps.Value}
+rule fspec_part StrPart = fspec_raw_text / fspec_text / ffield
+rule fspec_text FStringMiddle = ({lv / 4096 % 2 == 0} ([^'"\\{}\n\r\u{0}]+ / fquote / fesc)+) #atomic
+rule fspec_raw_text FStringRawMiddle = ({lv / 4096 % 2 == 1} ([^'"\\{}\n\r\u{0}]+ / fquote / frawesc)+) #atomic
+
+// ============================================================================
+// Numbers
+// ============================================================================
+
+// A number may be followed by an identifier character only if a keyword that can follow a number
+// starts there (CPython's verify_end_of_number): `1if x else 2`, `0x1for x in y`.
+rule number Constant = ((hex_lit / oct_lit / bin_lit / dec_number) num_end) #atomic
+rule real_number Constant = ((hex_lit / oct_lit / bin_lit / dec_real) ![jJ] num_end) #atomic
+rule imag_number Constant = ((pointfloat exponent? / digitpart exponent?) [jJ] num_end) #atomic
+rule hex_lit = "0" [xX] ("_"? [0-9a-fA-F])+
+rule oct_lit = "0" [oO] ("_"? [0-7])+
+rule bin_lit = "0" [bB] ("_"? [01])+
+rule dec_number = pointfloat exponent? [jJ]? / digitpart exponent [jJ]? / digitpart [jJ] / nonzero_int / zero_int
+rule dec_real = pointfloat exponent? / digitpart exponent / nonzero_int / zero_int
+rule pointfloat = digitpart "." digitpart? / "." digitpart
+rule exponent = [eE] [+\-]? digitpart
+rule digitpart = [0-9] ("_"? [0-9])*
+rule nonzero_int = [1-9] ("_"? [0-9])*
+// Decimal integers other than zero may not start with 0.
+rule zero_int = "0" ("_"? "0")* ![xXoObB]
+rule num_end = &("and" / "else" / "for" / "i" [fns] / "or" / "not") / ![a-zA-Z0-9_]
+
+// ============================================================================
+// Names and keywords
+// ============================================================================
+
+// A name: a letter or '_' then letters, digits and '_' (Unicode XID_Start and XID_Continue), that is
+// not a keyword. The soft keywords (match, case, type, _) are names.
+rule ident = (!keyword idstart idcont*) #atomic
+rule identifier Identifier = (ident) #atomic
+rule idstart = [a-zA-Z_] / &[\u{80}-\u{10ffff}] idstart_other @error(message="invalid character")
+rule idcont = [a-zA-Z0-9_] / &[\u{80}-\u{10ffff}] idcont_other @error(message="invalid character")
+rule keyword = ("False" / "None" / "True" / "and" / "assert" / "async" / "as" / "await" / "break" / "class" / "continue" / "def" / "del" / "elif" / "else" / "except" / "finally" / "for" / "from" / "global" / "if" / "import" / "in" / "is" / "lambda" / "nonlocal" / "not" / "or" / "pass" / "raise" / "return" / "try" / "while" / "with" / "yield") !idcont
+
+rule kw_as = "as" !idcont
+rule kw_assert = "assert" !idcont
+rule kw_async = "async" !idcont
+rule kw_await = "await" !idcont
+rule kw_break = "break" !idcont
+rule kw_case = "case" !idcont
+rule kw_class = "class" !idcont
+rule kw_continue = "continue" !idcont
+rule kw_def = "def" !idcont
+rule kw_del = "del" !idcont
+rule kw_elif = "elif" !idcont
+rule kw_else = "else" !idcont
+rule kw_except = "except" !idcont
+rule kw_finally = "finally" !idcont
+rule kw_for = "for" !idcont
+rule kw_from = "from" !idcont
+rule kw_global = "global" !idcont
+rule kw_if = "if" !idcont
+rule kw_import = "import" !idcont
+rule kw_in = "in" !idcont
+rule kw_lambda = "lambda" !idcont
+rule kw_match = "match" !idcont
+rule kw_nonlocal = "nonlocal" !idcont
+rule kw_pass = "pass" !idcont
+rule kw_raise = "raise" !idcont
+rule kw_return = "return" !idcont
+rule kw_try = "try" !idcont
+rule kw_type = "type" !idcont
+rule kw_while = "while" !idcont
+rule kw_with = "with" !idcont
+rule kw_yield = "yield" !idcont
+
+// The characters of Unicode 16.0 (as in CPython 3.14) other than ASCII that may start and continue
+// an identifier, generated with str.isidentifier.
+rule idstart_other = [ªµºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮͰ-ʹͶ-ͷͻ-ͽͿΆΈ-ΊΌΎ-ΡΣ-ϵϷ-ҁҊ-ԯԱ-Ֆՙՠ-ֈא-תׯ-ײؠ-يٮ-ٯٱ-ۓەۥ-ۦۮ-ۯۺ-ۼۿܐܒ-ܯݍ-ޥޱߊ-ߪߴ-ߵߺࠀ-ࠕࠚࠤࠨࡀ-ࡘࡠ-ࡪࡰ-ࢇࢉ-ࢎࢠ-ࣉऄ-हऽॐक़-ॡॱ-ঀঅ-ঌএ-ঐও-নপ-রলশ-হঽৎড়-ঢ়য়-ৡৰ-ৱৼਅ-ਊਏ-ਐਓ-ਨਪ-ਰਲ-ਲ਼ਵ-ਸ਼ਸ-ਹਖ਼-ੜਫ਼ੲ-ੴઅ-ઍએ-ઑઓ-નપ-રલ-ળવ-હઽૐૠ-ૡૹଅ-ଌଏ-ଐଓ-ନପ-ରଲ-ଳଵ-ହଽଡ଼-ଢ଼ୟ-ୡୱஃஅ-ஊஎ-ஐஒ-கங-சஜஞ-டண-தந-பம-ஹௐఅ-ఌఎ-ఐఒ-నప-హఽౘ-ౚౝౠ-ౡಀಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹಽೝ-ೞೠ-ೡೱ-ೲഄ-ഌഎ-ഐഒ-ഺഽൎൔ-ൖൟ-ൡൺ-ൿඅ-ඖක-නඳ-රලව-ෆก-ะาเ-ๆກ-ຂຄຆ-ຊຌ-ຣລວ-ະາຽເ-ໄໆໜ-ໟༀཀ-ཇཉ-ཬྈ-ྌက-ဪဿၐ-ၕၚ-ၝၡၥ-ၦၮ-ၰၵ-ႁႎႠ-ჅჇჍა-ჺჼ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚᎀ-ᎏᎠ-Ᏽᏸ-ᏽᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᛮ-ᛸᜀ-ᜑᜟ-ᜱᝀ-ᝑᝠ-ᝬᝮ-ᝰក-ឳៗៜᠠ-ᡸᢀ-ᢨᢪᢰ-ᣵᤀ-ᤞᥐ-ᥭᥰ-ᥴᦀ-ᦫᦰ-ᧉᨀ-ᨖᨠ-ᩔᪧᬅ-ᬳᭅ-ᭌᮃ-ᮠᮮ-ᮯᮺ-ᯥᰀ-ᰣᱍ-ᱏᱚ-ᱽᲀ-ᲊᲐ-ᲺᲽ-Ჿᳩ-ᳬᳮ-ᳳᳵ-ᳶᳺᴀ-ᶿḀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼⁱⁿₐ-ₜℂℇℊ-ℓℕ℘-ℝℤΩℨK-ℹℼ-ℿⅅ-ⅉⅎⅠ-ↈⰀ-ⳤⳫ-ⳮⳲ-ⳳⴀ-ⴥⴧⴭⴰ-ⵧⵯⶀ-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞ々-〇〡-〩〱-〵〸-〼ぁ-ゖゝ-ゟァ-ヺー-ヿㄅ-ㄯㄱ-ㆎㆠ-ㆿㇰ-ㇿ㐀-䶿一-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘟꘪ-ꘫꙀ-ꙮꙿ-ꚝꚠ-ꛯꜗ-ꜟꜢ-ꞈꞋ-ꟍꟐ-ꟑꟓꟕ-Ƛꟲ-ꠁꠃ-ꠅꠇ-ꠊꠌ-ꠢꡀ-ꡳꢂ-ꢳꣲ-ꣷꣻꣽ-ꣾꤊ-ꤥꤰ-ꥆꥠ-ꥼꦄ-ꦲꧏꧠ-ꧤꧦ-ꧯꧺ-ꧾꨀ-ꨨꩀ-ꩂꩄ-ꩋꩠ-ꩶꩺꩾ-ꪯꪱꪵ-ꪶꪹ-ꪽꫀꫂꫛ-ꫝꫠ-ꫪꫲ-ꫴꬁ-ꬆꬉ-ꬎꬑ-ꬖꬠ-ꬦꬨ-ꬮꬰ-ꭚꭜ-ꭩꭰ-ꯢ가-힣ힰ-ퟆퟋ-ퟻ豈-舘並-龎ﬀ-ﬆﬓ-ﬗיִײַ-ﬨשׁ-זּטּ-לּמּנּ-סּףּ-פּצּ-ﮱﯓ-ﱝﱤ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷹﹱﹳﹷﹹﹻﹽﹿ-ﻼＡ-Ｚａ-ｚｦ-ﾝﾠ-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼-𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐅀-𐅴𐊀-𐊜𐊠-𐋐𐌀-𐌟𐌭-𐍊𐍐-𐍵𐎀-𐎝𐎠-𐏃𐏈-𐏏𐏑-𐏕𐐀-𐒝𐒰-𐓓𐓘-𐓻𐔀-𐔧𐔰-𐕣𐕰-𐕺𐕼-𐖊𐖌-𐖒𐖔-𐖕𐖗-𐖡𐖣-𐖱𐖳-𐖹𐖻-𐖼𐗀-𐗳𐘀-𐜶𐝀-𐝕𐝠-𐝧𐞀-𐞅𐞇-𐞰𐞲-𐞺𐠀-𐠅𐠈𐠊-𐠵𐠷-𐠸𐠼𐠿-𐡕𐡠-𐡶𐢀-𐢞𐣠-𐣲𐣴-𐣵𐤀-𐤕𐤠-𐤹𐦀-𐦷𐦾-𐦿𐨀𐨐-𐨓𐨕-𐨗𐨙-𐨵𐩠-𐩼𐪀-𐪜𐫀-𐫇𐫉-𐫤𐬀-𐬵𐭀-𐭕𐭠-𐭲𐮀-𐮑𐰀-𐱈𐲀-𐲲𐳀-𐳲𐴀-𐴣𐵊-𐵥𐵯-𐶅𐺀-𐺩𐺰-𐺱𐻂-𐻄𐼀-𐼜𐼧𐼰-𐽅𐽰-𐾁𐾰-𐿄𐿠-𐿶𑀃-𑀷𑁱-𑁲𑁵𑂃-𑂯𑃐-𑃨𑄃-𑄦𑅄𑅇𑅐-𑅲𑅶𑆃-𑆲𑇁-𑇄𑇚𑇜𑈀-𑈑𑈓-𑈫𑈿-𑉀𑊀-𑊆𑊈𑊊-𑊍𑊏-𑊝𑊟-𑊨𑊰-𑋞𑌅-𑌌𑌏-𑌐𑌓-𑌨𑌪-𑌰𑌲-𑌳𑌵-𑌹𑌽𑍐𑍝-𑍡𑎀-𑎉𑎋𑎎𑎐-𑎵𑎷𑏑𑏓𑐀-𑐴𑑇-𑑊𑑟-𑑡𑒀-𑒯𑓄-𑓅𑓇𑖀-𑖮𑗘-𑗛𑘀-𑘯𑙄𑚀-𑚪𑚸𑜀-𑜚𑝀-𑝆𑠀-𑠫𑢠-𑣟𑣿-𑤆𑤉𑤌-𑤓𑤕-𑤖𑤘-𑤯𑤿𑥁𑦠-𑦧𑦪-𑧐𑧡𑧣𑨀𑨋-𑨲𑨺𑩐𑩜-𑪉𑪝𑪰-𑫸𑯀-𑯠𑰀-𑰈𑰊-𑰮𑱀𑱲-𑲏𑴀-𑴆𑴈-𑴉𑴋-𑴰𑵆𑵠-𑵥𑵧-𑵨𑵪-𑶉𑶘𑻠-𑻲𑼂𑼄-𑼐𑼒-𑼳𑾰𒀀-𒎙𒐀-𒑮𒒀-𒕃𒾐-𒿰𓀀-𓐯𓑁-𓑆𓑠-𔏺𔐀-𔙆𖄀-𖄝𖠀-𖨸𖩀-𖩞𖩰-𖪾𖫐-𖫭𖬀-𖬯𖭀-𖭃𖭣-𖭷𖭽-𖮏𖵀-𖵬𖹀-𖹿𖼀-𖽊𖽐𖾓-𖾟𖿠-𖿡𖿣𗀀-𘟷𘠀-𘳕𘳿-𘴈𚿰-𚿳𚿵-𚿻𚿽-𚿾𛀀-𛄢𛄲𛅐-𛅒𛅕𛅤-𛅧𛅰-𛋻𛰀-𛱪𛱰-𛱼𛲀-𛲈𛲐-𛲙𝐀-𝑔𝑖-𝒜𝒞-𝒟𝒢𝒥-𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𝼀-𝼞𝼥-𝼪𞀰-𞁭𞄀-𞄬𞄷-𞄽𞅎𞊐-𞊭𞋀-𞋫𞓐-𞓫𞗐-𞗭𞗰𞟠-𞟦𞟨-𞟫𞟭-𞟮𞟰-𞟾𞠀-𞣄𞤀-𞥃𞥋𞸀-𞸃𞸅-𞸟𞸡-𞸢𞸤𞸧𞸩-𞸲𞸴-𞸷𞸹𞸻𞹂𞹇𞹉𞹋𞹍-𞹏𞹑-𞹒𞹔𞹗𞹙𞹛𞹝𞹟𞹡-𞹢𞹤𞹧-𞹪𞹬-𞹲𞹴-𞹷𞹹-𞹼𞹾𞺀-𞺉𞺋-𞺛𞺡-𞺣𞺥-𞺩𞺫-𞺻𠀀-𪛟𪜀-𫜹𫝀-𫠝𫠠-𬺡𬺰-𮯠𮯰-𮹝丽-𪘀𰀀-𱍊𱍐-𲎯]
+rule idcont_other = [ªµ·ºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮ̀-ʹͶ-ͷͻ-ͽͿΆ-ΊΌΎ-ΡΣ-ϵϷ-ҁ҃-҇Ҋ-ԯԱ-Ֆՙՠ-ֈ֑-ֽֿׁ-ׂׄ-ׇׅא-תׯ-ײؐ-ؚؠ-٩ٮ-ۓە-ۜ۟-۪ۨ-ۼۿܐ-݊ݍ-ޱ߀-ߵߺ߽ࠀ-࠭ࡀ-࡛ࡠ-ࡪࡰ-ࢇࢉ-ࢎࢗ-ࣣ࣡-ॣ०-९ॱ-ঃঅ-ঌএ-ঐও-নপ-রলশ-হ়-ৄে-ৈো-ৎৗড়-ঢ়য়-ৣ০-ৱৼ৾ਁ-ਃਅ-ਊਏ-ਐਓ-ਨਪ-ਰਲ-ਲ਼ਵ-ਸ਼ਸ-ਹ਼ਾ-ੂੇ-ੈੋ-੍ੑਖ਼-ੜਫ਼੦-ੵઁ-ઃઅ-ઍએ-ઑઓ-નપ-રલ-ળવ-હ઼-ૅે-ૉો-્ૐૠ-ૣ૦-૯ૹ-૿ଁ-ଃଅ-ଌଏ-ଐଓ-ନପ-ରଲ-ଳଵ-ହ଼-ୄେ-ୈୋ-୍୕-ୗଡ଼-ଢ଼ୟ-ୣ୦-୯ୱஂ-ஃஅ-ஊஎ-ஐஒ-கங-சஜஞ-டண-தந-பம-ஹா-ூெ-ைொ-்ௐௗ௦-௯ఀ-ఌఎ-ఐఒ-నప-హ఼-ౄె-ైొ-్ౕ-ౖౘ-ౚౝౠ-ౣ౦-౯ಀ-ಃಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹ಼-ೄೆ-ೈೊ-್ೕ-ೖೝ-ೞೠ-ೣ೦-೯ೱ-ೳഀ-ഌഎ-ഐഒ-ൄെ-ൈൊ-ൎൔ-ൗൟ-ൣ൦-൯ൺ-ൿඁ-ඃඅ-ඖක-නඳ-රලව-ෆ්ා-ුූෘ-ෟ෦-෯ෲ-ෳก-ฺเ-๎๐-๙ກ-ຂຄຆ-ຊຌ-ຣລວ-ຽເ-ໄໆ່-໎໐-໙ໜ-ໟༀ༘-༙༠-༩༹༵༷༾-ཇཉ-ཬཱ-྄྆-ྗྙ-ྼ࿆က-၉ၐ-ႝႠ-ჅჇჍა-ჺჼ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚ፝-፟፩-፱ᎀ-ᎏᎠ-Ᏽᏸ-ᏽᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᛮ-ᛸᜀ-᜕ᜟ-᜴ᝀ-ᝓᝠ-ᝬᝮ-ᝰᝲ-ᝳក-៓ៗៜ-៝០-៩᠋-᠍᠏-᠙ᠠ-ᡸᢀ-ᢪᢰ-ᣵᤀ-ᤞᤠ-ᤫᤰ-᤻᥆-ᥭᥰ-ᥴᦀ-ᦫᦰ-ᧉ᧐-᧚ᨀ-ᨛᨠ-ᩞ᩠-᩿᩼-᪉᪐-᪙ᪧ᪰-᪽ᪿ-ᫎᬀ-ᭌ᭐-᭙᭫-᭳ᮀ-᯳ᰀ-᰷᱀-᱉ᱍ-ᱽᲀ-ᲊᲐ-ᲺᲽ-Ჿ᳐-᳔᳒-ᳺᴀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼ\u{200c}-\u{200d}‿-⁀⁔ⁱⁿₐ-ₜ⃐-⃥⃜⃡-⃰ℂℇℊ-ℓℕ℘-ℝℤΩℨK-ℹℼ-ℿⅅ-ⅉⅎⅠ-ↈⰀ-ⳤⳫ-ⳳⴀ-ⴥⴧⴭⴰ-ⵧⵯ⵿-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞⷠ-ⷿ々-〇〡-〯〱-〵〸-〼ぁ-ゖ゙-゚ゝ-ゟァ-ヿㄅ-ㄯㄱ-ㆎㆠ-ㆿㇰ-ㇿ㐀-䶿一-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘫꙀ-꙯ꙴ-꙽ꙿ-꛱ꜗ-ꜟꜢ-ꞈꞋ-ꟍꟐ-ꟑꟓꟕ-Ƛꟲ-ꠧ꠬ꡀ-ꡳꢀ-ꣅ꣐-꣙꣠-ꣷꣻꣽ-꤭ꤰ-꥓ꥠ-ꥼꦀ-꧀ꧏ-꧙ꧠ-ꧾꨀ-ꨶꩀ-ꩍ꩐-꩙ꩠ-ꩶꩺ-ꫂꫛ-ꫝꫠ-ꫯꫲ-꫶ꬁ-ꬆꬉ-ꬎꬑ-ꬖꬠ-ꬦꬨ-ꬮꬰ-ꭚꭜ-ꭩꭰ-ꯪ꯬-꯭꯰-꯹가-힣ힰ-ퟆퟋ-ퟻ豈-舘並-龎ﬀ-ﬆﬓ-ﬗיִ-ﬨשׁ-זּטּ-לּמּנּ-סּףּ-פּצּ-ﮱﯓ-ﱝﱤ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷹ︀-️︠-︯︳-︴﹍-﹏ﹱﹳﹷﹹﹻﹽﹿ-ﻼ０-９Ａ-Ｚ＿ａ-ｚ･-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼-𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐅀-𐅴𐇽𐊀-𐊜𐊠-𐋐𐋠𐌀-𐌟𐌭-𐍊𐍐-𐍺𐎀-𐎝𐎠-𐏃𐏈-𐏏𐏑-𐏕𐐀-𐒝𐒠-𐒩𐒰-𐓓𐓘-𐓻𐔀-𐔧𐔰-𐕣𐕰-𐕺𐕼-𐖊𐖌-𐖒𐖔-𐖕𐖗-𐖡𐖣-𐖱𐖳-𐖹𐖻-𐖼𐗀-𐗳𐘀-𐜶𐝀-𐝕𐝠-𐝧𐞀-𐞅𐞇-𐞰𐞲-𐞺𐠀-𐠅𐠈𐠊-𐠵𐠷-𐠸𐠼𐠿-𐡕𐡠-𐡶𐢀-𐢞𐣠-𐣲𐣴-𐣵𐤀-𐤕𐤠-𐤹𐦀-𐦷𐦾-𐦿𐨀-𐨃𐨅-𐨆𐨌-𐨓𐨕-𐨗𐨙-𐨵𐨸-𐨿𐨺𐩠-𐩼𐪀-𐪜𐫀-𐫇𐫉-𐫦𐬀-𐬵𐭀-𐭕𐭠-𐭲𐮀-𐮑𐰀-𐱈𐲀-𐲲𐳀-𐳲𐴀-𐴧𐴰-𐴹𐵀-𐵥𐵩-𐵭𐵯-𐶅𐺀-𐺩𐺫-𐺬𐺰-𐺱𐻂-𐻄𐻼-𐼜𐼧𐼰-𐽐𐽰-𐾅𐾰-𐿄𐿠-𐿶𑀀-𑁆𑁦-𑁵𑁿-𑂺𑃂𑃐-𑃨𑃰-𑃹𑄀-𑄴𑄶-𑄿𑅄-𑅇𑅐-𑅳𑅶𑆀-𑇄𑇉-𑇌𑇎-𑇚𑇜𑈀-𑈑𑈓-𑈷𑈾-𑉁𑊀-𑊆𑊈𑊊-𑊍𑊏-𑊝𑊟-𑊨𑊰-𑋪𑋰-𑋹𑌀-𑌃𑌅-𑌌𑌏-𑌐𑌓-𑌨𑌪-𑌰𑌲-𑌳𑌵-𑌹𑌻-𑍄𑍇-𑍈𑍋-𑍍𑍐𑍗𑍝-𑍣𑍦-𑍬𑍰-𑍴𑎀-𑎉𑎋𑎎𑎐-𑎵𑎷-𑏀𑏅𑏅𑎸-𑏊𑏌-𑏓𑏡-𑏢𑐀-𑑊𑑐-𑑙𑑞-𑑡𑒀-𑓅𑓇𑓐-𑓙𑖀-𑖵𑖸-𑗀𑗘-𑗝𑘀-𑙀𑙄𑙐-𑙙𑚀-𑚸𑛀-𑛉𑛐-𑛣𑜀-𑜚𑜝-𑜫𑜰-𑜹𑝀-𑝆𑠀-𑠺𑢠-𑣩𑣿-𑤆𑤉𑤌-𑤓𑤕-𑤖𑤘-𑤵𑤷-𑤸𑤻-𑥃𑥐-𑥙𑦠-𑦧𑦪-𑧗𑧚-𑧡𑧣-𑧤𑨀-𑨾𑩇𑩐-𑪙𑪝𑪰-𑫸𑯀-𑯠𑯰-𑯹𑰀-𑰈𑰊-𑰶𑰸-𑱀𑱐-𑱙𑱲-𑲏𑲒-𑲧𑲩-𑲶𑴀-𑴆𑴈-𑴉𑴋-𑴶𑴺𑴼-𑴽𑴿-𑵇𑵐-𑵙𑵠-𑵥𑵧-𑵨𑵪-𑶎𑶐-𑶑𑶓-𑶘𑶠-𑶩𑻠-𑻶𑼀-𑼐𑼒-𑼺𑼾-𑽂𑽐-𑽚𑾰𒀀-𒎙𒐀-𒑮𒒀-𒕃𒾐-𒿰𓀀-𓐯𓑀-𓑕𓑠-𔏺𔐀-𔙆𖄀-𖄹𖠀-𖨸𖩀-𖩞𖩠-𖩩𖩰-𖪾𖫀-𖫉𖫐-𖫭𖫰-𖫴𖬀-𖬶𖭀-𖭃𖭐-𖭙𖭣-𖭷𖭽-𖮏𖵀-𖵬𖵰-𖵹𖹀-𖹿𖼀-𖽊𖽏-𖾇𖾏-𖾟𖿠-𖿡𖿣-𖿤𖿰-𖿱𗀀-𘟷𘠀-𘳕𘳿-𘴈𚿰-𚿳𚿵-𚿻𚿽-𚿾𛀀-𛄢𛄲𛅐-𛅒𛅕𛅤-𛅧𛅰-𛋻𛰀-𛱪𛱰-𛱼𛲀-𛲈𛲐-𛲙𛲝-𛲞𜳰-𜳹𜼀-𜼭𜼰-𜽆𝅥-𝅩𝅭-𝅲𝅻-𝆂𝆅-𝆋𝆪-𝆭𝉂-𝉄𝐀-𝑔𝑖-𝒜𝒞-𝒟𝒢𝒥-𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𝟎-𝟿𝨀-𝨶𝨻-𝩬𝩵𝪄𝪛-𝪟𝪡-𝪯𝼀-𝼞𝼥-𝼪𞀀-𞀆𞀈-𞀘𞀛-𞀡𞀣-𞀤𞀦-𞀪𞀰-𞁭𞂏𞄀-𞄬𞄰-𞄽𞅀-𞅉𞅎𞊐-𞊮𞋀-𞋹𞓐-𞓹𞗐-𞗺𞟠-𞟦𞟨-𞟫𞟭-𞟮𞟰-𞟾𞠀-𞣄𞣐-𞣖𞤀-𞥋𞥐-𞥙𞸀-𞸃𞸅-𞸟𞸡-𞸢𞸤𞸧𞸩-𞸲𞸴-𞸷𞸹𞸻𞹂𞹇𞹉𞹋𞹍-𞹏𞹑-𞹒𞹔𞹗𞹙𞹛𞹝𞹟𞹡-𞹢𞹤𞹧-𞹪𞹬-𞹲𞹴-𞹷𞹹-𞹼𞹾𞺀-𞺉𞺋-𞺛𞺡-𞺣𞺥-𞺩𞺫-𞺻🯰-🯹𠀀-𪛟𪜀-𫜹𫝀-𫠝𫠠-𬺡𬺰-𮯠𮯰-𮹝丽-𪘀𰀀-𱍊𱍐-𲎯󠄀-󠇯]

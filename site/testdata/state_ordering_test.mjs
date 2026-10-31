@@ -6,7 +6,7 @@ import { decodeState } from "../static/assets/state.js";
 import { Element, playground } from "./playground_harness.mjs";
 
 const base = { g: 'rule main = "a"\nrule alt = "b"', i: "a" };
-const app = process.env.PEGO_PLAYGROUND_APP;
+const app = process.env.ZP_PLAYGROUND_APP;
 function deferred() {
   let resolve, reject;
   const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
@@ -228,12 +228,12 @@ async function landing(encode) {
   const warnings = [];
   const context = vm.createContext({
     document: { getElementById: (id) => elements.get(id) }, window: {},
-    PegoClient: class { async call() { return { sexpr: "", nodes: 0, micros: 0 }; } },
+    ZPClient: class { async call() { return { sexpr: "", nodes: 0, micros: 0 }; } },
     siteRoot: () => "/", encodeState: encode,
     console: { ...console, warn: (...args) => warnings.push(args) },
     setTimeout: () => 1, clearTimeout() {},
   });
-  const source = await readFile(process.env.PEGO_LANDING_APP || new URL("../static/assets/landing.js", import.meta.url), "utf8");
+  const source = await readFile(process.env.ZP_LANDING_APP || new URL("../static/assets/landing.js", import.meta.url), "utf8");
   new vm.Script(source.replace(/^import .*;\n/gm, "")).runInContext(context);
   const input = elements.get("live-input"), open = elements.get("live-open");
   return { input, open, warnings, edit(value) { input.value = value; return input.listeners.input[0](); } };

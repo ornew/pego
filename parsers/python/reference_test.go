@@ -10,9 +10,9 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/internal/corpora"
-	"github.com/ornew/pego/internal/corpora/corporatest"
-	"github.com/ornew/pego/parsers/python"
+	"github.com/ornew/zeroparse/internal/corpora"
+	"github.com/ornew/zeroparse/internal/corpora/corporatest"
+	"github.com/ornew/zeroparse/parsers/python"
 )
 
 // The reference data, generated with CPython 3.14.0 by internal/refgen/generate.sh: the snippets of code in the

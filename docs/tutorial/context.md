@@ -16,9 +16,9 @@ Complete [Reporting Errors](errors.md). This lesson uses `@error` messages.
 
 A **predicate** is a Go-like expression in braces. It consumes no input, and the parse continues only if it is true.
 Captured values are read with `$name`, and `text($name)` gives the matched text. Here a name may have at most eight
-letters. Save as `names.pego`:
+letters. Save as `names.zp`:
 
-```pego
+```zp
 @start
 rule main = name ("," name)* $$
 
@@ -26,13 +26,13 @@ rule name = n:[a-z]+ #atomic {len(text($n)) <= 8} @error(message="a name has at 
 ```
 
 ```bash
-pego parse -g names.pego -f sexpr -i 'alpha,beta'
-pego parse -g names.pego -f sexpr -i 'alpha,beta,verylongname'
+zp parse -g names.zp -f sexpr -i 'alpha,beta'
+zp parse -g names.zp -f sexpr -i 'alpha,beta,verylongname'
 ```
 
 ```text
 (("alpha") [("," ("beta"))])
-pego: 1:24: a name has at most 8 letters
+zp: 1:24: a name has at most 8 letters
 ```
 
 A predicate has no value, so each `name` is a tuple with a single element, the text of the name. The predicate is evaluated after `[a-z]+` matched, so the error is at the position after the name. A predicate that
@@ -44,9 +44,9 @@ message would be a bare `syntax error`.
 A **variable** is defined in a predicate with `:=` and can be read by every rule that is called afterwards. The tags
 grammar defines `tag` after the opening tag and compares it in the rule that matches the closing tag. Each `element`
 defines its own `tag`, and the definition disappears when the rule returns, so nesting works without further code. Save
-as `tags.pego`:
+as `tags.zp`:
 
-```pego
+```zp
 type Name = node[string]
 type Chars = node[string]
 type Element = { Name Name; Children []Content }
@@ -69,15 +69,15 @@ rule name Name = ([a-z]+) #atomic
 ```
 
 ```bash
-pego parse -g tags.pego -f sexpr -i '<a><b>x</b><c>y</c></a>'
-pego parse -g tags.pego -f sexpr -i '<a><b>x</a></b>'
-pego parse -g tags.pego -f sexpr -i '<a><a>x</a>'
+zp parse -g tags.zp -f sexpr -i '<a><b>x</b><c>y</c></a>'
+zp parse -g tags.zp -f sexpr -i '<a><b>x</a></b>'
+zp parse -g tags.zp -f sexpr -i '<a><a>x</a>'
 ```
 
 ```text
 Element{Children: [Element{Children: [Chars("x")], Name: Name("b")} Element{Children: [Chars("y")], Name: Name("c")}], Name: Name("a")}
-pego: 1:11: mismatched end tag
-pego: 1:12: syntax error: expected "<", "</", [^<]
+zp: 1:11: mismatched end tag
+zp: 1:12: syntax error: expected "<", "</", [^<]
 ```
 
 The mismatch is reported where the predicate ran, after the offending name. An unclosed element fails the ordinary way,

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // terminalCases are grammars with value-free terminal expressions that lean typed parsers match

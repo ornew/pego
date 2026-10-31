@@ -9,7 +9,7 @@ A fixture suite for the configuration grammar, a lint run that finds a real mist
 
 ## Before You Start
 
-Complete [Building Typed Trees](typed-trees.md) and [Reporting Errors](errors.md): you need `config.pego` and `robust.pego`.
+Complete [Building Typed Trees](typed-trees.md) and [Reporting Errors](errors.md): you need `config.zp` and `robust.zp`.
 
 ## A Fixture Suite
 
@@ -19,7 +19,7 @@ match, `rejected` for a syntax error, and `recovered` for a match that needed `#
 ```json
 {
   "version": 1,
-  "grammar": "config.pego",
+  "grammar": "config.zp",
   "backends": ["closure", "bytecode"],
   "equivalence": true,
   "cases": [
@@ -33,7 +33,7 @@ match, `rejected` for a syntax error, and `recovered` for a match that needed `#
 ```
 
 ```bash
-pego test -f suite.json
+zp test -f suite.json
 ```
 
 ```text
@@ -57,14 +57,14 @@ all fixtures passed
 
 Each case runs on both backends, and `"equivalence": true` also requires that the two backends produce the same tree and
 errors. A failing case prints `FAIL` with what differed and the command exits with status 1, so the suite works in a
-continuous integration job as it is. Cases can also pin the tree, the root range and the positions of errors; `pego test
+continuous integration job as it is. Cases can also pin the tree, the root range and the positions of errors; `zp test
 -update` refreshes those expectations from the observed results.
 
 ## Linting
 
-`pego lint` examines a grammar without running it. Save a grammar with two mistakes as `buggy.pego`:
+`zp lint` examines a grammar without running it. Save a grammar with two mistakes as `buggy.zp`:
 
-```pego
+```zp
 @start
 rule main = "a" ws op ws "b" $$
 rule op = "<" / "<="
@@ -73,15 +73,15 @@ rule unused = "x"
 ```
 
 ```bash
-pego lint -g buggy.pego
+zp lint -g buggy.zp
 ```
 
 ```text
-buggy.pego:3:17: error: alternative 2 (`"<="`) can never match: alternative 1 (`"<"` at 3:11) matches first wherever it could [shadowed-alternative]
+buggy.zp:3:17: error: alternative 2 (`"<="`) can never match: alternative 1 (`"<"` at 3:11) matches first wherever it could [shadowed-alternative]
 	fix: move it before alternative 1
-buggy.pego:5:1: warning: rule unused is never used: main does not call it, directly or indirectly [unreachable-rule]
+buggy.zp:5:1: warning: rule unused is never used: main does not call it, directly or indirectly [unreachable-rule]
 	fix: remove the rule, or call it from a rule that main reaches
-pego: lint: 1 error, 1 warning, 0 hints
+zp: lint: 1 error, 1 warning, 0 hints
 ```
 
 The first finding is the mistake of the previous lessons in disguise: `"<"` matches the start of `"<="`, so the
@@ -90,20 +90,20 @@ suggested fix. The command exits with status 1 if there is an error, and with `-
 of this tutorial are clean:
 
 ```bash
-pego lint -g config.pego
-pego lint -g robust.pego
+zp lint -g config.zp
+zp lint -g robust.zp
 ```
 
 A run with no findings prints nothing and exits with status 0.
 
 ## Formatting
 
-`pego fmt` rewrites a grammar into the canonical layout and keeps comments. `-l` lists the files whose formatting
+`zp fmt` rewrites a grammar into the canonical layout and keeps comments. `-l` lists the files whose formatting
 differs, `-w` rewrites them in place and `-check` lists them and exits with status 1, which suits CI:
 
 ```bash
-pego fmt -l config.pego robust.pego
-pego fmt -w config.pego
+zp fmt -l config.zp robust.zp
+zp fmt -w config.zp
 ```
 
 ## Next Steps

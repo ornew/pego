@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
 )
 
 // FieldType is a declared struct field type that a constructor checks a dynamically typed value

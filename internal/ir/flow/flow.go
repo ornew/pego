@@ -1,4 +1,4 @@
-// Package flow is the Flow IR of PEGO (design 062): one function per rule variant, with explicit
+// Package flow is the Flow IR of ZeroParse (design 062): one function per rule variant, with explicit
 // parser state and structured control, from which the host-language backends print code.
 //
 // A Func has variables (the saved state of backtracking points, capture values, intermediate
@@ -19,7 +19,7 @@
 // unreachable.
 package flow
 
-import "github.com/ornew/pego/internal/ir/core"
+import "github.com/ornew/zeroparse/internal/ir/core"
 
 // Func is a function of Flow IR: the body of a rule variant.
 type Func struct {

@@ -1,6 +1,6 @@
 # Documentation Style
 
-How the PEGO documentation is organized and written. It applies to the tutorial, the guides, the cookbook and the
+How the ZeroParse documentation is organized and written. It applies to the tutorial, the guides, the cookbook and the
 specification; design pages, design records and optimization records follow their own rules. Pages that break a rule that a test
 checks fail `cd site && go test ./...`; the rest is checked in review.
 
@@ -51,7 +51,7 @@ the title without a trailing qualifier.
   three letters (as, at, by, in, of, off, on, per, to, via, vs). Prepositions of four letters or more are capitalized
   (With, From, Into, Over, Through), and so is the adverb in "Up to Date". `TestHeadingTitleCase` enforces this for the
   tutorial, the guides, the cookbook, the specification, the project documents of `docs/` and the README.
-- Words in code spans stay as written (`pego gen`, `foldl`). Every part of a hyphenated word is capitalized
+- Words in code spans stay as written (`zp gen`, `foldl`). Every part of a hyphenated word is capitalized
   (Built-In, Indentation-Based).
 - The title of a page names what the page is for. Tutorial titles name what the reader builds or learns, guide
   titles name the feature (a noun phrase), recipe titles start with a verb for the task, and specification titles name
@@ -64,7 +64,7 @@ the title without a trailing qualifier.
 
 ## Voice and Terms
 
-- **Tutorial.** Second person, imperative, present tense: "Create `calc.pego`." "Run it." No "we" and no "let us".
+- **Tutorial.** Second person, imperative, present tense: "Create `calc.zp`." "Run it." No "we" and no "let us".
 - **Guide.** Second person for procedures. Declarative present tense for behavior. Do not hedge behavior that the
   specification defines; state it once and link to the specification. Keep advice (what to prefer) apart from the
   contract (what happens) in separate sentences or paragraphs.
@@ -76,8 +76,8 @@ the title without a trailing qualifier.
   Operators Rule, Value Action, Predicate Action, start rule, position unit, code point, node. Defined terms are
   capitalized as the specification capitalizes them. A new term lands in the glossary before it is used in a page.
   "Operators Rule" is the only name of that construct.
-- American English. Write "Go API", "TypeScript", "WebAssembly" and "`.pegoc`". Say "input" for the text that a
-  parser reads and "grammar source" for a `.pego` file.
+- American English. Write "Go API", "TypeScript", "WebAssembly" and "`.zpc`". Say "input" for the text that a
+  parser reads and "grammar source" for a `.zp` file.
 - Write for the reader of the published page. Do not mention chats, requests, review, the order in which work was
   done, backlog identifiers or agents. A page does not describe how it differs from an earlier version; a migration is
   a section that tells the reader what to change, with the old and the new spelling.
@@ -92,13 +92,13 @@ the title without a trailing qualifier.
   "**Problem.**" paragraph, the solution with its files, Expected Output, How It Works, and Variations and Limits.
   `TestCookbookRecipes` enforces the paragraph and the order of the sections.
 - The first line of a code block that holds a file the reader should save is a comment with the file name
-  (`// main.go`, `// rules.pego`). The extraction rule of the cookbook relies on it.
+  (`// main.go`, `// rules.zp`). The extraction rule of the cookbook relies on it.
 
 ## Examples
 
 Every example is run, and its output is pasted from that run. An example that a reader copies must work as printed.
 
-- Tag every fence. Grammars are `pego`, Go is `go`, TypeScript is `ts`, JSON is `json`, shell commands are `bash`
+- Tag every fence. Grammars are `zp`, Go is `go`, TypeScript is `ts`, JSON is `json`, shell commands are `bash`
   (not `sh` or `console`), and the output of a program or a command is `text`. An untagged fence is a mistake.
   `TestCodeFenceLanguages` enforces this.
 - Draw a diagram as a `mermaid` fence when it has more than a handful of nodes, branches or labeled edges; the site
@@ -120,7 +120,7 @@ Every example is run, and its output is pasted from that run. An example that a 
 - Write a complete `package main` program when the program is the point, and statement fragments otherwise, never half a
   function. Handle errors: `log.Fatal(err)` in programs, `return err` in fragments. Do not use `panic` and do not
   ignore errors.
-- Grammars are formatted with `pego fmt`. A rule body that spans lines is parenthesized, because a line break
+- Grammars are formatted with `zp fmt`. A rule body that spans lines is parenthesized, because a line break
   before the action ends the rule. Types come first, then rules in the order a reader needs them. `main` is the start
   rule unless the page is about start rules.
 - State the unit of every position that is shown, or write it as `line:column`. Write ranges as `[start, end)`.

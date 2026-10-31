@@ -12,31 +12,31 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/gen"
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/gen"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
-func sourceGrammar(t *testing.T) (*pego.Parser, string) {
+func sourceGrammar(t *testing.T) (*zeroparse.Parser, string) {
 	t.Helper()
-	src, err := os.ReadFile("../../pego.pego")
+	src, err := os.ReadFile("../../zeroparse.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := pego.CompileSource(string(src), "main")
+	p, err := zeroparse.CompileSource(string(src), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
 	return p, string(src)
 }
 
-func sourceField(t *testing.T, n *pego.Node, name string) *pego.Node {
+func sourceField(t *testing.T, n *zeroparse.Node, name string) *zeroparse.Node {
 	t.Helper()
 	if n == nil {
 		t.Fatalf("nil node for field %s", name)
 	}
-	child, ok := n.Field(name).(*pego.Node)
+	child, ok := n.Field(name).(*zeroparse.Node)
 	if !ok || child == nil {
 		t.Fatalf("%s.%s is %T, want node", n.Type(), name, n.Field(name))
 	}
@@ -44,26 +44,26 @@ func sourceField(t *testing.T, n *pego.Node, name string) *pego.Node {
 }
 
 // sourceText returns the text held by field name of n, a named string node.
-func sourceText(t *testing.T, n *pego.Node, name string) string {
+func sourceText(t *testing.T, n *zeroparse.Node, name string) string {
 	t.Helper()
 	field := sourceField(t, n, name)
 	text := field.Text()
-	if field.Kind() != pego.KindString {
+	if field.Kind() != zeroparse.KindString {
 		t.Fatalf("%s.%s has no text", n.Type(), name)
 	}
 	return text
 }
 
 // elems returns the elements of the tuple or list n.
-func elems(n *pego.Node) []*pego.Node {
-	var out []*pego.Node
+func elems(n *zeroparse.Node) []*zeroparse.Node {
+	var out []*zeroparse.Node
 	for _, e := range n.Elems() {
 		out = append(out, e)
 	}
 	return out
 }
 
-func sourceDecls(t *testing.T, n *pego.Node) []*pego.Node {
+func sourceDecls(t *testing.T, n *zeroparse.Node) []*zeroparse.Node {
 	t.Helper()
 	if n == nil || n.Type() != "File" {
 		t.Fatalf("source root: %v", n)
@@ -77,11 +77,11 @@ func TestSourceGrammarMatchesDocumentation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	blocks := pegoCodeBlocks(string(doc))
-	if len(blocks) != 1 || !strings.Contains(string(doc), "`pego.pego`") || strings.Contains(string(doc), "](http") || strings.Contains(string(doc), "## Full Grammar") {
+	blocks := zpCodeBlocks(string(doc))
+	if len(blocks) != 1 || !strings.Contains(string(doc), "`zeroparse.zp`") || strings.Contains(string(doc), "](http") || strings.Contains(string(doc), "## Full Grammar") {
 		t.Fatal("expected one simple grammar and a reference to the full source and no external link")
 	}
-	g, err := pego.ParseGrammar(src)
+	g, err := zeroparse.ParseGrammar(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,19 +119,19 @@ type Num = node[string]
 rule num = x:"1" => Num{$x,}
 rule tuples = "x" => ((), (Foo{},), ( 1 , "a" , ), (2), (1, (2,)))
 `
-	if _, err := pego.ParseGrammar(src); err != nil {
+	if _, err := zeroparse.ParseGrammar(src); err != nil {
 		t.Fatal(err)
 	}
 	// A constructor takes named fields or positional values, not both.
 	const mixed = "type Num = node[string]\nrule num = x:\"x\" => Num{$x, Text: \"0\"}"
-	if _, err := pego.ParseGrammar(mixed); err == nil {
+	if _, err := zeroparse.ParseGrammar(mixed); err == nil {
 		t.Fatal("the reader accepts a mixed constructor")
 	}
-	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		if _, err := p.Parse(mixed, pego.WithBackend(backend)); err == nil {
+	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+		if _, err := p.Parse(mixed, zeroparse.WithBackend(backend)); err == nil {
 			t.Fatalf("%v: the source grammar accepts a mixed constructor", backend)
 		}
-		n, err := p.Parse(src, pego.WithBackend(backend))
+		n, err := p.Parse(src, zeroparse.WithBackend(backend))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -171,13 +171,13 @@ rule tuples = "x" => ((), (Foo{},), ( 1 , "a" , ), (2), (1, (2,)))
 			t.Fatal("meet structure lost")
 		}
 		// One type without a comma is a group, and type arguments follow the name directly.
-		var alts []*pego.Node
+		var alts []*zeroparse.Node
 		for u := sourceField(t, defs[10], "Type"); ; u = sourceField(t, u, "L") {
 			if u.Type() != "JoinType" {
-				alts = append([]*pego.Node{u}, alts...)
+				alts = append([]*zeroparse.Node{u}, alts...)
 				break
 			}
-			alts = append([]*pego.Node{sourceField(t, u, "R")}, alts...)
+			alts = append([]*zeroparse.Node{sourceField(t, u, "R")}, alts...)
 		}
 		want := []struct {
 			typ   string
@@ -253,9 +253,9 @@ func TestSourceGrammarTree(t *testing.T) {
 	p, _ := sourceGrammar(t)
 	src := sourceTreeFixture
 	var want string
-	for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
-		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-			n, err := p.Parse(src, pego.WithUnit(unit), pego.WithBackend(backend))
+	for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+			n, err := p.Parse(src, zeroparse.WithUnit(unit), zeroparse.WithBackend(backend))
 			if err != nil {
 				t.Fatalf("%v/%v: %v", unit, backend, err)
 			}
@@ -343,9 +343,9 @@ func TestSourceGrammarRecovery(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var want string
-			for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-				n, err := p.Parse(tc.src, pego.WithBackend(backend), pego.WithExpectations())
-				var syntaxErrors pego.SyntaxErrors
+			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+				n, err := p.Parse(tc.src, zeroparse.WithBackend(backend), zeroparse.WithExpectations())
+				var syntaxErrors zeroparse.SyntaxErrors
 				wantErrors := 1
 				if tc.name == "broken multiline group" {
 					wantErrors = 2
@@ -386,7 +386,7 @@ func TestSourceGrammarGeneratedGo(t *testing.T) {
 		t.Skip("builds the generated source-parser consumer")
 	}
 	p, src := sourceGrammar(t)
-	g, err := pego.ParseGrammar(src)
+	g, err := zeroparse.ParseGrammar(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -500,7 +500,7 @@ func TestSourceGrammarTrivia(t *testing.T) {
 		"rule a = \"x\" ; /* x */ // after\nrule b = \"y\"",
 		"rule a = \"x\" ; /* x */\n// lead\nrule b = \"y\"",
 	} {
-		if _, err := pego.ParseGrammar(src); err != nil {
+		if _, err := zeroparse.ParseGrammar(src); err != nil {
 			t.Fatalf("reference rejects %q: %v", src, err)
 		}
 		n, err := p.Parse(src)
@@ -525,7 +525,7 @@ func TestSourceGrammarTrivia(t *testing.T) {
 		// A group's multiline mode ends at its closing parenthesis.
 		"type A ~ (B)\n  | C", "rule a = x:\"a\" => $x.(Match)\n  == $x",
 	} {
-		if _, err := pego.ParseGrammar(src); err == nil {
+		if _, err := zeroparse.ParseGrammar(src); err == nil {
 			t.Fatalf("reference accepted %q", src)
 		}
 		if _, err := p.Parse(src); err == nil {
@@ -537,9 +537,9 @@ func TestSourceGrammarTrivia(t *testing.T) {
 func TestSourceGrammarPackageRecovery(t *testing.T) {
 	p, _ := sourceGrammar(t)
 	for _, src := range []string{"package\nrule after = \"ok\"", "// leading\npackage ; rule after = \"ok\""} {
-		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-			n, err := p.Parse(src, pego.WithBackend(backend), pego.WithExpectations())
-			var syntaxErrors pego.SyntaxErrors
+		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+			n, err := p.Parse(src, zeroparse.WithBackend(backend), zeroparse.WithExpectations())
+			var syntaxErrors zeroparse.SyntaxErrors
 			if !errors.As(err, &syntaxErrors) || len(syntaxErrors) != 1 || !strings.Contains(err.Error(), "expected package name") {
 				t.Fatalf("%v: %v", backend, err)
 			}
@@ -573,8 +573,8 @@ func TestSourceGrammarOperatorsPlacement(t *testing.T) {
 		{"reference and predicate", `rule operators = "x"` + "\n" + `rule a = operators {1 == 1}`, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, refErr := pego.ParseGrammar(tc.src)
-			_, err := p.Parse(tc.src, pego.RecognizeOnly())
+			_, refErr := zeroparse.ParseGrammar(tc.src)
+			_, err := p.Parse(tc.src, zeroparse.RecognizeOnly())
 			if (refErr == nil) != tc.valid {
 				t.Errorf("reference parser: valid %v, want %v (%v)", refErr == nil, tc.valid, refErr)
 			}

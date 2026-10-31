@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/document"
+	"github.com/ornew/zeroparse/internal/engine/document"
 
-	. "github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/engine/core"
+	. "github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 // TestDocumentEditKeepsMemo checks that an edit keeps exactly the memo entries the rules in

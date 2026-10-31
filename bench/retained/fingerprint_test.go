@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func TestFingerprintTerminalFlag(t *testing.T) {
-	p, err := pego.CompileSource("@start\nrule main = v1:\"x\" => $v1\n", "main")
+	p, err := zeroparse.CompileSource("@start\nrule main = v1:\"x\" => $v1\n", "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestFingerprintTerminalFlag(t *testing.T) {
 }
 
 func TestFingerprintSharingAndNodeCycles(t *testing.T) {
-	hash := func(n *pego.Node) string {
+	hash := func(n *zeroparse.Node) string {
 		t.Helper()
 		h, err := fingerprint(n)
 		if err != nil {
@@ -65,9 +65,9 @@ func TestFingerprintSharingAndNodeCycles(t *testing.T) {
 		t.Fatal("fingerprint loses node sharing")
 	}
 	cycle := tupleNode()
-	value.SetNodeElems(cycle, []*pego.Node{cycle})
+	value.SetNodeElems(cycle, []*zeroparse.Node{cycle})
 	copyCycle := tupleNode()
-	value.SetNodeElems(copyCycle, []*pego.Node{copyCycle})
+	value.SetNodeElems(copyCycle, []*zeroparse.Node{copyCycle})
 	if hash(cycle) != hash(copyCycle) {
 		t.Fatal("fingerprint depends on pointer addresses")
 	}
@@ -118,14 +118,14 @@ func TestFingerprintDeepValuesAndCanonicalFields(t *testing.T) {
 	}
 }
 
-func stringNode(text string) *pego.Node {
-	return value.NewNode(pego.KindString, 0, len(text), text, nil, "", nil, nil)
+func stringNode(text string) *zeroparse.Node {
+	return value.NewNode(zeroparse.KindString, 0, len(text), text, nil, "", nil, nil)
 }
 
-func tupleNode(elems ...*pego.Node) *pego.Node {
-	return value.NewNode(pego.KindTuple, 0, 0, "", elems, "", nil, nil)
+func tupleNode(elems ...*zeroparse.Node) *zeroparse.Node {
+	return value.NewNode(zeroparse.KindTuple, 0, 0, "", elems, "", nil, nil)
 }
 
-func structNode() *pego.Node {
-	return value.NewNode(pego.KindStruct, 0, 0, "", nil, "S", nil, nil)
+func structNode() *zeroparse.Node {
+	return value.NewNode(zeroparse.KindStruct, 0, 0, "", nil, "S", nil, nil)
 }

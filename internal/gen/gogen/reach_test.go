@@ -12,10 +12,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // The grammars have one start rule, main, which the test corpora (they mark every rule as a start

@@ -7,7 +7,7 @@ input. The linter finds them, and other likely mistakes, by reading the grammar 
 
 | | Command line | Go |
 |:--|:--|:--|
-| Lint a grammar | `pego lint -g g.pego` | `lint.Config{}.Run(ctx, g, "main")` |
+| Lint a grammar | `zp lint -g g.zp` | `lint.Config{}.Run(ctx, g, "main")` |
 | Machine-readable output | `-f json` | `[]lint.Finding` |
 | Turn checks off | `-disable check,...` | `lint.Config{Disable: []string{...}}` |
 | Classify the parse cost | `-classify` | `lint.Config{Classify: true}` |
@@ -30,7 +30,7 @@ design, and how the checks are kept free of false positives, is in
 
 Take a list whose items may be words, numbers or booleans:
 
-```pego
+```zp
 @start
 rule main = item ("," item)*
 rule item = word / number / "true" / "false"
@@ -39,37 +39,37 @@ rule number = [0-9]+ #atomic
 ```
 
 ```bash
-pego lint -g items.pego
+zp lint -g items.zp
 ```
 
 ```text
-items.pego:3:29: error: alternative 3 (`"true"`) can never match: alternative 1 (`word` at 3:13) matches first wherever it could [shadowed-alternative]
+items.zp:3:29: error: alternative 3 (`"true"`) can never match: alternative 1 (`word` at 3:13) matches first wherever it could [shadowed-alternative]
 	fix: move it before alternative 1
-items.pego:3:38: error: alternative 4 (`"false"`) can never match: alternative 1 (`word` at 3:13) matches first wherever it could [shadowed-alternative]
+items.zp:3:38: error: alternative 4 (`"false"`) can never match: alternative 1 (`word` at 3:13) matches first wherever it could [shadowed-alternative]
 	fix: move it before alternative 1
-pego: lint: 2 errors, 0 warnings, 0 hints
+zp: lint: 2 errors, 0 warnings, 0 hints
 ```
 
 `word` matches `true` itself, so the parser never reaches the keywords. Each finding is one line,
 `file:line:col: severity: message [check]`, followed by a suggested fix when there is one. Here the fix is to try the
 keywords first, and to make sure that they are whole words: `rule item =  ("true" / "false") ![a-z] / word / number `.
-(`pego sample -coverage` finds the same mistake by generating inputs: see
+(`zp sample -coverage` finds the same mistake by generating inputs: see
 [Sampling inputs and fuzzing](sampling-and-fuzzing.md#coverage).)
 
-`pego lint` exits with status 1 if it finds an error, and 0 otherwise; with `-strict`, warnings fail too. Hints never
-fail. The grammar is PEGO source or JSON (a compiled grammar holds no grammar to lint); the start rule is the one `-s`
+`zp lint` exits with status 1 if it finds an error, and 0 otherwise; with `-strict`, warnings fail too. Hints never
+fail. The grammar is ZeroParse source or JSON (a compiled grammar holds no grammar to lint); the start rule is the one `-s`
 names, otherwise the grammar's default start rule. A grammar that does not compile is reported with its compile errors,
 like the other commands do.
 
 With `-f json`, the findings are printed as one JSON document:
 
 ```bash
-pego lint -g items.pego -f json
+zp lint -g items.zp -f json
 ```
 
 ```text
 {
-  "grammar": "items.pego",
+  "grammar": "items.zp",
   "start": "main",
   "findings": [
     {
@@ -95,7 +95,7 @@ check with its severity.
 grammar a failed `A` gives its input back to the repetition in `main`, which tries `"a"` and then `A` again one
 character further on:
 
-```pego
+```zp
 @start
 rule main = (A / "a")* $$
 
@@ -103,13 +103,13 @@ rule A = "a"* "c"
 ```
 
 ```bash
-pego lint -g scan.pego -classify
+zp lint -g scan.zp -classify
 ```
 
 ```text
-scan.pego:4:10: hint: the cost can grow as n^2: after the alternative at 2:14 in rule main fails, the later alternative "a" at 2:18 in rule main can start again inside the input that the repetition "a"* at 4:10 in rule A examined; this repeats in the repetition (A / "a")* at 2:13 in rule main [super-linear]
-scan.pego: the cost from start rule main is polynomial (n^2)
-	witness: scan.pego:4:10: the cost can grow as n^2: after the alternative at 2:14 in rule main fails, the later alternative "a" at 2:18 in rule main can start again inside the input that the repetition "a"* at 4:10 in rule A examined; this repeats in the repetition (A / "a")* at 2:13 in rule main
+scan.zp:4:10: hint: the cost can grow as n^2: after the alternative at 2:14 in rule main fails, the later alternative "a" at 2:18 in rule main can start again inside the input that the repetition "a"* at 4:10 in rule A examined; this repeats in the repetition (A / "a")* at 2:13 in rule main [super-linear]
+scan.zp: the cost from start rule main is polynomial (n^2)
+	witness: scan.zp:4:10: the cost can grow as n^2: after the alternative at 2:14 in rule main fails, the later alternative "a" at 2:18 in rule main can start again inside the input that the repetition "a"* at 4:10 in rule A examined; this repeats in the repetition (A / "a")* at 2:13 in rule main
 ```
 
 On `a` repeated n times, `"a"*` scans to the end of the input from every position. Each cause is a
@@ -130,12 +130,12 @@ stays free of estimates. The [`growing-variable`](#growing-variable) warning nee
 
 ## From Go
 
-Package `github.com/ornew/pego/lint` lints from Go. A `lint.Config` holds the settings of a run, and its `Run`
+Package `github.com/ornew/zeroparse/lint` lints from Go. A `lint.Config` holds the settings of a run, and its `Run`
 method takes a context, a grammar AST and the start rule. It returns an error, and no findings, if the grammar
 does not compile or the context ends:
 
 ```go
-g, err := pego.ParseGrammar(src)
+g, err := zeroparse.ParseGrammar(src)
 if err != nil {
 	log.Fatal(err)
 }
@@ -155,7 +155,7 @@ A test can keep a grammar free of mistakes:
 
 ```go
 func TestGrammarLint(t *testing.T) {
-	g, err := pego.ParseGrammar(grammarSource)
+	g, err := zeroparse.ParseGrammar(grammarSource)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +223,7 @@ commits to the earlier one. The linter proves it in three ways.
 
 An earlier alternative always succeeds, so the later ones are never even tried:
 
-```pego
+```zp
 rule sign = "+"? / "-" // "+"? matches nothing when there is no "+": "-" is never tried
 ```
 
@@ -232,7 +232,7 @@ optional).
 
 An earlier alternative is a prefix of a later one:
 
-```pego
+```zp
 rule op = "=" / "==" // "=" matches the start of "=="
 rule arrow = "-" / "->"
 rule call = ident / ident "(" args ")" // the same first item, and nothing more
@@ -262,7 +262,7 @@ Two things to know when you remove or move a dead alternative:
 
 An anchor that contradicts its neighbors in a sequence makes the sequence impossible:
 
-```pego
+```zp
 rule file = items $$ "\n" // nothing can follow the end of the input
 rule doc = header ^^ body // header consumed input, so this is not the beginning
 rule line = text $ "x" // $ is followed by a line break or the end, not "x"
@@ -273,7 +273,7 @@ Move `$$` to the end (`items "\n"? $$`), and `^^` to the beginning.
 
 A rule that can only match by matching itself first has no base case and never matches:
 
-```pego
+```zp
 rule list = item "," list // every list needs a longer list
 rule expr = expr "+" term // left recursion that never starts
 ```
@@ -285,7 +285,7 @@ An explicit `_|_` is never reported: it is written on purpose, as in `_|_ @error
 
 ### `useless-lookahead`
 
-```pego
+```zp
 rule a = !"x"? y // error: "x"? always succeeds, so !"x"? never does
 rule b = &ws* y // warning: ws* always succeeds, so &ws* has no effect
 rule c = !_|_ y // warning: _|_ never matches, so !_|_ always succeeds
@@ -297,7 +297,7 @@ The language-server quick fix removes a lookahead that always succeeds when it i
 
 ### `nullable-repetition`
 
-```pego
+```zp
 rule list = item?* // item? can match nothing
 rule text = word*+
 rule lines = line* // line = [^\n]* "\n"? can match nothing too
@@ -311,7 +311,7 @@ iteration still adds an element to the list (a `nil`, or an empty match), and th
 
 ### `redundant-optional`
 
-```pego
+```zp
 rule a = "x"*? y // "x"* always succeeds: the ? does nothing
 ```
 
@@ -319,7 +319,7 @@ Remove the `?`. An optional lookahead (`(&x)?`) is not reported: it adds a `nil`
 
 ### `growing-variable`
 
-```pego
+```zp
 var s string = "a"
 
 @start
@@ -327,7 +327,7 @@ rule main = "x" {s := s + s} main / ""
 ```
 
 ```text
-grow.pego:4:18: warning: s := s + s can at least double the size of s on each recursion or iteration, so that it can grow exponentially with the input [growing-variable]
+grow.zp:4:18: warning: s := s + s can at least double the size of s on each recursion or iteration, so that it can grow exponentially with the input [growing-variable]
 ```
 
 Each call of `main` sees the value that the call before it bound, so after n characters `s` holds 2^n characters. A
@@ -340,7 +340,7 @@ variables are checked; growth through `int` variables, and a fold accumulator th
 
 A capture is reported when nothing can read its value:
 
-```pego
+```zp
 rule ret = "return" v:(ws x:expr)? => Return{Value: $x} // v: is never read
 rule kv = k:key "=" v:value => $k // v: is never read
 rule all = (x:item)* => nil // the list of the repetition is discarded
@@ -352,14 +352,14 @@ parameter, which is written without `$`, is not a capture), or, in a rule withou
 
 ### `duplicate-capture`
 
-```pego
+```zp
 rule pair = a:key "=" a:value // the second a: overwrites the first
 ```
 
 A capture stores its value after its expression matches. For nested captures, the inner capture is stored first and
 the outer capture then overwrites it. The finding points to the outer capture and identifies the inner one:
 
-```pego
+```zp
 @start
 rule main = a:a:"x"
 ```
@@ -369,7 +369,7 @@ own.
 
 ### `char-class`
 
-```pego
+```zp
 rule id = [a-zA-Za-f_] // a-f overlaps a-z
 rule word = [A-z]+ // A-z also matches [\]^_` between Z and a
 ```
@@ -388,7 +388,7 @@ The language-server quick fix deletes the rule with its attributes and the comme
 
 ### `right-recursion`
 
-```pego
+```zp
 rule lines = line lines?
 rule args = expr ("," args)?
 ```
@@ -408,7 +408,7 @@ you).
 
 ### `long-lookahead`
 
-```pego
+```zp
 rule line = text "\n" &([^!]* ($$ / "!")) // looks ahead to the next "!", across lines
 ```
 
@@ -427,7 +427,7 @@ that grows with a recursion, such as `text` of a capture of the rule's own recur
 
 ### `case-insensitive-literal`
 
-```pego
+```zp
 rule SELECT = [sS][eE][lL][eE][cC][tT] !ident_char // write "select"i
 ```
 
@@ -439,7 +439,7 @@ partial run is reported with only its own letters.
 
 A comment that starts with `lint:ignore` and the names of checks suppresses their findings, with an optional reason:
 
-```pego
+```zp
 // lint:ignore unreachable-rule kept for the next version of the format
 rule expr_entry = expr $$
 
@@ -466,4 +466,4 @@ suppressions do not outlive what they excused. Grammars without comments (JSON) 
 - Mistakes the compiler already rejects: undefined rules and captures, captures inside `!`, `@` or `-`, type errors
   in actions, unknown escapes.
 - Anchors across rules: `rule a = "x" $$` called as `a "y"` is not reported.
-- Performance on real input: use [`pego profile`](debugging.md) for that.
+- Performance on real input: use [`zp profile`](debugging.md) for that.

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 var typedAllocatorControls = []struct {
@@ -23,7 +23,7 @@ var typedAllocatorControls = []struct {
 	{"individual", true, true, false},
 }
 
-// PEGO_TYPED_OUTPUT_RETENTION_DIR preserves the generated fixture for the
+// ZP_TYPED_OUTPUT_RETENTION_DIR preserves the generated fixture for the
 // retained-heap and parse-throughput benchmarks below. Normal tests clean it up.
 func TestGeneratedTypedOutputRetentionFixture(t *testing.T) {
 	t.Parallel()
@@ -76,7 +76,7 @@ rule small Token = t:("b") #atomic => Token{Text: text($t)}
 				if variant.legacy && strings.Contains(string(code), "s.bootstrap") {
 					t.Fatal("reference output used untracked bootstrap allocations")
 				}
-				dir := os.Getenv("PEGO_TYPED_OUTPUT_RETENTION_DIR")
+				dir := os.Getenv("ZP_TYPED_OUTPUT_RETENTION_DIR")
 				if dir == "" {
 					dir = t.TempDir()
 				} else {

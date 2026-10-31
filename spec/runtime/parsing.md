@@ -18,8 +18,8 @@ for.
 
 | Interface | How the start rule is selected |
 |:--|:--|
-| Go API | The `start` argument of `pego.Compile` and `pego.CompileSource`, where an empty name selects the default start rule; `Parser.WithStart` makes a parser with another start rule for whole-input parsing; `Parser.ParsePrefix` selects a start rule for one prefix parse without changing the configured start rule. Both take an empty name for the default start rule |
-| Command line | `pego parse -s <rule>`. It defaults to the start rule saved in a compiled grammar (`.pegoc`), and otherwise to the default start rule |
+| Go API | The `start` argument of `zeroparse.Compile` and `zeroparse.CompileSource`, where an empty name selects the default start rule; `Parser.WithStart` makes a parser with another start rule for whole-input parsing; `Parser.ParsePrefix` selects a start rule for one prefix parse without changing the configured start rule. Both take an empty name for the default start rule |
+| Command line | `zp parse -s <rule>`. It defaults to the start rule saved in a compiled grammar (`.zpc`), and otherwise to the default start rule |
 | Generated parsers | `Parse` uses the start rule selected when the parser was generated, the default start rule unless another was named; `ParseRule` and `ParseRuleAST` (`parseRule` and `parseRuleWithOptions` in TypeScript) take the name of a start rule, or an empty name for the default start rule |
 
 Naming a rule that is not a start rule is an error that names the rule and says
@@ -65,8 +65,8 @@ The text of the string node is the matched input: byte mode keeps the invalid by
 while code-point mode substitutes U+FFFD. The literal's spelling need not have
 the same byte length as the matched input.
 
-The unit is selected with `pego.WithUnit(pego.Bytes)` in the Go API and with
-`pego parse -unit bytes` on the command line.
+The unit is selected with `zeroparse.WithUnit(zeroparse.Bytes)` in the Go API and with
+`zp parse -unit bytes` on the command line.
 
 ### Lines and Columns
 
@@ -87,7 +87,7 @@ stopped, and the parse fails with a syntax error. The error is reported at the
 farthest position that parsing reached, which can be beyond where the start
 rule stopped.
 
-```pego
+```zp
 rule main = "a" ("b" "c")?
 ```
 
@@ -120,7 +120,7 @@ whose expression has no valued element, such as `rule main = -"a"`, has the unit
 ### Nodes
 
 The value of a rule without an action is a node. The properties of a node, the
-Go type `pego.Node`, traversal, and the text and JSON renderings are defined in
+Go type `zeroparse.Node`, traversal, and the text and JSON renderings are defined in
 [Nodes and Values](nodes.md).
 
 ## Prefix Parsing
@@ -244,20 +244,20 @@ Recording is requested as follows.
 
 | Parse | Request |
 |:--|:--|
-| `Parser.Parse`, `ParseStream`, `ParsePrefix`, `Document` | The option `pego.WithExpectations()`. A `Document` fixes the mode when it is created; a later parse that asks for the other mode is an error |
-| Generated Go and TypeScript parsers | Generate with the option `Expectations` (`-expectations` in `pego gen`), which gives the parser its table of expectations and a parse option `WithExpectations` (Go) or `expectations` (TypeScript). A parse records them only when it passes the option; a generated parser without the generation option has no table and no such option, and a parse of it that passes the runtime's `WithExpectations` or `expectations: true` returns an error |
-| `pego parse`, `pego debug`, `pego trace`, `pego explain`, `pego profile`, `pego test`, `pego editfuzz` and the playground | Always on |
+| `Parser.Parse`, `ParseStream`, `ParsePrefix`, `Document` | The option `zeroparse.WithExpectations()`. A `Document` fixes the mode when it is created; a later parse that asks for the other mode is an error |
+| Generated Go and TypeScript parsers | Generate with the option `Expectations` (`-expectations` in `zp gen`), which gives the parser its table of expectations and a parse option `WithExpectations` (Go) or `expectations` (TypeScript). A parse records them only when it passes the option; a generated parser without the generation option has no table and no such option, and a parse of it that passes the runtime's `WithExpectations` or `expectations: true` returns an error |
+| `zp parse`, `zp debug`, `zp trace`, `zp explain`, `zp profile`, `zp test`, `zp editfuzz` and the playground | Always on |
 
 ### Errors in Go and on the Command Line
 
-In the Go API, a failed parse returns a `*pego.SyntaxError` with the fields `Pos`
+In the Go API, a failed parse returns a `*zeroparse.SyntaxError` with the fields `Pos`
 (the position in the position unit), `Line`, `Col`, `Expected` (every expected
 item, in the order above) and `Messages` (the messages of `@error` attributes), both empty unless
 expectations are recorded, and the methods
 `Error()`, which returns the text above with its position, and `Message()`, which
 returns it without the position. A parse that recovered errors returns the node and
-an error of type `pego.SyntaxErrors`, a list of `*SyntaxError`; `errors.As` tells it
-apart from a fatal `*SyntaxError`, and the node is valid. The command `pego parse`
+an error of type `zeroparse.SyntaxErrors`, a list of `*SyntaxError`; `errors.As` tells it
+apart from a fatal `*SyntaxError`, and the node is valid. The command `zp parse`
 prints the tree and then each error on its own line, and exits with status 1 in
 both cases. Run-time errors of actions, nesting-limit errors and interruptions are
 other error values, not `SyntaxError`.
@@ -676,7 +676,7 @@ necessary.
 
 ### Classification
 
-`pego lint -classify` (`lint.Config.Classify` in Go) classifies the cost of
+`zp lint -classify` (`lint.Config.Classify` in Go) classifies the cost of
 the start rule that it checks and shows the class. The classes are ordered
 from best to worst, as in the table: each is a weaker claim than the classes
 before it. A grammar has the worst class of its causes. A witnessed
@@ -783,7 +783,7 @@ an Operators Rule; chains of left-associative operators do not nest. When the
 limit is exceeded, the parse fails with a run-time error and no value. In the
 reference implementation the error is `nesting too deep: more than N nested
 recursive rule calls`; the default limit is 100,000 (10,000,000 for the iterative
-bytecode VM), and the Go API changes it with `pego.WithMaxDepth`. Every backend
+bytecode VM), and the Go API changes it with `zeroparse.WithMaxDepth`. Every backend
 reaches the limit at the same nesting of the same input.
 
 ## Cancellation and Budget Limits
@@ -883,7 +883,7 @@ loop that only scans input, such as a repeated character class, is bounded by
 `Budget`. A cancelled
 context returns the error of the context (`errors.Is(err, context.Canceled)` or
 `context.DeadlineExceeded`); an exhausted limit returns an error that matches
-`pego.ErrLimit`, and `errors.As` with `*pego.LimitError` gives the
+`zeroparse.ErrLimit`, and `errors.As` with `*zeroparse.LimitError` gives the
 details. Stream parses and documents are specified in [Streaming](streaming.md)
 and [Incremental Documents](documents.md).
 

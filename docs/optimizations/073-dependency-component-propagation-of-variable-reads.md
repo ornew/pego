@@ -72,6 +72,6 @@
   `analysis.go` from `a1424e5` via a Go overlay for the parent. Alternate five
   pairs with no concurrent tests/builds/probes. For allocation attribution,
   run `BenchmarkVariableDependencies/no-vars/caller-first-512` separately
-  with `-benchtime=1s -memprofile=/tmp/pego-compile.pprof`, and inspect
+  with `-benchtime=1s -memprofile=/tmp/zp-compile.pprof`, and inspect
   `go tool pprof -sample_index=alloc_space`. Raw focused records stay local.
   The full-suite checkpoint follows this compiler-analysis optimization.

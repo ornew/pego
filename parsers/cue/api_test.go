@@ -8,7 +8,7 @@ import (
 	"testing"
 	"unicode"
 
-	"github.com/ornew/pego/parsers/cue/types"
+	"github.com/ornew/zeroparse/parsers/cue/types"
 )
 
 // TestCheck: inputs that the grammar accepts and Check (so ParseFile) rejects, as the reference parser does; the

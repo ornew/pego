@@ -1,5 +1,5 @@
-// The VS Code extension for PEGO grammar files. It starts the language server, `pego lsp`, for
-// .pego files; the language definition and the TextMate grammar are declared in package.json.
+// The VS Code extension for ZeroParse grammar files. It starts the language server, `zp lsp`, for
+// .zp files; the language definition and the TextMate grammar are declared in package.json.
 'use strict';
 
 const vscode = require('vscode');
@@ -10,7 +10,7 @@ const { LanguageClient, State, CloseAction } = require('vscode-languageclient/no
 // cleanup after the Node shutdown has retained responsibility for the process.
 // Keep ordinary crash recovery unchanged; a failed start must not auto-restart
 // while the extension is disposing it. check-client.js exercises the real API.
-class PegoLanguageClient extends LanguageClient {
+class ZPLanguageClient extends LanguageClient {
   constructor(...args) {
     super(...args);
     this.shutdownPending = undefined;
@@ -75,29 +75,29 @@ async function start() {
   if (!active) {
     return;
   }
-  const config = vscode.workspace.getConfiguration('pego');
+  const config = vscode.workspace.getConfiguration('zp');
   if (!config.get('server.enabled', true)) {
     return;
   }
-  const command = config.get('server.path') || 'pego';
+  const command = config.get('server.path') || 'zp';
   // The extension owns the channel so dependency cleanup order cannot leave
   // a failed-start channel behind after the client has already become Stopped.
-  const output = vscode.window.createOutputChannel('PEGO Language Server', { log: true });
+  const output = vscode.window.createOutputChannel('ZeroParse Language Server', { log: true });
   let c;
   const lintActions = createLintActions(vscode, config.get('server.experimentalLint', false),
     () => active && !!c && client === c && c.state === State.Running,
     (params) => c.sendRequest('codeAction/resolve', params));
   try {
-    c = new PegoLanguageClient(
-      'pego', // the prefix of the pego.trace.server setting
-      'PEGO Language Server',
+    c = new ZPLanguageClient(
+      'zp', // the prefix of the zp.trace.server setting
+      'ZeroParse Language Server',
       { command, args: ['lsp'] },
       {
         outputChannel: output,
         middleware: lintActions.middleware,
         documentSelector: [
-          { scheme: 'file', language: 'pego' },
-          { scheme: 'untitled', language: 'pego' },
+          { scheme: 'file', language: 'zp' },
+          { scheme: 'untitled', language: 'zp' },
         ],
       },
     );
@@ -118,9 +118,9 @@ async function start() {
     // channel, for one).
     const message = err instanceof Error ? err.message : String(err);
     vscode.window.showErrorMessage(
-      `PEGO: could not start the language server with "${command} lsp": ${message}. ` +
-        'Install pego with "go install github.com/ornew/pego/cmd/pego@latest", ' +
-        'or set pego.server.path to the pego command.',
+      `ZeroParse: could not start the language server with "${command} lsp": ${message}. ` +
+        'Install zp with "go install github.com/ornew/zeroparse/cmd/zp@latest", ' +
+        'or set zp.server.path to the zp command.',
     );
     await stop();
   }
@@ -155,18 +155,18 @@ function restart() {
 async function activate(context) {
   active = true;
   context.subscriptions.push(
-    vscode.commands.registerCommand('pego.restartServer', restart),
-    vscode.commands.registerCommand('pego.showExplanation', (...args) => clientLintActions?.showExplanation(...args) || false),
-    vscode.commands.registerCommand('pego.applyLintSuppression', (...args) => clientLintActions?.applySuppression(...args) || false),
-    vscode.commands.registerCommand('pego.applyLintAction', (...args) => clientLintActions?.applyResolved(...args) || false),
-    vscode.commands.registerCommand('pego.applyLintFix', (...args) => clientLintActions?.applyFix(...args) || false),
+    vscode.commands.registerCommand('zp.restartServer', restart),
+    vscode.commands.registerCommand('zp.showExplanation', (...args) => clientLintActions?.showExplanation(...args) || false),
+    vscode.commands.registerCommand('zp.applyLintSuppression', (...args) => clientLintActions?.applySuppression(...args) || false),
+    vscode.commands.registerCommand('zp.applyLintAction', (...args) => clientLintActions?.applyResolved(...args) || false),
+    vscode.commands.registerCommand('zp.applyLintFix', (...args) => clientLintActions?.applyFix(...args) || false),
     vscode.workspace.onDidCloseTextDocument((document) => clientLintActions?.closeDocument(document)),
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (active && e.affectsConfiguration('pego.server')) {
+      if (active && e.affectsConfiguration('zp.server')) {
         // VS Code does not await event callbacks; handle their failures here.
         return restart().catch((err) => {
           const message = err instanceof Error ? err.message : String(err);
-          vscode.window.showErrorMessage(`PEGO: could not update the language server: ${message}`);
+          vscode.window.showErrorMessage(`ZeroParse: could not update the language server: ${message}`);
         });
       }
     }),

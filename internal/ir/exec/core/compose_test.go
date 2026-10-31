@@ -6,10 +6,10 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/ops"
-	"github.com/ornew/pego/internal/ir/exec/pass"
-	"github.com/ornew/pego/internal/ir/exec/ref"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/ops"
+	"github.com/ornew/zeroparse/internal/ir/exec/pass"
+	"github.com/ornew/zeroparse/internal/ir/exec/ref"
 )
 
 // The tests of this file run the compositions on a model of the operations: the reference model of

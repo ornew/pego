@@ -1,7 +1,7 @@
 // Package examples_test parses the testdata inputs of every example grammar and compares the results with
 // golden files.
 //
-// Every .pego file in a directory is run against that directory's testdata/*.txt. Grammars in the same
+// Every .zp file in a directory is run against that directory's testdata/*.txt. Grammars in the same
 // directory must produce the same results, except where a result depends on how the grammar is written
 // (such as the expected alternatives of a syntax error); such results can be overridden per grammar with
 // <input>.<grammar>.golden. Run go test ./examples -update to regenerate the golden files.
@@ -14,13 +14,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 var update = flag.Bool("update", false, "update golden files")
 
 func TestExamples(t *testing.T) {
-	grammars, err := filepath.Glob("*/*.pego")
+	grammars, err := filepath.Glob("*/*.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +34,7 @@ func TestExamples(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			p, err := pego.CompileSource(string(src), "main")
+			p, err := zeroparse.CompileSource(string(src), "main")
 			if err != nil {
 				t.Fatalf("%s:%v", gpath, err)
 			}
@@ -49,7 +49,7 @@ func TestExamples(t *testing.T) {
 				}
 				// Print the tree and the errors, including those recovered with #recover.
 				var got string
-				n, err := p.Parse(string(data), pego.WithExpectations())
+				n, err := p.Parse(string(data), zeroparse.WithExpectations())
 				if n != nil {
 					got = n.String()
 				}
@@ -61,7 +61,7 @@ func TestExamples(t *testing.T) {
 				}
 				base := strings.TrimSuffix(in, ".txt")
 				golden := base + ".golden"
-				own := base + "." + strings.TrimSuffix(filepath.Base(gpath), ".pego") + ".golden"
+				own := base + "." + strings.TrimSuffix(filepath.Base(gpath), ".zp") + ".golden"
 				if _, err := os.Stat(own); err == nil {
 					golden = own
 				}

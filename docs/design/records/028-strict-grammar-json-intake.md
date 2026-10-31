@@ -6,7 +6,7 @@
 
 ## Summary
 
-Add an opt-in strict JSON entry point for tools that exchange PEGO grammar
+Add an opt-in strict JSON entry point for tools that exchange ZeroParse grammar
 ASTs. `grammar.DecodeJSON(data)` rejects unknown object fields
 and duplicate keys while preserving `grammar.UnmarshalJSON(data)` and its
 current permissive compatibility behavior.
@@ -117,12 +117,12 @@ refactoring preserves its observed compatibility behavior: unknown fields
 remain ignored and duplicate keys retain last-value-wins behavior. Both
 functions continue rejecting trailing JSON values/data and integer values
 outside destination types. Neither function resolves names or performs type,
-attribute or Operators Rule checks; callers still use `pego.Compile` for those checks.
+attribute or Operators Rule checks; callers still use `zeroparse.Compile` for those checks.
 
 ### CLI and Tooling Integration
 
 Tooling that wants typo detection can opt in by calling `grammar.DecodeJSON`.
-A future `pego compile` or `pego gen` strict-input flag should select this
+A future `zp compile` or `zp gen` strict-input flag should select this
 entry point only for JSON grammar files; source grammar parsing is unaffected.
 The default CLI path should remain compatible unless a separate migration
 decision changes it.

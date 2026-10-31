@@ -6,7 +6,7 @@
 
 ## Summary
 
-The algorithmic core of a PEGO parse — memoization, left-recursion growth, expected-set merging, recovery bookkeeping,
+The algorithmic core of a ZeroParse parse — memoization, left-recursion growth, expected-set merging, recovery bookkeeping,
 the variable environment, budget charges, stream commitment, Document reuse and the Operators Rule loop — is written
 once per runtime: in the engine (`internal/engine/core`, shared by the closure backend and both bytecode VMs), twice in
 the generated Go runtime (the node `Parser` in `runtime/runtime.go` and the typed `TParser` in `runtime/typed.go`), and
@@ -351,7 +351,7 @@ names an enclosing block, that operations are called with their signatures and f
 written only by the operations that declare it, and that a specialization leaves no reference to a folded feature.
 The IR has a text dump for tests, golden files and error messages, and an interpreter that runs a function against a
 machine of operations, which is how Go runs conformance cases until a backend prints them. A textual syntax, parsed
-by a PEGO grammar, can be added later without changing the IR.
+by a ZeroParse grammar, can be added later without changing the IR.
 
 ### Passes
 
@@ -459,7 +459,7 @@ runtime alike, because every stage prints grammar code through the Exec IR backe
 - **Engine** (final stage). The full-suite benchmarks of the closure backend and both VMs, in both families of
   record 062, and `Compile` time.
 - **Size and build.** Generated source bytes per repository parser, Go runtime source bytes and the binary size of each
-  generated parser package; TypeScript runtime bytes and gzipped bytes; generation time of `pego gen` for each
+  generated parser package; TypeScript runtime bytes and gzipped bytes; generation time of `zp gen` for each
   repository parser.
 
 A stage is accepted when no benchmark shows a statistically significant slowdown in `sec/op` (benchstat, p < 0.05),

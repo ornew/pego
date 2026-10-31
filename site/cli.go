@@ -12,12 +12,12 @@ import (
 	"strings"
 )
 
-// The reference of the pego command is generated from what the command itself prints: its usage
-// message (pego without arguments) and the flags of each command (pego <command> -h). Reading the
+// The reference of the zp command is generated from what the command itself prints: its usage
+// message (zp without arguments) and the flags of each command (zp <command> -h). Reading the
 // source instead would have to follow every way a command can define its flags (flag sets made in
 // helpers, flag.Var, flags added by a shared function), and would silently miss new ones.
 
-// cliCommand is a command of the pego command.
+// cliCommand is a command of the zp command.
 type cliCommand struct {
 	name        string
 	synopsis    string // the first lines of its entry in the usage message
@@ -30,9 +30,9 @@ type cliFlag struct {
 	name, kind, def, usage string
 }
 
-// cliUsage is the usage message of the pego command, split into its parts.
+// cliUsage is the usage message of the zp command, split into its parts.
 type cliUsage struct {
-	synopsis string // "pego <command> [flags] [arguments]"
+	synopsis string // "zp <command> [flags] [arguments]"
 	commands []cliCommand
 	notes    []string // the paragraphs after the commands
 }
@@ -43,7 +43,7 @@ var (
 	commandRe  = regexp.MustCompile(`^  ([a-z][a-z0-9-]*)\b`)
 )
 
-// parseUsage splits the usage message of the pego command.
+// parseUsage splits the usage message of the zp command.
 func parseUsage(text string) (cliUsage, error) {
 	var u cliUsage
 	lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
@@ -78,11 +78,11 @@ func parseUsage(text string) (cliUsage, error) {
 		case commandRe.MatchString(l) && !strings.HasPrefix(l, "   "):
 			name := commandRe.FindStringSubmatch(l)[1]
 			if cmd != nil && cmd.name == name && cmd.description == "" {
-				// Another form of the same command (pego gen for Go and for TypeScript).
-				cmd.synopsis += "\npego " + strings.TrimSpace(l)
+				// Another form of the same command (zp gen for Go and for TypeScript).
+				cmd.synopsis += "\nzp " + strings.TrimSpace(l)
 				continue
 			}
-			u.commands = append(u.commands, cliCommand{name: name, synopsis: "pego " + strings.TrimSpace(l)})
+			u.commands = append(u.commands, cliCommand{name: name, synopsis: "zp " + strings.TrimSpace(l)})
 			cmd = &u.commands[len(u.commands)-1]
 		case cmd != nil && strings.HasPrefix(l, "        "):
 			cmd.synopsis += "\n     " + strings.TrimSpace(l)
@@ -126,18 +126,18 @@ func parseFlagDefaults(text string) []cliFlag {
 	return flags
 }
 
-// pegoHelp builds the pego command and returns its usage message and the flags of each command.
-func pegoHelp(repo string) (cliUsage, error) {
-	dir, err := os.MkdirTemp("", "pego-site-")
+// zpHelp builds the zp command and returns its usage message and the flags of each command.
+func zpHelp(repo string) (cliUsage, error) {
+	dir, err := os.MkdirTemp("", "zp-site-")
 	if err != nil {
 		return cliUsage{}, err
 	}
 	defer os.RemoveAll(dir)
-	bin := filepath.Join(dir, "pego")
-	build := exec.Command("go", "build", "-o", bin, "./cmd/pego")
+	bin := filepath.Join(dir, "zp")
+	build := exec.Command("go", "build", "-o", bin, "./cmd/zp")
 	build.Dir = repo
 	if out, err := build.CombinedOutput(); err != nil {
-		return cliUsage{}, fmt.Errorf("building the pego command: %v\n%s", err, out)
+		return cliUsage{}, fmt.Errorf("building the zp command: %v\n%s", err, out)
 	}
 	run := func(args ...string) string {
 		var stderr bytes.Buffer
@@ -147,7 +147,7 @@ func pegoHelp(repo string) (cliUsage, error) {
 		_ = cmd.Run() // the usage and -h exit with status 1
 		return stderr.String()
 	}
-	u, err := parseUsage(strings.TrimPrefix(run(), "pego: "))
+	u, err := parseUsage(strings.TrimPrefix(run(), "zp: "))
 	if err != nil {
 		return u, err
 	}
@@ -155,28 +155,28 @@ func pegoHelp(repo string) (cliUsage, error) {
 		c := &u.commands[i]
 		c.flags = parseFlagDefaults(run(c.name, "-h"))
 		if len(c.flags) == 0 {
-			return u, fmt.Errorf("pego %s -h printed no flags", c.name)
+			return u, fmt.Errorf("zp %s -h printed no flags", c.name)
 		}
 	}
 	return u, nil
 }
 
-// renderCLI renders the reference of the pego command: the package comment, and each command of the
+// renderCLI renders the reference of the zp command: the package comment, and each command of the
 // usage message with its flags.
 func (s *Site) renderCLI(p *Page) (string, []Heading, error) {
-	fset, files, pkg, err := loadPackage(s.cfg.Repo, "cmd/pego", modulePath+"/cmd/pego")
+	fset, files, pkg, err := loadPackage(s.cfg.Repo, "cmd/zp", modulePath+"/cmd/zp")
 	if err != nil {
 		return "", nil, err
 	}
-	u, err := pegoHelp(s.cfg.Repo)
+	u, err := zpHelp(s.cfg.Repo)
 	if err != nil {
 		return "", nil, err
 	}
 	p.Description = "Parse, format, convert, compile and debug grammars, and generate parsers, from the command line."
 	esc := template.HTMLEscapeString
-	r := &refRenderer{s: s, page: p, fset: fset, files: files, pkg: pkg, dir: "cmd/pego"}
+	r := &refRenderer{s: s, page: p, fset: fset, files: files, pkg: pkg, dir: "cmd/zp"}
 	r.b.WriteString("<h1 id=\"top\">CLI Reference</h1>\n")
-	r.b.WriteString(`<pre><code class="language-bash">go install github.com/ornew/pego/cmd/pego@latest</code></pre>` + "\n")
+	r.b.WriteString(`<pre><code class="language-bash">go install github.com/ornew/zeroparse/cmd/zp@latest</code></pre>` + "\n")
 	r.heading(2, "overview", "Overview")
 	r.b.WriteString(r.docHTML(pkg.Doc))
 	r.heading(2, "usage", "Usage")
@@ -184,10 +184,10 @@ func (s *Site) renderCLI(p *Page) (string, []Heading, error) {
 	for _, n := range u.notes {
 		r.b.WriteString("<p>" + esc(n) + "</p>\n")
 	}
-	r.b.WriteString("<p>This reference is generated from the output of <code>pego</code> and <code>pego &lt;command&gt; -h</code>.</p>\n")
+	r.b.WriteString("<p>This reference is generated from the output of <code>zp</code> and <code>zp &lt;command&gt; -h</code>.</p>\n")
 	r.heading(2, "commands", "Commands")
 	for _, c := range u.commands {
-		r.heading(3, "cmd-"+c.name, "pego "+c.name)
+		r.heading(3, "cmd-"+c.name, "zp "+c.name)
 		r.b.WriteString("<pre><code class=\"language-text\">" + esc(c.synopsis) + "</code></pre>\n")
 		if c.description != "" {
 			r.b.WriteString("<p>" + esc(c.description) + "</p>\n")

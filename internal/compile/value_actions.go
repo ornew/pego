@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // This file checks actions in the value model: a capture has the value type of what it captured,

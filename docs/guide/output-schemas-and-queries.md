@@ -1,10 +1,10 @@
 # Output Schemas and Structural Queries
 
 `Parser.OutputSchema` describes the possible values of a checked grammar. By default the schema holds the start rule, the
-rules it calls and the types their output references; `pego.WithAllSchemaRules()` also includes unreachable rules and all
+rules it calls and the types their output references; `zeroparse.WithAllSchemaRules()` also includes unreachable rules and all
 declared types. A structural query searches the values of an
 actual parse result. Together they let a tool inspect the shape of a grammar and find values without generating code or
-serializing a result. Structural queries are in package `github.com/ornew/pego/query`. These Go APIs are experimental; the schema JSON format is versioned. The contract is defined in
+serializing a result. Structural queries are in package `github.com/ornew/zeroparse/query`. These Go APIs are experimental; the schema JSON format is versioned. The contract is defined in
 [Output Schemas and Structural Queries](../../spec/runtime/schemas-and-queries.md).
 
 ```go
@@ -15,12 +15,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/query"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/query"
 )
 
 func main() {
-	p, err := pego.CompileSource("@start\nrule main = name\nrule name = [a-z]+ #atomic", "main")
+	p, err := zeroparse.CompileSource("@start\nrule main = name\nrule name = [a-z]+ #atomic", "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,7 +66,7 @@ q, err := prepared.Compile(query.Pattern{
 })
 ```
 
-`schema.Compare(before, after)` in package `github.com/ornew/pego/schema` compares two schemas and returns the added,
+`schema.Compare(before, after)` in package `github.com/ornew/zeroparse/schema` compares two schemas and returns the added,
 removed and changed entries, for example to review how a grammar change alters its output:
 
 ```go
@@ -88,21 +88,21 @@ it, such as `field-removed` at `$.fields.Old`.
 
 ## The Command Line
 
-`pego schema` prints the schema of a grammar as JSON, and `pego schema diff` compares two schemas. An operand of the
+`zp schema` prints the schema of a grammar as JSON, and `zp schema diff` compares two schemas. An operand of the
 diff is a schema file or a grammar, so a schema saved with `-o` can be compared with the grammar it came from:
 
 ```bash
-pego schema -g pairs.pego -o before.json
-pego schema diff before.json pairs.pego
-pego schema diff -all-rules -f json before.json pairs.pego
+zp schema -g pairs.zp -o before.json
+zp schema diff before.json pairs.zp
+zp schema diff -all-rules -f json before.json pairs.zp
 ```
 
-See [the `pego` command](command-line.md#schema) for the flags.
+See [the `zp` command](command-line.md#schema) for the flags.
 
 Keep in mind:
 
 - The schema comes from the grammar source. A parser restored by `LoadParser` holds no schema in any mode, and its
-  `OutputSchema` returns an error that matches `pego.ErrSchemaUnavailable`; `pego schema` rejects a `.pegoc`.
+  `OutputSchema` returns an error that matches `zeroparse.ErrSchemaUnavailable`; `zp schema` rejects a `.zpc`.
 - A query sees only what the tree retains. Actions and discard operators remove punctuation and comments, and a query
   does not recover them or interpret source positions.
 - `Elements` sees through nodes: on a node it matches the elements of the node's value, as `x[i]` does in an action.

@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/xml"
+	"github.com/ornew/zeroparse/parsers/xml"
 )
 
-// benchInput is a catalog of about 256 KB, like the XML workload of the benchmarks of PEGO (bench/ in
-// github.com/ornew/pego): elements, attributes, text with references, comments and CDATA sections.
+// benchInput is a catalog of about 256 KB, like the XML workload of the benchmarks of ZeroParse (bench/ in
+// github.com/ornew/zeroparse): elements, attributes, text with references, comments and CDATA sections.
 var benchInput = func() string {
 	words := []string{"alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta"}
 	r := rand.New(rand.NewPCG(1, 2))

@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // Values of actions and predicates are *Node, int, string, bool, nil, or *closure.

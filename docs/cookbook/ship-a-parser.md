@@ -1,15 +1,15 @@
 # Ship a Parser and Keep It Up to Date
 
-**Problem.** You wrote a grammar and want your program, or your library, to use it without making users depend on PEGO,
+**Problem.** You wrote a grammar and want your program, or your library, to use it without making users depend on ZeroParse,
 and without a stale parser after somebody changes the grammar.
 
-Generate Go code from the grammar with `pego gen`, commit it, regenerate it with `go generate`, and let a test fail
+Generate Go code from the grammar with `zp gen`, commit it, regenerate it with `go generate`, and let a test fail
 when the committed file does not match the grammar. The generated package imports only the standard library.
 
 The grammar reads versions such as `1.2.3` and `1.2.3-rc.1`:
 
-```pego
-// version.pego
+```zp
+// version.zp
 type Num = node[string]
 type Ident = node[string]
 type Version = { Major Num; Minor Num; Patch Num; Pre *Ident }
@@ -32,7 +32,7 @@ own:
 ```text
 example.com/ship
 ├── go.mod
-├── version.pego
+├── version.zp
 ├── main.go
 ├── generated_test.go
 └── versionparser/       created by go generate
@@ -41,11 +41,11 @@ example.com/ship
     └── internal/runtime/
 ```
 
-Record `pego` as a tool of the module, so that `go generate` runs the version you pinned and nobody installs anything:
+Record `zp` as a tool of the module, so that `go generate` runs the version you pinned and nobody installs anything:
 
 ```bash
 go mod init example.com/ship
-go get -tool github.com/ornew/pego/cmd/pego
+go get -tool github.com/ornew/zeroparse/cmd/zp
 ```
 
 Then the program, with the `go:generate` line that makes the parser (`-types` adds Go types and `ParseAST`):
@@ -61,7 +61,7 @@ import (
 	"example.com/ship/versionparser"
 )
 
-//go:generate go tool pego gen -g version.pego -module example.com/ship/versionparser -types -o versionparser
+//go:generate go tool zp gen -g version.zp -module example.com/ship/versionparser -types -o versionparser
 
 func main() {
 	v, err := versionparser.ParseAST(os.Args[1])
@@ -104,17 +104,17 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/gen"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/gen"
 )
 
-//go:embed version.pego
+//go:embed version.zp
 var grammar string
 
-// The files of versionparser are what pego generates from version.pego. The module path and the options must be those
+// The files of versionparser are what zp generates from version.zp. The module path and the options must be those
 // of the go:generate line.
 func TestGeneratedIsUpToDate(t *testing.T) {
-	g, err := pego.ParseGrammar(grammar)
+	g, err := zeroparse.ParseGrammar(grammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,37 +146,37 @@ FAIL
 
 ## How It Works
 
-- **No dependency at run time.** `go list -deps .` for the program lists no package of PEGO: none is linked into it.
-  `go.mod` still requires PEGO, for the tool and for the test.
+- **No dependency at run time.** `go list -deps .` for the program lists no package of ZeroParse: none is linked into it.
+  `go.mod` still requires ZeroParse, for the tool and for the test.
 - **The generator is deterministic.** The same grammar and options give the same file, which is what makes the
   comparison in the test, and a review of a diff of `parser.go`, meaningful.
-- **Regenerate after upgrading PEGO.** The copy of the runtime in `versionparser/internal/runtime` comes from the version of `pego` that wrote it.
+- **Regenerate after upgrading ZeroParse.** The copy of the runtime in `versionparser/internal/runtime` comes from the version of `zp` that wrote it.
   Without the test, a new version of the tool leaves the old runtime in place until somebody runs `go generate`; with it,
   the test fails. Pinning the tool with `go get -tool` keeps every developer and CI on the same version.
 - **Without the test**, `go generate ./... && git diff --exit-code` in CI says the same.
 - **The same tree.** The generated `Parse` returns the same tree and errors as the engine for the same grammar, so you
-  can develop with the engine and the `pego` tools (`pego parse`, `pego trace`) and ship the generated code.
+  can develop with the engine and the `zp` tools (`zp parse`, `zp trace`) and ship the generated code.
 
 ## When the Grammar Must Stay Data
 
 If you want the grammar to be a file you load, not code (users supply it, or it changes without a rebuild), compile it
-once to a `.pegoc` file and embed or ship that, which skips parsing and checking the grammar at start-up:
+once to a `.zpc` file and embed or ship that, which skips parsing and checking the grammar at start-up:
 
 ```bash
-go tool pego compile -g version.pego -o version.pegoc
+go tool zp compile -g version.zp -o version.zpc
 ```
 
 ```go
-//go:embed version.pegoc
+//go:embed version.zpc
 var compiled []byte
 
-p, err := pego.LoadParser(compiled) // then p.Parse(...) as with CompileSource
+p, err := zeroparse.LoadParser(compiled) // then p.Parse(...) as with CompileSource
 ```
 
 The file serves `Parse` and `ParseStream` on the bytecode backends; compile it with `-mode recognize` for
-`pego.RecognizeOnly()` or `-mode document` for documents and traces. Loading is much faster than compiling: for the
-Python grammar of [parsers/python](../../parsers/python/), on an Apple M3 Max with Go 1.27.1, `pego.CompileSource` took
-about 60 ms and `pego.LoadParser` of the `.pegoc` under 1 ms in every mode.
+`zeroparse.RecognizeOnly()` or `-mode document` for documents and traces. Loading is much faster than compiling: for the
+Python grammar of [parsers/python](../../parsers/python/), on an Apple M3 Max with Go 1.27.1, `zeroparse.CompileSource` took
+about 60 ms and `zeroparse.LoadParser` of the `.zpc` under 1 ms in every mode.
 
 A generated parser needs no preparation at all, and is also the fastest at parsing.
 
@@ -185,7 +185,7 @@ A generated parser needs no preparation at all, and is also the fastest at parsi
 - **Several grammars**: one `go:generate` line and one package each; [parsers/generate.go](../../parsers/generate.go) does
   this for the ready-made parsers.
 - **A recognizer**: add `-recognize` for `Recognize`, which only checks, as in [Parse log lines fast](log-lines.md).
-- **TypeScript**: `pego gen -lang ts` generates a module with no dependencies; see
+- **TypeScript**: `zp gen -lang ts` generates a module with no dependencies; see
   [TypeScript parsers](../guide/typescript.md).
 - **A parity test**: compare the generated parser with the engine on a list of inputs, to catch a difference after an
   upgrade (see the code generation guide).

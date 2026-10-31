@@ -6,7 +6,7 @@
 
 ## Summary
 
-With `pego gen -types` (`gen.Go{Types: true}`), a generated parser also defines a Go type for each type of the grammar
+With `zp gen -types` (`gen.Go{Types: true}`), a generated parser also defines a Go type for each type of the grammar
 and a function `ParseAST`, which parses like `Parse` and returns the result of the start rule as values of those
 types instead of `*Node`.
 
@@ -32,7 +32,7 @@ fields of each struct type and the resolved alias types), and the generator maps
 
 The types are declared in the package `types`, apart from the names that `parser.go` and `api.go` declare, so a
 grammar type keeps its name whatever it is (`Node`, `Parse`, `Walk`, ...). The names `types` declares itself (`TNode`,
-`Error`, `PegoHooks`, and `Unit`, `TupleN` and `PegoNodeTypes` where used) are an error for a grammar type.
+`Error`, `ZPHooks`, and `Unit`, `TupleN` and `ZPNodeTypes` where used) are an error for a grammar type.
 
 Every declared alias is exported as a Go alias to its resolved value representation: `type Alias = Word` in the
 grammar becomes `type Alias = *Word` in Go, and a list alias becomes an alias to the corresponding slice. Chained,
@@ -124,7 +124,7 @@ The parity test generates every corpus grammar twice, with the typed runtime and
 that `ParseAST` returns the same values and errors, also when parsing concurrently. The corpus includes the cases two
 reviews found where the first version differed (`internal/gentest/testdata/typed`): field reads in actions, the order
 in which fields are evaluated, projections of names captured twice, of lists that `$n` also reaches and of nil
-values, and an `Error` where a list is expected; and grammars for the code paths of direct rules (`direct_*.pego`).
+values, and an `Error` where a list is expected; and grammars for the code paths of direct rules (`direct_*.zp`).
 It runs in both position units.
 
 ### Conversion After the Parse
@@ -178,7 +178,7 @@ built lists directly had taken 4.5 ms.
   slot metadata.
 - **Converting through JSON.** No generated code, but slower than the parse itself and lossy for joins (the
   member type would have to be decoded from `type`).
-- **Exposing typed values from the engine (`pego.Parser`).** Go types cannot be created at run time, so the engine
+- **Exposing typed values from the engine (`zeroparse.Parser`).** Go types cannot be created at run time, so the engine
   can only return `*Node`; typed values are a property of generated code.
 - **Sizing every type's first chunk from input length.** Input length does not predict how many values of each
   type will escape. Bounded geometric growth keeps unused types unallocated and limits the first-use cost of rare

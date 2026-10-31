@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 // memberDocumentProgram parses each input with the Documents of generated parsers (Parse and the

@@ -112,7 +112,7 @@ func runRequestResourceCase(t *testing.T, count, filters int, measure bool) requ
 	if requestHook != nil || analyzeHook != nil {
 		t.Fatal("resource probe requires inactive hooks")
 	}
-	uri := "file:///resource.pego"
+	uri := "file:///resource.zp"
 	source := f08BenchmarkGrammar()
 	method := "textDocument/hover"
 	var params any = at(uri, 1, 5)
@@ -120,7 +120,7 @@ func runRequestResourceCase(t *testing.T, count, filters int, measure bool) requ
 		method = "textDocument/codeAction"
 		only := make([]string, filters)
 		for i := range only {
-			only[i] = "quickfix.pego"
+			only[i] = "quickfix.zp"
 		}
 		params = map[string]any{"textDocument": textDocumentIdentifier{URI: uri}, "range": Range{}, "context": map[string]any{"only": only, "diagnostics": []Diagnostic{}}}
 	}
@@ -159,7 +159,7 @@ func runRequestResourceCase(t *testing.T, count, filters int, measure bool) requ
 	peer := newResourcePeer(t)
 	c := peer.client
 	defer func() { peer.abort(); requestHook = nil }()
-	c.request("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"pego": map[string]any{"responsiveAnalysis": true}}}})
+	c.request("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"zp": map[string]any{"responsiveAnalysis": true}}}})
 	if d := c.open(uri, source); len(d) != 0 {
 		t.Fatalf("resource fixture diagnostics: %+v", d)
 	}
@@ -251,14 +251,14 @@ func TestResponsiveRequestResources(t *testing.T) {
 // Run explicitly in fresh processes to avoid attributing process-wide test/GC
 // history to one case. Heap deltas are post-GC live heap, not peak heap or RSS.
 func TestResponsiveRequestResourceProbe(t *testing.T) {
-	if os.Getenv("PEGO_LSP_RESOURCE_PROBE") != "1" {
+	if os.Getenv("ZP_LSP_RESOURCE_PROBE") != "1" {
 		t.Skip("manual fresh-process resource probe")
 	}
-	count, err := strconv.Atoi(os.Getenv("PEGO_LSP_RESOURCE_COUNT"))
+	count, err := strconv.Atoi(os.Getenv("ZP_LSP_RESOURCE_COUNT"))
 	if err != nil || count != 1 && count != 4 && count != 16 && count != 64 {
 		t.Fatal("count must be 1,4,16,64")
 	}
-	filters, err := strconv.Atoi(os.Getenv("PEGO_LSP_RESOURCE_FILTERS"))
+	filters, err := strconv.Atoi(os.Getenv("ZP_LSP_RESOURCE_FILTERS"))
 	if err != nil || filters != 0 && filters != 65536 {
 		t.Fatal("filters must be 0 or65536")
 	}

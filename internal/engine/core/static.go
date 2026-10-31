@@ -1,6 +1,6 @@
 package core
 
-import "github.com/ornew/pego/internal/compile"
+import "github.com/ornew/zeroparse/internal/compile"
 
 // staticProgram and staticRule are the compiler's program and rule. SharedProgram and Rule embed
 // them under these names, so the embedded fields stay unexported.

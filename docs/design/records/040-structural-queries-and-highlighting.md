@@ -6,11 +6,11 @@
 
 ## Summary
 
-Add a declarative query API over PEGO Node results for matching node kinds, rules, fields, child structure, and bounded text predicates, with named captures usable for syntactic highlighting. Type and field checks use an explicitly supplied schema where available. The programmatic Go subset described under Implemented Go API is implemented; the illustrative text syntax, text predicates, highlighting, and TypeScript support remain deferred.
+Add a declarative query API over ZeroParse Node results for matching node kinds, rules, fields, child structure, and bounded text predicates, with named captures usable for syntactic highlighting. Type and field checks use an explicitly supplied schema where available. The programmatic Go subset described under Implemented Go API is implemented; the illustrative text syntax, text predicates, highlighting, and TypeScript support remain deferred.
 
 ## Motivation
 
-The public Go API provides programmatic structural queries over `pego.Node`; generated TypeScript `Node` does not yet have a query API. Both represent CST and action-built values with ordered children and fields that may contain nodes, scalars, or nil. Actions can discard punctuation and comments, so queries cannot promise lossless tokenization. The edge, order, range, and cycle contract follows [design 031](031-iterative-tree-traversal.md); schema validation depends on [design 038](038-structured-output-schema.md). Grammar LSP analysis and semantic name resolution remain separate.
+The public Go API provides programmatic structural queries over `zeroparse.Node`; generated TypeScript `Node` does not yet have a query API. Both represent CST and action-built values with ordered children and fields that may contain nodes, scalars, or nil. Actions can discard punctuation and comments, so queries cannot promise lossless tokenization. The edge, order, range, and cycle contract follows [design 031](031-iterative-tree-traversal.md); schema validation depends on [design 038](038-structured-output-schema.md). Grammar LSP analysis and semantic name resolution remain separate.
 
 ## Goals and Non-Goals
 
@@ -31,10 +31,10 @@ type Option func(*options)
 type Query struct { /* compiled pattern */ }
 type Match struct { Captures []Capture }
 func CompileText(source string, out *schema.Output) (*Query, error)
-func (q *Query) Matches(root *pego.Node, opts ...Option) ([]Match, error)
-func WithUnit(unit pego.PositionUnit) Option
+func (q *Query) Matches(root *zeroparse.Node, opts ...Option) ([]Match, error)
+func WithUnit(unit zeroparse.PositionUnit) Option
 func WithContext(ctx context.Context) Option
-func WithLimits(limits pego.Limits) Option
+func WithLimits(limits zeroparse.Limits) Option
 ```
 
 The implemented Go API accepts context and budget limit options. Structural matching inspects no source text, so its budget covers traversal and result construction. Cancellation returns the context error, exhaustion matches `ErrLimit`, and evaluation returns no partial result. Position predicates and highlight/range interpretation remain deferred; any future position-based behavior must require an explicit valid Unit rather than infer one from spans.
@@ -66,7 +66,7 @@ The programmatic Go API and Node traversal contract in design 031 are implemente
 
 ## Alternatives Considered
 
-- **Copy Tree-sitter query syntax:** it implies different field, node, and lossless-source semantics. Consider an adapter only after PEGO contracts are stable.
+- **Copy Tree-sitter query syntax:** it implies different field, node, and lossless-source semantics. Consider an adapter only after ZeroParse contracts are stable.
 - **Query serialized JSON:** it couples matching to Node serialization and allocates an intermediate tree. Evaluate graph values directly.
 - **Allow arbitrary Go callbacks:** these are unportable and cannot be bounded reliably. Keep the initial query declarative.
 - **Use a lexer for every highlight:** it can recover punctuation but duplicates grammar behavior. Keep it as a consumer choice when actions discard needed tokens.

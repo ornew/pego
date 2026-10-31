@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // DefaultMaxAttempts is the number of candidate replays that Minimize tries when maxAttempts is zero.
@@ -28,7 +28,7 @@ func Minimize(src []byte, seq *Sequence, maxAttempts int) (*Sequence, *Mismatch,
 }
 
 type minimizer struct {
-	p           *pego.Parser
+	p           *zeroparse.Parser
 	fingerprint string
 	attempts    int
 	max         int
@@ -36,7 +36,7 @@ type minimizer struct {
 	mismatch    *Mismatch
 }
 
-func minimize(p *pego.Parser, seq *Sequence, maxAttempts int) (*Sequence, *Mismatch, int, error) {
+func minimize(p *zeroparse.Parser, seq *Sequence, maxAttempts int) (*Sequence, *Mismatch, int, error) {
 	var m *Mismatch
 	if err := replay(p, seq); !errors.As(err, &m) {
 		if err == nil {

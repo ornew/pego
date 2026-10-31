@@ -5,9 +5,9 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/conform"
-	"github.com/ornew/pego/internal/ir/exec/ref"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/conform"
+	"github.com/ornew/zeroparse/internal/ir/exec/ref"
 )
 
 // The generated Go runtime is the first implementation of the parser VM's pilot operations under

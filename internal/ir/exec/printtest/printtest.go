@@ -13,8 +13,8 @@ import (
 	"math"
 	"strings"
 
-	. "github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/pass"
+	. "github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/pass"
 )
 
 // Box is the handle type of the test module.

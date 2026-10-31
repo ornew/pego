@@ -8,14 +8,14 @@ import (
 	"unsafe"
 	"weak"
 
-	"github.com/ornew/pego/internal/engine/document"
+	"github.com/ornew/zeroparse/internal/engine/document"
 
-	"github.com/ornew/pego/internal/compile"
-	. "github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/engine/closure"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/engine/vm"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/compile"
+	. "github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/engine/closure"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/engine/vm"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func BenchmarkDocumentVMValuesUnchanged(b *testing.B) {

@@ -16,7 +16,7 @@ test("TypeScript settings travel in requests and complete shared links", async (
   assert.equal(req.language, "typescript");
   assert.equal(req.types, false);
   assert.equal(req.recognize, true);
-  evaluate(h, `var finishExport; PegoClient.prototype.call = () => new Promise((resolve) => { finishExport = resolve; });`);
+  evaluate(h, `var finishExport; ZPClient.prototype.call = () => new Promise((resolve) => { finishExport = resolve; });`);
   const exporting = evaluate(h, "generate()");
   await h.event("pg-share", "click");
   assert.deepEqual((await decodeState(h.location.hash)).gen, gen);
@@ -31,7 +31,7 @@ test("TypeScript settings travel in requests and complete shared links", async (
 
 test("paged exports copy and download the full source", async () => {
   const h = await playground({ state: { ...base, t: "go" } });
-  evaluate(h, `PegoClient.prototype.call = async () => ({ code: "x".repeat(60000), diagnostics: [] });`);
+  evaluate(h, `ZPClient.prototype.call = async () => ({ code: "x".repeat(60000), diagnostics: [] });`);
   h.el("gen-language").value = "typescript";
   await h.event("gen-language", "input");
   await h.flush(250);
@@ -98,7 +98,7 @@ test("comparison distinguishes values, errors and positions with a bounded resul
 
 test("an export finishing after an editor change cannot enable an obsolete download", async () => {
   const h = await playground({ state: { ...base, t: "go" } });
-  evaluate(h, `var finishExport; PegoClient.prototype.call = () => new Promise((resolve) => { finishExport = resolve; });`);
+  evaluate(h, `var finishExport; ZPClient.prototype.call = () => new Promise((resolve) => { finishExport = resolve; });`);
   const generating = evaluate(h, "generate()");
   h.el("pg-grammar").value = 'rule main = "b"';
   await h.event("pg-grammar", "input");

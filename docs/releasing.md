@@ -1,22 +1,22 @@
 # Releasing
 
-This page says what a PEGO release promises, which platforms and Go versions it supports, and how a release is
+This page says what a ZeroParse release promises, which platforms and Go versions it supports, and how a release is
 tagged. It is written for maintainers who cut a release and for users who decide whether to depend on one. The
 vulnerability policy is in [SECURITY.md](../SECURITY.md).
 
-PEGO has no tagged release yet.
+ZeroParse has no tagged release yet.
 
 ## What a v0.x Release Promises
 
-Go modules give a v0 version no compatibility guarantee. PEGO states its intent for each surface instead.
+Go modules give a v0 version no compatibility guarantee. ZeroParse states its intent for each surface instead.
 
 | Surface | At v0.x |
 |:--|:--|
-| The grammar language: `.pego` syntax and meaning ([specification](../spec/README.md)) | Stable in intent. A change that breaks a grammar is announced, and `pego fix` rewrites older syntax where it can |
-| The API of generated Go parsers (`Parse`, `ParseAST`, the options and the error types) | Stable in intent. A generated parser carries the runtime of the generator that produced it, so regenerate it after upgrading PEGO |
-| The module API, including the `pego` and `grammar` packages | May change in any release; changes are announced |
-| The `runtime` package, as generated code uses it with `pego gen -runtime import` | Unstable: matches only a generator of the same PEGO version, so regenerate the parsers on every upgrade |
-| Compiled grammars (`.pegoc`) and the bytecode: container version 7, instruction-set version 29 ([bytecode specification](../spec/bytecode/README.md)) | Unstable: may change in any release. A loader accepts only its own versions and asks for the grammar to be compiled again |
+| The grammar language: `.zp` syntax and meaning ([specification](../spec/README.md)) | Stable in intent. A change that breaks a grammar is announced, and `zp fix` rewrites older syntax where it can |
+| The API of generated Go parsers (`Parse`, `ParseAST`, the options and the error types) | Stable in intent. A generated parser carries the runtime of the generator that produced it, so regenerate it after upgrading ZeroParse |
+| The module API, including the `zeroparse` and `grammar` packages | May change in any release; changes are announced |
+| The `runtime` package, as generated code uses it with `zp gen -runtime import` | Unstable: matches only a generator of the same ZeroParse version, so regenerate the parsers on every upgrade |
+| Compiled grammars (`.zpc`) and the bytecode: container version 7, instruction-set version 29 ([bytecode specification](../spec/bytecode/README.md)) | Unstable: may change in any release. A loader accepts only its own versions and asks for the grammar to be compiled again |
 | The JSON forms of grammars and nodes | Unstable: may change in any release |
 | Ready-made parsers under `parsers/` | Not part of a release: they are used from a checkout of the repository, and `go get` does not fetch them from another module |
 
@@ -36,7 +36,7 @@ v0.1.0.
 ## Announcing Changes
 
 Each release has release notes on its GitHub release page; the repository keeps no separate changelog file. The notes
-list breaking changes first, each with what to do (including the `pego fix` rewrite where one exists), then new
+list breaking changes first, each with what to do (including the `zp fix` rewrite where one exists), then new
 features and fixes.
 
 ## Supported Platforms
@@ -54,27 +54,27 @@ benchmarks run it under Node.js 24.13.0. It is written to run in Deno, Bun and b
 
 ## Go Versions
 
-**PEGO requires Go 1.27.1 or later, and so does the Go code it generates.** That covers the `pego` command, the engine
+**ZeroParse requires Go 1.27.1 or later, and so does the Go code it generates.** That covers the `zp` command, the engine
 API and generated Go with either runtime: the default `-runtime embed`, which copies the runtime into the generated
-package, and `-runtime import`, which makes the consumer depend on the PEGO module. Generated Go is required to build
+package, and `-runtime import`, which makes the consumer depend on the ZeroParse module. Generated Go is required to build
 with Go 1.27.1 or later; no lower version is promised.
 
-**Recording `pego` as a tool raises the module's `go` line to 1.27.1.** `go get -tool github.com/ornew/pego/cmd/pego`
-(`github.com/pego-lang/pego/cmd/pego` once the repository has moved; see [Tagging a Release](#tagging-a-release)) adds
-the PEGO module as a dependency, and because that module requires Go 1.27.1, the `go` command raises the consumer
+**Recording `zp` as a tool raises the module's `go` line to 1.27.1.** `go get -tool github.com/ornew/zeroparse/cmd/zp`
+(`github.com/zeroparse-lang/zeroparse/cmd/zp` once the repository has moved; see [Tagging a Release](#tagging-a-release)) adds
+the ZeroParse module as a dependency, and because that module requires Go 1.27.1, the `go` command raises the consumer
 module's `go` line to match (`go: upgraded go 1.23 => 1.27.1`). This is expected: the generated code needs the same
 version.
 
 ## Tagging a Release
 
 In the commands below, `vX.Y.Z` is the version being released, and the module path is the one in force at the time:
-`github.com/pego-lang/pego` once the repository has moved (step 2).
+`github.com/zeroparse-lang/zeroparse` once the repository has moved (step 2).
 
 1. Check that the release items of the [project strategy](strategy.md#wedge-and-sequencing) are done.
-2. For the first release only, move the repository to the `pego-lang` GitHub organization:
-   - transfer the repository from `github.com/ornew/pego` to `github.com/pego-lang/pego`, and point the `origin`
+2. For the first release only, move the repository to the `zeroparse-lang` GitHub organization:
+   - transfer the repository from `github.com/ornew/zeroparse` to `github.com/zeroparse-lang/zeroparse`, and point the `origin`
      remote of each checkout at the new address;
-   - change the module path to `github.com/pego-lang/pego` in every `go.mod` of the repository and in every import
+   - change the module path to `github.com/zeroparse-lang/zeroparse` in every `go.mod` of the repository and in every import
      path and document that names it;
    - regenerate the generated files with `go generate ./parsers ./bench`;
    - run the full suite, as in step 4;
@@ -103,16 +103,16 @@ In the commands below, `vX.Y.Z` is the version being released, and the module pa
 
 5. Run the checks of step 4 on linux/amd64 as well, on a Linux machine or by a run of the continuous-integration
    workflow. While workflows are paused, this run is a precondition of the release.
-6. Check the figures in the README and in [Why PEGO](why-pego.md) against the current
+6. Check the figures in the README and in [Why ZeroParse](why-zeroparse.md) against the current
    [benchmark report](benchmarks.md); rerun the benchmarks only if the report is older than the changes it describes.
-   From the first release, `pego gen` generates parsers with budget controls by default (today `-budget-controls` turns
+   From the first release, `zp gen` generates parsers with budget controls by default (today `-budget-controls` turns
    them on), and published performance figures are measured with the limits on.
 7. Update the resource policy of [SECURITY.md](../SECURITY.md) to the defaults that this release ships.
 8. Write the release notes ([Announcing Changes](#announcing-changes)).
 9. Tag the commit with an annotated tag and push the tag:
 
    ```bash
-   git tag -a vX.Y.Z -m "PEGO vX.Y.Z"
+   git tag -a vX.Y.Z -m "ZeroParse vX.Y.Z"
    git push origin vX.Y.Z
    ```
 
@@ -122,7 +122,7 @@ In the commands below, `vX.Y.Z` is the version being released, and the module pa
 10. Ask the Go module proxy for the new version, so that `go get` and pkg.go.dev see it:
 
     ```bash
-    GOPROXY=https://proxy.golang.org go list -m github.com/pego-lang/pego@vX.Y.Z
+    GOPROXY=https://proxy.golang.org go list -m github.com/zeroparse-lang/zeroparse@vX.Y.Z
     ```
 
 11. Publish the release notes on the GitHub release of the tag.

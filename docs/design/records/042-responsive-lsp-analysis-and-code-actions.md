@@ -6,15 +6,15 @@
 
 ## Summary
 
-Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. It is implemented behind an opt-in setting and provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits and three proven fix edits (see "Suggested Fixes") to clients that advertise the required workspace-edit capability. The VS Code client does not apply the converted edit, whose `WorkspaceEdit` carries no document version; it applies a suppression or a fix through a command that checks the document version and calls `workspace.applyEdit` in one synchronous step (see "VS Code Suppression"). Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation covers text-index construction, lexical tokenization, syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, shared grammar-success proofs, attribute normalization, context-aware grammar metadata collection, selected lint metadata traversals, class-descriptor/range analysis, context-aware grammar and LSP formatting, and semantic-token classification and encoding. Other shared operations and large primitives remain partly unpolled, and validation in editors other than Neovim remains open.
+Extend `zp lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. It is implemented behind an opt-in setting and provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits and three proven fix edits (see "Suggested Fixes") to clients that advertise the required workspace-edit capability. The VS Code client does not apply the converted edit, whose `WorkspaceEdit` carries no document version; it applies a suppression or a fix through a command that checks the document version and calls `workspace.applyEdit` in one synchronous step (see "VS Code Suppression"). Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation covers text-index construction, lexical tokenization, syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, shared grammar-success proofs, attribute normalization, context-aware grammar metadata collection, selected lint metadata traversals, class-descriptor/range analysis, context-aware grammar and LSP formatting, and semantic-token classification and encoding. Other shared operations and large primitives remain partly unpolled, and validation in editors other than Neovim remains open.
 
 ## Prototype Implementation Boundary
 
 The VS Code extension exposes the opt-in setting
-`pego.server.experimentalLint`, which defaults to `false` and requires a language
+`zp.server.experimentalLint`, which defaults to `false` and requires a language
 server restart after it changes. When enabled, the extension advertises
-`experimental.pego.lintDiagnostics`, `experimental.pego.responsiveAnalysis`, and
-`experimental.pego.showExplanation`. Other clients can advertise these
+`experimental.zp.lintDiagnostics`, `experimental.zp.responsiveAnalysis`, and
+`experimental.zp.showExplanation`. Other clients can advertise these
 capabilities independently: lint diagnostics also enable code actions, while
 responsive analysis alone enables the asynchronous analysis actor without lint.
 Without lint opt-in, diagnostics retain their existing syntax and compile/type
@@ -29,8 +29,8 @@ specified. Existing lint directives remain authoritative. No old lint findings
 are reused after an analysis failure.
 
 An explanation action additionally requires
-`experimental.pego.showExplanation: true`. The VS Code client handles
-`pego.showExplanation` by displaying the check name, finding message, and
+`experimental.zp.showExplanation: true`. The VS Code client handles
+`zp.showExplanation` by displaying the check name, finding message, and
 explanation; it rechecks the document version and analysis generation before
 showing the message. The server can return a versioned suppression edit to a
 client that advertises
@@ -40,7 +40,7 @@ disappeared, and checking that the inserted directive is valid. The edit inserts
 a standalone `lint:ignore` comment immediately before the finding line and uses
 the document's newline convention. The VS Code client replaces the converted
 `WorkspaceEdit`, which has lost the LSP document version, by the command
-`pego.applyLintSuppression` with the line, the directive text and the analysis
+`zp.applyLintSuppression` with the line, the directive text and the analysis
 guard. The command re-checks the guard and the document version and calls
 `workspace.applyEdit` in the same synchronous step (see "VS Code Suppression").
 The suppression candidate is limited to safe comment positions; rule-wide
@@ -188,9 +188,9 @@ Design 017 deliberately has no code actions and always returns Markdown for hove
 
 ### Diagnostics and Source Mapping
 
-Keep push diagnostics. Add optional LSP diagnostic `code` and `data` fields; for a lint finding, `code` is the stable check name and `data` contains the analyzed document version plus a server-owned finding key. Map lint `Error`, `Warning` and `Hint` to LSP severities 1, 2 and 4 respectively, and use source `pego-lint`. Existing syntax/compile diagnostics retain source `pego` and error severity. Convert `grammar.Pos` through the existing `textIndex` byte-offset mapping before making a UTF-16 range. A finding without a valid source position remains available in CLI output but is not published as an editor diagnostic.
+Keep push diagnostics. Add optional LSP diagnostic `code` and `data` fields; for a lint finding, `code` is the stable check name and `data` contains the analyzed document version plus a server-owned finding key. Map lint `Error`, `Warning` and `Hint` to LSP severities 1, 2 and 4 respectively, and use source `zp-lint`. Existing syntax/compile diagnostics retain source `zp` and error severity. Convert `grammar.Pos` through the existing `textIndex` byte-offset mapping before making a UTF-16 range. A finding without a valid source position remains available in CLI output but is not published as an editor diagnostic.
 
-After syntax parsing and compilation succeed, run lint with the same start rule and default enabled checks as `pego lint`. The linter's existing directive pass already removes suppressed findings and reports malformed, unknown, or unused directives. Do not run lint after syntax or compile failure. Preserve the last-good-analysis behavior for internal failures, but never publish lint findings from an older snapshot as if they belonged to the failed current version.
+After syntax parsing and compilation succeed, run lint with the same start rule and default enabled checks as `zp lint`. The linter's existing directive pass already removes suppressed findings and reports malformed, unknown, or unused directives. Do not run lint after syntax or compile failure. Preserve the last-good-analysis behavior for internal failures, but never publish lint findings from an older snapshot as if they belonged to the failed current version.
 
 Avoid compiling the same grammar twice: the LSP calls `lint.Config.RunUnchecked`, which lints a grammar its caller has already compiled and returns the same findings as `lint.Config.Run`; the CLI remains authoritative for check behavior.
 
@@ -200,7 +200,7 @@ Register `textDocument/codeAction` and advertise its provider. Accept the reques
 
 Provide these actions:
 
-- **Explain finding** invokes the `pego.showExplanation` client command with the check name, original diagnostic message, and a concise explanation derived from the check documentation. The VS Code extension displays it in an editor notification or equivalent. The extension advertises `experimental.pego.showExplanation` in client capabilities; the server returns this action only to clients that advertise the handler. Other clients retain the complete diagnostic message without receiving an unusable action.
+- **Explain finding** invokes the `zp.showExplanation` client command with the check name, original diagnostic message, and a concise explanation derived from the check documentation. The VS Code extension displays it in an editor notification or equivalent. The extension advertises `experimental.zp.showExplanation` in client capabilities; the server returns this action only to clients that advertise the handler. Other clients retain the complete diagnostic message without receiving an unusable action.
 - **Suppress finding** returns a versioned `WorkspaceEdit` adding `// lint:ignore <check>` on the finding line, using the document's line ending. The server offers this candidate only when the edited grammar remains valid and lint confirms its documented suppression scope. If a directive already covers the check, it does not offer a duplicate. A directive may suppress other findings in the same scope, which the action must make explicit; file-wide suppression is not the default. Clients that cannot enforce the document version atomically must not expose or apply the edit. The VS Code client applies it only through the guarded command described under "VS Code Suppression".
 - **Apply suggested fix** is offered only for the three findings under "Suggested Fixes", each with a proof that the edit changes neither what the grammar matches nor the values it builds. The string in `Finding.Fix` remains display-only.
 
@@ -212,7 +212,7 @@ A fix is offered for exactly these findings, because for each the proof below sh
 
 - **`char-class`, overlapping or repeated ranges.** The class is replaced by one with merged ranges. The proof is equality of the two code-point sets, checked at the ends of every range, with the negation unchanged. A class that also matches the punctuation between letters, such as `[A-z]`, gets no fix, because only the writer knows which characters were meant.
 - **`useless-lookahead`, a lookahead that always succeeds.** The lookahead is removed. The proof is that it holds only literals, character classes, any-character, groups, sequences, choices, options and repetitions, so it has no capture, cut, call, predicate, recovery or attribute; a lookahead consumes nothing and has no value. Only a lookahead that is itself an item of a sequence of at least three items qualifies. With fewer, what remains is no longer a tuple: in a rule `main = (g:(&"b"* "cc") => len($g.Value)) "d"` the label would capture the string node instead of a one-element tuple, and `len($g.Value)` would go from 1 to 2. Under a discard `-`, deleting it would move the `-` onto the next item (`"a" - &"b"* "c"` would become `"a" - "c"`), and a label, an operator or a repetition would lose its operand, so those get no fix.
-- **`unreachable-rule`, a rule no start rule reaches.** The rule definition, with its attributes and the comment lines that document it, is deleted. The proof is that no start rule reaches it, directly or through an inline action, so nothing calls it and no parse starts at it. A start rule is never deleted, a file-wide `lint:file-ignore` directive stays, and nothing is deleted from `pego.pego`.
+- **`unreachable-rule`, a rule no start rule reaches.** The rule definition, with its attributes and the comment lines that document it, is deleted. The proof is that no start rule reaches it, directly or through an inline action, so nothing calls it and no parse starts at it. A start rule is never deleted, a file-wide `lint:file-ignore` directive stays, and nothing is deleted from `zeroparse.zp`.
 
 These are not offered, because the tree or the values could change: removing a shadowed alternative (including a left-recursive one), changing a redundant optional or a nullable repetition, dropping an unused or duplicate capture (it changes the captured value or the node type), and any rewrite of a rule that is called or a lookahead that contains a call, a capture or a predicate.
 
@@ -232,9 +232,9 @@ Verifying a suppression or a fix compiles and lints an edited copy, which costs 
 
 `codeAction/resolve` runs the same verification for one action and returns the action with its versioned edit. It returns the action without an edit if the edit cannot be proven, if the title is not the one the server lists for the finding, if the finding no longer has that index and check, or if the document is not at the version of the data. Clients without resolve support get the edits in the list. The server advertises `resolveProvider` only to a client that supports resolving; the responsive actor handles the request like a text-document request, on the snapshot of the document in the data.
 
-VS Code resolves only the edit of an action, and an edit it applies carries no check against the analyzed version, so the extension does not use the editor's resolve. It turns each listed action into the command `pego.applyLintAction`, which sends `codeAction/resolve` itself and, when the answer arrives, requires the document to be at the analyzed version, the generation to be current, and the answer to be one text edit of that document stamped with that version and of the shape of its check. Then the check and the call of `workspace.applyEdit` are one synchronous step, as for an action listed with its edit. A failed request, a refused answer or a changed document applies nothing.
+VS Code resolves only the edit of an action, and an edit it applies carries no check against the analyzed version, so the extension does not use the editor's resolve. It turns each listed action into the command `zp.applyLintAction`, which sends `codeAction/resolve` itself and, when the answer arrives, requires the document to be at the analyzed version, the generation to be current, and the answer to be one text edit of that document stamped with that version and of the shape of its check. Then the check and the call of `workspace.applyEdit` are one synchronous step, as for an action listed with its edit. A failed request, a refused answer or a changed document applies nothing.
 
-Focused timings used Go 1.27.1 on an Apple M3 Max (darwin/arm64), under the benchmark lock, with `TestCodeActionResolveProbe` (`PEGO_LSP_RESOLVE_PROBE=1`) on `parsers/duckdb/duckdb.pego` (about 2,600 lines; its only own finding is a right-recursion hint). The probe appends one rule that nothing uses, with a class of overlapping ranges, so that a fixable finding exists. Each figure is the median of seven requests; three runs are given as a range.
+Focused timings used Go 1.27.1 on an Apple M3 Max (darwin/arm64), under the benchmark lock, with `TestCodeActionResolveProbe` (`ZP_LSP_RESOLVE_PROBE=1`) on `parsers/duckdb/duckdb.zp` (about 2,600 lines; its only own finding is a right-recursion hint). The probe appends one rule that nothing uses, with a class of overlapping ranges, so that a fixable finding exists. Each figure is the median of seven requests; three runs are given as a range.
 
 | Request covering one `unreachable-rule` or `char-class` finding | Median |
 | --- | --- |
@@ -260,7 +260,7 @@ Record `textDocument.hover.contentFormat` and `textDocument.completion.completio
 
 ### Compatibility and Implementation Sequence
 
-Existing diagnostic fields and codes remain valid; the new `code` and `data` fields are optional. Lint diagnostics are additive and honor directives exactly as `pego lint` does. Changes to hover/completion content kind follow the capabilities sent by each client. Existing clients continue to receive error diagnostics and UTF-16 ranges.
+Existing diagnostic fields and codes remain valid; the new `code` and `data` fields are optional. Lint diagnostics are additive and honor directives exactly as `zp lint` does. Changes to hover/completion content kind follow the capabilities sent by each client. Existing clients continue to receive error diagnostics and UTF-16 ranges.
 
 1. Add shared finding-to-diagnostic mapping and lint integration for compilable documents. Verify source suppression and CLI parity.
 2. Add structured code-action protocol models, versioned suppression edits, check explanations, and a VS Code command handler. Keep suggested grammar edits behind a separately reviewed allowlist. VS Code applies suppression through the guarded command described under "VS Code Suppression".
@@ -946,8 +946,8 @@ application only, not the analysis that follows each version.
 
 ### Multi-Document Resource Probe
 
-`TestDocumentResourceProbe` (run with `PEGO_LSP_DOCUMENT_PROBE=1`, a document
-count in `PEGO_LSP_DOCUMENT_COUNT` and `PEGO_LSP_RESPONSIVE=0` or `1`) opens
+`TestDocumentResourceProbe` (run with `ZP_LSP_DOCUMENT_PROBE=1`, a document
+count in `ZP_LSP_DOCUMENT_COUNT` and `ZP_LSP_RESPONSIVE=0` or `1`) opens
 copies of the 65,542-byte benchmark grammar under distinct URIs. It then sends
 one change to every document followed by a hover on the last one, reading
 replies concurrently as a client does, and finally closes them all. Three
@@ -1004,7 +1004,7 @@ still handles messages in order.
 
 `TestNeovimClient` runs Neovim's built-in client, configured as in the editor
 guide, against the synchronous and the responsive server. It runs only with
-`PEGO_LSP_NEOVIM=1`. Neovim 0.11.1 edits a 202-line grammar with ordinary
+`ZP_LSP_NEOVIM=1`. Neovim 0.11.1 edits a 202-line grammar with ordinary
 editor commands: an insert, a range substitution, `:global` with `normal`,
 a visual-block insert, joins, deletions, a single undo and redo of all of
 those, multibyte insertion, `nvim_buf_set_lines`, thirty separate appends and
@@ -1032,7 +1032,7 @@ VS Code, Helix and Emacs remain unvalidated.
 
 ### Cancellation Poll Intervals
 
-`TestPollIntervalProbe` (run with `PEGO_LSP_POLL_PROBE=1`) passes a
+`TestPollIntervalProbe` (run with `ZP_LSP_POLL_PROBE=1`) passes a
 never-cancelled context that records the wall-clock interval between
 consecutive cancellation checks and the two callers of each check. Its `Done`
 channel is non-nil, so the controlled paths run. The longest interval bounds
@@ -1041,7 +1041,7 @@ first check and after the last. The probe covers responsive analysis with lint
 and every analysed request: semantic tokens, document symbols, formatting,
 hover, definition, highlights, completion, prepare-rename, references, rename
 and code actions. Name-based requests use the middle occurrence of the
-most-referenced rule. Inputs are the repository's parser grammars, `pego.pego`,
+most-referenced rule. Inputs are the repository's parser grammars, `zeroparse.zp`,
 the 64 KiB benchmark grammar, and three 256 KiB single-token inputs: a string
 literal, a comment and a character class. Each configuration ran three times
 and kept its run with the shortest longest interval; the probe was run three
@@ -1051,12 +1051,12 @@ This table was measured with a compiler stride of 256; the current stride is 16 
 
 | Input | Bytes | Analysis longest (μs) | Request longest (μs) |
 |---|---:|---:|---:|
-| `duckdb.pego` | 192,992 | 285–822 | 105–399 (formatting) |
-| `typescript.pego` | 127,132 | 190–366 | 62–71 |
-| `python.pego` | 71,708 | 244–302 | 61–69 |
-| `golang.pego` | 56,593 | 235–336 | 49–53 |
+| `duckdb.zp` | 192,992 | 285–822 | 105–399 (formatting) |
+| `typescript.zp` | 127,132 | 190–366 | 62–71 |
+| `python.zp` | 71,708 | 244–302 | 61–69 |
+| `golang.zp` | 56,593 | 235–336 | 49–53 |
 | 64 KiB benchmark grammar | 65,542 | 115–135 | 233–260 (formatting) |
-| other parser grammars and `pego.pego` | 1,508–34,595 | 47–205 | 13–27 |
+| other parser grammars and `zeroparse.zp` | 1,508–34,595 | 47–205 | 13–27 |
 | 256 KiB literal | 262,159 | 1,125–1,143 | 10–16 |
 | 256 KiB comment | 262,164 | 38–40 | 22–579 (hover) |
 | 256 KiB class | 262,158 | 53–92 | 14–22 |
@@ -1078,14 +1078,14 @@ and JSON decoding and wire encoding are outside the measured intervals.
 
 The compiler polls its context every `compilePollStride` (16) steps. This
 section compares that stride with 256 and records the gaps that remain. To reproduce the comparison, change the constant and
-rebuild. `TestCancelLatencyProbe` (`PEGO_LSP_CANCEL_PROBE=1`,
-`PEGO_LSP_CANCEL_TRIALS=1000`, `PEGO_LSP_CANCEL_REQUESTS=0` to skip the request
+rebuild. `TestCancelLatencyProbe` (`ZP_LSP_CANCEL_PROBE=1`,
+`ZP_LSP_CANCEL_TRIALS=1000`, `ZP_LSP_CANCEL_REQUESTS=0` to skip the request
 section) cancels responsive analysis, and each analysed request, at a uniformly
 random moment within the uncancelled duration of the same work and records the
 time from cancellation to return. It ran 1000 trials per grammar on an Apple M3
 Max (Go 1.27.1, `GOMAXPROCS=16`) under the benchmark lock, with the strides run
-alternately. `TestPollIntervalProbe` with `PEGO_LSP_POLL_PROBE=1`,
-`PEGO_LSP_POLL_SITES=1` and `PEGO_LSP_POLL_ONLY=<file>` lists the gaps of at
+alternately. `TestPollIntervalProbe` with `ZP_LSP_POLL_PROBE=1`,
+`ZP_LSP_POLL_SITES=1` and `ZP_LSP_POLL_ONLY=<file>` lists the gaps of at
 least 300 μs that recur in every one of 15 analysis runs, with the smallest
 per-run maximum, which separates structural gaps from scheduler and collector
 noise. Single maxima of 12 to 52 ms occurred even with the collector off and are
@@ -1095,10 +1095,10 @@ Analysis cancel-to-return, p50 / p90 / p99, as ranges over the alternating runs:
 
 | Grammar | Full analysis | Stride 256 | Stride 16 |
 |---|---:|---|---|
-| `duckdb.pego` | 136–155 ms | 39–51 μs / 449–571 μs / 1.9–2.9 ms | 18–20 μs / 243–344 μs / 1.8–1.95 ms |
-| `typescript.pego` | 92–99 ms | 66–72 μs / 432–482 μs / about 1.1 ms | 25–28 μs / 170–187 μs / 576–623 μs |
-| `python.pego` | | p50 56 μs, p90 551–627 μs | p50 30 μs, p90 209 μs |
-| `golang.pego` | | p50 81–128 μs, p90 639–735 μs | p50 32 μs, p90 211 μs |
+| `duckdb.zp` | 136–155 ms | 39–51 μs / 449–571 μs / 1.9–2.9 ms | 18–20 μs / 243–344 μs / 1.8–1.95 ms |
+| `typescript.zp` | 92–99 ms | 66–72 μs / 432–482 μs / about 1.1 ms | 25–28 μs / 170–187 μs / 576–623 μs |
+| `python.zp` | | p50 56 μs, p90 551–627 μs | p50 30 μs, p90 209 μs |
+| `golang.zp` | | p50 81–128 μs, p90 639–735 μs | p50 32 μs, p90 211 μs |
 
 Recurring gaps of at least 300 μs per grammar fell from 26 or 27 at stride 256
 to 6 (`typescript`) and 10 (`duckdb`) at 64, 7 and 8 at 32, and 3 and 7 at 16.
@@ -1112,9 +1112,9 @@ expression is compiled, takes about 1.7 ms between checks when it does not poll,
 analysis before value inference about 1.1 ms. Both poll: the program carries
 the compilation's control while it is built, and the cycle analysis polls per
 rule, expression and visit. Repeating the probe on the same tree, the stretches
-that recur in every run on `duckdb.pego` are two of 0.32 and 0.37 ms in the
+that recur in every run on `duckdb.zp` are two of 0.32 and 0.37 ms in the
 value inference of predicates, and no other above 0.3 ms. Cancel-to-return on
-`duckdb.pego` with and without these polls, 1000 trials each, two runs: p50
+`duckdb.zp` with and without these polls, 1000 trials each, two runs: p50
 16 μs against 17–19 μs, p90 180–212 μs against 256–335 μs, and p99
 0.96–1.7 ms against 1.4–2.1 ms. The p99 differences are within the run-to-run
 spread, so the measured effect is the removal of the two long structural
@@ -1128,7 +1128,7 @@ four grammars the p99 was at most about 264 μs.
 
 ### Editor Workload Probe
 
-`TestEditorWorkloadProbe` (`PEGO_LSP_EDITOR_PROBE=1`) drives a framed responsive
+`TestEditorWorkloadProbe` (`ZP_LSP_EDITOR_PROBE=1`) drives a framed responsive
 server like an editor that types one character per keystroke: `didChange`,
 cancel of the previous semantic-token request, then semantic tokens, document
 highlight and completion. After typing it waits for the final diagnostics and
@@ -1141,10 +1141,10 @@ Typing 60 characters with 3 requests each, one analysis worker per document:
 
 | Grammar | Interval | Publications | Requests answered / `ContentModified` | Final publish after last keystroke |
 |---|---:|---:|---:|---:|
-| `duckdb.pego` | 0–60 ms | 1 | 3 / 177 | 129–181 ms |
-| `duckdb.pego` | 300 ms | 60 | 180 / 0 | 148–150 ms |
-| `typescript.pego` | 0–60 ms | 1 | 3 / 177 | 87–115 ms |
-| `typescript.pego` | 300 ms | 60 | 180 / 0 | 100–114 ms |
+| `duckdb.zp` | 0–60 ms | 1 | 3 / 177 | 129–181 ms |
+| `duckdb.zp` | 300 ms | 60 | 180 / 0 | 148–150 ms |
+| `typescript.zp` | 0–60 ms | 1 | 3 / 177 | 87–115 ms |
+| `typescript.zp` | 300 ms | 60 | 180 / 0 | 100–114 ms |
 
 Typing faster than one analysis (about 140 and 95 ms) coalesces to a single
 publication of the final version, and stale requests are answered with
@@ -1156,7 +1156,7 @@ publication order never regressed.
 
 Burst of 44 mixed requests after typing, total time by request workers:
 
-| Workers | `duckdb.pego` | `typescript.pego` |
+| Workers | `duckdb.zp` | `typescript.zp` |
 |---:|---:|---:|
 | 1 | 73–82 ms | 36–39 ms |
 | 2 | 44–45 ms | 22 ms |
@@ -1184,7 +1184,7 @@ version parameter. The extension therefore does not surface the converted edit.
 zero-width insertion at column 0 of a line of the same document, for the single
 lint diagnostic it answers, with the text `// lint:ignore <check>` and one line
 break, where `<check>` is that diagnostic's code. It then replaces the edit by
-a command action `pego.applyLintSuppression` with the line, the text and the
+a command action `zp.applyLintSuppression` with the line, the text and the
 analysis guard (session, URI, document version and generation).
 
 The command checks the guard and `document.version` and then builds a new
@@ -1199,7 +1199,7 @@ the stamp comparison, and one it has seen fails the extension's own check, so th
 edit applies only to the analyzed text. The extension reports no result beyond
 the boolean.
 
-The action ships only behind `pego.server.experimentalLint`: with it off, the middleware drops every lint action, including a version-less edit, and the command applies nothing. This depends on behaviour VS Code does not document: the stamp is
+The action ships only behind `zp.server.experimentalLint`: with it off, the middleware drops every lint action, including a version-less edit, and the command applies nothing. This depends on behaviour VS Code does not document: the stamp is
 omitted when the extension host does not know the document, in which case the
 main thread checks nothing, and a different host could behave differently. The
 extension only offers the action for a document it holds in `textDocuments`
@@ -1207,7 +1207,7 @@ at the guarded version. `scripts/check-lint-actions.js` covers the surfaced
 edits, the synchronous call with the stamped version, replay after an edit, a
 forged or foreign guard, malformed arguments, a main-thread refusal, a new
 publication and close. Its host stand-in implements the stamp and refusal rules
-as read from the sources; no real VS Code was run. The tests of `pego.applyLintAction` use the same stand-in and add a stand-in for the resolve request.
+as read from the sources; no real VS Code was run. The tests of `zp.applyLintAction` use the same stand-in and add a stand-in for the resolve request.
 
 ## Limitations and Open Questions
 
@@ -1216,5 +1216,5 @@ as read from the sources; no real VS Code was run. The tests of `pego.applyLintA
 - VS Code suppression relies on the extension host stamping `workspace.applyEdit` edits with the document version and the main thread refusing a mismatch. That is how current VS Code behaves, but it is not documented API, and it was verified by reading the VS Code sources, not by running an editor. Other clients that apply versioned `documentChanges` edits natively are unaffected.
 - The worker count (4), admission cap (64) and compiler poll stride (16) follow from the measurements above on one machine; the longest stretch that recurs in every run on the largest grammar is about 0.4 ms. Clients that keep many requests outstanding were not measured.
 - **Open: lint scope.** All existing checks run for every compilable open grammar, with source directives as the suppression mechanism. A configurable lint set is not provided; it is open whether editor noise will call for one.
-- **Open: explanation command.** Explanations use the small `pego.showExplanation` command handled by the VS Code extension. A portable protocol-only explanation request would add a custom request method and an editor UI contract, and is not provided.
+- **Open: explanation command.** Explanations use the small `zp.showExplanation` command handled by the VS Code extension. A portable protocol-only explanation request would add a custom request method and an editor UI contract, and is not provided.
 - No grammar-changing action beyond the three under "Suggested Fixes" is approved; each further one needs its own proof and review. The client shapes of the VS Code fix command and the proofs were exercised by tests and mutants, not in a running editor.

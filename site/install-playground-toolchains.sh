@@ -21,12 +21,12 @@ binaryen_archive=binaryen-version_131-x86_64-linux.tar.gz
 binaryen_sha256=b5bf1f0eaf17c63ee588ff7a5954dc8f6ce2c26989051c66f24dfe9ece3e46db
 binaryen_url=https://github.com/WebAssembly/binaryen/releases/download/version_131/$binaryen_archive
 
-cache_root=${PLAYGROUND_TOOLCHAIN_CACHE_DIR:-${TMPDIR:-/tmp}/pego-toolchain-cache}
+cache_root=${PLAYGROUND_TOOLCHAIN_CACHE_DIR:-${TMPDIR:-/tmp}/zp-toolchain-cache}
 [ ! -L "$cache_root" ] || fail 'Refusing a symlink as the toolchain cache directory.'
 mkdir -p "$cache_root"
 [ -d "$cache_root" ] || fail 'Toolchain cache path is not a directory.'
 
-work=$(mktemp -d "${TMPDIR:-/tmp}/pego-toolchains.XXXXXX") || fail 'Could not create a temporary toolchain directory.'
+work=$(mktemp -d "${TMPDIR:-/tmp}/zp-toolchains.XXXXXX") || fail 'Could not create a temporary toolchain directory.'
 cleanup() { rm -rf "$work"; }
 trap cleanup EXIT
 trap 'exit 129' HUP

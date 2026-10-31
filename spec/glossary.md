@@ -15,21 +15,21 @@ definition and the place where the term is defined.
 | character class | `[...]` or `[^...]`: matches one code point from a set of characters and ranges. See [Character Matching](language/parser-expressions.md#character-classes). |
 | choice | `a / b`: an ordered choice, which commits to the first alternative that succeeds. See [Ordered choice](language/parser-expressions.md#ordered-choice). |
 | code point | A Unicode code point; the unit in which the input is matched. See [Input and positions](runtime/parsing.md#input-and-positions). |
-| compiled grammar | A grammar saved as a `.pegoc` file holding the bytecode of one mode (parse, recognize or document), with no grammar AST, that loads without parsing grammar source. See [Compiled Grammars](runtime/compiled-grammars.md). |
+| compiled grammar | A grammar saved as a `.zpc` file holding the bytecode of one mode (parse, recognize or document), with no grammar AST, that loads without parsing grammar source. See [Compiled Grammars](runtime/compiled-grammars.md). |
 | concrete syntax tree (CST) | The tree of nodes that Rule Expressions produce when no action is involved: string nodes, tuples for sequences and lists for repetitions. See [Values and the concrete syntax tree](language/parser-expressions.md#values-and-the-concrete-syntax-tree). |
 | contextual word | A grammar word interpreted as syntax only in a Declaration Statement or Operators Rule position; the same spelling may be an identifier elsewhere. See [Contextual Words](language/lexical.md#contextual-words). |
-| Core IR | The intermediate representation of a checked grammar, whose nodes make their effects explicit. See [PEGO Core IR Specification](core-ir/README.md). |
+| Core IR | The intermediate representation of a checked grammar, whose nodes make their effects explicit. See [ZeroParse Core IR Specification](core-ir/README.md). |
 | cost | What a parse spends: the rule bodies evaluated, the input examined, the iterations and operators applied and the size of the values built. Time is proportional to it, and the budget caps it, in budget units. See [Time and Memory](runtime/parsing.md#time-and-memory). |
 | cut | `#cut`: commits the enclosing choice to the current alternative. See [Cut](language/parser-expressions.md#cut). |
-| Declaration Statement | A Type Declaration Statement or Rule Declaration Statement in a `.pego` file. See [Grammar Files](language/grammar-files.md#structure). |
+| Declaration Statement | A Type Declaration Statement or Rule Declaration Statement in a `.zp` file. See [Grammar Files](language/grammar-files.md#structure). |
 | discard | `-a`: matches `a` and has no value. See [Discard](language/parser-expressions.md#discard). |
 | Document | A mutable text together with its parse result, updated by edits and reparsed incrementally. See [Incremental Documents](runtime/documents.md). |
 | edit | The replacement of a range of a Document's text; the next parse reuses the results that the edit did not affect. See [Edits](runtime/documents.md#edits). |
 | effect | One thing a Core IR node can do besides succeed or fail, such as consuming input, recording expectations or writing a capture. See [Attributes and Effects](core-ir/attributes.md#effects). |
 | expectation | An item that a syntax error lists as expected at a position: a literal, a character class, `any character` or an anchor. A parse records expectations only on request. See [Recording expectations](runtime/parsing.md#recording-expectations). |
 | farthest failure | The farthest position at which parsing failed, with the items expected there when the parse records expectations; the syntax error reports it. See [Syntax errors](runtime/parsing.md#syntax-errors). |
-| generated parser | A standalone Go or TypeScript parser written for one grammar by `pego gen`. See [Generated Parsers](runtime/generated-parsers.md). |
-| grammar | An optional package clause followed by Type and Rule Declaration Statements, normally written in a `.pego` file. See [Grammar Files](language/grammar-files.md). |
+| generated parser | A standalone Go or TypeScript parser written for one grammar by `zp gen`. See [Generated Parsers](runtime/generated-parsers.md). |
+| grammar | An optional package clause followed by Type and Rule Declaration Statements, normally written in a `.zp` file. See [Grammar Files](language/grammar-files.md). |
 | join type | The join `T \| U` of types: a type whose values are the values of any one of its member types. See [Join Types](language/types.md#join-types). |
 | left recursion | A rule that calls itself at the position where it started. It is evaluated by growing a seed. See [Left recursion](language/parser-expressions.md#left-recursion). |
 | lookahead | `&a` and `!a`: tests the input that follows without consuming it. See [Lookahead](language/parser-expressions.md#lookahead). |

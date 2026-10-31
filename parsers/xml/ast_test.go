@@ -3,8 +3,8 @@ package xml_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/parsers/xml"
-	"github.com/ornew/pego/parsers/xml/types"
+	"github.com/ornew/zeroparse/parsers/xml"
+	"github.com/ornew/zeroparse/parsers/xml/types"
 )
 
 // TestASTHelpers checks the methods of the typed values.

@@ -9,8 +9,8 @@ import (
 	"unsafe"
 	"weak"
 
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 type traceLifecycleSentinel struct{ value [128]byte }

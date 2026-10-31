@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 func TestDocumentChangesPublicOptIn(t *testing.T) {
@@ -15,9 +15,9 @@ rule main Entry = x:([a-zé]+ #atomic) $$ => Entry{Name: text($x)}`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
-			d, err := p.NewDocument("aa", pego.WithBackend(backend), pego.WithUnit(unit))
+	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+		for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+			d, err := p.NewDocument("aa", zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -41,18 +41,18 @@ rule main Entry = x:([a-zé]+ #atomic) $$ => Entry{Name: text($x)}`, "main")
 				t.Fatal(err)
 			}
 			events := d.DrainChanges()
-			if len(events) != 1 || events[0].Kind != pego.ChangeOutcome || events[0].Output != pego.OutputMayHaveChanged {
+			if len(events) != 1 || events[0].Kind != zeroparse.ChangeOutcome || events[0].Output != zeroparse.OutputMayHaveChanged {
 				t.Fatal(events)
 			}
 			from := d.Version()
-			if err := d.EditBatch(from, pego.TextEdit{Start: 0, End: 2, Text: "bb"}); err != nil {
+			if err := d.EditBatch(from, zeroparse.TextEdit{Start: 0, End: 2, Text: "bb"}); err != nil {
 				t.Fatal(err)
 			}
 			if _, err := d.Parse(); err != nil {
 				t.Fatal(err)
 			}
 			events = d.DrainChanges()
-			if len(events) != 2 || events[0].Kind != pego.ChangeEdit || events[0].From != from || events[0].To != d.Version() || events[0].Unit != unit || events[1].Kind != pego.ChangeOutcome || events[1].From != original.Version() || events[1].Output != pego.OutputChanged {
+			if len(events) != 2 || events[0].Kind != zeroparse.ChangeEdit || events[0].From != from || events[0].To != d.Version() || events[0].Unit != unit || events[1].Kind != zeroparse.ChangeOutcome || events[1].From != original.Version() || events[1].Output != zeroparse.OutputChanged {
 				t.Fatal(events)
 			}
 			if value, _ := original.Root().Field("Name"); value != "aa" {
@@ -62,23 +62,23 @@ rule main Entry = x:([a-zé]+ #atomic) $$ => Entry{Name: text($x)}`, "main")
 			if _, err := d.Snapshot(); err != nil {
 				t.Fatal(err)
 			}
-			if got := d.DrainChanges()[0].Output; got != pego.OutputUnchanged {
+			if got := d.DrainChanges()[0].Output; got != zeroparse.OutputUnchanged {
 				t.Fatal(got)
 			}
 			// The reference build has no cancellation to interrupt the Snapshot.
 			if core.BudgetControlsEnabled {
 				ctx, cancel := context.WithCancel(context.Background())
 				cancel()
-				if s, err := d.Snapshot(pego.WithContext(ctx)); s != nil || !errors.Is(err, context.Canceled) {
+				if s, err := d.Snapshot(zeroparse.WithContext(ctx)); s != nil || !errors.Is(err, context.Canceled) {
 					t.Fatal(s, err)
 				}
-				if got := d.DrainChanges()[0].Output; got != pego.OutputUnavailable {
+				if got := d.DrainChanges()[0].Output; got != zeroparse.OutputUnavailable {
 					t.Fatal(got)
 				}
 				if _, err := d.Snapshot(); err != nil {
 					t.Fatal(err)
 				}
-				if got := d.DrainChanges()[0].Output; got != pego.OutputMayHaveChanged {
+				if got := d.DrainChanges()[0].Output; got != zeroparse.OutputMayHaveChanged {
 					t.Fatal("comparison bridged interruption", got)
 				}
 			}
@@ -106,7 +106,7 @@ func TestDocumentChangesPublicFullRefresh(t *testing.T) {
 		t.Fatal(err)
 	}
 	events := d.DrainChanges()
-	if len(events) != 1 || events[0].Kind != pego.ChangeFullRefresh || !events[0].FullRefresh || events[0].From != from || events[0].To != d.Version() || events[0].Edits != nil {
+	if len(events) != 1 || events[0].Kind != zeroparse.ChangeFullRefresh || !events[0].FullRefresh || events[0].From != from || events[0].To != d.Version() || events[0].Edits != nil {
 		t.Fatal(events)
 	}
 }

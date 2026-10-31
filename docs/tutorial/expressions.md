@@ -1,7 +1,7 @@
 # Parsing Expressions
 
 Arithmetic is where PEG grammars usually get awkward: operator precedence and associativity normally require one rule
-per level. This lesson builds a calculator grammar with the two tools PEGO offers, an Operators Rule and left recursion.
+per level. This lesson builds a calculator grammar with the two tools ZeroParse offers, an Operators Rule and left recursion.
 
 ## What You Will Build
 
@@ -13,9 +13,9 @@ Complete [Building Typed Trees](typed-trees.md). This lesson does not use the co
 
 ## An Operators Rule
 
-Start with an Operators Rule. Save as `calc.pego`:
+Start with an Operators Rule. Save as `calc.zp`:
 
-```pego
+```zp
 type Number = node[string]
 type Binary = { Left Expr; Op node[string]; Right Expr }
 type Expr ~ Number | Binary
@@ -40,7 +40,7 @@ parts:
   the operator text.
 
 ```bash
-pego parse -g calc.pego -f sexpr -i '1+2-3'
+zp parse -g calc.zp -f sexpr -i '1+2-3'
 ```
 
 ```text
@@ -50,18 +50,18 @@ Binary{Left: Binary{Left: Number("1"), Op: "+", Right: Number("2")}, Op: "-", Ri
 `1+2-3` is `(1+2)-3`, as left associativity demands. But whitespace is not handled yet:
 
 ```bash
-pego parse -g calc.pego -f sexpr -i '1 + 2'
+zp parse -g calc.zp -f sexpr -i '1 + 2'
 ```
 
 ```text
-pego: 1:2: syntax error: expected end of input, "+", "-", [0-9]
+zp: 1:2: syntax error: expected end of input, "+", "-", [0-9]
 ```
 
-Add a `skip` item, which PEGO inserts before every operand and operator, and fill out the language: more levels,
+Add a `skip` item, which ZeroParse inserts before every operand and operator, and fill out the language: more levels,
 parentheses, a prefix operator and a right-associative one. **Levels declared earlier bind more loosely**, so the order
 of the `level` blocks is the precedence table, from loosest to tightest:
 
-```pego
+```zp
 type Number = node[string]
 type Binary = { Left Expr; Op node[string]; Right Expr }
 type Unary = { Op node[string]; X Expr }
@@ -85,7 +85,7 @@ rule ws = [ \t\r\n]*
 ```
 
 ```bash
-pego parse -g calc.pego -f sexpr -i '1+2*3'
+zp parse -g calc.zp -f sexpr -i '1+2*3'
 ```
 
 ```text
@@ -111,10 +111,10 @@ why the parenthesized operand writes `ws` before `")"` itself, and why `main` ha
 
 ### The Same Language With Left Recursion
 
-A rule that starts by calling itself is **left recursive**, and PEGO accepts it. Precedence then comes from having one
+A rule that starts by calling itself is **left recursive**, and ZeroParse accepts it. Precedence then comes from having one
 rule per level, each defined in terms of the next tighter one:
 
-```pego
+```zp
 type Number = node[string]
 type Binary = { Left Expr; Op node[string]; Right Expr }
 type Expr ~ Number | Binary
@@ -135,7 +135,7 @@ rule ws = [ \t\r\n]*
 ```
 
 ```bash
-pego parse -g calc-lr.pego -f sexpr -i '1 + 2 * 3 - 4'
+zp parse -g calc-lr.zp -f sexpr -i '1 + 2 * 3 - 4'
 ```
 
 ```text

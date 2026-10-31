@@ -6,7 +6,7 @@
 
 ## Summary
 
-Package `lint` and `pego lint` report likely mistakes in a grammar that compiles: alternatives of an ordered choice that
+Package `lint` and `zp lint` report likely mistakes in a grammar that compiles: alternatives of an ordered choice that
 can never match, expressions that can never match or have no effect, captures whose values are discarded, rules the
 start rule never uses, and grammar shapes that slow down incremental parsing. Each finding has a severity, the name of
 the check that reported it, a message, the position in the source, the rule it is in, and usually a suggested fix.
@@ -22,8 +22,8 @@ for _, f := range fs {
 ```
 
 ```
-$ pego lint -g grammar.pego
-grammar.pego:3:18: error: alternative 2 (`"ab"`) can never match: alternative 1 (`"a"` at 3:12) matches first wherever it could [shadowed-alternative]
+$ zp lint -g grammar.zp
+grammar.zp:3:18: error: alternative 2 (`"ab"`) can never match: alternative 1 (`"a"` at 3:12) matches first wherever it could [shadowed-alternative]
 	fix: move it before alternative 1
 ```
 
@@ -33,7 +33,7 @@ PEG mistakes are silent. An ordered choice commits to the first alternative that
 matches `==` as one token, and `ident / "if"` never produces the keyword; the grammar compiles, parses most inputs,
 and fails on some much later, far from the cause. The same holds for `!x?` (which never succeeds), `$$ "x"` (which
 never matches), a repetition of something that can match nothing, or a capture that the action forgets to read.
-`pego profile` finds where a grammar is slow on a given input; nothing pointed out these mistakes before a test did.
+`zp profile` finds where a grammar is slow on a given input; nothing pointed out these mistakes before a test did.
 
 ## Principles
 
@@ -44,7 +44,7 @@ The only heuristic findings are the performance hints, which have their own seve
 
 **Severity says how sure the finding is, and whether the grammar is wrong.**
 
-| Severity | Meaning | `pego lint` exit status |
+| Severity | Meaning | `zp lint` exit status |
 |:--|:--|:--|
 | error | Certain: part of the grammar can never take effect (a dead alternative, an expression that can never match) | 1 |
 | warning | Certain about the fact (a capture is never read, an element can match nothing), but the grammar may still do what was meant | 0 (1 with `-strict`) |
@@ -193,7 +193,7 @@ called by unreachable rules are reported too, with a message that says so.
 
 ### Performance Hints
 
-They complement `pego profile`, which needs an input, with what the grammar's shape implies for `Document` reuse (see
+They complement `zp profile`, which needs an input, with what the grammar's shape implies for `Document` reuse (see
 [Writing grammars that reuse well](../../guide/incremental-reuse.md#writing-grammars-that-reuse-well)):
 
 - `right-recursion`: a rule that continues a list by calling itself at its end, after a call of another rule
@@ -213,7 +213,7 @@ They complement `pego profile`, which needs an input, with what the grammar's sh
 Findings are suppressed with comments, since the formatter keeps comments (`grammar.Grammar.AllComments`) and a
 suppression belongs next to the code it excuses:
 
-```pego
+```zp
 // lint:ignore unused-capture the value is kept for debugging
 rule stmt = s:simple k:keyword => $s
 
@@ -228,7 +228,7 @@ rule main = a:"x" b:"y" => $a // lint:ignore unused-capture
 - A directive that names an unknown check, or suppresses nothing, is reported (`lint-directive`), so suppressions do
   not outlive the code they excused. A directive for a disabled check is not reported as unused.
 
-`Config.Disable` (`pego lint -disable`) turns checks off for the whole run, for grammars without comments (JSON) and for
+`Config.Disable` (`zp lint -disable`) turns checks off for the whole run, for grammars without comments (JSON) and for
 projects that do not want a kind of finding at all.
 
 ## Testing
@@ -236,7 +236,7 @@ projects that do not want a kind of finding at all.
 - Table tests give every check positive and negative cases, including the cuts, left recursion, captures read by
   predicates, and directives.
 - `TestExamples` lints every grammar under `examples/` and compares the findings with a list checked by hand (the
-  fourteen captures in `python.pego`); any other finding is a false positive.
+  fourteen captures in `python.zp`); any other finding is a false positive.
 - `TestSoundness` generates random grammars of three rules over `a`, `b` and the line feed, with choices, sequences,
   repetitions, lookaheads, anchors, cuts, `@`, `@error` and `#recover`. For each certain finding it changes the
   grammar in a way that is equivalent exactly when the finding is true (it keeps cuts and left calls: `x` becomes
@@ -253,7 +253,7 @@ projects that do not want a kind of finding at all.
 - **Actions that always produce nil, and captures that are never set**: the type checker infers the types of actions
   and rejects undefined captures at compile time; `-> nil` is deliberate.
 - **Rules that defeat memoization**: memoization is decided per rule by the engine (left recursion, variables) and
-  is not something a grammar author chooses; `pego profile` shows the cost on real input.
+  is not something a grammar author chooses; `zp profile` shows the cost on real input.
 - **Escape mistakes**: the lexer already rejects unknown escapes such as `\d`.
 - **Alternatives whose first characters overlap**: overlap alone is not a mistake.
 - **Cross-rule anchors** (`rule a = "x" $$` called as `a "y"`): only anchors and their neighbors in one sequence are
@@ -263,7 +263,7 @@ projects that do not want a kind of finding at all.
 
 - **Reporting from `Compile`**: compile errors stop compilation; most findings should not, and hints need not be seen
   every time. A separate entry point keeps compilation fast and quiet.
-- **One function next to `Compile` in package `pego`**: linting is one call for most users, but the language server
+- **One function next to `Compile` in package `zeroparse`**: linting is one call for most users, but the language server
   lints a grammar it has already compiled (`Config.RunUnchecked`) and offers the proven rewrites (`Rewrites`), and
   the checks, severities and findings are a vocabulary of their own. Package `lint` holds them all, so the editor
   uses the same API as other programs.

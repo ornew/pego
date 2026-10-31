@@ -65,7 +65,7 @@ func TestMutations(t *testing.T) {
 	if testing.Short() {
 		n = 150
 	}
-	if v := os.Getenv("PEGO_GO_MUTATIONS"); v != "" {
+	if v := os.Getenv("ZP_GO_MUTATIONS"); v != "" {
 		fmt.Sscan(v, &n)
 	}
 	r := rand.New(rand.NewPCG(1, 2))
@@ -128,9 +128,9 @@ func TestMutations(t *testing.T) {
 	t.Logf("%d mutated files (%d accepted by go/parser), %d differ", len(jobs), accepted, len(failures))
 }
 
-// excerpt writes the input of a failure to the directory $PEGO_GO_DUMP, if set, and returns where.
+// excerpt writes the input of a failure to the directory $ZP_GO_DUMP, if set, and returns where.
 func excerpt(src, d string) string {
-	dir := os.Getenv("PEGO_GO_DUMP")
+	dir := os.Getenv("ZP_GO_DUMP")
 	if dir == "" {
 		return ""
 	}

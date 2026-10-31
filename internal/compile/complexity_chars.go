@@ -5,7 +5,7 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // charset is a set of characters as sorted, disjoint, non-adjacent ranges. The classifier uses it

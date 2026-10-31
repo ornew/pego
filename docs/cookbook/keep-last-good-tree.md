@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 const grammar = `package settings
@@ -54,8 +54,8 @@ func lineStart(text string, line int) int {
 
 // Editor keeps a Document and the last tree that parsed.
 type Editor struct {
-	doc  *pego.Document
-	last *pego.Node
+	doc  *zeroparse.Document
+	last *zeroparse.Node
 }
 
 // Apply replaces [start, end) with text and reparses.
@@ -73,7 +73,7 @@ func (e *Editor) Apply(start, end int, text string) error {
 	case err == nil:
 		status = fmt.Sprintf("ok, %d entries", node.Elem(0).Len())
 	default:
-		var se *pego.SyntaxError
+		var se *zeroparse.SyntaxError
 		if errors.As(err, &se) {
 			status = fmt.Sprintf("error at %d:%d, keeping the last good tree", se.Line, se.Col)
 		} else {
@@ -85,7 +85,7 @@ func (e *Editor) Apply(start, end int, text string) error {
 }
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -172,7 +172,7 @@ same as a fresh parse: true
 - Keep one `Document` per open file and one goroutine per `Document`, with the `Parser` shared.
 - Convert your editor's positions to the document's unit before `Edit`. In `Bytes` mode, a position inside a character
   is an error rather than a silent corruption.
-- If the grammar uses `#recover`, `Parse` returns a tree and a `pego.SyntaxErrors` together: keep the tree, show the
+- If the grammar uses `#recover`, `Parse` returns a tree and a `zeroparse.SyntaxErrors` together: keep the tree, show the
   errors.
 - Debounce: reparse after the user pauses, not after every key, and merge the edits that arrived meanwhile.
 - The kept tree shares its nodes with the document, and later parses move the nodes they reuse to their new

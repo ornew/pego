@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // The examined frontier, the evaluations and the reuse that a Document reports for a rule that
@@ -53,7 +53,7 @@ import (
 	"strings"
 	"testing"
 
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 )
 
 func TestFrontier(t *testing.T) {
@@ -63,8 +63,8 @@ func TestFrontier(t *testing.T) {
 	}
 	var out strings.Builder
 	for i := 0; i < 2; i++ {
-		_, _ = d.PARSE(pegort.WithTrace(func(e pegort.TraceEvent) {
-			if e.Kind == pegort.TraceExit {
+		_, _ = d.PARSE(zprt.WithTrace(func(e zprt.TraceEvent) {
+			if e.Kind == zprt.TraceExit {
 				fmt.Fprintf(&out, "exit %s pos=%d memo=%v evals=%d examined=%d\n", e.Rule, e.Pos, e.Memo, e.Evals, e.Examined)
 			}
 		}))

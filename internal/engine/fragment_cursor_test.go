@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 func TestFragmentCursorOriginalBytes(t *testing.T) {

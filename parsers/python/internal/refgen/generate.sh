@@ -2,12 +2,12 @@
 # Regenerates the recorded reference data of the tests (testdata/cpython-*.jsonl.gz) with CPython
 # 3.14.0:
 #
-#   PEGO_PYTHON=python3.14 internal/refgen/generate.sh /path/to/cpython-checkout
+#   ZP_PYTHON=python3.14 internal/refgen/generate.sh /path/to/cpython-checkout
 #
 # The checkout is of the tag v3.14.0 (commit ebf955df7a89ed0c7968f79faec1de49f61ed7cb). Run it from
 # the root of the module.
 set -e
-py=${PEGO_PYTHON:-python3.14}
+py=${ZP_PYTHON:-python3.14}
 src=${1:?usage: generate.sh CPYTHON_CHECKOUT}
 test -f "$src/Lib/test/test_grammar.py" || { echo "no Lib/test in $src" >&2; exit 1; }
 cd "$(dirname "$0")/../.."

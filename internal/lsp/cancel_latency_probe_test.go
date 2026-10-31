@@ -44,26 +44,26 @@ func (l latencyStats) quantile(q float64) time.Duration {
 	return s[min(len(s)-1, int(q*float64(len(s))))]
 }
 
-// TestCancelLatencyProbe (PEGO_LSP_CANCEL_PROBE=1, optional PEGO_LSP_CANCEL_TRIALS) cancels
+// TestCancelLatencyProbe (ZP_LSP_CANCEL_PROBE=1, optional ZP_LSP_CANCEL_TRIALS) cancels
 // responsive analysis and each analysed request at uniformly random moments of a run and reports
 // the time from the cancellation to the return of the work. Unlike the poll-interval probe, which
 // records the gaps between checks, this measures the delay a cancellation actually sees, including
 // scheduling and garbage collection. Cancellations land uniformly in time, so a phase is hit in
 // proportion to its duration.
 func TestCancelLatencyProbe(t *testing.T) {
-	if os.Getenv("PEGO_LSP_CANCEL_PROBE") != "1" {
+	if os.Getenv("ZP_LSP_CANCEL_PROBE") != "1" {
 		t.Skip("manual cancellation latency probe")
 	}
 	if requestHook != nil || analyzeHook != nil {
 		t.Fatal("cancellation latency probe requires inactive hooks")
 	}
 	trials := 300
-	if v, err := strconv.Atoi(os.Getenv("PEGO_LSP_CANCEL_TRIALS")); err == nil && v > 0 {
+	if v, err := strconv.Atoi(os.Getenv("ZP_LSP_CANCEL_TRIALS")); err == nil && v > 0 {
 		trials = v
 	}
-	names := []string{"duckdb/duckdb.pego", "typescript/typescript.pego", "python/python.pego", "golang/golang.pego"}
+	names := []string{"duckdb/duckdb.zp", "typescript/typescript.zp", "python/python.zp", "golang/golang.zp"}
 	rng := rand.New(rand.NewSource(1))
-	const uri = "file:///probe.pego"
+	const uri = "file:///probe.zp"
 	for _, name := range names {
 		data, err := os.ReadFile(filepath.Join("../../parsers", name))
 		if err != nil {
@@ -108,7 +108,7 @@ func TestCancelLatencyProbe(t *testing.T) {
 		}()
 		stop()
 		report("analysis", full, analysisWork)
-		if os.Getenv("PEGO_LSP_CANCEL_REQUESTS") == "0" {
+		if os.Getenv("ZP_LSP_CANCEL_REQUESTS") == "0" {
 			continue
 		}
 		a, err := analyzeContext(context.Background(), text)

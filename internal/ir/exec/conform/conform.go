@@ -12,9 +12,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/ops"
-	"github.com/ornew/pego/internal/ir/exec/ref"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/ops"
+	"github.com/ornew/zeroparse/internal/ir/exec/ref"
 )
 
 // Impl is an implementation under test. Values returns the implementation's Values handle for the

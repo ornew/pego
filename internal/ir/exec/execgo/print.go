@@ -22,8 +22,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/pass"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/pass"
 )
 
 // Target is how printed code reaches the parser state and the operations of one Go implementation.

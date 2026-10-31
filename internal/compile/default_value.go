@@ -1,6 +1,6 @@
 package compile
 
-import "github.com/ornew/pego/grammar"
+import "github.com/ornew/zeroparse/grammar"
 
 // defaultValueGrammar returns g without the value actions and without the declared types of rules,
 // so that every rule makes the default value of its expression (Options.DefaultValue). Predicates

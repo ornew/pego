@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/parsers/cue/types"
+	"github.com/ornew/zeroparse/parsers/cue/types"
 )
 
 // dump prints a file in the canonical form of the reference results (see internal/refgen/dump.go): a line

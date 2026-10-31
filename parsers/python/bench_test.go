@@ -5,19 +5,19 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego/internal/corpora/corporatest"
-	"github.com/ornew/pego/parsers/python"
+	"github.com/ornew/zeroparse/internal/corpora/corporatest"
+	"github.com/ornew/zeroparse/parsers/python"
 )
 
 // benchFiles are two of the largest modules of the standard library, the inputs of the benchmarks
-// (CPython 3.14.0's Lib, the corpus "cpython" fetched by go run ./hack/corpora fetch; PEGO_BENCH_DIR names another
+// (CPython 3.14.0's Lib, the corpus "cpython" fetched by go run ./hack/corpora fetch; ZP_BENCH_DIR names another
 // directory with files of these names). There is no Python parser in the Go standard library to compare with:
 // CPython's own, ast.parse, is measured on the same files with the command in the README.
 var benchFiles = []string{"_pydecimal.py", "typing.py"}
 
-// benchDir is the directory of the benchmark files: PEGO_BENCH_DIR, or the Lib of the fetched CPython.
+// benchDir is the directory of the benchmark files: ZP_BENCH_DIR, or the Lib of the fetched CPython.
 func benchDir(b *testing.B) string {
-	if dir := os.Getenv("PEGO_BENCH_DIR"); dir != "" {
+	if dir := os.Getenv("ZP_BENCH_DIR"); dir != "" {
 		return dir
 	}
 	return filepath.Join(corporatest.Dir(b, "cpython"), "Lib")

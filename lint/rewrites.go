@@ -4,8 +4,8 @@ import (
 	"context"
 	"slices"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/engine"
 )
 
 // A Rewrite is a change to the source of a grammar that fixes a finding without changing what the

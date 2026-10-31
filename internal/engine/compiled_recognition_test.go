@@ -10,11 +10,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/limits"
 )
 
 // moduleRuleNames returns the names of the rules of m in order, each once: value-free twins follow

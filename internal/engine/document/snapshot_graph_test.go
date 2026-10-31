@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func snapshotVariants(t *testing.T, run func(*testing.T, core.ParseOptions)) {

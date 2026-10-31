@@ -3,7 +3,7 @@ package compile
 import (
 	"strings"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // Projected repetitions.

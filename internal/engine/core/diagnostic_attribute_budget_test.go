@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package core
 
@@ -7,7 +7,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/zeroparse/internal/limits"
 )
 
 func TestDiagnosticRenameAccountsForLargeExpectationSets(t *testing.T) {

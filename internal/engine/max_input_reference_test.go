@@ -1,4 +1,4 @@
-//go:build pego_budget_controls_reference
+//go:build zp_budget_controls_reference
 
 package engine
 
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/zeroparse/internal/limits"
 )
 
 // The reference build has no limits: a finite MaxInput is unavailable, and zero and Unlimited run.

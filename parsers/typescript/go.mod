@@ -1,7 +1,7 @@
-module github.com/ornew/pego/parsers/typescript
+module github.com/ornew/zeroparse/parsers/typescript
 
 go 1.27.1
 
-require github.com/ornew/pego v0.0.0
+require github.com/ornew/zeroparse v0.0.0
 
-replace github.com/ornew/pego => ../..
+replace github.com/ornew/zeroparse => ../..

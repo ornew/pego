@@ -12,7 +12,7 @@ object. Follow the comment-group ownership transitions of the [Protocol Buffers
 v32 tokenizer](https://github.com/protocolbuffers/protobuf/blob/v32.0/src/google/protobuf/io/tokenizer.cc)
 ([descriptor contract](https://github.com/protocolbuffers/protobuf/blob/v32.0/src/google/protobuf/descriptor.proto#L1316-L1362),
 [tokenizer tests](https://github.com/protocolbuffers/protobuf/blob/v32.0/src/google/protobuf/io/tokenizer_unittest.cc)),
-while retaining PEGO's lexical rules. The concrete source grammar must construct
+while retaining ZeroParse's lexical rules. The concrete source grammar must construct
 ownership directly; the manual parser must agree. No semantic-analysis or
 post-parse attachment pass is involved.
 
@@ -81,7 +81,7 @@ retain the old `PackagePos` field.
 
 ### Comment Collection and Ownership
 
-The collector groups PEGO comment tokens and returns a boundary record with
+The collector groups ZeroParse comment tokens and returns a boundary record with
 trailing text for the previous token, detached groups, leading text for the next
 token, and `HasNext` to indicate whether a next owner exists. Keep pending state
 local to a parse production or transactionally restore it during backtracking;
@@ -109,7 +109,7 @@ Atomic and Attributed follow their production's return path and must not
 duplicate ownership merely because spans share a boundary. The root grammar and
 manual parser must produce the same owner paths.
 
-The executable fixture [`spec/language/testdata/comment-boundaries.pego`](../../../spec/language/testdata/comment-boundaries.pego)
+The executable fixture [`spec/language/testdata/comment-boundaries.zp`](../../../spec/language/testdata/comment-boundaries.zp)
 and focused test [`spec/language/comment_boundary_test.go`](../../../spec/language/comment_boundary_test.go)
 exercise the boundary record and package/rule owner construction directly. The
 focused matrix covers 34 boundary cases across three backends and two position
@@ -132,8 +132,8 @@ Adjacent block groups can split across tokens: in `corge /* trailing */ /*
 leading */ grault`, the first group trails `corge` and the second leads
 `grault`. A single ambiguous same-line group is detached. A multiline block
 ending on the next token's line follows the same ambiguity check. These are
-ownership transitions, not a claim that PEGO adopts every protobuf lexical
-rule: PEGO's CR-only newlines, Unicode whitespace and nested block comments
+ownership transitions, not a claim that ZeroParse adopts every protobuf lexical
+rule: ZeroParse's CR-only newlines, Unicode whitespace and nested block comments
 remain governed by its own lexer.
 
 For normalized text, remove only the `//` marker from line comments, retaining
@@ -201,10 +201,10 @@ member markers, closing delimiters and other source forms remain outside this
 increment's coverage. The broader ownership and formatter migration remains
 incomplete.
 
-Direct grammar JSON preserves normalized source metadata. The current `.pegoc`
+Direct grammar JSON preserves normalized source metadata. The current `.zpc`
 AST-bearing codec does not encode source positions or comments; loading or
 saving that AST preserves the compiled grammar tree, not its source-document
-ownership. This distinction does not change the `.pegoc` bytecode format.
+ownership. This distinction does not change the `.zpc` bytecode format.
 
 ## Compatibility and Migration
 
@@ -225,14 +225,14 @@ layout is stored separately in `OpenBreak`, `BodyBreak`, `CloseBreak` and
 `OneLine`; these fields preserve line placement around delimiters without
 changing normalized source ownership. The compiler and generators lower these
 wrappers transparently before semantic execution, so grouping adds no matching,
-value-frame, type, or bytecode semantics. The canonical `pego.pego` parser must
+value-frame, type, or bytecode semantics. The canonical `zeroparse.zp` parser must
 construct these nodes directly. The first interior-boundary formatter increment
 stores raw comment tokens in `SourceLayout` for selected Action Expression
 operand boundaries and constructor field names. It preserves normalized
 ownership and the JSON contract while keeping comments at their parsed physical
 boundary; its scope and remaining formatter work are described under
 [JSON and Formatting](#json-and-formatting).
-The canonical `pego.pego` parser builds ownership for the package clause, type
+The canonical `zeroparse.zp` parser builds ownership for the package clause, type
 declarations, rule declarations, struct fields, operators skip/operand/level/
 operator lines and constructor field initializers. A statement cannot see the
 boundary before it, so each boundary is recorded once after the item it
@@ -253,7 +253,7 @@ Expression and type operands, member markers, closing delimiters, callee-open
 boundaries and the type-expression header have no boundary of their own in the
 canonical grammar. A comment at a token belongs to the outermost node that starts
 (leading and detached groups) or ends (trailing group) at that token, and
-`pego.pego` cannot say that without a wrapper node per expression. The grammar
+`zeroparse.zp` cannot say that without a wrapper node per expression. The grammar
 instead keeps every comment-bearing gap between two tokens (`File.Gaps`): the
 trailing, leading and detached groups of the gap, whether the trailing group
 exists and whether a token follows. A gap node spans exactly the trivia, so the
@@ -335,7 +335,7 @@ sizes were:
 | Input | Source bytes | Parse ns/op before → after | B/op before → after | Allocs/op before → after | JSON bytes before → after |
 |:--|--:|--:|--:|--:|--:|
 | Small grammar | 26 | 1,290 → 1,401 | 2,488 → 3,080 | 19 → 19 | 423 → 1,408 |
-| Root `pego.pego` | 22,964 | 964,262 → 1,204,372 | 2,919,964 → 3,304,963 | 8,338 → 8,409 | 287,710 → 1,050,989 |
+| Root `zeroparse.zp` | 22,964 | 964,262 → 1,204,372 | 2,919,964 → 3,304,963 | 8,338 → 8,409 | 287,710 → 1,050,989 |
 | Commented grammar (64 rules) | 5,848 | 79,332 → 103,200 | 138,608 → 175,768 | 1,172 → 2,068 | 8,527 → 44,612 |
 
 These descriptive medians quantify source-parser and serialized-size costs for
@@ -357,7 +357,7 @@ validated, including owned boundary comments, strict and permissive JSON,
 structural validation and equivalent generated code and parse results.
 The in-progress raw interior-layout formatter increment is scoped to selected
 unary/lambda value boundaries and constructor field names. Canonical metadata
-construction in `pego.pego` covers statements, list elements and, through the
+construction in `zeroparse.zp` covers statements, list elements and, through the
 comment-bearing gaps between tokens and the claim in the source adapter, every
 node of expressions and types, and matches the hand-written frontend on the
 parity corpus. The public-AST adapter that builds those nodes from the canonical

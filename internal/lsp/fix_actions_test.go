@@ -3,8 +3,8 @@ package lsp
 import (
 	"context"
 	"encoding/json"
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/lint"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/lint"
 	"strings"
 	"testing"
 )
@@ -20,7 +20,7 @@ func fixActions(t *testing.T, uri, src string, resolve bool) map[string][]string
 	defer c.exit()
 	capabilities := map[string]any{
 		"workspace":    map[string]any{"workspaceEdit": map[string]any{"documentChanges": true}},
-		"experimental": map[string]any{"pego": map[string]any{"lintDiagnostics": true, "showExplanation": true}},
+		"experimental": map[string]any{"zp": map[string]any{"lintDiagnostics": true, "showExplanation": true}},
 	}
 	if resolve {
 		capabilities["textDocument"] = map[string]any{"codeAction": map[string]any{
@@ -29,7 +29,7 @@ func fixActions(t *testing.T, uri, src string, resolve bool) map[string][]string
 	c.request("initialize", map[string]any{"capabilities": capabilities})
 	out := map[string][]string{}
 	for _, d := range c.open(uri, src) {
-		if d.Source != "pego-lint" {
+		if d.Source != "zp-lint" {
 			continue
 		}
 		var actions []codeAction
@@ -128,7 +128,7 @@ func TestLintFixActions(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, resolve := range []bool{false, true} {
-				got := fixActions(t, "file:///fix.pego", tc.src, resolve)[tc.check]
+				got := fixActions(t, "file:///fix.zp", tc.src, resolve)[tc.check]
 				if strings.Join(got, "|") != strings.Join(tc.want, "|") {
 					t.Errorf("fixes (resolve %v) = %q, want %q", resolve, got, tc.want)
 				}
@@ -137,8 +137,8 @@ func TestLintFixActions(t *testing.T) {
 	}
 	// The grammar of the language server itself is not edited on a suggestion.
 	for _, resolve := range []bool{false, true} {
-		if got := fixActions(t, "file:///repo/pego.pego", "@start\nrule main = \"a\"\nrule x = \"b\"\n", resolve)["unreachable-rule"]; got != nil {
-			t.Errorf("fixes for pego.pego (resolve %v) = %q", resolve, got)
+		if got := fixActions(t, "file:///repo/zeroparse.zp", "@start\nrule main = \"a\"\nrule x = \"b\"\n", resolve)["unreachable-rule"]; got != nil {
+			t.Errorf("fixes for zeroparse.zp (resolve %v) = %q", resolve, got)
 		}
 	}
 }
@@ -148,7 +148,7 @@ func TestLintFixActions(t *testing.T) {
 func forgedFix(t *testing.T, ctx context.Context, src, check string, edit func(*lint.Rewrite, *analysis)) bool {
 	t.Helper()
 	a := analyze(src)
-	d := &document{uri: "file:///forged.pego", text: src, an: a, good: a, version: 1, generation: 1}
+	d := &document{uri: "file:///forged.zp", text: src, an: a, good: a, version: 1, generation: 1}
 	findings, err := a.lintFindingsContext(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -227,16 +227,16 @@ func lookaheadSpanFor(text string) func(*lint.Rewrite, *analysis) {
 func resolvingClient(t *testing.T, responsive bool) (*testClient, map[string]any) {
 	t.Helper()
 	c := newServer(t)
-	pego := map[string]any{"lintDiagnostics": true, "showExplanation": true}
+	zp := map[string]any{"lintDiagnostics": true, "showExplanation": true}
 	if responsive {
-		pego["responsiveAnalysis"] = true
+		zp["responsiveAnalysis"] = true
 	}
 	var result struct {
 		Capabilities map[string]any `json:"capabilities"`
 	}
 	c.requestInto("initialize", map[string]any{"capabilities": map[string]any{
 		"workspace":    map[string]any{"workspaceEdit": map[string]any{"documentChanges": true}},
-		"experimental": map[string]any{"pego": pego},
+		"experimental": map[string]any{"zp": zp},
 		"textDocument": map[string]any{"codeAction": map[string]any{
 			"dataSupport": true, "resolveSupport": map[string]any{"properties": []string{"edit"}}}},
 	}}, &result)
@@ -262,7 +262,7 @@ func TestCodeActionResolve(t *testing.T) {
 			if provider["resolveProvider"] != true {
 				t.Fatalf("codeActionProvider = %v", capabilities["codeActionProvider"])
 			}
-			const uri, src = "file:///resolve.pego", "@start\nrule main = (\n  [a-cb-z] \"x\"\n)\n"
+			const uri, src = "file:///resolve.zp", "@start\nrule main = (\n  [a-cb-z] \"x\"\n)\n"
 			var finding Diagnostic
 			for _, d := range c.open(uri, src) {
 				if d.Code == "char-class" {
@@ -306,7 +306,7 @@ func TestCodeActionResolve(t *testing.T) {
 				t.Errorf("suppress = %q", got)
 			}
 			// A suppression that the server would refuse is not listed: the line starts a declaration.
-			const oneLine = "file:///resolve-line.pego"
+			const oneLine = "file:///resolve-line.zp"
 			var onLine Diagnostic
 			for _, d := range c.open(oneLine, "@start\nrule main = [a-cb-z] \"x\"\n") {
 				if d.Code == "char-class" {
@@ -321,7 +321,7 @@ func TestCodeActionResolve(t *testing.T) {
 				t.Errorf("titles on a declaration line = %q", titles)
 			}
 			// A fix without a rewrite is not listed: [A-z] has no proven merge.
-			const noRewrite = "file:///resolve-norewrite.pego"
+			const noRewrite = "file:///resolve-norewrite.zp"
 			var punctuation Diagnostic
 			for _, d := range c.open(noRewrite, "@start\nrule main = [A-z] \"x\"\n") {
 				if d.Code == "char-class" {

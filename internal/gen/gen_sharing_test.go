@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gen/tsgen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gen/tsgen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestGeneratedSharingIdentity(t *testing.T) {
@@ -106,18 +106,18 @@ rule a = ("é" / "ab")+ #atomic`)
 	}
 }
 
-// PEGO_GENERATED_SHARING selects generation-only controls: combined also
+// ZP_GENERATED_SHARING selects generation-only controls: combined also
 // enables experimental TypeScript literal sharing; methods, literals, or
 // both disables the corresponding mechanism in that experiment. Empty uses
 // production defaults. Standalone parsers have no matching-time selector.
 func BenchmarkGeneratedSharing(b *testing.B) {
 	opts := gen.GenOptions{Package: "shared", Start: "main", Types: true, Recognize: true}
-	mode := os.Getenv("PEGO_GENERATED_SHARING")
+	mode := os.Getenv("ZP_GENERATED_SHARING")
 	opts.DisableMethodSharing = mode == "methods" || mode == "both"
 	opts.DisableLiteralSharing = mode == "literals" || mode == "both"
 	opts.EnableTSLiteralSharing = mode == "combined" || mode == "methods" || mode == "literals" || mode == "both"
 	for _, name := range []string{"json", "typescript", "duckdb"} {
-		src, err := os.ReadFile(filepath.Join("../../parsers", name, name+".pego"))
+		src, err := os.ReadFile(filepath.Join("../../parsers", name, name+".zp"))
 		if err != nil {
 			b.Fatal(err)
 		}

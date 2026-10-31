@@ -4,12 +4,12 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestTypeRefs(t *testing.T) {
-	g, err := pego.ParseGrammar("type Box = { V any; L []Box; O *string }\ntype U ~ Box | Other\ntype Other = { Text string }\n" +
+	g, err := zeroparse.ParseGrammar("type Box = { V any; L []Box; O *string }\ntype U ~ Box | Other\ntype Other = { Text string }\n" +
 		"rule main Box = x:\"x\" => Box{V: $x.(any), L: []Box{}, O: nil}\n")
 	if err != nil {
 		t.Fatal(err)

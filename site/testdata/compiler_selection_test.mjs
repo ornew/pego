@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { playground } from "./playground_harness.mjs";
 
-const tinygoWasm = "wasm/pego-1234567890abcdef.wasm";
+const tinygoWasm = "wasm/zp-1234567890abcdef.wasm";
 
 test("Go remains the default when both binaries are present", async () => {
   const h = await playground({ tinygoWasm });

@@ -1,4 +1,4 @@
-// Package ops declares the operations of the PEGO parser VM in Exec IR (design 065): their
+// Package ops declares the operations of the ZeroParse parser VM in Exec IR (design 065): their
 // signatures, behavior contracts, preconditions, effects and cost bounds. The declarations are
 // shared by every target; each target implements them, and the conformance suite
 // (internal/ir/exec/conform) checks an implementation against a reference model
@@ -9,7 +9,7 @@
 // models compute.
 package ops
 
-import "github.com/ornew/pego/internal/ir/exec"
+import "github.com/ornew/zeroparse/internal/ir/exec"
 
 // Features of the parser VM.
 const (

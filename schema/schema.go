@@ -1,5 +1,5 @@
 // Package schema describes the values a grammar can produce, independently of a parse: the output
-// schema that pego.Parser.OutputSchema exports, its JSON form and its validation, and Compare,
+// schema that zeroparse.Parser.OutputSchema exports, its JSON form and its validation, and Compare,
 // which reports how two schemas differ. Package query matches patterns against parse results and
 // checks them against a schema.
 package schema
@@ -11,7 +11,7 @@ import (
 // Format and Version identify the output schema format: an Output carries them in its fields of
 // the same names.
 const (
-	Format  = "pego-output-schema"
+	Format  = "zp-output-schema"
 	Version = 2
 )
 

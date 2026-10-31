@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/ir/core"
-	"github.com/ornew/pego/internal/ir/flow"
-	flowlower "github.com/ornew/pego/internal/ir/flow/lower"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/ir/core"
+	"github.com/ornew/zeroparse/internal/ir/flow"
+	flowlower "github.com/ornew/zeroparse/internal/ir/flow/lower"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // Typed Go rules printed from Flow IR.

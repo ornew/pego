@@ -29,8 +29,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego/internal/ir/core"
-	"github.com/ornew/pego/internal/ir/flow"
+	"github.com/ornew/zeroparse/internal/ir/core"
+	"github.com/ornew/zeroparse/internal/ir/flow"
 )
 
 // Options selects the forms the lowering writes.

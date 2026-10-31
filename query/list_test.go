@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/query"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/query"
+	"github.com/ornew/zeroparse/schema"
 )
 
 func TestOutputSchemaListQueries(t *testing.T) {
@@ -60,10 +60,10 @@ rule main = "x" => Holder{Values: [][]Token{[]Token{Token{Text: "one"}}}}`, "x",
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-				for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
+			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+				for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
 					t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
-						n, err := p.Parse(tc.input, pego.WithBackend(backend), pego.WithUnit(unit))
+						n, err := p.Parse(tc.input, zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
 						if err != nil {
 							t.Fatal(err)
 						}

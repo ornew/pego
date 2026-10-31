@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // The lowering decisions of the Core IR passes over the corpus are frozen in two golden files:

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/ornew/pego/internal/engine"
+	. "github.com/ornew/zeroparse/internal/engine"
 )
 
 func TestNullableRepetitionResumedMinimum(t *testing.T) {

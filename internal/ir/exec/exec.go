@@ -1,4 +1,4 @@
-// Package exec is the Exec IR of PEGO (design 065): the specification of the parser VM that every
+// Package exec is the Exec IR of ZeroParse (design 065): the specification of the parser VM that every
 // target implements, and the compositions that drive it.
 //
 // A Module declares the parser VM. Its abstract state is a set of Components (the memo table, the

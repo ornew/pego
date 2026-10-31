@@ -15,11 +15,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 // streamCases are the grammars with a #stream repetition of the generated-code tests, and the checked-in
@@ -33,7 +33,7 @@ func streamCases(t *testing.T) []gentest.Case {
 		}
 	}
 	for _, name := range []string{"csv"} {
-		src, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".pego"))
+		src, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".zp"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -219,10 +219,10 @@ import (
 	"os"
 	"strings"
 
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 IMPORTS)
 
-var entries = []func(io.Reader, func(*pegort.Node) error, ...pegort.ParseOption) error{
+var entries = []func(io.Reader, func(*zprt.Node) error, ...zprt.ParseOption) error{
 ENTRIES}
 
 func sum(v any) string {
@@ -260,15 +260,15 @@ func main() {
 	for i := range inputs {
 		for j, in := range inputs[i] {
 			for _, chunk := range []int{0, 1, 5} {
-				var events []pegort.TraceEvent
+				var events []zprt.TraceEvent
 				var elems []any
 				reads := 0
-				emit := func(n *pegort.Node) error { elems = append(elems, [2]any{reads, n}); return nil }
-				err := entries[i](&reader{s: in, chunk: chunk, reads: &reads}, emit, pegort.WithTrace(func(e pegort.TraceEvent) { events = append(events, e) }))
-				var prof pegort.Profile
+				emit := func(n *zprt.Node) error { elems = append(elems, [2]any{reads, n}); return nil }
+				err := entries[i](&reader{s: in, chunk: chunk, reads: &reads}, emit, zprt.WithTrace(func(e zprt.TraceEvent) { events = append(events, e) }))
+				var prof zprt.Profile
 				reads = 0
 				elems2 := 0
-				perr := entries[i](&reader{s: in, chunk: chunk, reads: &reads}, func(*pegort.Node) error { elems2++; return nil }, pegort.WithProfile(&prof))
+				perr := entries[i](&reader{s: in, chunk: chunk, reads: &reads}, func(*zprt.Node) error { elems2++; return nil }, zprt.WithProfile(&prof))
 				snap := prof.Snapshot()
 				snap.Time = 0
 				for k := range snap.Rules {

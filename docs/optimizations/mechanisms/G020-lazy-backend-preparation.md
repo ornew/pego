@@ -1,7 +1,7 @@
 # G020: Lazy Backend Preparation
 
 A compiled grammar need not prepare every execution backend before its first
-parse. PEGO delays derived bytecode, VM metadata and the recognition graph until
+parse. ZeroParse delays derived bytecode, VM metadata and the recognition graph until
 an operation needs them, then caches the prepared state.
 
 ## Mechanism and Invariants

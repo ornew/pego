@@ -12,7 +12,7 @@ start rules, can be entered: by default parsing, by name, by compiled grammars,
 documents, streams, prefix parsing and generated parsers alike. One start rule
 is the default; when there are several, `@start(default)` marks it.
 
-```pego
+```zp
 @start(default)
 rule file = stmt*
 
@@ -136,7 +136,7 @@ with the interpreter's messages.
 
 A per-rule entry of a generated Go parser, its `ParseRuleAST` case and typed
 converters, costs bytes in `parser.go`, and only start rules have one. For the
-bundled grammars, generated with `pego gen -types -recognize -runtime import`
+bundled grammars, generated with `zp gen -types -recognize -runtime import`
 (DuckDB SQL, TypeScript and JSON also with `-nodoc`), the entries of the rules
 that are not start rules would cost:
 

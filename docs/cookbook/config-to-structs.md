@@ -5,8 +5,8 @@ booleans and arrays, and wants a Go struct. A wrong type or an unknown key shoul
 
 The grammar describes the syntax and keeps each kind of value as a type. Go turns the values into a struct.
 
-```pego
-// config.pego
+```zp
+// config.zp
 package config
 
 type Key = node[string]
@@ -47,10 +47,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed config.pego
+//go:embed config.zp
 var grammar string
 
 // Config is what the program wants from the file.
@@ -62,35 +62,35 @@ type Config struct {
 }
 
 // text returns the text of a Key, Int, Str or Bool node.
-func text(v *pego.Node) string { return v.Text() }
+func text(v *zeroparse.Node) string { return v.Text() }
 
-func asString(v *pego.Node) (string, error) {
+func asString(v *zeroparse.Node) (string, error) {
 	if v.Type() != "Str" {
 		return "", fmt.Errorf("want a string, got %s", strings.ToLower(v.Type()))
 	}
 	return strconv.Unquote(text(v))
 }
 
-func asInt(v *pego.Node) (int, error) {
+func asInt(v *zeroparse.Node) (int, error) {
 	if v.Type() != "Int" {
 		return 0, fmt.Errorf("want an integer, got %s", strings.ToLower(v.Type()))
 	}
 	return strconv.Atoi(text(v))
 }
 
-func asBool(v *pego.Node) (bool, error) {
+func asBool(v *zeroparse.Node) (bool, error) {
 	if v.Type() != "Bool" {
 		return false, fmt.Errorf("want true or false, got %s", strings.ToLower(v.Type()))
 	}
 	return text(v) == "true", nil
 }
 
-func asStrings(v *pego.Node) ([]string, error) {
+func asStrings(v *zeroparse.Node) ([]string, error) {
 	if v.Type() != "Array" {
 		return nil, fmt.Errorf("want an array, got %s", strings.ToLower(v.Type()))
 	}
 	var out []string
-	for _, item := range v.Field("Items").(*pego.Node).Elems() {
+	for _, item := range v.Field("Items").(*zeroparse.Node).Elems() {
 		s, err := asString(item)
 		if err != nil {
 			return nil, err
@@ -101,16 +101,16 @@ func asStrings(v *pego.Node) ([]string, error) {
 }
 
 // Load parses src and copies the entries into a Config.
-func Load(p *pego.Parser, src string) (Config, error) {
+func Load(p *zeroparse.Parser, src string) (Config, error) {
 	var c Config
 	// Bytes, so that Start() is an offset into src.
-	tree, err := p.Parse(src, pego.WithUnit(pego.Bytes))
+	tree, err := p.Parse(src, zeroparse.WithUnit(zeroparse.Bytes))
 	if err != nil {
 		return c, err
 	}
-	for _, e := range tree.Field("Entries").(*pego.Node).Elems() {
-		key := text(e.Field("Key").(*pego.Node))
-		v := e.Field("Value").(*pego.Node)
+	for _, e := range tree.Field("Entries").(*zeroparse.Node).Elems() {
+		key := text(e.Field("Key").(*zeroparse.Node))
+		v := e.Field("Value").(*zeroparse.Node)
 		switch key {
 		case "name":
 			c.Name, err = asString(v)
@@ -132,7 +132,7 @@ func Load(p *pego.Parser, src string) (Config, error) {
 }
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -169,10 +169,10 @@ error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", [ \t\r\
 - **The tree is what the grammar declares.** `main` returns a `Config` struct whose `Entries` field is a list of `Entry`
   structs. `Field("Entries")` and `Elems` walk it, as described in
   [Shaping Trees](../guide/shaping-trees.md).
-- **`pego.WithUnit(pego.Bytes)`** makes `Start()` and `End()` offsets into the Go string, so `src[:e.Start()]` is the text
+- **`zeroparse.WithUnit(zeroparse.Bytes)`** makes `Start()` and `End()` offsets into the Go string, so `src[:e.Start()]` is the text
   before an entry, and counting its line feeds gives the line. By default positions count code points, which are not
   string indexes when the text has non-ASCII characters.
-- **Two kinds of error.** A file that is not in the format fails in `Parse` with a `*pego.SyntaxError` (the last line of
+- **Two kinds of error.** A file that is not in the format fails in `Parse` with a `*zeroparse.SyntaxError` (the last line of
   the output). A file that has the format but not the meaning your program needs, such as a wrong type or an unknown
   key, fails in your code, which knows the position of the entry.
 
@@ -180,7 +180,7 @@ error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", [ \t\r\
 
 - The syntax error lists every token that could have come next. [Report an error with its source line and a
   caret](error-carets.md) shows how to replace it with a message such as `expected a value`.
-- To get typed Go values without writing the `Field` and `Elems` code, generate a parser with `pego gen -types`; see
+- To get typed Go values without writing the `Field` and `Elems` code, generate a parser with `zp gen -types`; see
   [Ship a parser and keep it up to date](ship-a-parser.md).
 - Sections (`[server]`), a trailing comma rule or `key: value` lines are changes to `entry` and `main`. Keep every rule
   that skips white space in one place (`ws` here), so that the grammar says where white space may appear.

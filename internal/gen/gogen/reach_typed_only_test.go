@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // typedOnlyLonelyGrammar is the left-recursive typed-only grammar, which keeps its Node rules, plus a rule

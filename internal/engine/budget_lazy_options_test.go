@@ -1,14 +1,14 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/limits"
 
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/internal/compile"
 )
 
 func TestBudgetLazyClosureSavedFlagsAndOptions(t *testing.T) {

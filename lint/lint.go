@@ -1,4 +1,4 @@
-// Package lint reports likely mistakes in PEGO grammars: rules and alternatives that can never
+// Package lint reports likely mistakes in ZeroParse grammars: rules and alternatives that can never
 // match, expressions that have no effect, captures that are never read, and grammar shapes that
 // defeat incremental parsing.
 //
@@ -16,8 +16,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/engine"
 )
 
 // Severity tells how likely a finding is to be a mistake.
@@ -177,7 +177,7 @@ func (c Config) Run(ctx context.Context, g *grammar.Grammar, start string) ([]Fi
 // RunUnchecked lints g from start as Run does, without compiling g: it is for a caller that has
 // already compiled g, such as an editor that lints after each change. Its precondition is that g
 // compiles and that start is a start rule of g (the default start rule of a compiled grammar is
-// pego.Parser.DefaultStart); Run checks this, RunUnchecked does not, and the findings for any
+// zeroparse.Parser.DefaultStart); Run checks this, RunUnchecked does not, and the findings for any
 // other g or start are unspecified. It returns an error only if c.Disable names an unknown check
 // or ctx ends; cancellation discards all findings.
 func (c Config) RunUnchecked(ctx context.Context, g *grammar.Grammar, start string) ([]Finding, error) {

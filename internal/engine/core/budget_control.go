@@ -5,7 +5,7 @@ import (
 	"errors"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/zeroparse/internal/limits"
 )
 
 // BudgetCheckInterval is the spend between two observations of cancellation.

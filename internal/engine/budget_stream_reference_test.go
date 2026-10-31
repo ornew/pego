@@ -1,4 +1,4 @@
-//go:build pego_budget_controls_reference
+//go:build zp_budget_controls_reference
 
 package engine
 
@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/limits"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/limits"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func TestBudgetStreamReferenceAdmission(t *testing.T) {

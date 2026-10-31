@@ -1,4 +1,4 @@
-//go:build !pego_snapshot_sharing_reference
+//go:build !zp_snapshot_sharing_reference
 
 package engine
 
@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func TestSnapshotSharingCyclesAndTypedNil(t *testing.T) {

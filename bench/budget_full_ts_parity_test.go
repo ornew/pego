@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego/gen"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/gen"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // TestGeneratedTSFullWorkloadParity compares generated TypeScript against its
@@ -61,7 +61,7 @@ func TestGeneratedTSFullWorkloadParity(t *testing.T) {
 				"input.json":   inputs,
 				"consumer.ts":  []byte(tsFullWorkloadConsumer),
 				"runner.mjs": []byte(`import { readFileSync } from "node:fs";
-globalThis.__pegoFullWorkloads = JSON.parse(readFileSync(new URL("./input.json", import.meta.url), "utf8"));
+globalThis.__zpFullWorkloads = JSON.parse(readFileSync(new URL("./input.json", import.meta.url), "utf8"));
 await import("./consumer.ts");
 `),
 			} {
@@ -87,7 +87,7 @@ await import("./consumer.ts");
 const tsFullWorkloadConsumer = `import * as p from "./parser.ts";
 
 type Workload={name:string;input:string;recovery:boolean};
-const workloads=(globalThis as typeof globalThis & {__pegoFullWorkloads:Workload[]}).__pegoFullWorkloads;
+const workloads=(globalThis as typeof globalThis & {__zpFullWorkloads:Workload[]}).__zpFullWorkloads;
 function check(ok:unknown,why:string):asserts ok {if(!ok)throw new Error(why)}
 // Flat iterative frames avoid Node.toJSON and the host stringify depth limit.
 function stable(value:unknown):string {

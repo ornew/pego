@@ -3,7 +3,7 @@
 Run it with the CPython whose Unicode database the module follows (3.14: Unicode 16.0), from the
 module directory:
 
-    python3.14 tools/gentables.py [Name.pl] > /tmp/xid.pego
+    python3.14 tools/gentables.py [Name.pl] > /tmp/xid.zp
 
 It writes:
 
@@ -13,7 +13,7 @@ It writes:
     NFKC normalization (of identifiers) for the characters that may continue an identifier: their
     compatibility decompositions, the canonical combining classes, and the canonical compositions.
 
-It prints the character classes of identifiers of python.pego (idstart_other, idcont_other).
+It prints the character classes of identifiers of python.zp (idstart_other, idcont_other).
 
 unicodedata cannot list name aliases, which \\N{...} accepts. Pass a file of candidate names, such as
 Perl's lib/unicore/Name.pl (which lists names and aliases, one per line after a line with the code

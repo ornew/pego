@@ -6,8 +6,8 @@ file. You want a `func(Record) bool` that is cheap to call on every record.
 Parse the filter once and turn the tree into Go closures. The grammar gives the keywords, the precedence of `or`, `and`
 and `not`, and comparisons that do not chain.
 
-```pego
-// filter.pego
+```zp
+// filter.zp
 type Num = node[string]
 type Str = node[string]
 type Bool = node[string]
@@ -56,10 +56,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed filter.pego
+//go:embed filter.zp
 var grammar string
 
 // Record is what a filter looks at.
@@ -69,10 +69,10 @@ type Record map[string]any
 type value func(Record) any
 
 // text returns the text of a Num, Str, Bool or Field node.
-func text(n *pego.Node) string { return n.Text() }
+func text(n *zeroparse.Node) string { return n.Text() }
 
 // compile turns a tree into closures, so that the tree is walked once, not once per record.
-func compile(n *pego.Node) value {
+func compile(n *zeroparse.Node) value {
 	switch n.Type() {
 	case "Num":
 		v, _ := strconv.ParseFloat(text(n), 64)
@@ -87,13 +87,13 @@ func compile(n *pego.Node) value {
 		name := text(n)
 		return func(r Record) any { return r[name] }
 	case "Not":
-		x := compile(n.Field("X").(*pego.Node))
+		x := compile(n.Field("X").(*zeroparse.Node))
 		return func(r Record) any { return x(r) != true }
 	}
 	// Binary
-	op := n.Field("Op").(*pego.Node).Text()
-	l := compile(n.Field("Left").(*pego.Node))
-	r := compile(n.Field("Right").(*pego.Node))
+	op := n.Field("Op").(*zeroparse.Node).Text()
+	l := compile(n.Field("Left").(*zeroparse.Node))
+	r := compile(n.Field("Right").(*zeroparse.Node))
 	switch op {
 	case "and":
 		return func(rec Record) any { return l(rec) == true && r(rec) == true }
@@ -148,7 +148,7 @@ func compare(op string, a, b any) bool {
 }
 
 // Compile parses a filter and returns a predicate.
-func Compile(p *pego.Parser, src string) (func(Record) bool, error) {
+func Compile(p *zeroparse.Parser, src string) (func(Record) bool, error) {
 	tree, err := p.Parse(src)
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func Compile(p *pego.Parser, src string) (func(Record) bool, error) {
 }
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}

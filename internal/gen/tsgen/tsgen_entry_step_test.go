@@ -3,8 +3,8 @@ package tsgen_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // A rule call costs one step at its entry. A rule that reads no captures and takes callBody's unmemoized

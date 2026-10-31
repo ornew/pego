@@ -5,7 +5,7 @@ package starttest
 import (
 	"strings"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // MarkAll marks every rule of g that is not hidden @start, and the first of

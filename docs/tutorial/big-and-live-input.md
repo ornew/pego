@@ -10,14 +10,14 @@ evaluates again.
 
 ## Before You Start
 
-Complete [Building Typed Trees](typed-trees.md): you need `config.pego` and a Go module that requires `github.com/ornew/pego`.
+Complete [Building Typed Trees](typed-trees.md): you need `config.zp` and a Go module that requires `github.com/ornew/zeroparse`.
 
 ## Streaming
 
 Mark a repetition at the top level of the start rule with `#stream` and each element is handed to your code and
-forgotten, so memory depends on the size of one element and not on the size of the file. Save as `stream.pego`:
+forgotten, so memory depends on the size of one element and not on the size of the file. Save as `stream.zp`:
 
-```pego
+```zp
 type Key = node[string]
 type Number = node[string]
 type String = node[string]
@@ -49,20 +49,20 @@ On the command line, `-stream` prints one line per element. Entries that matched
 error is reported with positions in the whole input:
 
 ```bash
-printf 'host = "localhost"\nport = 8080\ndebug = maybe\n' | pego parse -g stream.pego -stream -f sexpr
+printf 'host = "localhost"\nport = 8080\ndebug = maybe\n' | zp parse -g stream.zp -stream -f sexpr
 ```
 
 ```text
 Entry{Key: Key("host"), Value: String("\"localhost\"")}
 Entry{Key: Key("port"), Value: Number("8080")}
-pego: 3:9: syntax error: expected "#", "\"", "false", "true", [ \t\r\n], [0-9]
+zp: 3:9: syntax error: expected "#", "\"", "false", "true", [ \t\r\n], [0-9]
 ```
 
 ## Incremental Parsing
 
 An editor changes a few characters and needs a new tree at once. A `Document` holds the text, applies edits and parses
 again, reusing the results that the edit did not affect. This program, which also reads the entries with
-`ParseStream`, parses `example.conf`-like text, changes `8080` to `9090` and reparses. Put `stream.pego` and `config.pego`
+`ParseStream`, parses `example.conf`-like text, changes `8080` to `9090` and reparses. Put `stream.zp` and `config.zp`
 next to it:
 
 ```go
@@ -74,24 +74,24 @@ import (
 	"log"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed stream.pego
+//go:embed stream.zp
 var streamSource string
 
-//go:embed config.pego
+//go:embed config.zp
 var configSource string
 
 func main() {
 	// Streaming: entries arrive one at a time and are forgotten.
-	sp, err := pego.CompileSource(streamSource, "main")
+	sp, err := zeroparse.CompileSource(streamSource, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
 	input := "host = \"localhost\"\nport = 8080\ndebug = true\n"
-	err = sp.ParseStream(strings.NewReader(input), func(n *pego.Node) error {
-		key := n.Field("Key").(*pego.Node)
+	err = sp.ParseStream(strings.NewReader(input), func(n *zeroparse.Node) error {
+		key := n.Field("Key").(*zeroparse.Node)
 		fmt.Printf("[%d,%d) %s\n", n.Start(), n.End(), key.Text())
 		return nil
 	})
@@ -100,7 +100,7 @@ func main() {
 	}
 
 	// Incremental parsing: edit a document and parse it again.
-	cp, err := pego.CompileSource(configSource, "main")
+	cp, err := zeroparse.CompileSource(configSource, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func main() {
 	}
 	st := doc.Stats()
 	fmt.Println("after the edit: evaluated", st.Evaluated, "reused", st.Reused)
-	fmt.Println(cfg.Field("Entries").(*pego.Node).Elem(1).Field("Value").(*pego.Node).Text())
+	fmt.Println(cfg.Field("Entries").(*zeroparse.Node).Elem(1).Field("Value").(*zeroparse.Node).Text())
 }
 ```
 

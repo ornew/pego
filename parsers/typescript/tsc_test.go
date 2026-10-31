@@ -19,13 +19,13 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/parsers/typescript"
+	"github.com/ornew/zeroparse/parsers/typescript"
 )
 
 // The differential tests run the TypeScript compiler (with node) on the same sources and compare.
 //
-//	PEGO_TYPESCRIPT        the directory of the typescript package (node_modules/typescript), version 5.9.3
-//	PEGO_TYPESCRIPT_TESTS  the tests/cases directory of the TypeScript repository at tag v5.9.3
+//	ZP_TYPESCRIPT        the directory of the typescript package (node_modules/typescript), version 5.9.3
+//	ZP_TYPESCRIPT_TESTS  the tests/cases directory of the TypeScript repository at tag v5.9.3
 //
 // The tests are skipped when the variables are not set.
 var (
@@ -76,9 +76,9 @@ type tscProcess struct {
 
 func startTSC(t testing.TB) *tscProcess {
 	t.Helper()
-	pkg := os.Getenv("PEGO_TYPESCRIPT")
+	pkg := os.Getenv("ZP_TYPESCRIPT")
 	if pkg == "" {
-		t.Skip("PEGO_TYPESCRIPT is not set (the directory of the typescript package)")
+		t.Skip("ZP_TYPESCRIPT is not set (the directory of the typescript package)")
 	}
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Skip("node is not installed")
@@ -370,9 +370,9 @@ func isTypeScriptFile(name string) bool {
 // both accept. The known differences are listed in testdata/tsc-known-failures.list; the test fails on any
 // other difference, and on a listed one that no longer differs (run with -tsc.update to rewrite the list).
 func TestTypeScriptSuite(t *testing.T) {
-	cases := os.Getenv("PEGO_TYPESCRIPT_TESTS")
+	cases := os.Getenv("ZP_TYPESCRIPT_TESTS")
 	if cases == "" {
-		t.Skip("PEGO_TYPESCRIPT_TESTS is not set (the tests/cases directory of the TypeScript repository)")
+		t.Skip("ZP_TYPESCRIPT_TESTS is not set (the tests/cases directory of the TypeScript repository)")
 	}
 	p := startTSC(t)
 	var filter *regexp.Regexp

@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 const fingerprintFormat = "cst-value-graph-v2"
@@ -24,7 +24,7 @@ type field struct {
 // fingerprint visits every public node, field and value without recursively
 // marshaling subtrees. Deterministic node IDs preserve sharing and node cycles.
 // The benchmark corpora produce nodes, acyclic collections and scalar values.
-func fingerprint(root *pego.Node) (string, error) {
+func fingerprint(root *zeroparse.Node) (string, error) {
 	h := sha256.New()
 	write := func(data []byte) {
 		var size [binary.MaxVarintLen64]byte
@@ -33,7 +33,7 @@ func fingerprint(root *pego.Node) (string, error) {
 		h.Write(data)
 	}
 	write([]byte(fingerprintFormat))
-	seen := map[*pego.Node]int{}
+	seen := map[*zeroparse.Node]int{}
 	stack := []any{root}
 	for len(stack) != 0 {
 		i := len(stack) - 1
@@ -44,7 +44,7 @@ func fingerprint(root *pego.Node) (string, error) {
 		case frame:
 			write([]byte(x))
 			continue
-		case *pego.Node:
+		case *zeroparse.Node:
 			if x == nil {
 				write([]byte("nil-node"))
 				continue
@@ -82,7 +82,7 @@ func fingerprint(root *pego.Node) (string, error) {
 			for i := x.Len() - 1; i >= 0; i-- {
 				stack = append(stack, x.Elem(i))
 			}
-			if x.Kind() == pego.KindValue {
+			if x.Kind() == zeroparse.KindValue {
 				stack = append(stack, x.Value())
 			}
 			continue

@@ -1,20 +1,20 @@
 # Debugging and Profiling Grammars
 
 This guide is about finding out what a grammar does with an input: which rules it calls where, why an input is
-rejected, and where the time of a parse goes. It covers three commands, `pego explain`, `pego trace` and
-`pego profile`, and the Go API behind them (`pego.WithTrace`, `pego.WithProfile`).
+rejected, and where the time of a parse goes. It covers three commands, `zp explain`, `zp trace` and
+`zp profile`, and the Go API behind them (`zeroparse.WithTrace`, `zeroparse.WithProfile`).
 
 Contents:
 
 1. [The example grammar](#the-example-grammar)
-2. [Why does an input fail?](#why-does-an-input-fail) `pego explain`
-3. [What does the parser do?](#what-does-the-parser-do) `pego trace`
-4. [Why is a parse slow?](#why-is-a-parse-slow) `pego profile`
+2. [Why does an input fail?](#why-does-an-input-fail) `zp explain`
+3. [What does the parser do?](#what-does-the-parser-do) `zp trace`
+4. [Why is a parse slow?](#why-is-a-parse-slow) `zp profile`
 5. [Reading the profile](#reading-the-profile)
 6. [From Go](#from-go)
 7. [Costs and limits](#costs-and-limits)
 
-The examples use the `pego` command; build it with `go build -o pego ./cmd/pego`. Every command below was run as shown,
+The examples use the `zp` command; build it with `go build -o zp ./cmd/zp`. Every command below was run as shown,
 and its output is copied from the terminal (standard output and standard error together). Times in profiles will
 differ on your machine.
 
@@ -22,8 +22,8 @@ differ on your machine.
 
 A small configuration language with assignments, updates and calls:
 
-```pego
-// config.pego
+```zp
+// config.zp
 @start
 rule main = ws (stmt ws)* $$
 rule stmt = assign / update / call
@@ -60,11 +60,11 @@ log.rotate(7 size);
 
 A PEG parser backtracks, so a syntax error does not come from one place: it lists everything that was expected at the
 farthest position any alternative reached (see [error messages](error-messages.md#what-a-syntax-error-is)).
-When the list is long or surprising, `pego explain` tells you which rule calls contributed each item, and from where
+When the list is long or surprising, `zp explain` tells you which rule calls contributed each item, and from where
 they were called:
 
 ```bash
-pego explain -g config.pego < bad.txt
+zp explain -g config.zp < bad.txt
 ```
 
 ```text
@@ -115,11 +115,11 @@ Some things to know:
 
 ## What Does the Parser Do?
 
-`pego trace` prints every rule call of a parse as an indented tree. A call whose nested calls are shown takes two
+`zp trace` prints every rule call of a parse as an indented tree. A call whose nested calls are shown takes two
 lines, its start (`rule line:col`) and its end (`rule -> result`); a call without shown nested calls takes one:
 
 ```bash
-pego trace -g config.pego < small.txt
+zp trace -g config.zp < small.txt
 ```
 
 ```text
@@ -163,7 +163,7 @@ Other marks on a result:
   inside it show as memo hits that return the match so far:
 
   ```bash
-  pego trace -g lr.pego -i '1+2'      # rule sum =  sum "+" n / n
+  zp trace -g lr.zp -i '1+2'      # rule sum =  sum "+" n / n
   ```
 
   ```text
@@ -187,7 +187,7 @@ Traces grow quickly, so narrow them down:
 - `-max-depth n` hides calls nested deeper than `n`:
 
   ```bash
-  pego trace -g config.pego -max-depth 2 < small.txt
+  zp trace -g config.zp -max-depth 2 < small.txt
   ```
 
   ```text
@@ -205,7 +205,7 @@ Traces grow quickly, so narrow them down:
   commas. With `-rule`, `-max-depth` counts from the rule's calls:
 
   ```bash
-  pego trace -g config.pego -rule stmt -max-depth 2 -i 'a.b.c(1);'
+  zp trace -g config.zp -rule stmt -max-depth 2 -i 'a.b.c(1);'
   ```
 
   ```text
@@ -224,7 +224,7 @@ Traces grow quickly, so narrow them down:
 - `-failures` adds, to each failed call, the farthest position it reached and what it expected there:
 
   ```bash
-  pego trace -g config.pego -rule args -failures < bad.txt
+  zp trace -g config.zp -rule args -failures < bad.txt
   ```
 
   ```text
@@ -232,7 +232,7 @@ Traces grow quickly, so narrow them down:
     value 2:12 -> matched 2:12-2:13 "7"
     ws 2:13 -> matched 2:13-2:14 " "
   args -> matched 2:12-2:13 "7"
-  pego: 2:14: syntax error: expected ")", ",", [ \t\n]
+  zp: 2:14: syntax error: expected ")", ",", [ \t\n]
   ```
 
   (`args` matched, so there is no failure to show; the error comes after the trace.)
@@ -243,13 +243,13 @@ For tools, `-f json` prints one JSON object per event and line. Enter events hav
 looked at), `reusedElements` when nonzero, and, with `-failures`, `failure`:
 
 ```bash
-pego trace -g config.pego -f json -rule call -max-depth 1 -failures < bad.txt
+zp trace -g config.zp -f json -rule call -max-depth 1 -failures < bad.txt
 ```
 
 ```text
 {"event":"enter","rule":"call","depth":3,"pos":20,"line":2,"col":1}
 {"event":"exit","rule":"call","depth":3,"pos":20,"line":2,"col":1,"matched":false,"end":20,"endLine":2,"endCol":1,"evals":1,"examined":34,"failure":{"pos":33,"line":2,"col":14,"expected":["\")\"","\",\"","[ \\t\\n]"]}}
-pego: 2:14: syntax error: expected ")", ",", [ \t\n]
+zp: 2:14: syntax error: expected ")", ",", [ \t\n]
 ```
 
 `trace` takes the flags of `parse` that select what is parsed (`-s`, `-i`, `-unit`, `-backend`) and exits with status
@@ -263,10 +263,10 @@ on each backend, and results never differ.
 
 ## Why Is a Parse Slow?
 
-`pego profile` parses the input once with tracing and prints the cost of each rule. On 900 statements (35 KB):
+`zp profile` parses the input once with tracing and prints the cost of each rule. On 900 statements (35 KB):
 
 ```bash
-pego profile -g config.pego -n 5 < config.txt
+zp profile -g config.zp -n 5 < config.txt
 ```
 
 ```text
@@ -295,8 +295,8 @@ them (evaluating such a rule again only reads its input again), and every altern
 whole target, throwing away 17,101 and 7,801 positions of work (`wasted`). The fix is to read the target once and then
 choose:
 
-```pego
-// config_fast.pego (changed rules)
+```zp
+// config_fast.zp (changed rules)
 rule stmt = ident ws (assign / update / call)
 rule assign = "=" ws value ";"
 rule update = "+=" ws value ";"
@@ -304,7 +304,7 @@ rule call = "(" ws args? ws ")" ";"
 ```
 
 ```bash
-pego profile -g config_fast.pego -n 5 < config.txt
+zp profile -g config_fast.zp -n 5 < config.txt
 ```
 
 ```text
@@ -377,15 +377,15 @@ alternative makes again, or as failed calls of the alternatives themselves when 
 
 ## From Go
 
-`pego.WithTrace` passes every event to a function; the methods of the event read the parser, so call them from the
+`zeroparse.WithTrace` passes every event to a function; the methods of the event read the parser, so call them from the
 function:
 
 ```go
-_, err = p.Parse("a=1;b=x", pego.WithTrace(func(e pego.TraceEvent) {
+_, err = p.Parse("a=1;b=x", zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
 	indent := strings.Repeat("  ", e.Depth-1)
 	line, col := e.LineCol(e.Pos)
 	switch {
-	case e.Kind == pego.TraceEnter:
+	case e.Kind == zeroparse.TraceEnter:
 		fmt.Printf("%s%s at %d:%d\n", indent, e.Rule, line, col)
 	case e.Matched:
 		fmt.Printf("%s%s matched %q\n", indent, e.Rule, e.Text())
@@ -421,13 +421,13 @@ also have `Matched`, `End`, `Memo`, `Evals`, `ReusedElements` and `Examined`, an
 (the farthest failure recorded during the call, as a `*SyntaxError`, or nil) and `Recovered` (the errors `#recover`
 recovered from during the call, whose expectations `Failure` does not include). `LineCol` converts a position.
 
-`pego.WithProfile` adds a parse to a `pego.Profile`, which can collect any number of parses, for example a whole test
+`zeroparse.WithProfile` adds a parse to a `zeroparse.Profile`, which can collect any number of parses, for example a whole test
 corpus:
 
 ```go
-var prof pego.Profile
+var prof zeroparse.Profile
 for _, input := range inputs {
-	p.Parse(input, pego.WithProfile(&prof))
+	p.Parse(input, zeroparse.WithProfile(&prof))
 }
 for _, r := range prof.Rules {
 	fmt.Println(r.Rule, r.Calls, r.Evals, r.Repeats, r.Wasted, r.SelfTime)
@@ -454,11 +454,11 @@ trace/profile API.
 
 ### Generated Go Node and Typed Traces
 
-Generate a standalone Go parser with tracing hooks using `pego gen -observability`. Add `-types` to trace typed entry points too:
+Generate a standalone Go parser with tracing hooks using `zp gen -observability`. Add `-types` to trace typed entry points too:
 
 ```bash
-pego gen -g pairs.pego -module example.com/pairs/pairsparser -observability -o pairsparser
-pego gen -g pairs.pego -module example.com/pairs/pairsparser -types -observability -o pairsparser
+zp gen -g pairs.zp -module example.com/pairs/pairsparser -observability -o pairsparser
+zp gen -g pairs.zp -module example.com/pairs/pairsparser -types -observability -o pairsparser
 ```
 
 A parser generated without `-observability` has no tracing: it returns an error for the trace and profile options
@@ -513,7 +513,7 @@ events report no examined range, and a profile counts the stream as one parse.
 Generated Go traces also report their generated execution strategy rather than promise
 event-for-event equivalence with engine traces. Generated TypeScript traces
 and profiles have their own contracts and do not promise event-for-event
-equivalence with engine traces. See [code generation](code-generation.md#the-pego-gen-command)
+equivalence with engine traces. See [code generation](code-generation.md#the-zp-gen-command)
 for the generation option. Focused synthetic measurements cover Go Node and
 typed batch parsers. Typed no-callback runs added about 48 B/op with unchanged allocation
 counts; callback cost depends on parser path and workload, and the measured
@@ -566,7 +566,7 @@ TypeScript batch profiling has its own `Profile` API, described below.
 Generate the Go Document with observability enabled:
 
 ```bash
-pego gen -g pairs.pego -module example.com/pairs/pairsparser -document -observability -o pairsparser
+zp gen -g pairs.zp -module example.com/pairs/pairsparser -document -observability -o pairsparser
 ```
 
 Constructor trace and profile options are defaults for later parses. They do
@@ -621,13 +621,13 @@ observer/profile state is released when a parse returns or panics.
 
 ### Generated TypeScript Traces
 
-Generate tracing hooks with `pego gen -lang ts -observability`; add `-types` to
+Generate tracing hooks with `zp gen -lang ts -observability`; add `-types` to
 trace typed-result parsing and `-recognize` to trace recognition calls. Tracing
 is delivered through the per-call options APIs, not the legacy positional-unit
 functions:
 
 ```bash
-pego gen -lang ts -g pairs.pego -observability -types -recognize -o pairs
+zp gen -lang ts -g pairs.zp -observability -types -recognize -o pairs
 ```
 
 ```ts
@@ -714,4 +714,4 @@ measurements are linked above.
 - **Streams forget lines.** A stream parse discards the input it has consumed, and with it the line structure:
   `LineCol` gives 0, 0 for a position that is no longer (or not yet) held, and a profile location that could not be
   converted prints as `position N`.
-- `pego explain` parses twice (once to find the errors, once traced), so it takes about as long as `trace`.
+- `zp explain` parses twice (once to find the errors, once traced), so it takes about as long as `trace`.

@@ -990,7 +990,7 @@ func pad(s string, w int, control *metadataControl) string {
 	return s + strings.Repeat(" ", w-formatRuneCount(s, control))
 }
 
-// FormatType returns t in PEGO syntax.
+// FormatType returns t in ZeroParse syntax.
 func formatType(t TypeExpr, control *metadataControl) string {
 	pollFormat(control)
 	switch t := t.(type) {
@@ -1480,7 +1480,7 @@ const (
 	precSuffix
 )
 
-// FormatExpr returns the parser expression e in PEGO syntax.
+// FormatExpr returns the parser expression e in ZeroParse syntax.
 func FormatExpr(e Expr) string { return formatExpr(e, precChoice, nil) }
 
 func paren(s string, inner, outer int) string {
@@ -2124,7 +2124,7 @@ func formatAttributeValue(value any, control *metadataControl) string {
 	return fmt.Sprintf("<%T>", value)
 }
 
-// quote returns s as a PEGO string literal.
+// quote returns s as a ZeroParse string literal.
 func quote(s string, control *metadataControl) string {
 	pollFormat(control)
 	var b strings.Builder
@@ -2195,7 +2195,7 @@ var termPrec = map[string]int{
 	"*": 5, "/": 5, "%": 5,
 }
 
-// FormatTerm returns the value expression t in PEGO syntax.
+// FormatTerm returns the value expression t in ZeroParse syntax.
 func FormatTerm(t Term) string { return formatTerm(t, 0, nil) }
 
 func formatTerm(t Term, outer int, control *metadataControl) string {

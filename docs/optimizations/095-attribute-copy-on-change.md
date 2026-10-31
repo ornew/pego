@@ -60,7 +60,7 @@ The candidate test suite includes `BenchmarkAttributeNormalization` in
 the candidate test binary with:
 
 ```sh
-go test -c -o /tmp/pego-copy-candidate.test ./internal/compile
+go test -c -o /tmp/zp-copy-candidate.test ./internal/compile
 ```
 
 Build the baseline binary from a candidate checkout using a Go overlay. The
@@ -74,8 +74,8 @@ tests and methods. The overlay changes which files the compiler reads without
 physically overwriting the checkout. Build the baseline binary with:
 
 ```sh
-go test -overlay=/tmp/pego-copy-baseline-overlay.json -c \
-  -o /tmp/pego-copy-baseline.test ./internal/compile
+go test -overlay=/tmp/zp-copy-baseline-overlay.json -c \
+  -o /tmp/zp-copy-baseline.test ./internal/compile
 ```
 
 After building both binaries, run each filtered invocation from
@@ -85,11 +85,11 @@ five rounds, and keep the corpus and environment fixed:
 
 ```sh
 cd internal/compile
-GOMAXPROCS=16 GOGC=100 GOMEMLIMIT=off /tmp/pego-copy-baseline.test \
+GOMAXPROCS=16 GOGC=100 GOMEMLIMIT=off /tmp/zp-copy-baseline.test \
   -test.run='^$' \
   -test.bench='^BenchmarkAttributeNormalization$/^attributes$/^eager$/^compile$' \
   -test.benchtime=3s -test.count=1
-GOMAXPROCS=16 GOGC=100 GOMEMLIMIT=off /tmp/pego-copy-candidate.test \
+GOMAXPROCS=16 GOGC=100 GOMEMLIMIT=off /tmp/zp-copy-candidate.test \
   -test.run='^$' \
   -test.bench='^BenchmarkAttributeNormalization$/^attributes$/^copy-on-change$/^compile$' \
   -test.benchtime=3s -test.count=1
@@ -117,7 +117,7 @@ Pinned fingerprints (the baseline test binary includes the listed benchmark-only
 | Candidate `normalize_attributes.go` SHA-256 | `68b7f19aaae2bd0f374e78453ee3fcfe45127c856d28b49f9c178f8fdc2640bf` |
 | Candidate `normalize_attributes_test.go` SHA-256 | `5e8bcdfec6f319276ad2396c8f9ba129950fd39a0fc7208904c4d4d9d1480b5e` |
 | Candidate `compile.go` SHA-256 | `9ca60a5f32554ba6e99ab6c4018bdb4836ed9445bf581f7431598c94a9871242` |
-| `pego.pego` grammar SHA-256 | `7567b967bc19ee30b7ebd0b7f09cdef6df0fe5157468b73bad22a543e57e0774` |
+| `zeroparse.zp` grammar SHA-256 | `7567b967bc19ee30b7ebd0b7f09cdef6df0fe5157468b73bad22a543e57e0774` |
 | JSON grammar SHA-256 | `a14e28c3dce151bc42aa1d676ad020059344871af20bb8e3282947a76108db4b` |
 | Minilang grammar SHA-256 | `bf466e1f677b9b8f00c2a4378c141545f648ecb9c22c2c33246bad4cb968f930` |
 

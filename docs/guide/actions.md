@@ -9,7 +9,7 @@ Rule](operators-rule.md).
 
 An action is an expression after `=>` inside a rule body that computes the value of the rule from what the body matched:
 
-```pego
+```zp
 rule <name> [<type>] = <rule expression> => <action expression>
 ```
 
@@ -20,15 +20,15 @@ position: the group is one element of the enclosing sequence, its value is the r
 only the captures made inside the parentheses. The captures of the enclosing rule are not visible there, and the ones made
 inside are not visible outside.
 
-```pego
-// inline-action.pego
+```zp
+// inline-action.zp
 type Pair = { Left node[string]; Right node[string] }
 @start
 rule pairs = (l:[a-z] r:[a-z] => Pair{Left: $l, Right: $r})+
 ```
 
 ```bash
-pego parse -g inline-action.pego -s pairs -f sexpr -i 'abcd'
+zp parse -g inline-action.zp -s pairs -f sexpr -i 'abcd'
 ```
 
 ```text
@@ -44,7 +44,7 @@ contributes what its expression would if it were written in its place as a group
 it cannot be the start rule or be parsed by name. [Shaping Trees](shaping-trees.md#hidden-rules) shows the effect on
 the tree.
 
-```pego
+```zp
 rule pair = "(" _items ")"
 rule _items = [a-z] ("," [a-z])*
 ```
@@ -65,8 +65,8 @@ undefined capture is a compile-time error (`undefined capture $z`).
 `T{Field: value, ...}` builds a struct. Field values are checked against the declared field types, so typos and
 mismatches are compile-time errors:
 
-```pego
-// field-errors.pego
+```zp
+// field-errors.zp
 type Assign = { Name node[string]; Value node[string] }
 
 @start
@@ -77,11 +77,11 @@ rule number = [0-9]+ #atomic
 ```
 
 ```bash
-pego parse -g field-errors.pego -s a -i 'a=b'
+zp parse -g field-errors.zp -s a -i 'a=b'
 ```
 
 ```text
-pego: field-errors.pego:6:57: Assign has no field Valu
+zp: field-errors.zp:6:57: Assign has no field Valu
 ```
 
 ## Typed Lists
@@ -91,7 +91,7 @@ it from the evaluated values. Every item must have a known type assignable
 to the target, including items in nested lists. Nil is accepted only for an optional element
 type; an empty typed list is still a non-nil list.
 
-```pego
+```zp
 type NameNode = { Name string }
 rule name NameNode = v1:[a-z]+ => NameNode{Name: text($v1)}
 rule names []NameNode = a:name "," b:name => []NameNode{$a, $b}
@@ -111,8 +111,8 @@ member declares it.
 
 Struct fields can hold integers, strings and booleans too, which is how you attach derived data to a node:
 
-```pego
-// derived.pego
+```zp
+// derived.zp
 type Word = {
     Text   string
     Length int
@@ -128,7 +128,7 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g derived.pego -f sexpr -i '  hello '
+zp parse -g derived.zp -f sexpr -i '  hello '
 ```
 
 ```text
@@ -142,7 +142,7 @@ A tuple literal builds a tuple value of its elements: `()` is the unit, `(x,)` h
 comma stay a group. The elements may be nodes, ints, strings, bools or `nil`, and the literal fits
 a declared tuple type of the same arity elementwise.
 
-```pego
+```zp
 type Entry = { Key (int, string) }
 rule entry Entry = "a" => Entry{Key: (1, "a")}
 rule pair (node[string], node[string]) = a:"a" b:"b" => ($a, $b)
@@ -167,8 +167,8 @@ of the enclosing rule with `$`. The function passed to `map` may produce any val
 Boolean. The [specification](../../spec/language/actions.md#built-in-functions) defines each function exactly: element types, `nil`
 and `Error` arguments, evaluation order and what happens when a callback fails.
 
-```pego
-// builtins.pego
+```zp
+// builtins.zp
 type Call = {
     Name  string
     Arity int
@@ -180,7 +180,7 @@ rule call Call = n:[a-z]+ #atomic "(" args:(a:[a-z]+ #atomic -","?)* ")" => Call
 ```
 
 ```bash
-pego parse -g builtins.pego -s call -f sexpr -i 'f(a,b,c)'
+zp parse -g builtins.zp -s call -f sexpr -i 'f(a,b,c)'
 ```
 
 ```text
@@ -191,8 +191,8 @@ Call{Arity: 3, Name: "f", Raw: "a,b,c"}
 properties of the input, not of the elements. Here is a lambda that reads a capture of the enclosing rule, `$k`, to
 pair the key with every item:
 
-```pego
-// outer-capture.pego
+```zp
+// outer-capture.zp
 type Pair = { A node[string]; B node[string] }
 type Pairs = { Items []Pair }
 
@@ -202,7 +202,7 @@ rule ident = [a-z]+ #atomic
 ```
 
 ```bash
-pego parse -g outer-capture.pego -s pairs -f sexpr -i 'k:a,b'
+zp parse -g outer-capture.zp -s pairs -f sexpr -i 'k:a,b'
 ```
 
 ```text
@@ -225,19 +225,19 @@ Lists made by `list`, `map` and `concat` cover their elements. This is what make
 exactly their operands, which the Go program below prints.
 
 Positions are counted in **code points** by default, or in UTF-8 **bytes** with `-unit bytes`
-(`pego.WithUnit(pego.Bytes)` in Go). Matching is always by code point; the unit only changes how positions and `len`
+(`zeroparse.WithUnit(zeroparse.Bytes)` in Go). Matching is always by code point; the unit only changes how positions and `len`
 are measured. The value `v` below starts at position 3 in code points and at 7 in bytes:
 
-```pego
-// unit.pego
+```zp
+// unit.zp
 rule name = [^=]+ #atomic
 @start
 rule kv = k:name "=" v:name
 ```
 
 ```bash
-pego parse -g unit.pego -s kv -i 'あい=うえお' | grep -B2 '"うえお"'
-pego parse -g unit.pego -s kv -i 'あい=うえお' -unit bytes | grep -B2 '"うえお"'
+zp parse -g unit.zp -s kv -i 'あい=うえお' | grep -B2 '"うえお"'
+zp parse -g unit.zp -s kv -i 'あい=うえお' -unit bytes | grep -B2 '"うえお"'
 ```
 
 ```text
@@ -256,8 +256,8 @@ pego parse -g unit.pego -s kv -i 'あい=うえお' -unit bytes | grep -B2 '"う
 A repetition gives a flat list; a fold turns it into the nested tree. Capture the first operand, capture the repeated
 `(operator, operand)` pairs, and fold from the left, so that `1 - 2 + 3` becomes `(1 - 2) + 3`:
 
-```pego
-// sum.pego
+```zp
+// sum.zp
 type Bin = {
     Left  Expr
     Op    node[string]
@@ -274,8 +274,8 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g sum.pego -f sexpr -i '1 - 2 + 3'
-pego parse -g sum.pego -f sexpr -i '7'
+zp parse -g sum.zp -f sexpr -i '1 - 2 + 3'
+zp parse -g sum.zp -f sexpr -i '7'
 ```
 
 ```text
@@ -293,8 +293,8 @@ rule per level; for that case also look at [Operators Rule](operators-rule.md).
 `a ^ b ^ c` must be `a ^ (b ^ c)`. Capture the pairs *(operand, operator)* and the last operand separately, and fold
 from the right, starting with the last operand:
 
-```pego
-// pow.pego
+```zp
+// pow.zp
 type Bin = {
     Left  Expr
     Op    node[string]
@@ -310,8 +310,8 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g pow.pego -s pow -f sexpr -i '2 ^ 3 ^ 4'
-pego parse -g pow.pego -s pow -f sexpr -i '2'
+zp parse -g pow.zp -s pow -f sexpr -i '2 ^ 3 ^ 4'
+zp parse -g pow.zp -s pow -f sexpr -i '2'
 ```
 
 ```text
@@ -327,8 +327,8 @@ The repetition is greedy and does not backtrack, but it is still correct here: i
 The same fold builds `a.b.c`. The accumulator is first a node and then a `Member`, so declare the join and use it
 for the rule type and the field:
 
-```pego
-// path.pego
+```zp
+// path.zp
 type Member = {
     X    Path
     Name node[string]
@@ -341,7 +341,7 @@ rule ident = [a-z]+ #atomic
 ```
 
 ```bash
-pego parse -g path.pego -s path -f sexpr -i 'a.b.c'
+zp parse -g path.zp -s path -f sexpr -i 'a.b.c'
 ```
 
 ```text
@@ -354,8 +354,8 @@ Member{Name: "c", X: Member{Name: "b", X: "a"}}
 rebuild a list: `list($first)` makes a one-element list, `map` extracts the item from every iteration, and `concat`
 joins them. A list that is optional (`args?`) works with `concat` too, because a `nil` argument counts as empty:
 
-```pego
-// args.pego
+```zp
+// args.zp
 type Call = {
     Fn   node[string]
     Args []node[string]
@@ -371,9 +371,9 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g args.pego -s call -f sexpr -i 'f(a, b, c)'
-pego parse -g args.pego -s call -f sexpr -i 'f()'
-pego parse -g args.pego -s args_cst -f sexpr -i 'a, b, c'
+zp parse -g args.zp -s call -f sexpr -i 'f(a, b, c)'
+zp parse -g args.zp -s call -f sexpr -i 'f()'
+zp parse -g args.zp -s args_cst -f sexpr -i 'a, b, c'
 ```
 
 ```text
@@ -385,8 +385,8 @@ Call{Args: [], Fn: "f"}
 `args_cst` shows what you would otherwise get: the first item followed by a list of `("," item)` tuples. Writing
 `Args: $args` directly does not compile, because `$args` is optional and the field is a plain list:
 
-```pego
-// args-optional.pego
+```zp
+// args-optional.zp
 type Call = { Fn node[string]; Args []node[string] }
 @start
 rule call Call = fn:ident "(" args:args? ")" => Call{Fn: $fn, Args: $args}
@@ -395,11 +395,11 @@ rule ident = [a-z]+ #atomic
 ```
 
 ```bash
-pego parse -g args-optional.pego -s call -i 'f(a)'
+zp parse -g args-optional.zp -s call -i 'f(a)'
 ```
 
 ```text
-pego: args-optional.pego:4:63: cannot use *[]ident as []node[string] in field Args of Call
+zp: args-optional.zp:4:63: cannot use *[]ident as []node[string] in field Args of Call
 ```
 
 ### Keeping Only the AST You Need
@@ -413,8 +413,8 @@ contain the data. Four habits get you there:
 3. **Pick fields with `map`** when each iteration carries more than the value you want.
 4. **Unwrap the start rule** with `e:rule $$ => $e`.
 
-```pego
-// config.pego
+```zp
+// config.zp
 type Entry = {
     Key   node[string]
     Value node[string]
@@ -431,7 +431,7 @@ rule ws = ([ \t\r\n] / "#" [^\n]*)*
 ```
 
 ```bash
-pego parse -g config.pego -f sexpr -i $'# web server\nhost = example.com;  # comment\nport = 8080;\n'
+zp parse -g config.zp -f sexpr -i $'# web server\nhost = example.com;  # comment\nport = 8080;\n'
 ```
 
 ```text

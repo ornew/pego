@@ -56,7 +56,7 @@ silently truncating it.
 
 ### Compatibility
 
-The `.pegoc` format remains version 2. Instruction set 4 adds `REPEATW` and
+The `.zpc` format remains version 2. Instruction set 4 adds `REPEATW` and
 `SCANW`; files using them require that version. Modules without wide bounds
 continue to declare instruction set 3, preserving compatibility with earlier
 runtimes. Earlier instruction sets still load. A file falsely declaring an

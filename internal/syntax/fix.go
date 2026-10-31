@@ -8,10 +8,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
-// Fix rewrites source written in earlier PEGO syntax to the current syntax:
+// Fix rewrites source written in earlier ZeroParse syntax to the current syntax:
 //
 //   - the cut "--" becomes "#cut";
 //   - a struct type "type T struct {...}" becomes the definition "type T = {...}";

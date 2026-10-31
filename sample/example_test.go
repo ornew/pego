@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/sample"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/sample"
 )
 
 const settings = `rule main = pair ("," " "? pair)*
@@ -89,11 +89,11 @@ func ExampleGenerator_GenerateInvalid() {
 // that all backends agree, and that the generated inputs it is seeded with parse. Run it with
 // go test -fuzz=FuzzCalculator ./sample; go test runs it on the seeds only.
 func FuzzCalculator(f *testing.F) {
-	src, err := os.ReadFile("../examples/calculator/calc.pego")
+	src, err := os.ReadFile("../examples/calculator/calc.zp")
 	if err != nil {
 		f.Fatal(err)
 	}
-	p, err := pego.CompileSource(string(src), "main")
+	p, err := zeroparse.CompileSource(string(src), "main")
 	if err != nil {
 		f.Fatal(err)
 	}
@@ -118,8 +118,8 @@ func FuzzCalculator(f *testing.F) {
 		if valid[in] && err != nil {
 			t.Fatalf("generated input %q does not parse: %v", in, err)
 		}
-		for _, b := range []pego.Backend{pego.Bytecode, pego.BytecodeIterative} {
-			m, err2 := p.Parse(in, pego.WithBackend(b))
+		for _, b := range []zeroparse.Backend{zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+			m, err2 := p.Parse(in, zeroparse.WithBackend(b))
 			if fmt.Sprint(n, err) != fmt.Sprint(m, err2) {
 				t.Fatalf("%q: backend %v returned %v, %v; the closure backend %v, %v", in, b, m, err2, n, err)
 			}

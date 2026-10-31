@@ -9,8 +9,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func TestInvalidUTF8LiteralMatching(t *testing.T) {

@@ -1,6 +1,6 @@
 package pass
 
-import "github.com/ornew/pego/internal/ir/exec"
+import "github.com/ornew/zeroparse/internal/ir/exec"
 
 // Stores is what DeadStores finds about the locals of a function: which are never read, so that a
 // backend does not declare them, and which assignments it leaves out.

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // listGen writes random comma-separated lists with comments in every place a

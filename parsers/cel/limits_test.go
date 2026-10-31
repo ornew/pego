@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/cel"
+	"github.com/ornew/zeroparse/parsers/cel"
 )
 
 func rep(s string, n int) string { return strings.Repeat(s, max(n, 0)) }

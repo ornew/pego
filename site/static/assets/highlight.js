@@ -1,4 +1,4 @@
-// A small syntax highlighter for the languages of the documentation: pego, Go, TypeScript, JSON, S-expressions and shell.
+// A small syntax highlighter for the languages of the documentation: zp, Go, TypeScript, JSON, S-expressions and shell.
 // tokenize returns non-overlapping tokens {from, to, cls}; highlight returns HTML.
 
 const GO_KEYWORDS = new Set([
@@ -30,7 +30,7 @@ const TS_TYPES = new Set([
 const SEXPR_KEYWORDS = new Set(["nil", "true", "false", "error"]);
 
 const rules = {
-  pego: [
+  zp: [
     ["comment", /\/\/[^\r\n]*/y],
     ["string", /"(?:[^"\\\n]|\\.)*"?/y],
     ["class", /\[(?!\])(?:[^\]\\\r\n]|\\.)*\]?/y],
@@ -58,7 +58,7 @@ const rules = {
     ["number", /-?\d[\d.eE+-]*/y],
     ["keyword", /\b(?:true|false|null)\b/y],
   ],
-  // The S-expressions of pego parse -f sexpr: tuples (...), lists [...], structs Type{...} and
+  // The S-expressions of zp parse -f sexpr: tuples (...), lists [...], structs Type{...} and
   // named node types Type(...) with field labels, quoted strings, numbers, rule suffixes @rule and captures &name:.
   sexpr: [
     ["string", /"(?:[^"\\\n]|\\.)*"?/y],
@@ -85,7 +85,7 @@ export function tokenize(code, lang) {
   let prevWord = "";
   const n = code.length;
   while (i < n) {
-    if (lang === "pego" && code.startsWith("/*", i)) {
+    if (lang === "zp" && code.startsWith("/*", i)) {
       const from = i;
       let depth = 1;
       i += 2;
@@ -105,7 +105,7 @@ export function tokenize(code, lang) {
       const text = m[0];
       let c = cls;
       if (cls === "ident") {
-        c = lang === "pego" ? "ident" : classifyIdent(lang, text, code, i + text.length, prevWord);
+        c = lang === "zp" ? "ident" : classifyIdent(lang, text, code, i + text.length, prevWord);
         prevWord = text;
       } else if (cls !== "comment") {
         prevWord = "";
@@ -117,12 +117,12 @@ export function tokenize(code, lang) {
     }
     if (!matched) i++; // white space and anything the language does not color
   }
-  return lang === "pego" ? classifyPegoTokens(code, tokens) : tokens;
+  return lang === "zp" ? classifyZPTokens(code, tokens) : tokens;
 }
 
 // Contextual words are keywords at statement headers, not in rule names,
 // references or captures. Track delimiters once without parsing the grammar.
-function classifyPegoTokens(code, tokens) {
+function classifyZPTokens(code, tokens) {
   const significant = tokens.filter((t) => t.cls !== "comment");
   const frames = [{kind: "file", value: false, start: true, header: "", name: "", listNext: false}];
   let previous = null;

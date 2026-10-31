@@ -1,9 +1,9 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/internal/compile"
 
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 // Static returns the static program that p runs: the checked grammar, its rules and their facts,

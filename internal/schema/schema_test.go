@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/compiletest"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/compiletest"
+	"github.com/ornew/zeroparse/schema"
 )
 
 // compileError compiles src, which must not compile, and returns the error.

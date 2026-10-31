@@ -34,8 +34,8 @@ jobs:
           python-version: 3.14.0
       - name: Install pinned TypeScript reference compiler
         run: |
-          npm install --prefix "$RUNNER_TEMP/pego-typescript" --no-save --ignore-scripts typescript@5.9.3
-          echo "$RUNNER_TEMP/pego-typescript/node_modules/.bin" >> "$GITHUB_PATH"
+          npm install --prefix "$RUNNER_TEMP/zp-typescript" --no-save --ignore-scripts typescript@5.9.3
+          echo "$RUNNER_TEMP/zp-typescript/node_modules/.bin" >> "$GITHUB_PATH"
       - uses: actions/checkout@v4
         with:
           repository: microsoft/TypeScript
@@ -49,32 +49,32 @@ jobs:
           REQUIRE_PYTHON: "1"
           REQUIRE_TSC: "1"
           REQUIRE_TYPESCRIPT_CORPUS: "1"
-          PEGO_PYTHON: python
-          PEGO_TYPESCRIPT: ${{ runner.temp }}/pego-typescript/node_modules/typescript
-          PEGO_TYPESCRIPT_TESTS: ${{ github.workspace }}/typescript-reference/tests/cases
+          ZP_PYTHON: python
+          ZP_TYPESCRIPT: ${{ runner.temp }}/zp-typescript/node_modules/typescript
+          ZP_TYPESCRIPT_TESTS: ${{ github.workspace }}/typescript-reference/tests/cases
         run: .github/scripts/require-toolchain.sh
       - name: Record test provenance
         env:
-          PEGO_PYTHON: python
-          PEGO_TYPESCRIPT: ${{ runner.temp }}/pego-typescript/node_modules/typescript
-          PEGO_TYPESCRIPT_REF: ${{ github.workspace }}/typescript-reference
-          PEGO_TYPESCRIPT_TESTS: ${{ github.workspace }}/typescript-reference/tests/cases
-        run: .github/scripts/write-provenance.sh "$RUNNER_TEMP/pego-ci-provenance.log"
+          ZP_PYTHON: python
+          ZP_TYPESCRIPT: ${{ runner.temp }}/zp-typescript/node_modules/typescript
+          ZP_TYPESCRIPT_REF: ${{ github.workspace }}/typescript-reference
+          ZP_TYPESCRIPT_TESTS: ${{ github.workspace }}/typescript-reference/tests/cases
+        run: .github/scripts/write-provenance.sh "$RUNNER_TEMP/zp-ci-provenance.log"
       - name: Test root module
-        run: go test -v -timeout=45m ./... 2>&1 | tee "$RUNNER_TEMP/pego-root-test.log"
+        run: go test -v -timeout=45m ./... 2>&1 | tee "$RUNNER_TEMP/zp-root-test.log"
       - name: Vet root module
-        run: go vet ./... 2>&1 | tee "$RUNNER_TEMP/pego-root-vet.log"
+        run: go vet ./... 2>&1 | tee "$RUNNER_TEMP/zp-root-vet.log"
       - name: Test and vet parsers plus every parser module
         env:
-          PEGO_PYTHON: python
-          PEGO_TYPESCRIPT: ${{ runner.temp }}/pego-typescript/node_modules/typescript
-          PEGO_TYPESCRIPT_TESTS: ${{ github.workspace }}/typescript-reference/tests/cases
-        run: parsers/test.sh -v -timeout=30m 2>&1 | tee "$RUNNER_TEMP/pego-parser-modules.log"
+          ZP_PYTHON: python
+          ZP_TYPESCRIPT: ${{ runner.temp }}/zp-typescript/node_modules/typescript
+          ZP_TYPESCRIPT_TESTS: ${{ github.workspace }}/typescript-reference/tests/cases
+        run: parsers/test.sh -v -timeout=30m 2>&1 | tee "$RUNNER_TEMP/zp-parser-modules.log"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: go-native-test-logs
-          path: ${{ runner.temp }}/pego-*.log
+          path: ${{ runner.temp }}/zp-*.log
           if-no-files-found: ignore
           retention-days: 14
 
@@ -96,16 +96,16 @@ jobs:
           REQUIRE_NODE: "1"
         run: .github/scripts/require-toolchain.sh
       - name: Record test provenance
-        run: .github/scripts/write-provenance.sh "$RUNNER_TEMP/pego-ci-provenance.log"
+        run: .github/scripts/write-provenance.sh "$RUNNER_TEMP/zp-ci-provenance.log"
       - name: Test site module
-        run: cd site && go test -v -timeout=45m ./... 2>&1 | tee "$RUNNER_TEMP/pego-site-test.log"
+        run: cd site && go test -v -timeout=45m ./... 2>&1 | tee "$RUNNER_TEMP/zp-site-test.log"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: site-test-logs
           path: |
-            ${{ runner.temp }}/pego-site-test.log
-            ${{ runner.temp }}/pego-ci-provenance.log
+            ${{ runner.temp }}/zp-site-test.log
+            ${{ runner.temp }}/zp-ci-provenance.log
           if-no-files-found: ignore
           retention-days: 14
 
@@ -130,17 +130,17 @@ jobs:
           REQUIRE_TSC: "1"
         run: .github/scripts/require-toolchain.sh
       - name: Record test provenance
-        run: PEGO_TYPESCRIPT="$(npm root -g)/typescript" .github/scripts/write-provenance.sh "$RUNNER_TEMP/pego-ci-provenance.log"
+        run: ZP_TYPESCRIPT="$(npm root -g)/typescript" .github/scripts/write-provenance.sh "$RUNNER_TEMP/zp-ci-provenance.log"
       - name: Run WebAssembly smoke test in Node.js
-        run: go test -v -timeout=20m ./cmd/playground -run '^TestWasmSmoke$' -count=1 2>&1 | tee "$RUNNER_TEMP/pego-wasm-test.log"
+        run: go test -v -timeout=20m ./cmd/playground -run '^TestWasmSmoke$' -count=1 2>&1 | tee "$RUNNER_TEMP/zp-wasm-test.log"
       - name: Run generated TypeScript parser tests and strict type checks
-        run: go test -v -timeout=20m ./internal/gen ./internal/gen/tsgen -run '^TestGeneratedTS' -count=1 2>&1 | tee "$RUNNER_TEMP/pego-generated-ts-test.log"
+        run: go test -v -timeout=20m ./internal/gen ./internal/gen/tsgen -run '^TestGeneratedTS' -count=1 2>&1 | tee "$RUNNER_TEMP/zp-generated-ts-test.log"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: node-wasm-typescript-test-logs
           path: |
-            ${{ runner.temp }}/pego-*-test.log
-            ${{ runner.temp }}/pego-ci-provenance.log
+            ${{ runner.temp }}/zp-*-test.log
+            ${{ runner.temp }}/zp-ci-provenance.log
           if-no-files-found: ignore
           retention-days: 14

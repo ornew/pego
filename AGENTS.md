@@ -1,6 +1,6 @@
-# PEGO
+# ZeroParse
 
-PEGO is a Go parser framework using an extended PEG grammar language. Keep this
+ZeroParse is a Go parser framework using an extended PEG grammar language. Keep this
 file concise; put contracts, design rationale, measurements and workflow detail
 in the linked project documents.
 
@@ -17,7 +17,7 @@ At the start of every development session, use the `onboarding` skill in
   `docs/design/records/`: decisions; `docs/optimizations/`: measured mechanisms.
 - `docs/development.md`, `docs/site.md`, `docs/performance.md`: development,
   site maintenance and performance method/status.
-- `docs/why-pego.md`, `docs/strategy.md`: positioning, comparison and project
+- `docs/why-zeroparse.md`, `docs/strategy.md`: positioning, comparison and project
   strategy, including performance targets.
 - `site/`: Nanosite configuration and wrapper; `bench/`: benchmark sources.
 
@@ -29,7 +29,7 @@ with implementation changes; regenerate generated files.
 
 ## Development and checks
 
-- Public APIs: `pego.go` (which joins the runtime to the output schema),
+- Public APIs: `zeroparse.go` (which joins the runtime to the output schema),
   `gen/` (code generation), `lint/`, `grammar/`, `sample/`, `editfuzz/`; parser/compiler: `internal/syntax/`,
   `internal/compile/`; runtime: `internal/engine/`; generators:
   `internal/gen/`; generated parsers: `parsers/`.
@@ -55,7 +55,7 @@ with implementation changes; regenerate generated files.
 
 ## Backlog, commits and branches
 
-- Issue #1 is the living backlog: https://github.com/ornew/pego/issues/1.
+- Issue #1 is the living backlog: https://github.com/ornew/zeroparse/issues/1.
   Categories are two-digit B, O, F, Q, I, D, plus M for ready-made parsers.
   Keep incomplete parent items; mark completion only after verified
   integration, in the recent-completions list with a commit link and outcome

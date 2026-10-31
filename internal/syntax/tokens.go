@@ -4,7 +4,7 @@ import (
 	"context"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // This file exposes the lexer and an error-tolerant parse to tools that work on source as it is
@@ -25,7 +25,7 @@ const (
 	TokenComment                        // // ... or /* ... */
 )
 
-// Token is a lexical token of PEGO source.
+// Token is a lexical token of ZeroParse source.
 type Token struct {
 	Kind TokenKind
 	// Text is the name of an identifier or a capture reference, the punctuation, the digits of an

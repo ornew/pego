@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/cue/types"
+	"github.com/ornew/zeroparse/parsers/cue/types"
 )
 
 // literalCount is the number of literals in testdata/literals.txt.gz.

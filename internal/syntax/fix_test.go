@@ -69,7 +69,7 @@ func TestFix(t *testing.T) {
 	}
 }
 
-// pego fix rewrites operators { only where it starts a rule body: after the = of a type or a var,
+// zp fix rewrites operators { only where it starts a rule body: after the = of a type or a var,
 // operators { is not the old spelling, even if the result is not valid.
 func TestFixOperatorsOnlyInRuleBody(t *testing.T) {
 	for _, in := range []string{
@@ -97,8 +97,8 @@ func TestFixLexError(t *testing.T) {
 
 func TestOldCutRejected(t *testing.T) {
 	_, err := Parse(`rule a = "a" -- "b"`)
-	if err == nil || !strings.Contains(err.Error(), "#cut") || !strings.Contains(err.Error(), "pego fix") {
-		t.Fatalf("got %v, want an error naming #cut and pego fix", err)
+	if err == nil || !strings.Contains(err.Error(), "#cut") || !strings.Contains(err.Error(), "zp fix") {
+		t.Fatalf("got %v, want an error naming #cut and zp fix", err)
 	}
 }
 

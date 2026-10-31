@@ -1,10 +1,10 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/value"
 
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/internal/compile"
 )
 
 // PrefixResult records the successful cursor independently of the rule's value.

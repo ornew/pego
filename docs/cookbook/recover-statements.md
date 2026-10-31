@@ -7,8 +7,8 @@ Put `#recover` on the statement rule, which every block body uses. A bad stateme
 that holds it, the recovery happens in the innermost block that contains the mistake, and the blocks around it are
 unaffected. The one rule to keep is that the skip must not eat a brace, or it would swallow the end of the block.
 
-```pego
-// script.pego
+```zp
+// script.zp
 package script
 
 type Name = node[string]
@@ -50,10 +50,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed script.pego
+//go:embed script.zp
 var grammar string
 
 const source = `set a = 1;
@@ -69,13 +69,13 @@ set f = 6;
 `
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	root, err := p.Parse(source)
-	var errs pego.SyntaxErrors
+	var errs zeroparse.SyntaxErrors
 	if err != nil && !errors.As(err, &errs) {
 		fmt.Fprintln(os.Stderr, err) // not a recovered parse: no tree
 		os.Exit(1)
@@ -85,23 +85,23 @@ func main() {
 	}
 
 	// The outline: how many statements were read at each level, and where the bad ones are.
-	var outline func(n *pego.Node, indent string)
-	outline = func(list *pego.Node, indent string) {
+	var outline func(n *zeroparse.Node, indent string)
+	outline = func(list *zeroparse.Node, indent string) {
 		for _, n := range list.Elems() {
-			if n.Kind() == pego.KindError {
+			if n.Kind() == zeroparse.KindError {
 				fmt.Printf("%sERROR %q\n", indent, strings.TrimSpace(source[n.Start():n.End()]))
 				continue
 			}
 			switch n.Type() {
 			case "Set":
-				fmt.Printf("%sset %s\n", indent, n.Field("Name").(*pego.Node).Text())
+				fmt.Printf("%sset %s\n", indent, n.Field("Name").(*zeroparse.Node).Text())
 			case "Block":
-				fmt.Printf("%sif %s\n", indent, n.Field("Cond").(*pego.Node).Text())
-				outline(n.Field("Body").(*pego.Node), indent+"  ")
+				fmt.Printf("%sif %s\n", indent, n.Field("Cond").(*zeroparse.Node).Text())
+				outline(n.Field("Body").(*zeroparse.Node), indent+"  ")
 			}
 		}
 	}
-	outline(root.Field("Body").(*pego.Node), "")
+	outline(root.Field("Body").(*zeroparse.Node), "")
 }
 ```
 
@@ -132,7 +132,7 @@ the block that holds them, and `if nested` is still a block with its own list.
   its own line only, and the `}` that closes the block stays for the `block` rule.
 - Each `@error` replaces the mechanical list of expected characters with one message at the position where the statement
   went wrong.
-- `Parse` returns the tree and a `pego.SyntaxErrors` together, so the program checks for that type before treating the
+- `Parse` returns the tree and a `zeroparse.SyntaxErrors` together, so the program checks for that type before treating the
   error as a failure.
 
 ## Variations and Limits

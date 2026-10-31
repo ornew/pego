@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 // GoVetAndTest runs go vet and, if test is set, go test in the module in dir.

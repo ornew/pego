@@ -13,7 +13,7 @@ func GrammarCases(t *testing.T) []Case {
 	t.Helper()
 	var cases []Case
 	for _, name := range []string{"json", "cel", "cue", "duckdb", "golang", "python", "xml", "yaml", "csv", "typescript"} {
-		src, err := os.ReadFile(path(t, "../../parsers/"+name+"/"+name+".pego"))
+		src, err := os.ReadFile(path(t, "../../parsers/"+name+"/"+name+".zp"))
 		if err != nil {
 			t.Fatal(err)
 		}

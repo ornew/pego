@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func TestDocumentSnapshotPublicContract(t *testing.T) {
@@ -14,8 +14,8 @@ func TestDocumentSnapshotPublicContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
-		d, err := p.NewDocument("aa", pego.WithUnit(unit))
+	for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+		d, err := p.NewDocument("aa", zeroparse.WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -35,17 +35,17 @@ func TestDocumentSnapshotPublicContract(t *testing.T) {
 			t.Fatal(err)
 		}
 		failed, err := d.Snapshot()
-		var syntax *pego.SyntaxError
+		var syntax *zeroparse.SyntaxError
 		if failed == nil || !errors.As(err, &syntax) || failed.Text() != "ba" || failed.Version() == s.Version() || failed.Root().Valid() || s.Text() != "aa" {
 			t.Fatal("failed version", err)
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		interrupted, err := d.Snapshot(pego.WithContext(ctx))
+		interrupted, err := d.Snapshot(zeroparse.WithContext(ctx))
 		if interrupted != nil || err == nil {
 			t.Fatal("cancelled snapshot", err)
 		}
-		_, parseErr := d.Parse(pego.WithContext(ctx))
+		_, parseErr := d.Parse(zeroparse.WithContext(ctx))
 		if parseErr == nil || parseErr.Error() != err.Error() {
 			t.Fatalf("snapshot and Parse disagree on budget-control availability: %v / %v", err, parseErr)
 		}

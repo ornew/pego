@@ -6,7 +6,7 @@ import (
 	"sort"
 	"unicode"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // inf is the height or length of an expression that can never match.

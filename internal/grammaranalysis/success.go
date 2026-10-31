@@ -2,7 +2,7 @@
 // compiler and linter. Unknown facts never justify excluding a rule call.
 package grammaranalysis
 
-import "github.com/ornew/pego/grammar"
+import "github.com/ornew/zeroparse/grammar"
 
 // SucceedingRules finds ordinary, non-cyclic rules that cannot return a matching
 // failure. A recursive call can read a failing growth seed even when its rule's

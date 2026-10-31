@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // Three grammars for a file of "key = value" lines.
@@ -81,7 +81,7 @@ func live(build func() any) float64 {
 
 func main() {
 	for _, g := range grammars {
-		p, err := pego.CompileSource(g.grammar, "main")
+		p, err := zeroparse.CompileSource(g.grammar, "main")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -185,7 +185,7 @@ settings, everything in one rule
 
 ## A Real Grammar
 
-A real grammar, [parsers/json](../../parsers/json/json.pego), on an array of 5,000 objects (283 KB). Run it from the
+A real grammar, [parsers/json](../../parsers/json/json.zp), on an array of 5,000 objects (283 KB). Run it from the
 root of the repository:
 
 <details>
@@ -201,16 +201,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-// Run it from the root of the repository: go run ./jsondoc parsers/json/json.pego
+// Run it from the root of the repository: go run ./jsondoc parsers/json/json.zp
 func main() {
 	src, err := os.ReadFile(os.Args[1])
 	if err != nil {
 		log.Fatal(err)
 	}
-	p, err := pego.CompileSource(string(src), "main")
+	p, err := zeroparse.CompileSource(string(src), "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -263,7 +263,7 @@ func main() {
 </details>
 
 ```bash
-go run ./jsondoc parsers/json/json.pego
+go run ./jsondoc parsers/json/json.zp
 ```
 
 ```text

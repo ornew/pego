@@ -3,7 +3,7 @@ package syntax
 import (
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // A detached paragraph is separated from the node before it and the node after

@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // BenchmarkCompileCorpus complements post-GC retained heap with compilation
@@ -17,14 +17,14 @@ func BenchmarkCompileCorpus(b *testing.B) {
 				b.Fatal(err)
 			}
 			for range 4 {
-				if _, err := pego.CompileSource(source, "main"); err != nil {
+				if _, err := zeroparse.CompileSource(source, "main"); err != nil {
 					b.Fatal(err)
 				}
 			}
 			runtime.GC()
 			b.ReportAllocs()
 			for b.Loop() {
-				p, err := pego.CompileSource(source, "main")
+				p, err := zeroparse.CompileSource(source, "main")
 				if err != nil {
 					b.Fatal(err)
 				}

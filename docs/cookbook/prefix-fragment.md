@@ -9,8 +9,8 @@ on the beginning of its input, does not require the rule to reach the end, and r
 closing delimiter in the rule, so that the consumed length includes it. A syntax error is local to the fragment, so the
 program adds the fragment's offset to report a position in the whole text.
 
-```pego
-// expr.pego
+```zp
+// expr.zp
 package expr
 
 type Num = node[string]
@@ -47,13 +47,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed expr.pego
+//go:embed expr.zp
 var grammar string
 
-func eval(n *pego.Node, vars map[string]float64) (float64, error) {
+func eval(n *zeroparse.Node, vars map[string]float64) (float64, error) {
 	switch n.Type() {
 	case "Num":
 		return strconv.ParseFloat(n.Text(), 64)
@@ -65,15 +65,15 @@ func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 		}
 		return v, nil
 	}
-	l, err := eval(n.Field("Left").(*pego.Node), vars)
+	l, err := eval(n.Field("Left").(*zeroparse.Node), vars)
 	if err != nil {
 		return 0, err
 	}
-	r, err := eval(n.Field("Right").(*pego.Node), vars)
+	r, err := eval(n.Field("Right").(*zeroparse.Node), vars)
 	if err != nil {
 		return 0, err
 	}
-	switch n.Field("Op").(*pego.Node).Text() {
+	switch n.Field("Op").(*zeroparse.Node).Text() {
 	case "+":
 		return l + r, nil
 	case "-":
@@ -98,7 +98,7 @@ func lineCol(text string, off int) (int, int) {
 }
 
 // render replaces each {{ expression }} of the template by its value.
-func render(p *pego.Parser, template string, vars map[string]float64) (string, error) {
+func render(p *zeroparse.Parser, template string, vars map[string]float64) (string, error) {
 	var out strings.Builder
 	pos := 0
 	for {
@@ -111,7 +111,7 @@ func render(p *pego.Parser, template string, vars map[string]float64) (string, e
 		base := pos + i + len("{{")
 		res, err := p.ParsePrefix("fragment", template[base:])
 		if err != nil {
-			var se *pego.SyntaxError
+			var se *zeroparse.SyntaxError
 			if errors.As(err, &se) {
 				line, col := lineCol(template, base+se.Pos)
 				return "", fmt.Errorf("%d:%d: %s", line, col, se.Message())
@@ -129,7 +129,7 @@ func render(p *pego.Parser, template string, vars map[string]float64) (string, e
 }
 
 func main() {
-	p, err := pego.CompileSource(grammar, "fragment")
+	p, err := zeroparse.CompileSource(grammar, "fragment")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -175,7 +175,7 @@ error: 1:10: unknown name "cost"
 
 ## Variations and Limits
 
-- Use `WithUnit(pego.Bytes)` when the surrounding text is processed in bytes, so that spans, errors and
+- Use `WithUnit(zeroparse.Bytes)` when the surrounding text is processed in bytes, so that spans, errors and
   `ConsumedBytes` all agree.
 - A delimiter that can appear inside the fragment, such as `}}` in a string literal, belongs in the grammar: the rule
   reads the string, so the scan never mistakes it for the end.

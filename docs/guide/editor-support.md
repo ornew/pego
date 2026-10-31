@@ -1,6 +1,6 @@
 # Editor Support
 
-`pego lsp` is a [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) server for `.pego`
+`zp lsp` is a [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) server for `.zp`
 files. Any editor with an LSP client can use it to show the errors of a grammar as you type, format it, jump between
 rules and types, show the type a rule produces, rename and complete names.
 This guide explains what the server does, how to set up an editor, and its limits. The design is recorded in
@@ -15,27 +15,27 @@ This guide explains what the server does, how to set up an editor, and its limit
 
 ## Installing the Server
 
-The server is part of the `pego` command:
+The server is part of the `zp` command:
 
 ```bash
-go install github.com/ornew/pego/cmd/pego@latest
-pego lsp     # speaks LSP on standard input and output; editors start it for you
+go install github.com/ornew/zeroparse/cmd/zp@latest
+zp lsp     # speaks LSP on standard input and output; editors start it for you
 ```
 
-`go install` puts `pego` in `$(go env GOPATH)/bin` (or `$GOBIN`). Editors start the command by name, so that
+`go install` puts `zp` in `$(go env GOPATH)/bin` (or `$GOBIN`). Editors start the command by name, so that
 directory must be on the `PATH` the editor sees, or the editor must be given the full path.
 
-`pego lsp` takes no options. It ignores the arguments that clients add, such as `--stdio` and `--clientProcessId=N`:
+`zp lsp` takes no options. It ignores the arguments that clients add, such as `--stdio` and `--clientProcessId=N`:
 standard input and output are the only transport.
 
 ## What the Server Does
 
-A `.pego` file is a whole grammar, so the server analyzes each open file on its own, again after every change.
+A `.zp` file is a whole grammar, so the server analyzes each open file on its own, again after every change.
 
 | Feature | What you see |
 |:--|:--|
 | Diagnostics | Syntax errors as you type. When the file has none, the errors of compiling and type checking it too: undefined rules and types, rules defined twice, type errors in actions, invalid attributes. The range of each error is the token it is about |
-| Formatting | The file formatted like `pego fmt`, keeping comments. A file with syntax errors is left as it is. Line ends stay `\r\n` if the file uses them. The editor's tab size is ignored: the layout is canonical |
+| Formatting | The file formatted like `zp fmt`, keeping comments. A file with syntax errors is left as it is. Line ends stay `\r\n` if the file uses them. The editor's tab size is ignored: the layout is canonical |
 | Go to definition | From a rule or type name to its definition |
 | Find references, highlights | Every place a rule or type is used. Rules and types are different names, so `num` and `Num` are kept apart |
 | Document symbols | The outline of the file: rules with their types, types, and the fields of struct types |
@@ -55,7 +55,7 @@ partially invalid document; rename leaves comment text intact.
 The comment lines directly above a definition are its documentation, shown on hover and in completion. A
 definition on one line can instead have a comment at the end of the line:
 
-```pego
+```zp
 // A number: one or more digits.
 // Leading zeros are allowed.
 rule number = [0-9]+ #atomic
@@ -71,7 +71,7 @@ Hover shows the type of every rule, also the rules without a declared type. An i
 type of the rule's value; in it, a rule with a declared type stands for that type, and a rule without
 one for its name:
 
-```pego
+```zp
 type Num = node[string]
 rule digits = [0-9]+ // hover: rule digits node[[]node[string]] (inferred)
 rule num Num = digits #atomic
@@ -84,40 +84,40 @@ of its own, and hover says so.
 
 ### Experimental Lint Diagnostics and Actions
 
-The VS Code extension can opt into grammar lint diagnostics, guarded explanations, and responsive analysis. Set `pego.server.experimentalLint` to `true`, then restart the language server. The setting defaults to `false`; with it off, lint diagnostics and these code actions are not enabled.
+The VS Code extension can opt into grammar lint diagnostics, guarded explanations, and responsive analysis. Set `zp.server.experimentalLint` to `true`, then restart the language server. The setting defaults to `false`; with it off, lint diagnostics and these code actions are not enabled.
 
-When enabled, lint findings appear only after the grammar parses and compiles successfully. Select a lint diagnostic and request a quick fix to see a guarded explanation. The explanation is shown as a message; it does not edit the grammar. The server can return a versioned `// lint:ignore <check>` edit after verifying that the edited grammar remains valid and the targeted finding disappears. The VS Code extension shows it as a quick fix that inserts the directive on the line above the finding. It applies the edit only if the document is still at the analyzed version: the version is checked immediately before the edit is handed to VS Code, which refuses an edit made against a different version. If the document changed, nothing is inserted and the quick fix must be requested again. The quick fixes (the suppression and the three grammar fixes below) exist only with `pego.server.experimentalLint` enabled, because they rely on VS Code behavior that is not part of its documented API: the extension host stamps the edit with the document version it holds, and the editor refuses the edit if its own version differs. A future VS Code could change this. With the setting off, no lint action, including a server-supplied edit, is shown. The server does not turn the linter's explanatory `Fix` text into an edit. Three findings also get a quick fix that edits the grammar, because the edit cannot change what it matches or the values it builds: overlapping character-class ranges are merged, a lookahead that always succeeds is removed, and a rule that no start rule reaches is deleted (never a start rule, and nothing in `pego.pego`). The server applies the edit to a copy first and offers it only if the copy compiles, the finding is gone, no other finding changed, and no rule changed its type. VS Code applies these fixes under the same version check as the suppression, and each is shown as a quick fix on the finding it fixes. The edit is checked when you pick the quick fix, not when the menu opens, so the menu appears at once; a fix that cannot be proven (for example for `[A-z]`, which no edit can fix without knowing what you meant) does nothing when picked. No other finding has an edit, because removing or rewriting anything else could change the tree or the values.
+When enabled, lint findings appear only after the grammar parses and compiles successfully. Select a lint diagnostic and request a quick fix to see a guarded explanation. The explanation is shown as a message; it does not edit the grammar. The server can return a versioned `// lint:ignore <check>` edit after verifying that the edited grammar remains valid and the targeted finding disappears. The VS Code extension shows it as a quick fix that inserts the directive on the line above the finding. It applies the edit only if the document is still at the analyzed version: the version is checked immediately before the edit is handed to VS Code, which refuses an edit made against a different version. If the document changed, nothing is inserted and the quick fix must be requested again. The quick fixes (the suppression and the three grammar fixes below) exist only with `zp.server.experimentalLint` enabled, because they rely on VS Code behavior that is not part of its documented API: the extension host stamps the edit with the document version it holds, and the editor refuses the edit if its own version differs. A future VS Code could change this. With the setting off, no lint action, including a server-supplied edit, is shown. The server does not turn the linter's explanatory `Fix` text into an edit. Three findings also get a quick fix that edits the grammar, because the edit cannot change what it matches or the values it builds: overlapping character-class ranges are merged, a lookahead that always succeeds is removed, and a rule that no start rule reaches is deleted (never a start rule, and nothing in `zeroparse.zp`). The server applies the edit to a copy first and offers it only if the copy compiles, the finding is gone, no other finding changed, and no rule changed its type. VS Code applies these fixes under the same version check as the suppression, and each is shown as a quick fix on the finding it fixes. The edit is checked when you pick the quick fix, not when the menu opens, so the menu appears at once; a fix that cannot be proven (for example for `[A-z]`, which no edit can fix without knowing what you meant) does nothing when picked. No other finding has an edit, because removing or rewriting anything else could change the tree or the values.
 
 Explanations are tied to the document version and analysis that produced the diagnostic; the extension rechecks them before display and drops stale requests. The setting also enables responsive analysis: newer document versions can replace pending analysis and supersede stale results. Cancellation is cooperative, and some parsing, compilation, lint, and request-processing phases do not yet check for cancellation internally, so an already-running phase may need to finish before the server responds.
 
 ## Setting Up an Editor
 
-The examples below start `pego lsp` for files ending in `.pego`.
+The examples below start `zp lsp` for files ending in `.zp`.
 
 ### Visual Studio Code
 
-The repository has an extension in [`editors/vscode`](../../editors/vscode/README.md). It adds the `pego` language
+The repository has an extension in [`editors/vscode`](../../editors/vscode/README.md). It adds the `zp` language
 (line comments, bracket matching and auto-closing pairs), syntax highlighting with a TextMate grammar, and starts
-`pego lsp` for `.pego` files. It is not published to the Marketplace; build and install it from a checkout with
+`zp lsp` for `.zp` files. It is not published to the Marketplace; build and install it from a checkout with
 Node.js 20 or later:
 
 ```bash
 cd editors/vscode
 npm install
-npm run package                        # builds pego-0.1.0.vsix
-code --install-extension pego-0.1.0.vsix
+npm run package                        # builds zp-0.1.0.vsix
+code --install-extension zp-0.1.0.vsix
 ```
 
 To try it without installing, open `editors/vscode` in VS Code and press F5: a window with the extension loaded opens.
 
 | Setting | Default | Meaning |
 |:--|:--|:--|
-| `pego.server.enabled` | `true` | Start the language server. Without it, only highlighting and the editing settings apply |
-| `pego.server.path` | `pego` | The `pego` command: a name looked up on the `PATH`, or an absolute path. In an untrusted workspace (Restricted Mode), the workspace's value is ignored, so that opening a folder cannot make VS Code run a program of its choosing |
-| `pego.trace.server` | `off` | Log the protocol messages (`messages` or `verbose`) in the *PEGO Language Server* output channel |
+| `zp.server.enabled` | `true` | Start the language server. Without it, only highlighting and the editing settings apply |
+| `zp.server.path` | `zp` | The `zp` command: a name looked up on the `PATH`, or an absolute path. In an untrusted workspace (Restricted Mode), the workspace's value is ignored, so that opening a folder cannot make VS Code run a program of its choosing |
+| `zp.trace.server` | `off` | Log the protocol messages (`messages` or `verbose`) in the *ZeroParse Language Server* output channel |
 
-**PEGO: Restart Language Server** in the command palette restarts the server, for example after installing a new
-`pego`. Highlighting does not need the server, so it works even when `pego` is not installed; the extension then
+**ZeroParse: Restart Language Server** in the command palette restarts the server, for example after installing a new
+`zp`. Highlighting does not need the server, so it works even when `zp` is not installed; the extension then
 shows an error once and offers no diagnostics.
 
 ### Neovim
@@ -125,34 +125,34 @@ shows an error once and offers no diagnostics.
 With Neovim 0.11 or later, in `init.lua`:
 
 ```lua
-vim.filetype.add({ extension = { pego = "pego" } })
-vim.lsp.config("pego", {
-  cmd = { "pego", "lsp" },
-  filetypes = { "pego" },
+vim.filetype.add({ extension = { zp = "zp" } })
+vim.lsp.config("zp", {
+  cmd = { "zp", "lsp" },
+  filetypes = { "zp" },
   root_markers = { ".git" },
 })
-vim.lsp.enable("pego")
+vim.lsp.enable("zp")
 ```
 
 Formatting is `vim.lsp.buf.format()`, rename `vim.lsp.buf.rename()`. Set `commentstring` for the file type
-(`vim.bo.commentstring = "// %s"` in `after/ftplugin/pego.lua`) so that `gc` comments lines.
+(`vim.bo.commentstring = "// %s"` in `after/ftplugin/zp.lua`) so that `gc` comments lines.
 
 ### Helix
 
 In `languages.toml`:
 
 ```toml
-[language-server.pego]
-command = "pego"
+[language-server.zp]
+command = "zp"
 args = ["lsp"]
 
 [[language]]
-name = "pego"
-scope = "source.pego"
-file-types = ["pego"]
+name = "zp"
+scope = "source.zp"
+file-types = ["zp"]
 comment-token = "//"
 indent = { tab-width = 4, unit = "    " }
-language-servers = ["pego"]
+language-servers = ["zp"]
 ```
 
 ### Emacs
@@ -160,19 +160,19 @@ language-servers = ["pego"]
 With Eglot (built into Emacs 29 and later):
 
 ```elisp
-(define-derived-mode pego-mode prog-mode "PEGO"
-  "Major mode for PEGO grammars."
+(define-derived-mode zp-mode prog-mode "ZeroParse"
+  "Major mode for ZeroParse grammars."
   (setq-local comment-start "// "))
-(add-to-list 'auto-mode-alist '("\\.pego\\'" . pego-mode))
+(add-to-list 'auto-mode-alist '("\\.zp\\'" . zp-mode))
 (with-eval-after-load 'eglot
-  (add-to-list 'eglot-server-programs '(pego-mode "pego" "lsp")))
+  (add-to-list 'eglot-server-programs '(zp-mode "zp" "lsp")))
 ```
 
-Then `M-x eglot` in a `.pego` buffer, or add `eglot-ensure` to `pego-mode-hook`.
+Then `M-x eglot` in a `.zp` buffer, or add `eglot-ensure` to `zp-mode-hook`.
 
 ### Other Editors
 
-Configure a language server with the command `pego lsp` for the files ending in `.pego`. The server announces
+Configure a language server with the command `zp lsp` for the files ending in `.zp`. The server announces
 everything it supports in its reply to `initialize`, and uses UTF-16 positions, which every client supports.
 
 ## Limits
@@ -196,9 +196,9 @@ keyword, so one broken definition does not hide later Declaration Statements.
 
 ## Troubleshooting
 
-- **Nothing happens.** Check that the editor finds the command: run `pego lsp` in a terminal (it waits for input;
-  press Ctrl-C), and give the editor the full path if it does not see your `PATH` (in VS Code, `pego.server.path`).
-  In VS Code, set `pego.trace.server` to `messages` and look at the *PEGO Language Server* output channel.
+- **Nothing happens.** Check that the editor finds the command: run `zp lsp` in a terminal (it waits for input;
+  press Ctrl-C), and give the editor the full path if it does not see your `PATH` (in VS Code, `zp.server.path`).
+  In VS Code, set `zp.trace.server` to `messages` and look at the *ZeroParse Language Server* output channel.
 - **The server exits with status 1.** It does so when the editor sends `exit` without `shutdown` first, or when the
   input ends; the editor restarts it.
 - **Formatting does nothing.** The file has a syntax error; fix the errors the editor shows first.

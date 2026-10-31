@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	ir "github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/pass"
+	ir "github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/pass"
 )
 
 // bodyFunc returns a module with the operations of the body tests and the function f of the locals

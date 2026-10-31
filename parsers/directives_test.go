@@ -4,15 +4,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func TestYAMLDirectiveBackends(t *testing.T) {
-	src, err := os.ReadFile("yaml/yaml.pego")
+	src, err := os.ReadFile("yaml/yaml.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := pego.CompileSource(string(src), "main")
+	p, err := zeroparse.CompileSource(string(src), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,12 +27,12 @@ func TestYAMLDirectiveBackends(t *testing.T) {
 		{"%YAML 0001.02", true}, {"%TAG !e! notahandle", true},
 	} {
 		t.Run(tc.directive, func(t *testing.T) {
-			for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-				for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
+			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+				for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
 					for _, recognize := range []bool{false, true} {
-						opts := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit)}
+						opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend), zeroparse.WithUnit(unit)}
 						if recognize {
-							opts = append(opts, pego.RecognizeOnly())
+							opts = append(opts, zeroparse.RecognizeOnly())
 						}
 						_, err := p.Parse(tc.directive+"\n--- x\n", opts...)
 						if (err == nil) != tc.valid {

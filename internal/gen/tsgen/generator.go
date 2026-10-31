@@ -11,10 +11,10 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/ir/core"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/ir/core"
 )
 
 //go:embed tsrt/runtime.ts

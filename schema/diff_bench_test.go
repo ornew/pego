@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/schema"
 )
 
 var schemaDiffBenchmarkSink *schema.Diff
 
 func schemaDiffBenchmarkInput(count int, changed bool) *schema.Output {
-	s := &schema.Output{Format: "pego-output-schema", Version: 2, Start: "parseItem000", PositionUnitIndependent: true}
+	s := &schema.Output{Format: "zp-output-schema", Version: 2, Start: "parseItem000", PositionUnitIndependent: true}
 	for i := range count {
 		name := fmt.Sprintf("Item%03d", i)
 		rule := fmt.Sprintf("parseItem%03d", i)

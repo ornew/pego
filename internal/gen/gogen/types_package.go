@@ -13,7 +13,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen"
 )
 
 // typesPackageName is the name of the package, a subpackage of the parser package, that declares
@@ -32,9 +32,9 @@ type TNode[T any] rt.TNode[T]
 // Error is input skipped by error recovery (#recover).
 type Error rt.Error
 
-// PegoHooks makes the values of the types of this package from those the typed runtime builds, and
+// ZPHooks makes the values of the types of this package from those the typed runtime builds, and
 // back. It is for generated parsers.
-var PegoHooks = &rt.TPubHooks{
+var ZPHooks = &rt.TPubHooks{
 	Match: func(m *rt.TNode[string]) any { return (*TNode[string])(m) },
 	Error: func(e *rt.Error) any { return (*Error)(e) },
 	Node:  func(n *rt.TNode[any]) any { return (*TNode[any])(n) },
@@ -115,7 +115,7 @@ func typesPackageFile(opts gen.GenOptions, body string) ([]byte, *typesPackage, 
 }
 
 // schemaPrefix starts the name of the constant that ties a parser package to its types package.
-const schemaPrefix = "PegoSchema_"
+const schemaPrefix = "ZPSchema_"
 
 // schemaName returns the name of the schema constant of the types package whose source (with its package
 // clause) is src: schemaPrefix and the hex digest of the declarations and code of the package without

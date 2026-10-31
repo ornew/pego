@@ -3,8 +3,8 @@ package compile
 import (
 	"context"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/grammaranalysis"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/grammaranalysis"
 )
 
 // Cancellation is the panic value that unwinds a cancelled compilation with its error. The

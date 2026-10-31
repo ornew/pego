@@ -3,7 +3,7 @@ package tsgen_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen"
 )
 
 func TestGeneratedTSConversionControlCheckpoints(t *testing.T) {

@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 var proofLintBenchmarkFindings []Finding
 
 func BenchmarkSuccessProofLintCancellation(b *testing.B) {
 	sources := map[string]string{"attributes": `rule main = "a"` + strings.Repeat(` @error("label")`, 64)}
-	for name, path := range map[string]string{"source-grammar": "../pego.pego", "json": "../parsers/json/json.pego"} {
+	for name, path := range map[string]string{"source-grammar": "../zeroparse.zp", "json": "../parsers/json/json.zp"} {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			b.Fatal(err)

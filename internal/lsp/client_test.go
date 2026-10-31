@@ -196,7 +196,7 @@ func (c *testClient) diagnostics(uri string) publishDiagnosticsParams {
 func (c *testClient) open(uri, text string) []Diagnostic {
 	c.t.Helper()
 	c.notify("textDocument/didOpen", map[string]any{
-		"textDocument": map[string]any{"uri": uri, "languageId": "pego", "version": 1, "text": text},
+		"textDocument": map[string]any{"uri": uri, "languageId": "zp", "version": 1, "text": text},
 	})
 	return c.diagnostics(uri).Diagnostics
 }

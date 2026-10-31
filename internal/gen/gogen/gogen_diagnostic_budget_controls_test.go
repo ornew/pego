@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestGeneratedGoDiagnosticBudget(t *testing.T) {
@@ -56,10 +56,10 @@ rule letter Word = t:("z" / "a" / "é") #atomic => Word{Text: text($t)}`)
 
 const generatedGoDiagnosticConsumer = `package PACKAGE
 
-import pegort "github.com/ornew/pego/runtime"
+import zprt "github.com/ornew/zeroparse/runtime"
 import("context";"errors";"fmt";"reflect";"slices";"strings";"testing")
-func diagnosticParser(limits Limits)*pegort.Parser{return &pegort.Parser{Control:pegort.X_newBudgetControl(nil,limits)}}
-func catchFatal(t *testing.T,f func())(err error){t.Helper();defer func(){if v:=recover();v!=nil{fatal,ok:=v.(pegort.X_fatal);if !ok{panic(v)};err=fatal.X_err}}();f();return nil}
+func diagnosticParser(limits Limits)*zprt.Parser{return &zprt.Parser{Control:zprt.X_newBudgetControl(nil,limits)}}
+func catchFatal(t *testing.T,f func())(err error){t.Helper();defer func(){if v:=recover();v!=nil{fatal,ok:=v.(zprt.X_fatal);if !ok{panic(v)};err=fatal.X_err}}();f();return nil}
 type pollingContext struct{context.Context}
 func(*pollingContext)Done()<-chan struct{}{return make(chan struct{})}
 func(*pollingContext)Err()error{return context.Canceled}
@@ -82,13 +82,13 @@ func TestDiagnosticTextParityAndBudget(t *testing.T){
   retained:=p.RecoveryErrorText(e)
   if retained!=want{t.Fatal("message parity",retained,want)}
   if p.Control.X_budgetUsed()!=steps{t.Fatalf("text spend %+v",p.Control)}
-  p.Control=pegort.X_newBudgetControl(nil,Limits{Budget:steps-1})
+  p.Control=zprt.X_newBudgetControl(nil,Limits{Budget:steps-1})
   if err:=catchFatal(t,func(){p.RecoveryErrorText(e)});!errors.Is(err,ErrLimit){t.Fatal("one-short text",err)}
-  p.Control=pegort.X_newBudgetControl(nil,Limits{Budget:100000})
+  p.Control=zprt.X_newBudgetControl(nil,Limits{Budget:100000})
   p.RecoveryErrorText(&SyntaxError{Line:1,Col:2,Messages:[]string{"other"}})
   if retained!=want || e.Error()!=want{t.Fatal("retained message overwritten")}
  })}
- p:=&pegort.Parser{Control:pegort.X_newBudgetControl(&pollingContext{Context:context.Background()},Limits{Budget:100000})}
+ p:=&zprt.Parser{Control:zprt.X_newBudgetControl(&pollingContext{Context:context.Background()},Limits{Budget:100000})}
  var partial string
  if err:=catchFatal(t,func(){partial=p.RecoveryErrorText(&SyntaxError{Line:2,Col:3,Messages:make([]string,320)})});!errors.Is(err,context.Canceled)||partial!=""{t.Fatal("format cancellation published partial",partial,err)}
 }
@@ -103,16 +103,16 @@ func TestDiagnosticSortingAndSnapshots(t *testing.T){
  }
  p:=diagnosticParser(Limits{Budget:128})
  if err:=catchFatal(t,func(){p.X_sortExpected(make([]string,320))});!errors.Is(err,ErrLimit){t.Fatal("sort moves unbounded",err)}
- ids:=make([]pegort.ExpID,320);for i:=range ids{ids[i]=pegort.ExpID(i)}
+ ids:=make([]zprt.ExpID,320);for i:=range ids{ids[i]=zprt.ExpID(i)}
  p=diagnosticParser(Limits{Budget:100000})
  kept:=p.Keep(ids);before:=slices.Clone(kept)
- p.Control=pegort.X_newBudgetControl(nil,Limits{Budget:319})
+ p.Control=zprt.X_newBudgetControl(nil,Limits{Budget:319})
  if err:=catchFatal(t,func(){p.Keep(ids)});!errors.Is(err,ErrLimit){t.Fatal("snapshot equality unbounded",err)}
  if !slices.Equal(kept,before){t.Fatal("snapshot overwritten")}
  p=diagnosticParser(Limits{Budget:319})
  if err:=catchFatal(t,func(){p.Keep(ids)});!errors.Is(err,ErrLimit){t.Fatal("snapshot copy unbounded",err)}
  p=diagnosticParser(Limits{Budget:100000});p.MergeExpected(0,ids)
- p.Control=pegort.X_newBudgetControl(nil,Limits{Budget:128})
+ p.Control=zprt.X_newBudgetControl(nil,Limits{Budget:128})
  if err:=catchFatal(t,func(){p.MergeExpected(0,ids)});!errors.Is(err,ErrLimit){t.Fatal("merged expectations unbounded",err)}
  errorsList:=make([]*SyntaxError,320)
  p=diagnosticParser(Limits{Budget:319})

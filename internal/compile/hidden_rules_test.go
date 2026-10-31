@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // A grammar that default-value mode accepts because it drops the actions is accepted with inline

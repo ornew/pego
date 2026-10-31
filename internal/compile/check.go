@@ -3,7 +3,7 @@ package compile
 import (
 	"sync"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // dropRepeatedErrors removes the errors after the first from that repeat an earlier one at the same

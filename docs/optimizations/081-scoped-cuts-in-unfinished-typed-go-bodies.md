@@ -50,7 +50,7 @@
 Generate same-revision direct and reference fixtures and check parity:
 
 ```sh
-export PEGO_TYPED_FRAMED_CUT_DIR=/tmp/pego-typed-framed-cuts
+export ZP_TYPED_FRAMED_CUT_DIR=/tmp/zp-typed-framed-cuts
 go test ./internal/gen/gogen -run '^TestGeneratedTypedFramedCutWorkloads$' -count=1
 ```
 
@@ -59,8 +59,8 @@ Build each fixture as a separate benchmark binary:
 ```sh
 for workload in lr operatorsRule; do
   for variant in direct general; do
-    fixture="$PEGO_TYPED_FRAMED_CUT_DIR/$workload/$variant"
-    (cd "$fixture" && go test -c -o "$PEGO_TYPED_FRAMED_CUT_DIR/$workload-$variant.test" .)
+    fixture="$ZP_TYPED_FRAMED_CUT_DIR/$workload/$variant"
+    (cd "$fixture" && go test -c -o "$ZP_TYPED_FRAMED_CUT_DIR/$workload-$variant.test" .)
   done
 done
 ```
@@ -77,7 +77,7 @@ for pair in 1 2 3 4 5; do
   fi
   for workload in lr operatorsRule; do
     for variant in "$first" "$second"; do
-      "$PEGO_TYPED_FRAMED_CUT_DIR/$workload-$variant.test" -test.run='^$' \
+      "$ZP_TYPED_FRAMED_CUT_DIR/$workload-$variant.test" -test.run='^$' \
         -test.bench='^BenchmarkTyped(LR|OperatorsRule)$' -test.benchtime=300ms -test.benchmem
     done
   done

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego/lint"
+	"github.com/ornew/zeroparse/lint"
 )
 
 type findingData struct {
@@ -151,7 +151,7 @@ func (d *document) lintDiagnostic(i int, f lint.Finding) Diagnostic {
 	} else if f.Severity == lint.Warning {
 		severity = 2
 	}
-	return Diagnostic{Range: d.analysis().errorRange(f.Pos, false), Severity: severity, Source: "pego-lint", Message: f.Message, Code: f.Check,
+	return Diagnostic{Range: d.analysis().errorRange(f.Pos, false), Severity: severity, Source: "zp-lint", Message: f.Message, Code: f.Check,
 		Data: &findingData{URI: d.uri, Version: d.version, Generation: d.generation, Key: fmt.Sprintf("%d:%s", i, f.Check)}}
 }
 
@@ -173,7 +173,7 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 		return nil, err
 	}
 	out := []codeAction{}
-	if !s.client.Experimental.Pego.LintDiagnostics {
+	if !s.client.Experimental.ZP.LintDiagnostics {
 		return out, nil
 	}
 	if len(p.Context.Only) > 0 {
@@ -223,7 +223,7 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 		if !matched {
 			continue
 		}
-		if s.client.Experimental.Pego.ShowExplanation {
+		if s.client.Experimental.ZP.ShowExplanation {
 			explanation := ""
 			for _, check := range lint.Checks() {
 				control.poll()
@@ -233,7 +233,7 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 				}
 			}
 			control.poll()
-			out = append(out, codeAction{Title: "Explain " + diagnostic.Code, Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Command: &actionCommand{Title: "Explain lint finding", Command: "pego.showExplanation", Arguments: []any{diagnostic.Code, diagnostic.Message, explanation}}})
+			out = append(out, codeAction{Title: "Explain " + diagnostic.Code, Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Command: &actionCommand{Title: "Explain lint finding", Command: "zp.showExplanation", Arguments: []any{diagnostic.Code, diagnostic.Message, explanation}}})
 		}
 		if !s.client.Workspace.WorkspaceEdit.DocumentChanges {
 			continue
@@ -331,7 +331,7 @@ func (s *Server) codeActionResolveControlled(params json.RawMessage, control *re
 		ctx = context.Background()
 	}
 	cancelled := &rpcError{Code: codeRequestCancelled, Message: "request cancelled"}
-	if !s.client.Experimental.Pego.LintDiagnostics || !s.client.Workspace.WorkspaceEdit.DocumentChanges {
+	if !s.client.Experimental.ZP.LintDiagnostics || !s.client.Workspace.WorkspaceEdit.DocumentChanges {
 		return item, nil
 	}
 	findings, lintErr := d.analysis().lintFindingsContext(ctx)

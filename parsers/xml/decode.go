@@ -3,8 +3,8 @@ package xml
 import (
 	"errors"
 	"fmt"
-	"github.com/ornew/pego/parsers/xml/internal/text"
-	"github.com/ornew/pego/parsers/xml/types"
+	"github.com/ornew/zeroparse/parsers/xml/internal/text"
+	"github.com/ornew/zeroparse/parsers/xml/types"
 	"reflect"
 	"strings"
 	"unicode/utf8"

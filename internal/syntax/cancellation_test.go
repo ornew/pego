@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // cancelOnCheck cancels at a known polling point, so the test does not rely on

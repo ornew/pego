@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/ir/core"
+	"github.com/ornew/zeroparse/internal/ir/core"
 )
 
 // replaceTerm replaces the first term of the module, in rule order, for which f returns a

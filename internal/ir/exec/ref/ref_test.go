@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/ops"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/ops"
 )
 
 // The model is the executable contract; these tests pin the behaviors its contract text states.

@@ -3,7 +3,7 @@ package duckdb_test
 import (
 	"strings"
 
-	"github.com/ornew/pego/parsers/duckdb/types"
+	"github.com/ornew/zeroparse/parsers/duckdb/types"
 )
 
 // typ maps a type to the JSON of a LogicalType in the AST of DuckDB.

@@ -1,8 +1,8 @@
 package tsgen
 
 import (
-	"github.com/ornew/pego/internal/ir/core"
-	flowlower "github.com/ornew/pego/internal/ir/flow/lower"
+	"github.com/ornew/zeroparse/internal/ir/core"
+	flowlower "github.com/ornew/zeroparse/internal/ir/flow/lower"
 )
 
 // Outlining of the generated TypeScript.

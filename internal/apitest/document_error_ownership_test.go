@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func TestDocumentDiagnosticOwnership(t *testing.T) {
@@ -14,11 +14,11 @@ rule item = "a;" @error(message="original") #recover(skip=[^;]+ ";")`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
+	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+		for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
 			for _, changes := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/%s/changes=%v", backend, unit, changes), func(t *testing.T) {
-					opts := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit), pego.WithExpectations()}
+					opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend), zeroparse.WithUnit(unit), zeroparse.WithExpectations()}
 					d, err := p.NewDocument("?é;", opts...)
 					if err != nil {
 						t.Fatal(err)
@@ -30,7 +30,7 @@ rule item = "a;" @error(message="original") #recover(skip=[^;]+ ";")`, "main")
 					}
 					_, want := p.Parse("?é;", opts...)
 					_, first := d.Parse()
-					list, ok := first.(pego.SyntaxErrors)
+					list, ok := first.(zeroparse.SyntaxErrors)
 					if !ok || len(list) != 1 || !reflect.DeepEqual(first, want) {
 						t.Fatalf("first diagnostics: %v / %v", first, want)
 					}
@@ -47,7 +47,7 @@ rule item = "a;" @error(message="original") #recover(skip=[^;]+ ";")`, "main")
 						t.Fatalf("caller changed cached diagnostics: %#v / %#v", second, want)
 					}
 					end := 3
-					if unit == pego.Bytes {
+					if unit == zeroparse.Bytes {
 						end = 4
 					}
 					if err := d.Edit(0, end, "??;"); err != nil {
@@ -63,7 +63,7 @@ rule item = "a;" @error(message="original") #recover(skip=[^;]+ ";")`, "main")
 					}
 					_, want = p.Parse("??", opts...)
 					_, failure := d.Parse()
-					ordinary, ok := failure.(*pego.SyntaxError)
+					ordinary, ok := failure.(*zeroparse.SyntaxError)
 					if !ok {
 						t.Fatalf("ordinary failure: %T", failure)
 					}

@@ -4,13 +4,13 @@
 duration, an ID), and a specification of the format. You want to know that the two agree, including on the inputs
 that your tests did not think of.
 
-Write the specification as a grammar, and let PEGO generate inputs from it: inputs the grammar accepts, and inputs that
+Write the specification as a grammar, and let ZeroParse generate inputs from it: inputs the grammar accepts, and inputs that
 are one mutation away from one and that the grammar rejects. The function must say yes to the first and no to the
 second. This is the grammar of [Ship a parser and keep it up to date](ship-a-parser.md), and the function is a regular
 expression:
 
-```pego
-// version.pego
+```zp
+// version.zp
 type Num = node[string]
 type Ident = node[string]
 type Version = { Major Num; Minor Num; Patch Num; Pre *Ident }
@@ -53,15 +53,15 @@ import (
 	_ "embed"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/sample"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/sample"
 )
 
-//go:embed version.pego
+//go:embed version.zp
 var grammar string
 
-func compile(t testing.TB) *pego.Parser {
-	p, err := pego.CompileSource(grammar, "main")
+func compile(t testing.TB) *zeroparse.Parser {
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +159,7 @@ With the fixed expression, five seconds of fuzzing found no input on which the f
   (`GenerateInvalid` keeps a mutation only if the parser rejects it), so no expected values are written by hand.
 - **Near misses find the edge cases.** The grammar accepts `0` and `10`, not `01`. A mutation such as "insert `0` at the
   start" produces that input from a valid one, which is exactly the case a hand-written test forgets.
-- **Reproducible.** The same version of PEGO gives the same inputs for the same grammar, options and seed, whichever Go
+- **Reproducible.** The same version of ZeroParse gives the same inputs for the same grammar, options and seed, whichever Go
   release built it. A failure that matters should be kept as a test case of its own, as the inputs may change when you
   upgrade.
 - **The fuzz seed.** `sample.Seed` adds generated inputs to the corpus of a fuzz test. A fuzzer started from nothing
@@ -167,7 +167,7 @@ With the fixed expression, five seconds of fuzzing found no input on which the f
 
 ## Variations and Limits
 
-- **The same check from the command line**: `pego sample -g version.pego -n 20` prints inputs, and `-invalid -f json`
+- **The same check from the command line**: `zp sample -g version.zp -n 20` prints inputs, and `-invalid -f json`
   near misses with their mutation and error. `-coverage` reports the rules and alternatives that the inputs did not
   reach, which often points at an alternative that can never match.
 - **Compare with a real implementation.** If the format has one (`encoding/json`, `go/parser`, `net/url`), call it in

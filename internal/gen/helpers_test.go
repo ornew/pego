@@ -6,25 +6,25 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/compiletest"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gentest"
-	ischema "github.com/ornew/pego/internal/schema"
-	"github.com/ornew/pego/internal/syntax"
-	"github.com/ornew/pego/internal/value"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/compiletest"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gentest"
+	ischema "github.com/ornew/zeroparse/internal/schema"
+	"github.com/ornew/zeroparse/internal/syntax"
+	"github.com/ornew/zeroparse/internal/value"
+	"github.com/ornew/zeroparse/schema"
 )
 
 // The tests of this package compile the grammars that they generate parsers for with the engine,
-// as package pego does.
+// as package zeroparse does.
 func init() {
 	gentest.Compile = compileForGenerator
 	gentest.Reference = referenceProgram
 }
 
-// mustCompile compiles PEGO source with source information, so that results show rule names and
+// mustCompile compiles ZeroParse source with source information, so that results show rule names and
 // capture labels.
 func mustCompile(t *testing.T, src string, opts ...compile.Options) *engine.Program {
 	t.Helper()
@@ -36,7 +36,7 @@ func mustCompile(t *testing.T, src string, opts ...compile.Options) *engine.Prog
 	return compileBare(t, src, o)
 }
 
-// compileBare compiles PEGO source with the options as given: without source information unless
+// compileBare compiles ZeroParse source with the options as given: without source information unless
 // they request it.
 func compileBare(t *testing.T, src string, opts ...compile.Options) *engine.Program {
 	t.Helper()

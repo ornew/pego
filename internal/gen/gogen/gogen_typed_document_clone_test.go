@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 func TestGeneratedTypedDocumentPublicationClone(t *testing.T) {
@@ -42,7 +42,7 @@ rule token Token = t:("x") #atomic => Token{Text: text($t)}`)
 		"go.mod": gentest.GoMod("gentest"),
 		"doc/parser_test.go": `package doc
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
  "gentest/doc/types"
  "context"
  "errors"
@@ -81,7 +81,7 @@ func TestPublicationDeepGraph(t *testing.T) {
  if count!=100001 {t.Fatalf("deep clone length: %d",count)}
 }
 func cloneWithControl(input *types.Box, c *typedDocumentClone,beforeFinish ...func())(output *types.Box,err error) {
- defer pegort.X_recoverParse(&output,&err)
+ defer zprt.X_recoverParse(&output,&err)
  defer c.Release()
  output=c.toTypeBox(input)
  if len(beforeFinish)>0 {beforeFinish[0]()}
@@ -90,14 +90,14 @@ func cloneWithControl(input *types.Box, c *typedDocumentClone,beforeFinish ...fu
 }
 func TestPublicationControls(t *testing.T) {
  input:=&types.Box{First:&types.Token{Text:"private"},Items:make([]*types.Token,1000)}
- c:=&typedDocumentClone{TypedDocumentCloneBase: pegort.TypedDocumentCloneBase{Control: pegort.X_newBudgetControl(nil,Limits{Budget:1})}}
+ c:=&typedDocumentClone{TypedDocumentCloneBase: zprt.TypedDocumentCloneBase{Control: zprt.X_newBudgetControl(nil,Limits{Budget:1})}}
  if output,err:=cloneWithControl(input,c);output!=nil || !errors.Is(err,ErrLimit) {t.Fatalf("budget: %v %v",output,err)}
  if c.Control!=nil || c.Values!=nil || c.Slices!=nil || c.Tasks!=nil {t.Fatal("interrupted clone retained state")}
  ctx,cancel:=context.WithCancel(context.Background());cancel()
- c=&typedDocumentClone{TypedDocumentCloneBase: pegort.TypedDocumentCloneBase{Control: pegort.X_newBudgetControl(ctx,Limits{})}}
+ c=&typedDocumentClone{TypedDocumentCloneBase: zprt.TypedDocumentCloneBase{Control: zprt.X_newBudgetControl(ctx,Limits{})}}
  if output,err:=cloneWithControl(input,c);output!=nil || !errors.Is(err,context.Canceled) {t.Fatalf("cancel: %v %v",output,err)}
  ctx,cancel=context.WithCancel(context.Background())
- c=&typedDocumentClone{TypedDocumentCloneBase: pegort.TypedDocumentCloneBase{Control: pegort.X_newBudgetControl(ctx,Limits{})}}
+ c=&typedDocumentClone{TypedDocumentCloneBase: zprt.TypedDocumentCloneBase{Control: zprt.X_newBudgetControl(ctx,Limits{})}}
  if output,err:=cloneWithControl(&types.Box{First:&types.Token{}},c,cancel);output!=nil || !errors.Is(err,context.Canceled) {t.Fatalf("final cancellation poll: %v %v",output,err)}
  if output,err:=cloneWithControl(input,&typedDocumentClone{});output==nil || err!=nil {t.Fatalf("retry: %v",err)}
 }

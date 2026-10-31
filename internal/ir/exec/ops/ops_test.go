@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ornew/pego/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec"
 )
 
 var update = flag.Bool("update", false, "update golden files")

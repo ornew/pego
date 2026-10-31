@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // A tuple literal is written like a tuple type: () is the unit, (x,) has one element, and one

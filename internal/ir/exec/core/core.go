@@ -9,8 +9,8 @@
 package core
 
 import (
-	. "github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/ops"
+	. "github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/ops"
 )
 
 // Build returns the module of the operations and the compositions, verified.

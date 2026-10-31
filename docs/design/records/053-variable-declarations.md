@@ -10,7 +10,7 @@ A parser variable is declared by a top-level `var` declaration, next to the type
 declaration gives the variable a static type, `int`, `string` or `bool`, and an initial value that every parse
 starts with:
 
-```pego
+```zp
 var depth int = 0
 var mode string
 var seen = false

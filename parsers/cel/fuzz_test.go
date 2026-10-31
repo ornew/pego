@@ -7,8 +7,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/internal/corpora/corporatest"
-	"github.com/ornew/pego/parsers/cel"
+	"github.com/ornew/zeroparse/internal/corpora/corporatest"
+	"github.com/ornew/zeroparse/parsers/cel"
 )
 
 // FuzzParse checks the properties of the parser on arbitrary input (go test -fuzz FuzzParse): ParseAST accepts the same

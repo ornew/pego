@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package bench
 
@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // BenchmarkBudgetControlModes separates warm context polling from finite counters. The inactive and
@@ -24,19 +24,19 @@ func BenchmarkBudgetControlModes(b *testing.B) {
 				for _, unit := range units {
 					for _, mode := range []string{"inactive", "context", "budget", "combined"} {
 						b.Run(backend.name+"/"+unit.name+"/"+mode, func(b *testing.B) {
-							opts := []pego.ParseOption{pego.WithBackend(backend.b), pego.WithUnit(unit.u)}
+							opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend.b), zeroparse.WithUnit(unit.u)}
 							if mode == "context" || mode == "combined" {
 								ctx, cancel := context.WithCancel(context.Background())
 								defer cancel()
-								opts = append(opts, pego.WithContext(ctx))
+								opts = append(opts, zeroparse.WithContext(ctx))
 							}
 							if mode == "inactive" || mode == "context" {
 								// A zero budget selects the default, which is a counter; Unlimited leaves only the context.
-								opts = append(opts, pego.WithLimits(pego.Limits{Budget: pego.Unlimited}))
+								opts = append(opts, zeroparse.WithLimits(zeroparse.Limits{Budget: zeroparse.Unlimited}))
 							}
 							if mode == "budget" || mode == "combined" {
 								// The largest finite budget: ^uint64(0) is Unlimited, which runs without a control.
-								opts = append(opts, pego.WithLimits(pego.Limits{Budget: ^uint64(0) - 1}))
+								opts = append(opts, zeroparse.WithLimits(zeroparse.Limits{Budget: ^uint64(0) - 1}))
 							}
 							if err := parseOK(p, &w, input, opts...); err != nil {
 								b.Fatal(err)

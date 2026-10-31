@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/lint"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/lint"
 )
 
 // A lint fix is offered for a finding only when lint.Rewrites proves its kind of change, and then
@@ -79,7 +79,7 @@ func (d *document) fixTitle(f lint.Finding) (string, bool) {
 	case lint.CheckUselessLookahead:
 		return "Remove the lookahead that always succeeds", true
 	case lint.CheckUnreachableRule:
-		return "Remove the unused rule " + f.Rule, path.Base(d.uri) != "pego.pego"
+		return "Remove the unused rule " + f.Rule, path.Base(d.uri) != "zeroparse.zp"
 	}
 	return "", false
 }
@@ -127,7 +127,7 @@ func findingKeys(findings []lint.Finding, skip int, gone string) map[string]int 
 func (d *document) verifiedFix(ctx context.Context, findings []lint.Finding, i int, rw lint.Rewrite, control *renderControl) (lintFix, bool) {
 	a := d.analysis()
 	f := findings[i]
-	start, end := a.idx.pegoOffset(rw.Start), a.idx.pegoOffset(rw.End)
+	start, end := a.idx.zpOffset(rw.Start), a.idx.zpOffset(rw.End)
 	if start < 0 || start >= end || end > len(d.text) {
 		return lintFix{}, false
 	}

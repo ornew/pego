@@ -23,7 +23,7 @@ Documents, ordinary batch parsing, generated Go and TypeScript are unchanged.
 
 ## Reference Control
 
-Build tag `pego_reference_document_vm_values` restores fresh-stack allocation.
+Build tag `zp_reference_document_vm_values` restores fresh-stack allocation.
 Both same-source builds keep the Document's backend-state slot, so the
 comparison does not measure that layout or construction footprint.
 

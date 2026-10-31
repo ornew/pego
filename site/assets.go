@@ -41,7 +41,7 @@ type assetBytes struct {
 }
 
 var digestPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
-var legacyWasmPattern = regexp.MustCompile(`data-wasm="(?:\.\./)?playground/(wasm/pego-[0-9a-f]{16}\.wasm)"`)
+var legacyWasmPattern = regexp.MustCompile(`data-wasm="(?:\.\./)?playground/(wasm/zp-[0-9a-f]{16}\.wasm)"`)
 
 // productionSite is the canonical origin of the published site; site/config.json names the same
 // origin as siteURL.
@@ -77,13 +77,13 @@ func hashBytes(data []byte) string {
 
 func describeAssets(wasm, runtime []byte) playgroundAsset {
 	w, r := hashBytes(wasm), hashBytes(runtime)
-	return playgroundAsset{Wasm: "wasm/pego-" + w[:16] + ".wasm", WasmSHA256: w,
+	return playgroundAsset{Wasm: "wasm/zp-" + w[:16] + ".wasm", WasmSHA256: w,
 		Runtime: "runtime/wasm_exec-" + r[:16] + ".js", RuntimeSHA256: r}
 }
 
 func (a playgroundAsset) validate() error {
 	if !digestPattern.MatchString(a.WasmSHA256) || !digestPattern.MatchString(a.RuntimeSHA256) ||
-		a.Wasm != "wasm/pego-"+a.WasmSHA256[:16]+".wasm" ||
+		a.Wasm != "wasm/zp-"+a.WasmSHA256[:16]+".wasm" ||
 		a.Runtime != "runtime/wasm_exec-"+a.RuntimeSHA256[:16]+".js" {
 		return errors.New("invalid playground asset paths or hashes")
 	}

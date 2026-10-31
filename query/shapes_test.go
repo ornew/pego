@@ -6,9 +6,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/query"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/query"
+	"github.com/ornew/zeroparse/schema"
 )
 
 const queryShapeGrammar = `type Int = { Text string }
@@ -27,7 +27,7 @@ rule name Name = t:([a-z]) #atomic => Name{Text: text($t)}
 
 func queryShapeSchema(t *testing.T) *schema.Output {
 	t.Helper()
-	return mustSchema(t, mustCompile(t, queryShapeGrammar, pego.WithSourceInfo()))
+	return mustSchema(t, mustCompile(t, queryShapeGrammar, zeroparse.WithSourceInfo()))
 }
 
 // TestStructuralQueryNestedShapes checks that a pattern compiles if, and only if, some value of the
@@ -127,7 +127,7 @@ func TestStructuralQueryErrorSize(t *testing.T) {
 		src += "type " + n + " = { X E }\n"
 	}
 	src += "rule main E = e\nrule e E = n:[0-9] => Num{Text: text($n)}\n"
-	s := mustSchema(t, mustCompile(t, src, pego.WithSourceInfo()), pego.WithAllSchemaRules())
+	s := mustSchema(t, mustCompile(t, src, zeroparse.WithSourceInfo()), zeroparse.WithAllSchemaRules())
 	p := query.Pattern{Category: "string"}
 	for range 16 {
 		p = query.Pattern{Fields: []query.FieldPattern{field("X", p)}}

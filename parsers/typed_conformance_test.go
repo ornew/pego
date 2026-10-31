@@ -14,8 +14,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/gen"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/gen"
 )
 
 // The typed conformance checks compare the generated typed outputs with the output schema of their
@@ -72,11 +72,11 @@ func conformanceSchema(t *testing.T, path string) confSchema {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := pego.CompileSource(string(src), "")
+	p, err := zeroparse.CompileSource(string(src), "")
 	if err != nil {
 		t.Fatalf("%s: %v", path, err)
 	}
-	s, err := p.OutputSchema(pego.WithAllSchemaRules())
+	s, err := p.OutputSchema(zeroparse.WithAllSchemaRules())
 	if err != nil {
 		t.Fatalf("%s: schema: %v", path, err)
 	}
@@ -542,7 +542,7 @@ func checkTypedGeneration(t *testing.T, sc confSchema, g typedGeneration, src st
 			out = append(out, "Go: "+v)
 		}
 	}
-	gr, err := pego.ParseGrammar(src)
+	gr, err := zeroparse.ParseGrammar(src)
 	if err != nil {
 		t.Fatal(err)
 	}

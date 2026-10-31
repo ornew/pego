@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/grammaranalysis"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/grammaranalysis"
 )
 
 // Keep the cancellation sentinel inside the metadata invocation, before the
@@ -60,7 +60,7 @@ func (a *analysis) mapSyntaxDiagnostics(control *renderControl) {
 		control.poll()
 		r := a.errorRangeControlled(e.Pos, false, control)
 		if e.End.IsValid() {
-			r = a.idx.rangeOf(a.idx.pegoOffset(e.Pos), a.idx.pegoOffset(e.End))
+			r = a.idx.rangeOf(a.idx.zpOffset(e.Pos), a.idx.zpOffset(e.End))
 		}
 		a.diag(r, e.Msg)
 	}

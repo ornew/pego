@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
 )
 
 func init() {

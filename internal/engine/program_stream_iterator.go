@@ -6,8 +6,8 @@ import (
 	"io"
 	"iter"
 
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // ErrStreamClosed is returned after an iterator is abandoned before termination.

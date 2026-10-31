@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
-// The helpers of the tests that check the compile phase: they compile PEGO source with
+// The helpers of the tests that check the compile phase: they compile ZeroParse source with
 // compileStatic, which builds no matchers. The engine's tests keep their own copies, which return
 // the engine's program.
 
-// mustParse parses PEGO source with parseTest, panicking on a syntax error.
+// mustParse parses ZeroParse source with parseTest, panicking on a syntax error.
 func mustParse(src string) *grammar.Grammar {
 	g, err := parseTest(src)
 	if err != nil {
@@ -21,7 +21,7 @@ func mustParse(src string) *grammar.Grammar {
 	return g
 }
 
-// mustCompile compiles PEGO source with source information, so that results show rule names and
+// mustCompile compiles ZeroParse source with source information, so that results show rule names and
 // capture labels.
 func mustCompile(t *testing.T, src string, opts ...Options) *Program {
 	t.Helper()
@@ -33,7 +33,7 @@ func mustCompile(t *testing.T, src string, opts ...Options) *Program {
 	return compileBare(t, src, o)
 }
 
-// compileBare compiles PEGO source with the options as given: without source information unless
+// compileBare compiles ZeroParse source with the options as given: without source information unless
 // they request it.
 func compileBare(t *testing.T, src string, opts ...Options) *Program {
 	t.Helper()

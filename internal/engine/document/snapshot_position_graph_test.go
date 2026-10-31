@@ -1,4 +1,4 @@
-//go:build pego_snapshot_position_overlays
+//go:build zp_snapshot_position_overlays
 
 package document
 
@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/zeroparse/internal/limits"
 )
 
 func TestSnapshotPositionOverlayZeroAndOverflow(t *testing.T) {

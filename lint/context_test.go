@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/starttest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/starttest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 type lintPollContext struct {

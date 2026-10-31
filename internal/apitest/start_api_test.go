@@ -3,7 +3,7 @@ package apitest_test
 import (
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // startAPISource has the default start rule main, which matches "aa", and the
@@ -13,7 +13,7 @@ const startAPISource = "@start(default)\nrule main = item item\n@start\nrule ite
 // An empty start rule name selects the grammar's default start rule on every
 // surface of the API, also on a parser that starts at another rule.
 func TestEmptyStartSelectsDefault(t *testing.T) {
-	p, err := pego.CompileSource(startAPISource, "item")
+	p, err := zeroparse.CompileSource(startAPISource, "item")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestEmptyStartSelectsDefault(t *testing.T) {
 	if r, err := p.ParsePrefix("item", "aab"); err != nil || r.ConsumedBytes != 1 {
 		t.Errorf("ParsePrefix(item): consumed %d, %v", r.ConsumedBytes, err)
 	}
-	d, err := pego.CompileSource(startAPISource, "")
+	d, err := zeroparse.CompileSource(startAPISource, "")
 	if err != nil {
 		t.Fatal(err)
 	}

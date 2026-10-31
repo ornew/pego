@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/corpora/corporatest"
-	"github.com/ornew/pego/parsers/json"
+	"github.com/ornew/zeroparse/internal/corpora/corporatest"
+	"github.com/ornew/zeroparse/parsers/json"
 )
 
 // TestJSONTestSuite runs the parsing tests of JSONTestSuite: y_ files must be accepted and decode to
@@ -72,7 +72,7 @@ func TestDecode(t *testing.T) {
 	for _, src := range []string{
 		`null`, `true`, `false`, `0`, `-0`, `-12.5e+3`, `1E-2`, `"a\"b\\c\/dé\n\b\f\r\t"`,
 		`[]`, `{}`, `[1, [2, [3]], {"k": []}]`,
-		`{"name": "pego", "tags": ["peg", "pratt"], "ok": true, "n": null, "v": 1.5}`,
+		`{"name": "zp", "tags": ["peg", "pratt"], "ok": true, "n": null, "v": 1.5}`,
 		" \n\t{ \"a\" : { \"b\" : [ 1 , 2 ] } } \n",
 		`"日本語"`, `"日本"`, `"😀"`, `"\ud83d"`, `"\ude00\ud83d"`, `"\ud83dx"`, `"\ud83dA"`,
 		`{"a": 1, "a": 2}`, "\"\xff\xfe\"", "\"a\xc3\"",
@@ -194,7 +194,7 @@ func FuzzDecode(f *testing.F) {
 }
 
 // TestGolden checks the generated parser against the golden files of testdata, which the tests of
-// github.com/ornew/pego/parsers check every backend of the engine against.
+// github.com/ornew/zeroparse/parsers check every backend of the engine against.
 func TestGolden(t *testing.T) {
 	inputs, _ := filepath.Glob("testdata/*.txt")
 	if len(inputs) == 0 {

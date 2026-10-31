@@ -6,8 +6,8 @@ evaluates them for many values of `x` and `y`.
 Parse the formula once into a typed tree, then evaluate the tree as often as you like. An Operators Rule gives the
 precedence and associativity in a table; the evaluator is a `switch` on the node type.
 
-```pego
-// calc.pego
+```zp
+// calc.zp
 type Num = node[string]
 type Name = node[string]
 type Bin = { Left Expr; Op node[string]; Right Expr }
@@ -49,10 +49,10 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed calc.pego
+//go:embed calc.zp
 var grammar string
 
 // funcs are the functions an expression can call, with their number of arguments.
@@ -66,7 +66,7 @@ var funcs = map[string]struct {
 }
 
 // eval evaluates a tree of the grammar with the given values of the variables.
-func eval(n *pego.Node, vars map[string]float64) (float64, error) {
+func eval(n *zeroparse.Node, vars map[string]float64) (float64, error) {
 	switch n.Type() {
 	case "Num":
 		return strconv.ParseFloat(n.Text(), 64)
@@ -78,18 +78,18 @@ func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 		}
 		return v, nil
 	case "Neg":
-		x, err := eval(n.Field("X").(*pego.Node), vars)
+		x, err := eval(n.Field("X").(*zeroparse.Node), vars)
 		return -x, err
 	case "Bin":
-		l, err := eval(n.Field("Left").(*pego.Node), vars)
+		l, err := eval(n.Field("Left").(*zeroparse.Node), vars)
 		if err != nil {
 			return 0, err
 		}
-		r, err := eval(n.Field("Right").(*pego.Node), vars)
+		r, err := eval(n.Field("Right").(*zeroparse.Node), vars)
 		if err != nil {
 			return 0, err
 		}
-		switch op := n.Field("Op").(*pego.Node).Text(); op {
+		switch op := n.Field("Op").(*zeroparse.Node).Text(); op {
 		case "+":
 			return l + r, nil
 		case "-":
@@ -107,12 +107,12 @@ func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 			return math.Pow(l, r), nil
 		}
 	case "Call":
-		name := n.Field("Fn").(*pego.Node).Text()
+		name := n.Field("Fn").(*zeroparse.Node).Text()
 		fn, ok := funcs[name]
 		if !ok {
 			return 0, fmt.Errorf("undefined function %q", name)
 		}
-		argNodes := n.Field("Args").(*pego.Node)
+		argNodes := n.Field("Args").(*zeroparse.Node)
 		if argNodes.Len() != fn.arity {
 			return 0, fmt.Errorf("%s takes %d arguments, got %d", name, fn.arity, argNodes.Len())
 		}
@@ -130,7 +130,7 @@ func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 }
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -183,7 +183,7 @@ z * 2            0 undefined variable "z"
 - **Parse once.** The cost of parsing is paid once for `tree`; each evaluation only walks it. If you compile the
   formula into closures instead, as [Compile a filter language into a Go predicate](filter-language.md) does, each
   evaluation does not even dispatch on the node type.
-- **Errors.** A formula that does not parse is a `*pego.SyntaxError` with its position. Errors that depend on the
+- **Errors.** A formula that does not parse is a `*zeroparse.SyntaxError` with its position. Errors that depend on the
   values (undefined variable, division by zero) are found while evaluating; wrong arity and undefined functions could
   also be found in a pass over the tree before any evaluation.
 

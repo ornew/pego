@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/engine"
 )
 
 // complexity runs the checks that come from the classification of the cost of the grammar g as

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/internal/compile"
 )
 
 // compileDefault compiles src with default values and source information.

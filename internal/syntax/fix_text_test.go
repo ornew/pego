@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/starttest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/starttest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // Fix rewrites the structs { Text string } that rules make from the text they match to named

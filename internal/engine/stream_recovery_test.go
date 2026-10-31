@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // legacyStreamRecovery builds the bytecode emitted before recovery around a
@@ -31,7 +31,7 @@ func legacyStreamRecovery(t *testing.T, streamFirst bool) *Program {
 		t.Fatalf("legacy fixture has %d NEXT instructions", next)
 	}
 	a := p.Grammar.Rules()[0].Expr.(*grammar.Seq).Items[0].(*grammar.Attributed)
-	// Mutate the normalized executable AST, which is the .pegoc payload.
+	// Mutate the normalized executable AST, which is the .zpc payload.
 	stream := &grammar.Attribute{Name: "stream", Pragma: true}
 	if streamFirst {
 		a.Attrs = append([]*grammar.Attribute{stream}, a.Attrs...)

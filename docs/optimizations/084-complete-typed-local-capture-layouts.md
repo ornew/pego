@@ -72,7 +72,7 @@ Generate same-generator direct and reference fixtures and check value and
 error parity:
 
 ```sh
-export PEGO_TYPED_LOCAL_LAYOUT_DIR=/tmp/pego-typed-local-layouts
+export ZP_TYPED_LOCAL_LAYOUT_DIR=/tmp/zp-typed-local-layouts
 go test ./internal/gen/gogen -run '^TestGeneratedTypedLocalLayoutWorkloads$' -count=1
 ```
 
@@ -81,8 +81,8 @@ Build each workload and route as a separate benchmark binary:
 ```sh
 for workload in ordinary element cuts; do
   for variant in direct general; do
-    fixture="$PEGO_TYPED_LOCAL_LAYOUT_DIR/$workload/$variant"
-    (cd "$fixture" && go test -c -o "$PEGO_TYPED_LOCAL_LAYOUT_DIR/$workload-$variant.test" .)
+    fixture="$ZP_TYPED_LOCAL_LAYOUT_DIR/$workload/$variant"
+    (cd "$fixture" && go test -c -o "$ZP_TYPED_LOCAL_LAYOUT_DIR/$workload-$variant.test" .)
   done
 done
 ```
@@ -98,7 +98,7 @@ for pair in 1 2 3 4 5; do
   fi
   for workload in ordinary element cuts; do
     for variant in "$first" "$second"; do
-      "$PEGO_TYPED_LOCAL_LAYOUT_DIR/$workload-$variant.test" -test.run='^$' \
+      "$ZP_TYPED_LOCAL_LAYOUT_DIR/$workload-$variant.test" -test.run='^$' \
         -test.bench='^BenchmarkTypedLocalLayout$' -test.benchtime=300ms -test.benchmem
     done
   done
@@ -107,14 +107,14 @@ done
 
 For generation, compile the engine test binary once. Run it from
 `internal/engine`, where its fixture paths resolve, alternating
-`PEGO_REFERENCE_LOCAL_LAYOUTS=0` and `1` across five pairs:
+`ZP_REFERENCE_LOCAL_LAYOUTS=0` and `1` across five pairs:
 
 ```sh
-go test -c -o /tmp/pego-typed-local-layout-engine.test ./internal/engine
+go test -c -o /tmp/zp-typed-local-layout-engine.test ./internal/engine
 (cd internal/engine && for pair in 1 2 3 4 5; do
   if [ "$((pair % 2))" -eq 1 ]; then first=1; second=0; else first=0; second=1; fi
   for reference in "$first" "$second"; do
-    PEGO_REFERENCE_LOCAL_LAYOUTS=$reference /tmp/pego-typed-local-layout-engine.test \
+    ZP_REFERENCE_LOCAL_LAYOUTS=$reference /tmp/zp-typed-local-layout-engine.test \
       -test.run='^$' -test.bench='^BenchmarkTypedLocalLayoutGeneration$' \
       -test.benchtime=300ms -test.benchmem
   done

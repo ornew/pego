@@ -40,7 +40,7 @@ allowed at top-level statement boundaries, at statement and field boundaries
 inside braces, and freely inside Rule Expressions and Action Expressions, including
 predicates and function arguments.
 
-```pego
+```zp
 rule digits = [0-9]+ // one or more digits
 /* outer comment /* nested comment */ continues */
 ```
@@ -104,7 +104,7 @@ characters. It may contain a literal CR, but MUST NOT contain a literal LF. The 
 written as `\"` and `\\` respectively. String literals may also be values in
 actions.
 
-```pego
+```zp
 "if" "\n" "say \"hi\"" "😀"
 ```
 
@@ -125,7 +125,7 @@ contents. Its matching rules are defined in
 [Character Classes](parser-expressions.md#character-classes). Literal
 characters, ranges, negation and escapes are defined there. `[` begins a character class.
 
-```pego
+```zp
 [a-z_] [^"\\] [\-()?]
 ```
 
@@ -138,7 +138,7 @@ with unary `-`. The signed minimum `int` is also accepted as a single value:
 its positive magnitude cannot be a separate integer token. This preserves the
 full native integer range in generic attribute arguments.
 
-```pego
+```zp
 "a" #repeat(2, 3) {len($s) > 4}
 ```
 

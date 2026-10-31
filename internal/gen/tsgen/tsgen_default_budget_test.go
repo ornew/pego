@@ -3,8 +3,8 @@ package tsgen_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // A budget of zero selects the default of max(2^20, 1024 times the input length) in the position unit,

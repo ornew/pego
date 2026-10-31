@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/lint"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/lint"
 )
 
 func TestRun(t *testing.T) {
-	g, err := pego.ParseGrammar("@start\nrule main = \"a\" / \"ab\"\nrule unused = \"x\"")
+	g, err := zeroparse.ParseGrammar("@start\nrule main = \"a\" / \"ab\"\nrule unused = \"x\"")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func TestRun(t *testing.T) {
 		t.Errorf("disabled: %v %v", fs, err)
 	}
 	// Every start rule is used, whichever one is linted from.
-	several, err := pego.ParseGrammar("@start(default)\nrule main = \"a\"\n@start\nrule other = \"x\"\nrule unused = \"y\"")
+	several, err := zeroparse.ParseGrammar("@start(default)\nrule main = \"a\"\n@start\nrule other = \"x\"\nrule unused = \"y\"")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,14 +62,14 @@ func TestRun(t *testing.T) {
 	if fs, err := (lint.Config{Disable: []string{"shadowed-alternative"}}).Run(context.Background(), g, ""); err != nil || len(fs) != 1 || fs[0].Rule != "unused" || !strings.Contains(fs[0].Message, "main does not call it") {
 		t.Errorf("default start: %v %v", fs, err)
 	}
-	inner, err := pego.ParseGrammar("@start\nrule main = inner\nrule inner = \"a\"")
+	inner, err := zeroparse.ParseGrammar("@start\nrule main = inner\nrule inner = \"a\"")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := (lint.Config{}).Run(context.Background(), inner, "inner"); err == nil || !strings.Contains(err.Error(), "rule inner is not a start rule") {
 		t.Errorf("not a start rule: %v", err)
 	}
-	bad, err := pego.ParseGrammar("@start\nrule main = undefined")
+	bad, err := zeroparse.ParseGrammar("@start\nrule main = undefined")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunUnchecked(t *testing.T) {
-	g, err := pego.ParseGrammar("@start\nrule main = \"a\" / \"ab\"\nrule unused = \"x\"")
+	g, err := zeroparse.ParseGrammar("@start\nrule main = \"a\" / \"ab\"\nrule unused = \"x\"")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func TestRunUnchecked(t *testing.T) {
 // TestRunClassify checks the checks that come from the classification of the cost, through Run and
 // RunUnchecked, with and without a context that can end.
 func TestRunClassify(t *testing.T) {
-	g, err := pego.ParseGrammar("var s string = \"a\"\n@start\nrule main = (a / \"a\")* $$\nrule a = \"a\"* \"c\" / \"x\" {s := s + s} a\n")
+	g, err := zeroparse.ParseGrammar("var s string = \"a\"\n@start\nrule main = (a / \"a\")* $$\nrule a = \"a\"* \"c\" / \"x\" {s := s + s} a\n")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +157,7 @@ func TestRunClassify(t *testing.T) {
 // once, and passes that classification, whose causes are the super-linear findings, to the sink
 // of its context.
 func TestRunClassifySink(t *testing.T) {
-	g, err := pego.ParseGrammar("@start\nrule main = (a / \"a\")* $$\nrule a = \"a\"* \"c\"\n")
+	g, err := zeroparse.ParseGrammar("@start\nrule main = (a / \"a\")* $$\nrule a = \"a\"* \"c\"\n")
 	if err != nil {
 		t.Fatal(err)
 	}

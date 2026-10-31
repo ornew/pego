@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/cel"
+	"github.com/ornew/zeroparse/parsers/cel"
 )
 
 // policies are the expressions of testdata/bench/policies.txt: typical access policies, admission checks and validation

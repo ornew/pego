@@ -5,11 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // A hidden rule cannot be a start rule: @start on it is an error at the

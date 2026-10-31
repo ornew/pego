@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/yaml"
+	"github.com/ornew/zeroparse/parsers/yaml"
 )
 
 // benchInput is a stream of Kubernetes-like manifests of about 256 KB: deployments, services and

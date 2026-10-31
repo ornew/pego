@@ -20,9 +20,9 @@ var (
 // real-world inputs, with the compiler's.
 func TestTypeScriptLib(t *testing.T) {
 	p := startTSC(t)
-	files, _ := filepath.Glob(filepath.Join(os.Getenv("PEGO_TYPESCRIPT"), "lib", "*.d.ts"))
+	files, _ := filepath.Glob(filepath.Join(os.Getenv("ZP_TYPESCRIPT"), "lib", "*.d.ts"))
 	if len(files) == 0 {
-		t.Skip("no lib/*.d.ts in PEGO_TYPESCRIPT")
+		t.Skip("no lib/*.d.ts in ZP_TYPESCRIPT")
 	}
 	for _, f := range files {
 		data, err := os.ReadFile(f)
@@ -61,9 +61,9 @@ var mutationTokens = []string{
 // or two tokens swapped. The mutations are deterministic: -tsc.seed sets the seed and -tsc.mutations their
 // number.
 func TestTSCMutations(t *testing.T) {
-	cases := os.Getenv("PEGO_TYPESCRIPT_TESTS")
+	cases := os.Getenv("ZP_TYPESCRIPT_TESTS")
 	if cases == "" {
-		t.Skip("PEGO_TYPESCRIPT_TESTS is not set")
+		t.Skip("ZP_TYPESCRIPT_TESTS is not set")
 	}
 	p := startTSC(t)
 	var units []testUnit

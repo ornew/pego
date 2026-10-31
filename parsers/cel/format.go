@@ -3,7 +3,7 @@ package cel
 import (
 	"strings"
 
-	"github.com/ornew/pego/parsers/cel/types"
+	"github.com/ornew/zeroparse/parsers/cel/types"
 )
 
 // Format returns the expression as source text: the literals as they were written (a triple-quoted string keeps its

@@ -1,9 +1,9 @@
 // Behavior shared by every page: the theme switch, the mobile navigation, search, and code blocks
-// (highlighting, copy, and opening PEGO grammars in the playground).
+// (highlighting, copy, and opening ZeroParse grammars in the playground).
 
 import { escapeHTML, highlight, highlightJSON } from "./highlight.js";
 import { encodeState } from "./state.js";
-import { siteRoot } from "./pego-client.js";
+import { siteRoot } from "./zp-client.js";
 import { search, snippet } from "./search.js";
 import { installLegacyOptimizationRedirects } from "./legacy-redirect.js";
 
@@ -26,7 +26,7 @@ document.querySelector(".theme-toggle")?.addEventListener("click", () => {
   const el = document.documentElement;
   const dark = el.dataset.theme ? el.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
   el.dataset.theme = dark ? "light" : "dark";
-  storage("pego-theme", el.dataset.theme);
+  storage("zp-theme", el.dataset.theme);
 });
 
 // Mobile navigation.
@@ -48,7 +48,7 @@ const scrollTarget = current?.closest("details:not([open])")?.querySelector(":sc
 if (scrollTarget) sidebar.scrollTop = scrollTarget.offsetTop - sidebar.clientHeight / 2;
 
 // Code blocks.
-const LANGS = { pego: "pego", go: "go", json: "json", typescript: "typescript", ts: "typescript", bash: "bash", console: "console", sh: "bash", shell: "bash" };
+const LANGS = { zp: "zp", go: "go", json: "json", typescript: "typescript", ts: "typescript", bash: "bash", console: "console", sh: "bash", shell: "bash" };
 for (const code of document.querySelectorAll("pre > code")) {
   const pre = code.parentElement;
   const lang = LANGS[(code.className.match(/language-(\w+)/) || [])[1]];
@@ -58,7 +58,7 @@ for (const code of document.querySelectorAll("pre > code")) {
   if (pre.closest(".pg, .live")) continue;
   const actions = document.createElement("div");
   actions.className = "code-actions";
-  if (lang === "pego" && /^\s*(?:operators\s+)?rule\s/m.test(text)) {
+  if (lang === "zp" && /^\s*(?:operators\s+)?rule\s/m.test(text)) {
     const open = document.createElement("a");
     open.textContent = "Playground";
     open.title = "Open this grammar in the playground";

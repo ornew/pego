@@ -3,10 +3,10 @@ package tsgen
 import (
 	"fmt"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/ir/core"
-	irbuild "github.com/ornew/pego/internal/ir/core/build"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/ir/core"
+	irbuild "github.com/ornew/zeroparse/internal/ir/core/build"
 )
 
 // A generated parser prints only the rules that a parse can enter: the start rules, which parseRule

@@ -1,4 +1,4 @@
-//go:build !pego_snapshot_sharing_reference
+//go:build !zp_snapshot_sharing_reference
 
 package document_test
 
@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/document"
+	"github.com/ornew/zeroparse/internal/engine/document"
 
-	. "github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/engine/core"
+	. "github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 func TestSnapshotSharedChildRunsAfterMiddleEdit(t *testing.T) {

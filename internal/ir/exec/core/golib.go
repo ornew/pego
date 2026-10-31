@@ -5,10 +5,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/execgo"
-	"github.com/ornew/pego/internal/ir/exec/ops"
-	"github.com/ornew/pego/internal/ir/exec/pass"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/execgo"
+	"github.com/ornew/zeroparse/internal/ir/exec/ops"
+	"github.com/ornew/zeroparse/internal/ir/exec/pass"
 )
 
 //go:generate go run print_runtime.go
@@ -20,7 +20,7 @@ const GoRuntimeFile = "../../../../runtime/call_exec.go"
 
 // RuntimeTag is the build tag that selects the printed compositions in the generated Go runtime
 // instead of the hand-written functions they replace.
-const RuntimeTag = "pego_exec"
+const RuntimeTag = "zp_exec"
 
 // goSpec is a printed function of the Go runtime: a specialization of a composition for the node
 // Parser or the typed TParser.

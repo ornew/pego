@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-const codeActionURI = "file:///code-action.pego"
+const codeActionURI = "file:///code-action.zp"
 
 var codeActionBenchmarkResult any
 
@@ -18,8 +18,8 @@ func codeActionSource(newline string) string {
 }
 func codeActionServer(a *analysis, ctx context.Context, enabled, explain, edit bool) *Server {
 	s := &Server{docs: map[string]*document{codeActionURI: {uri: codeActionURI, text: a.text, version: 7, generation: 11, an: a}}, state: stateInitialized, requestContext: ctx}
-	s.client.Experimental.Pego.LintDiagnostics = enabled
-	s.client.Experimental.Pego.ShowExplanation = explain
+	s.client.Experimental.ZP.LintDiagnostics = enabled
+	s.client.Experimental.ZP.ShowExplanation = explain
 	s.client.Workspace.WorkspaceEdit.DocumentChanges = edit
 	return s
 }
@@ -91,7 +91,7 @@ func codeActionResponseCorpus(tb testing.TB) []codeActionCase {
 		case "data":
 			d.Data = nil
 		case "uri":
-			d.Data.URI = "file:///other.pego"
+			d.Data.URI = "file:///other.zp"
 		case "version":
 			d.Data.Version++
 		case "generation":
@@ -144,7 +144,7 @@ func codeActionResponseCorpus(tb testing.TB) []codeActionCase {
 		case "bad-params":
 			msg.Params = json.RawMessage(`{"textDocument":1}`)
 		case "unknown-document":
-			msg.Params = json.RawMessage(strings.ReplaceAll(string(msg.Params), codeActionURI, "file:///unknown.pego"))
+			msg.Params = json.RawMessage(strings.ReplaceAll(string(msg.Params), codeActionURI, "file:///unknown.zp"))
 		}
 		add(name, a, msg, true, true, true)
 	}

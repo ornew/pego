@@ -4,7 +4,7 @@ package corporatest
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/corpora"
+	"github.com/ornew/zeroparse/internal/corpora"
 )
 
 // FetchCommand is what a skipped test tells the reader to run.

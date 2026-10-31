@@ -7,19 +7,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/gen"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/gen"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
-// TestGenerateGoEmbeddedPackageBuilds generates a parser with the runtime embedded, as pego gen does
+// TestGenerateGoEmbeddedPackageBuilds generates a parser with the runtime embedded, as zp gen does
 // by default, and builds and runs it in a module that requires nothing: the copy of the runtime must
 // compile on its own, and the parser must work with it.
 func TestGenerateGoEmbeddedPackageBuilds(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a generated parser")
 	}
-	g, err := pego.ParseGrammar(`type Pair = { Key node[string]; Value node[string] }
+	g, err := zeroparse.ParseGrammar(`type Pair = { Key node[string]; Value node[string] }
 @start
 rule main Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`)
 	if err != nil {

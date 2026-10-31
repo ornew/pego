@@ -5,7 +5,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // fixTextStructs rewrites the structs { Text string } that hold the text a rule matches to named

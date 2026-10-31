@@ -38,7 +38,7 @@ each run directly rather than consulting the map for each edge.
 ## Reproduction
 
 The baseline is the same source built with
-`-tags pego_snapshot_child_chunks_reference`; that private build keeps
+`-tags zp_snapshot_child_chunks_reference`; that private build keeps
 flat child slices. The ordinary-path control is main commit
 `7c3569a4aea5a9f86f1d6ede7c9ca96647da1f5b`. Measurements used Go 1.27.1
 on an Apple M3 Max (darwin/arm64), `GOMAXPROCS=16`, `GOGC=100`, Closure,
@@ -54,12 +54,12 @@ snapshot live until the next capture completes.
 ```sh
 GOMAXPROCS=16 GOGC=100 go test ./internal/engine -run '^$' \
   -bench '^BenchmarkDocumentSnapshotMiddleEdit$' -benchtime=200ms -count=1
-GOMAXPROCS=16 GOGC=100 go test -tags pego_snapshot_child_chunks_reference ./internal/engine \
+GOMAXPROCS=16 GOGC=100 go test -tags zp_snapshot_child_chunks_reference ./internal/engine \
   -run '^$' -bench '^BenchmarkDocumentSnapshotMiddleEdit$' \
   -benchtime=200ms -count=1
 GOMAXPROCS=16 GOGC=100 go run ./bench/snapshot-retained -mode snapshot -edit replace-middle \
   -size 4096 -versions 33 -backend closure -unit bytes
-GOMAXPROCS=16 GOGC=100 go run -tags pego_snapshot_child_chunks_reference ./bench/snapshot-retained \
+GOMAXPROCS=16 GOGC=100 go run -tags zp_snapshot_child_chunks_reference ./bench/snapshot-retained \
   -mode snapshot -edit replace-middle -size 4096 -versions 33 \
   -backend closure -unit bytes
 ```

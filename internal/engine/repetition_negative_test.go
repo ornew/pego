@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func negativeMaxima() []int {

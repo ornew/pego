@@ -3,7 +3,7 @@ package syntax
 import (
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // A grammar decoded from JSON has no layout, but JSON carries the comments the

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 // The parser package of a typed parser reinterprets a string node of a named node type as the type of
@@ -80,7 +80,7 @@ func testGeneratedSchemaTie(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tie := regexp.MustCompile(`types\.PegoSchema_[0-9a-f]{16}\b`)
+	tie := regexp.MustCompile(`types\.ZPSchema_[0-9a-f]{16}\b`)
 	if n := len(tie.FindAll(parser, -1)); n != 1 {
 		t.Fatalf("parser.go refers to the schema constant %d times, want once", n)
 	}
@@ -107,7 +107,7 @@ func testGeneratedSchemaTie(t *testing.T) {
 		t.Fatal("a parser with the types package of another schema compiles")
 	}
 	t.Logf("build of the mismatched pair:\n%s", out)
-	if !strings.Contains(out, "PegoSchema_") {
+	if !strings.Contains(out, "ZPSchema_") {
 		t.Errorf("the build fails, but not on the schema constant:\n%s", out)
 	}
 }
@@ -126,7 +126,7 @@ func TestGeneratedSchemaIgnoresComments(t *testing.T) {
 		}
 		for _, f := range files {
 			if f.Path == "types/types.go" {
-				return string(regexp.MustCompile(`PegoSchema_[0-9a-f]{16}`).Find(f.Content))
+				return string(regexp.MustCompile(`ZPSchema_[0-9a-f]{16}`).Find(f.Content))
 			}
 		}
 		t.Fatal("no types package")

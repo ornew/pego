@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // TestGeneratedActionTracking inspects state after real generated rules have
@@ -44,21 +44,21 @@ rule main = "a" => Outer{Inner: Inner{N: 1}}`, "a"},
 			main := fmt.Sprintf(`package main
 import (
 	"fmt"
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 )
 func main() {
     for _, unit := range []PositionUnit{CodePoints, Bytes} {
-        p := &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}
+        p := &zprt.Parser{MaxDepth: zpGrammar.X_maxDepth}
         if unit == Bytes { p.X_unit, p.X_bs, p.X_n = Bytes, %[1]q, len(%[1]q) } else { p.X_setSource(%[1]q) }
-        p.X_setGrammar(pegoGrammar)
+        p.X_setGrammar(zpGrammar)
         n, ok := p.Call(rules[0], 0)
         if !ok || p.Pos != p.X_n || n == nil { panic("Node parse failed") }
         if len(p.X_created) != 0 { panic("Node tracking length") }
         for _, n := range p.X_created[:cap(p.X_created)] { if n != nil { panic("Node tracking tail") } }
         // Clearing tracking must preserve the returned result and its fields.
         if _, err := n.MarshalJSON(); err != nil { panic(err) }
-        tp := &pegort.TParser{Parser: &pegort.Parser{}}
-        v, err := tp.X_run(trules[0], %[1]q, pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+        tp := &zprt.TParser{Parser: &zprt.Parser{}}
+        v, err := tp.X_run(trules[0], %[1]q, zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth}, &tslabs{})
         if err != nil || v == nil { panic(fmt.Sprintf("typed parse: %%v", err)) }
         if len(tp.X_created) != 0 { panic("typed tracking length") }
         for _, n := range tp.X_created[:cap(tp.X_created)] { if n != nil { panic("typed tracking tail") } }
@@ -103,14 +103,14 @@ func testGeneratedEnvironmentBindings(t *testing.T) {
 	main := `package main
 import (
 	"strings"
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 )
 func main() {
  for _, unit := range []PositionUnit{CodePoints, Bytes} {
   input := strings.Repeat("a", 10000)
-  p := &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}
+  p := &zprt.Parser{MaxDepth: zpGrammar.X_maxDepth}
   if unit == Bytes { p.X_unit, p.X_bs, p.X_n = Bytes, input, len(input) } else { p.X_setSource(input) }
-  p.X_setGrammar(pegoGrammar)
+  p.X_setGrammar(zpGrammar)
   p.Frame = p.NewFrame(len(rules[0].Scope))
   if _, ok := rules[0].Body(p, 0); !ok || p.Pos != p.X_n { panic("parse failed") }
   // The environment holds one value for each of the three declared variables, however many

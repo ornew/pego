@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 const grammar = `package kv
@@ -35,16 +35,16 @@ rule key Key =  ([a-z_]+) #atomic
 rule value Value =  ([0-9]+) #atomic `
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		panic(err)
 	}
-	err = p.ParseStream(strings.NewReader("#version 2\na=1\nb=2\n"), func(n *pego.Node) error {
+	err = p.ParseStream(strings.NewReader("#version 2\na=1\nb=2\n"), func(n *zeroparse.Node) error {
 		switch n.Type() {
 		case "Header":
-			fmt.Println("header, version", n.Field("Version").(*pego.Node).Text())
+			fmt.Println("header, version", n.Field("Version").(*zeroparse.Node).Text())
 		case "Pair":
-			fmt.Println("pair", n.Field("Key").(*pego.Node).Text(), "=", n.Field("Value").(*pego.Node).Text())
+			fmt.Println("pair", n.Field("Key").(*zeroparse.Node).Text(), "=", n.Field("Value").(*zeroparse.Node).Text())
 		}
 		return nil
 	})

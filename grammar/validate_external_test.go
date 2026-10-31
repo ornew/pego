@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // Embedded AST nodes promote their interface methods even in other packages.

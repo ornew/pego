@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 func metadataWideSource(n int, invalid bool) string {
@@ -44,7 +44,7 @@ func metadataPrepared(tb testing.TB, text string) *analysis {
 		tb.Fatal(err)
 	}
 	for _, tok := range toks {
-		start, end := a.idx.pegoOffset(tok.Pos), a.idx.pegoOffset(tok.End)
+		start, end := a.idx.zpOffset(tok.Pos), a.idx.zpOffset(tok.End)
 		a.tokAt[start] = len(a.toks)
 		a.toks = append(a.toks, token{tok, start, end})
 	}

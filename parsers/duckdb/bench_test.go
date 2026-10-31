@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/zeroparse/parsers/duckdb"
 )
 
 // benchScript is an analytical script of about 256 KB: tables, CTEs with joins, aggregates, window functions,

@@ -13,10 +13,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego/internal/corpora"
-	"github.com/ornew/pego/internal/corpora/corporatest"
-	"github.com/ornew/pego/parsers/duckdb"
-	"github.com/ornew/pego/parsers/duckdb/types"
+	"github.com/ornew/zeroparse/internal/corpora"
+	"github.com/ornew/zeroparse/internal/corpora/corporatest"
+	"github.com/ornew/zeroparse/parsers/duckdb"
+	"github.com/ornew/zeroparse/parsers/duckdb/types"
 )
 
 // The reference data in testdata/reference is what DuckDB 1.5.6 says about each text: whether its parser accepts

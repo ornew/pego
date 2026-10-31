@@ -8,7 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // Error is a syntax error.
@@ -59,7 +59,7 @@ func (e *errorList) addRange(pos, end grammar.Pos, msg string) {
 	e.list = append(e.list, &Error{Pos: pos, End: end, Msg: msg})
 }
 
-// Parse parses the PEGO source code src.
+// Parse parses the ZeroParse source code src.
 func Parse(src string) (*grammar.Grammar, error) {
 	errs := &errorList{}
 	p := &parser{toks: lex(src, errs), errs: errs}
@@ -79,7 +79,7 @@ type legacyForms struct {
 	positional map[*grammar.New]bool
 }
 
-// parseLegacy parses src like Parse but accepts the removed syntax that pego fix rewrites:
+// parseLegacy parses src like Parse but accepts the removed syntax that zp fix rewrites:
 // positional captures, lambda parameters written $x, terminal types, positional constructors
 // and the retired names of concrete syntax tree types. Terminal types and positional
 // constructors are parsed as the text structs that replace them, and located in the returned
@@ -127,7 +127,7 @@ type parser struct {
 	// before the token.
 	inlined int
 	errs    *errorList
-	// legacy, if not nil, accepts the removed syntax that pego fix rewrites (see parseLegacy) and
+	// legacy, if not nil, accepts the removed syntax that zp fix rewrites (see parseLegacy) and
 	// records where it is.
 	legacy *legacyForms
 	// params holds the parameters of the lambdas whose bodies are being parsed, innermost last.
@@ -623,7 +623,7 @@ func (p *parser) typeDecl() (sourceResult grammar.TypeDecl) {
 	specStart := p.i
 	switch {
 	case p.is("struct"):
-		p.errorf("a struct type is defined as type %s = {...}; run pego fix to rewrite type %s struct", name.text, name.text)
+		p.errorf("a struct type is defined as type %s = {...}; run zp fix to rewrite type %s struct", name.text, name.text)
 		panic(bail{})
 	case p.is("=") && p.peek(1).kind == tPunct && p.peek(1).text == "{":
 		p.next()
@@ -639,7 +639,7 @@ func (p *parser) typeDecl() (sourceResult grammar.TypeDecl) {
 		return def(st)
 	case p.is("terminal"):
 		if p.legacy == nil {
-			p.errorf("a terminal type is the struct type %s = { Text string }; run pego fix to rewrite type %s terminal", name.text, name.text)
+			p.errorf("a terminal type is the struct type %s = { Text string }; run zp fix to rewrite type %s terminal", name.text, name.text)
 			panic(bail{})
 		}
 		p.next()
@@ -663,7 +663,7 @@ func (p *parser) typeDecl() (sourceResult grammar.TypeDecl) {
 		td.HeaderComments = append(td.HeaderComments, gap...)
 		return td
 	case p.is("="):
-		p.errorf("expected '{' or 'node[' after '='; write type %s ~ <type> for an alias (pego fix rewrites type %s = <type>)", name.text, name.text)
+		p.errorf("expected '{' or 'node[' after '='; write type %s ~ <type> for an alias (zp fix rewrites type %s = <type>)", name.text, name.text)
 		panic(bail{})
 	case p.accept("~"):
 		p.header = false
@@ -776,9 +776,9 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 	}
 	name := p.ident()
 	if replacement, ok := valueTypeNames[name.text]; ok && p.legacy == nil {
-		p.errs.add(name.pos, fmt.Sprintf("%s is not a type; write %s (pego fix rewrites it)", name.text, replacement))
+		p.errs.add(name.pos, fmt.Sprintf("%s is not a type; write %s (zp fix rewrites it)", name.text, replacement))
 	} else if name.text == "node" && !p.is("[") && p.legacy == nil {
-		p.errs.add(name.pos, bareNode+" (pego fix rewrites it)")
+		p.errs.add(name.pos, bareNode+" (zp fix rewrites it)")
 	}
 	if p.is("[") {
 		// The lexer makes "[" a bracket only directly after the name: T[U].
@@ -942,7 +942,7 @@ func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
 	p.header = false
 	rd.HeaderComments = p.headerContents(headerFrom)
 	if !p.boundary() && p.isOldOperatorsStart() {
-		p.errorf("an Operators Rule is written #operators { ... }; run pego fix to rewrite operators {")
+		p.errorf("an Operators Rule is written #operators { ... }; run zp fix to rewrite operators {")
 		panic(bail{})
 	}
 	if !p.boundary() && p.isOperatorsWord() && !p.isOperatorsStart() {
@@ -1678,7 +1678,7 @@ func (p *parser) isOldOperatorsStart() bool { return oldOperatorsStart(p.peek) }
 // written without the pragma: operators, a { on the same line, and an item that starts with one
 // of the item words followed by something that cannot continue a term. A body such as
 // operators {x == 1} or operators {level {x} > 0} is a reference to a rule named operators
-// followed by a predicate. The parser's hint and pego fix both use it.
+// followed by a predicate. The parser's hint and zp fix both use it.
 func oldOperatorsStart(at func(int) token) bool {
 	if t := at(0); t.kind != tIdent || t.text != "operators" {
 		return false
@@ -1939,7 +1939,7 @@ func (p *parser) primary() (sourceResult grammar.Expr) {
 				return &grammar.Cut{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
 			}
 		case "--":
-			p.errorf("the cut is written #cut; run pego fix to rewrite --")
+			p.errorf("the cut is written #cut; run zp fix to rewrite --")
 			panic(bail{})
 		case "^^":
 			p.next()
@@ -2254,7 +2254,7 @@ func (p *parser) unary() (sourceResult grammar.Term) {
 		}
 		name := p.ident()
 		if p.legacy == nil && captureMember(name.text) {
-			p.errs.addRange(name.pos, name.end, fmt.Sprintf("a capture is read with .$%s; run pego fix to rewrite .%s", name.text, name.text))
+			p.errs.addRange(name.pos, name.end, fmt.Sprintf("a capture is read with .$%s; run zp fix to rewrite .%s", name.text, name.text))
 		}
 		x = &grammar.Member{SourceInfo: grammar.SourceInfo{Pos: name.pos}, X: x, Name: name.text}
 		p.sourceNode(x, sourceStart)
@@ -2297,13 +2297,13 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 	case tCapture:
 		p.next()
 		if p.legacy == nil && slices.Contains(p.params, t.text) {
-			p.errs.addRange(t.pos, t.end, fmt.Sprintf("lambda parameters are written without $: write %s; run pego fix to rewrite $%s", t.text, t.text))
+			p.errs.addRange(t.pos, t.end, fmt.Sprintf("lambda parameters are written without $: write %s; run zp fix to rewrite $%s", t.text, t.text))
 		}
 		return &grammar.CaptureRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	case tIndex:
 		p.next()
 		if p.legacy == nil {
-			p.errs.addRange(t.pos, t.end, fmt.Sprintf("positional captures are removed: label the element (x:...) and write $x; run pego fix to rewrite $%d", t.num))
+			p.errs.addRange(t.pos, t.end, fmt.Sprintf("positional captures are removed: label the element (x:...) and write $x; run zp fix to rewrite $%d", t.num))
 		}
 		return &grammar.IndexRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Index: t.num}
 	case tIdent:
@@ -2422,7 +2422,7 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 		}
 		// Every argument is kept, as a Text field, so that Fix still rewrites the terms inside
 		// them; only a constructor of one argument is a terminal constructor that Fix rewrites, and
-		// the compiler reports any other (pego fix leaves it as it is).
+		// the compiler reports any other (zp fix leaves it as it is).
 		for _, arg := range args {
 			n.Fields = append(n.Fields, &grammar.FieldInit{Name: "Text", Value: arg})
 		}
@@ -2596,7 +2596,7 @@ func (p *parser) takeAfter(layout **grammar.SourceLayout) {
 	t.lineComment, t.comments = nil, nil
 }
 
-// ParseLegacy parses src like Parse but accepts the removed syntax that pego fix rewrites, with
+// ParseLegacy parses src like Parse but accepts the removed syntax that zp fix rewrites, with
 // the meaning Fix gives it. Grammar ASTs decoded from JSON may still hold some of these forms,
 // such as positional captures, which the engine reports; ParseLegacy builds such ASTs from source.
 func ParseLegacy(src string) (*grammar.Grammar, error) {

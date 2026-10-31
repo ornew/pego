@@ -1,7 +1,7 @@
-// Command unitab prints the character classes of cue.pego that depend on the Unicode tables of the Go
+// Command unitab prints the character classes of cue.zp that depend on the Unicode tables of the Go
 // standard library: the letters (unicode.IsLetter) and digits (unicode.IsDigit) above ASCII, which the
 // scanner of CUE accepts in identifiers. The grammar cannot call a function, so the classes are written
-// into cue.pego; TestUnicodeTables checks them against the standard library of the Go version in use.
+// into cue.zp; TestUnicodeTables checks them against the standard library of the Go version in use.
 package main
 
 import (

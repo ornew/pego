@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/csv"
+	"github.com/ornew/zeroparse/parsers/csv"
 )
 
 // bom is the UTF-8 encoding of the byte order mark U+FEFF.
@@ -436,7 +436,7 @@ func FuzzRecords(f *testing.F) {
 }
 
 // TestGolden checks the generated parser against the golden files of testdata, which the tests of
-// github.com/ornew/pego/parsers check every backend of the engine against.
+// github.com/ornew/zeroparse/parsers check every backend of the engine against.
 func TestGolden(t *testing.T) {
 	inputs, _ := filepath.Glob("testdata/*.txt")
 	if len(inputs) == 0 {

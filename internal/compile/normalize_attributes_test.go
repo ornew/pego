@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestNormalizationContainerShapes(t *testing.T) {
@@ -97,12 +97,12 @@ func BenchmarkAttributeNormalization(b *testing.B) {
 		"pragmas":    `rule main = ("a" #repeat(1, 3) #atomic ";") #recover(skip=[^;]+ ";") $$`,
 		"operators":  `rule main = #operators { skip " "*; operand [0-9]+; operand "(" main ")"; level { infix left "+" / "-" }; level product { infix left "*" / "/" } }`,
 	}
-	source, err := os.ReadFile("../../pego.pego")
+	source, err := os.ReadFile("../../zeroparse.zp")
 	if err != nil {
 		b.Fatal(err)
 	}
 	sources["source-grammar"] = string(source)
-	for name, path := range map[string]string{"json": "../../parsers/json/json.pego", "minilang": "../../examples/minilang/minilang.pego"} {
+	for name, path := range map[string]string{"json": "../../parsers/json/json.zp", "minilang": "../../examples/minilang/minilang.zp"} {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			b.Fatal(err)

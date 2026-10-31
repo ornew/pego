@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package engine
 
@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/limits"
 )
 
 func TestBudgetParsePreCancelledAndValidation(t *testing.T) {

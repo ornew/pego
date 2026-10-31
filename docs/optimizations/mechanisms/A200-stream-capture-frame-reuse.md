@@ -18,7 +18,7 @@ TypeScript have no streaming API.
 
 ## Reference Control
 
-Build tag `pego_reference_stream_frames` selects the former allocation route
+Build tag `zp_reference_stream_frames` selects the former allocation route
 without a runtime selector. It is independent of text and prefix cleanup
 controls.
 

@@ -4,12 +4,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func rhsCheck(t *testing.T, rules string) (*info, *operatorsRuleCheck) {
 	t.Helper()
-	ast, err := pego.ParseGrammar("rule main = e $$\n" + rules)
+	ast, err := zeroparse.ParseGrammar("rule main = e $$\n" + rules)
 	if err != nil {
 		t.Fatal(err)
 	}

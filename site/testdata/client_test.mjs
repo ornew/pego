@@ -1,9 +1,9 @@
-// Tests of PegoClient (static/assets/pego-client.js) with a fake worker. Run by TestJavaScript.
+// Tests of ZPClient (static/assets/zp-client.js) with a fake worker. Run by TestJavaScript.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { PegoClient } from "../static/assets/pego-client.js";
+import { ZPClient } from "../static/assets/zp-client.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -42,7 +42,7 @@ function fakeWorkers() {
   return { FakeWorker, workers };
 }
 
-const client = (opts) => new PegoClient("https://example.test/playground/", { compile: async () => ({}), ...opts });
+const client = (opts) => new ZPClient("https://example.test/playground/", { compile: async () => ({}), ...opts });
 
 test("a timeout keeps the calls queued behind the stuck one", async () => {
   const { FakeWorker, workers } = fakeWorkers();
@@ -97,11 +97,11 @@ test("a worker that fails to start is started again by the next call", async () 
 test("the client loads the binary the page names", async () => {
   const { FakeWorker, workers } = fakeWorkers();
   let compiled = null;
-  const c = client({ Worker: FakeWorker, wasm: "wasm/pego-0123456789abcdef.wasm", compile: async (url) => ((compiled = url), {}) });
+  const c = client({ Worker: FakeWorker, wasm: "wasm/zp-0123456789abcdef.wasm", compile: async (url) => ((compiled = url), {}) });
   await c.call("echo", {});
-  assert.equal(compiled, "https://example.test/playground/wasm/pego-0123456789abcdef.wasm");
+  assert.equal(compiled, "https://example.test/playground/wasm/zp-0123456789abcdef.wasm");
   assert.equal(workers[0].received[0].wasm, compiled);
-  assert.equal(new PegoClient("https://example.test/playground/", { wasm: null }).wasm, "https://example.test/playground/pego.wasm");
+  assert.equal(new ZPClient("https://example.test/playground/", { wasm: null }).wasm, "https://example.test/playground/zp.wasm");
 });
 
 test("a stack overflow restarts the worker", async () => {
@@ -130,7 +130,7 @@ test("default compilation shares a pending module only for the same resolved URL
     const pending = deferred(); modules.set(url, pending);
     return pending.promise;
   });
-  const make = (wasm) => new PegoClient("https://cache.test/playground/", { wasm, Worker: FakeWorker });
+  const make = (wasm) => new ZPClient("https://cache.test/playground/", { wasm, Worker: FakeWorker });
   const a = make("a.wasm"), same = make("./a.wasm"), b = make("b.wasm");
   const starts = [a.start(), same.start(), b.start()];
   await Promise.resolve(); await Promise.resolve();
@@ -158,7 +158,7 @@ test("a failed compilation can retry without evicting a different URL", async (t
     if (url.endsWith("failed.wasm")) return fail ? failed.promise : retriedModule;
     return stableModule;
   });
-  const make = (wasm) => new PegoClient("https://retry.test/playground/", { wasm, Worker: FakeWorker });
+  const make = (wasm) => new ZPClient("https://retry.test/playground/", { wasm, Worker: FakeWorker });
   const bad = make("failed.wasm"), same = make("failed.wasm"), stable = make("stable.wasm");
   const failures = [assert.rejects(bad.start(), /network down/), assert.rejects(same.start(), /network down/)];
   await stable.start();

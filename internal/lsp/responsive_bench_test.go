@@ -27,7 +27,7 @@ func BenchmarkF08Analyze(b *testing.B) {
 		b.Fatal("analysis benchmarks require inactive test hooks")
 	}
 	fixtures := []struct{ name, source string }{{name: "generated", source: f08BenchmarkGrammar()}}
-	for _, name := range []string{"golang/golang.pego", "python/python.pego"} {
+	for _, name := range []string{"golang/golang.zp", "python/python.zp"} {
 		data, err := os.ReadFile(filepath.Join("../../parsers", name))
 		if err != nil {
 			b.Fatal(err)
@@ -52,13 +52,13 @@ func BenchmarkF08Analyze(b *testing.B) {
 					var diagnostics []Diagnostic
 					expectedCount := 0
 					if withLint {
-						document := document{uri: "file:///benchmark.pego", version: 1, generation: 1, text: fixture.source, an: validated}
+						document := document{uri: "file:///benchmark.zp", version: 1, generation: 1, text: fixture.source, an: validated}
 						expectedCount = len(document.lintDiagnostics())
 					}
 					for b.Loop() {
 						result = analyze(fixture.source)
 						if withLint {
-							snapshot := analysisSnapshot{URI: "file:///benchmark.pego", Version: 1, Generation: 1, Text: fixture.source}
+							snapshot := analysisSnapshot{URI: "file:///benchmark.zp", Version: 1, Generation: 1, Text: fixture.source}
 							if err := result.preparePublicationContext(context.Background(), snapshot, true); err != nil {
 								b.Fatal(err)
 							}
@@ -173,7 +173,7 @@ func f08BurstBatch(b *testing.B, source string, count, edits int) f08BurstMetric
 	documents := make(map[string]*document, count)
 	uris := make([]string, count)
 	for i := range uris {
-		uris[i] = "file:///burst" + strconv.Itoa(i) + ".pego"
+		uris[i] = "file:///burst" + strconv.Itoa(i) + ".zp"
 		text := f08SnapshotText(source, i, 1)
 		a := analyze(text)
 		if a.prog == nil || len(a.diags) != 0 {
@@ -277,7 +277,7 @@ func BenchmarkF08ProtocolCancel(b *testing.B) {
 	b.StopTimer()
 	peer := newF08BenchmarkPeer(b)
 	defer func() { peer.abort(); requestHook = nil }()
-	peer.send("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": "file:///cancel-benchmark.pego", "version": 1, "text": "@start\nrule main = \"a\""}}, false)
+	peer.send("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": "file:///cancel-benchmark.zp", "version": 1, "text": "@start\nrule main = \"a\""}}, false)
 	notification := peer.receive()
 	if notification.Method != "textDocument/publishDiagnostics" {
 		b.Fatalf("unexpected initialization message: %+v", notification)
@@ -324,7 +324,7 @@ func BenchmarkF08ProtocolCancel(b *testing.B) {
 	b.StartTimer() // Setup ended with the timer stopped; B.Loop requires it running.
 	for b.Loop() {
 		b.StopTimer()
-		id := peer.send("textDocument/hover", map[string]any{"textDocument": map[string]any{"uri": "file:///cancel-benchmark.pego"}, "position": Position{Line: 1, Character: 5}}, true)
+		id := peer.send("textDocument/hover", map[string]any{"textDocument": map[string]any{"uri": "file:///cancel-benchmark.zp"}, "position": Position{Line: 1, Character: 5}}, true)
 		<-active
 		b.StartTimer()
 		cancelAt := time.Now()
@@ -382,7 +382,7 @@ func newF08BenchmarkPeer(b *testing.B) *f08BenchmarkPeer {
 		peer.done <- err
 	}()
 	b.Cleanup(peer.abort)
-	id := peer.send("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"pego": map[string]any{"responsiveAnalysis": true}}}}, true)
+	id := peer.send("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"zp": map[string]any{"responsiveAnalysis": true}}}}, true)
 	reply := peer.receive()
 	if string(reply.ID) != strconv.Itoa(id) || len(reply.Error) > 0 {
 		b.Fatalf("initialize failed: id=%s error=%s", reply.ID, reply.Error)

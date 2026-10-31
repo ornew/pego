@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"regexp"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func (s *Server) documentSymbol(params json.RawMessage) (any, *rpcError) {

@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // TestGeneratedParsersMatchEngine checks that generated parsers return the same results as the engine:

@@ -3,7 +3,7 @@
 # manual parsing returns grammar.Grammar; generated parsing has no adapter.
 set -eu
 sourcebench_repo=$(CDPATH= cd "$(dirname "$0")/.." && pwd)
-sourcebench_dir=$(mktemp -d "${TMPDIR:-/tmp}/pego-sourcebench.XXXXXX")
+sourcebench_dir=$(mktemp -d "${TMPDIR:-/tmp}/zp-sourcebench.XXXXXX")
 trap 'rm -rf "$sourcebench_dir"' 0
 sourcebench_count=${COUNT:-5}
 sourcebench_time=${BENCHTIME:-200ms}
@@ -11,10 +11,10 @@ case "$sourcebench_count" in ''|*[!0-9]*|0) echo 'COUNT must be a positive integ
 [ "$sourcebench_count" -gt 0 ] || { echo 'COUNT must be a positive integer.' >&2; exit 1; }
 GOMAXPROCS=${GOMAXPROCS:-16}
 export GOMAXPROCS
-export PEGO_SOURCE_ROOT="$sourcebench_repo"
+export ZP_SOURCE_ROOT="$sourcebench_repo"
 mkdir "$sourcebench_dir/generated"
 cd "$sourcebench_repo"
-go run ./cmd/pego gen -g pego.pego -module sourcebaseline/generated -types -o "$sourcebench_dir/generated"
+go run ./cmd/zp gen -g zeroparse.zp -module sourcebaseline/generated -types -o "$sourcebench_dir/generated"
 cat > "$sourcebench_dir/go.mod" <<'MOD'
 module sourcebaseline
 
@@ -24,7 +24,7 @@ cat > "$sourcebench_dir/source_test.go" <<'GO'
 package sourcebaseline
 
 import (
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 	"os"
 	"path/filepath"
 	"sourcebaseline/generated"
@@ -34,13 +34,13 @@ import (
 var sink any
 var samples = []struct{ Name, Src string }{
 	{"Small", `rule main = [a-z]+ #atomic`},
-	{"Self", read("pego.pego")},
-	{"Go", read("parsers/golang/golang.pego")},
-	{"Python", read("parsers/python/python.pego")},
+	{"Self", read("zeroparse.zp")},
+	{"Go", read("parsers/golang/golang.zp")},
+	{"Python", read("parsers/python/python.zp")},
 }
 
 func read(p string) string {
-	b, e := os.ReadFile(filepath.Join(os.Getenv("PEGO_SOURCE_ROOT"), p))
+	b, e := os.ReadFile(filepath.Join(os.Getenv("ZP_SOURCE_ROOT"), p))
 	if e != nil {
 		panic(e)
 	}
@@ -48,7 +48,7 @@ func read(p string) string {
 }
 func TestParityCounts(t *testing.T) {
 	for _, s := range samples {
-		a, e := pego.ParseGrammar(s.Src)
+		a, e := zeroparse.ParseGrammar(s.Src)
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -67,7 +67,7 @@ func BenchmarkSource(b *testing.B) {
 			b.Run("Manual", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					n, e := pego.ParseGrammar(s.Src)
+					n, e := zeroparse.ParseGrammar(s.Src)
 					if e != nil {
 						b.Fatal(e)
 					}
@@ -89,7 +89,7 @@ func BenchmarkSource(b *testing.B) {
 }
 GO
 cd "$sourcebench_dir"
-GOWORK=off go mod edit -require github.com/ornew/pego@v0.0.0 -replace "github.com/ornew/pego=$sourcebench_repo"
+GOWORK=off go mod edit -require github.com/ornew/zeroparse@v0.0.0 -replace "github.com/ornew/zeroparse=$sourcebench_repo"
 GOWORK=off go test -c -o sourcebaseline.test .
 ./sourcebaseline.test -test.run '^TestParityCounts$'
 sourcebench_round=0

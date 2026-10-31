@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package document_test
 
@@ -10,11 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/engine/vm"
-	"github.com/ornew/pego/internal/limits"
-	"github.com/ornew/pego/internal/value"
+	. "github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/engine/vm"
+	"github.com/ornew/zeroparse/internal/limits"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func TestBudgetDocumentAdmittedAbortAndRetry(t *testing.T) {

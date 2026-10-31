@@ -16,7 +16,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 
 For a JSON grammar whose start rule has the type `Value`:
 
-```pego
+```zp
 type Object = { Members []Member }
 type Member = { Key Text; Value Value }
 type Array = { Elements []Value }
@@ -68,7 +68,7 @@ type Value interface{ isValue() }
 and `jsonparser.ParseAST` returns a `types.Value`. A type switch replaces the field lookups and type assertions of `*Node`:
 
 ```go
-v, err := jsonparser.ParseAST(`{"name": "pego", "tags": ["peg", "go"], "stars": 42}`)
+v, err := jsonparser.ParseAST(`{"name": "zp", "tags": ["peg", "go"], "stars": 42}`)
 if err != nil {
 	log.Fatal(err)
 }
@@ -83,7 +83,7 @@ for _, m := range v.(*types.Object).Members {
 ```
 
 ```text
-name text pego
+name text zp
 tags array of 2
 stars text 42
 ```
@@ -109,7 +109,7 @@ stars text 42
 
 - **Names.** Go types have the names of the grammar types. They live in the package `types`, apart from the names
   `parser.go` and `api.go` declare, so a grammar type may be called `Node`, `Parse` or `Walk`. The package also declares
-  `TNode`, `Error`, `PegoHooks` and, where the grammar uses them, `Unit`, `TupleN` and `PegoNodeTypes`, and the constant `PegoSchema_<digest>` that ties the parser to this package: a grammar type
+  `TNode`, `Error`, `ZPHooks` and, where the grammar uses them, `Unit`, `TupleN` and `ZPNodeTypes`, and the constant `ZPSchema_<digest>` that ties the parser to this package: a grammar type
   with one of these names is an error. A field named like a field or method of `Span` or like a method of the typed
   values (`Start`, `End`, `Range`, `TName`, ...) gets a trailing underscore, so `Start` and `End` always read the
   span.

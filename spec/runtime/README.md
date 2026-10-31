@@ -1,4 +1,4 @@
-# PEGO Parser and Runtime Specification
+# ZeroParse Parser and Runtime Specification
 
 This specification defines what happens when a compiled grammar meets input: the
 start rule, positions, results, syntax errors, the node and value model,
@@ -34,8 +34,8 @@ Observing a parse, saving and generating parsers, describing their output and ch
 | | Chapter | Defines |
 |--:|:--|:--|
 | 5 | [Tracing and Profiling](observability.md) | Rule tracing and profiling of the engine and of generated parsers |
-| 6 | [Compiled Grammars](compiled-grammars.md) | Saving and loading `.pegoc` files, their modes and the operations each serves, versions and loading checks |
-| 7 | [Generated Parsers](generated-parsers.md) | `pego gen`: the Go and TypeScript parsers, their APIs and what each supports |
+| 6 | [Compiled Grammars](compiled-grammars.md) | Saving and loading `.zpc` files, their modes and the operations each serves, versions and loading checks |
+| 7 | [Generated Parsers](generated-parsers.md) | `zp gen`: the Go and TypeScript parsers, their APIs and what each supports |
 | 8 | [Output Schemas and Structural Queries](schemas-and-queries.md) | Describing the output of a grammar and searching result nodes (experimental) |
 | 9 | [Grammar Lint](lint.md) | The checks of the linter, severities and suppression directives |
 

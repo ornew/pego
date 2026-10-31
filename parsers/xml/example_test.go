@@ -4,18 +4,18 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ornew/pego/parsers/xml"
-	"github.com/ornew/pego/parsers/xml/types"
+	"github.com/ornew/zeroparse/parsers/xml"
+	"github.com/ornew/zeroparse/parsers/xml/types"
 )
 
 func ExampleDecode() {
 	tree, err := xml.Decode(`<?xml version="1.0"?>
 <!DOCTYPE catalog [
-  <!ENTITY pego "PEGO">
+  <!ENTITY zp "ZeroParse">
   <!ATTLIST book lang CDATA "en">
 ]>
 <catalog>
-  <book id="b1"><title>&pego; &amp; XML</title></book>
+  <book id="b1"><title>&zp; &amp; XML</title></book>
   <book id="b2" lang="ja"><title>Parsing&#x20;Expression Grammars</title></book>
 </catalog>`)
 	if err != nil {
@@ -27,7 +27,7 @@ func ExampleDecode() {
 		fmt.Printf("%s %s %q\n", id, lang, b.Text())
 	}
 	// Output:
-	// b1 en "PEGO & XML"
+	// b1 en "ZeroParse & XML"
 	// b2 ja "Parsing Expression Grammars"
 }
 

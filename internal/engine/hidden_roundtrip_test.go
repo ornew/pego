@@ -3,8 +3,8 @@ package engine
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // A compiled grammar keeps hidden rules and inline actions, with and without default values, and

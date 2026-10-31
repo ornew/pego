@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // Tuple types and type arguments parse, format and round-trip through JSON. Tuple types and node[T]

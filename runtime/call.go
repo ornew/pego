@@ -1,9 +1,9 @@
-//go:build !pego_exec
+//go:build !zp_exec
 
 package runtime
 
 // The call protocol of a rule and left-recursion growth, as written by hand. Built with the tag
-// pego_exec, the runtime uses the functions that internal/ir/exec/core prints from the shared
+// zp_exec, the runtime uses the functions that internal/ir/exec/core prints from the shared
 // compositions instead (call_exec.go).
 
 // Call calls rule r at level min. An observed or Document parse takes

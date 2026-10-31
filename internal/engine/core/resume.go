@@ -3,8 +3,8 @@ package core
 import (
 	"slices"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // Resuming repetitions in a Document.

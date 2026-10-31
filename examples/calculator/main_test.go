@@ -3,11 +3,11 @@ package main
 import (
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func TestEval(t *testing.T) {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

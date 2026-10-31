@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // Every comma-separated list keeps its comments with their owners and follows

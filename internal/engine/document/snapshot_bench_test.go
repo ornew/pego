@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	. "github.com/ornew/pego/internal/engine"
+	"github.com/ornew/zeroparse/internal/compile"
+	. "github.com/ornew/zeroparse/internal/engine"
 )
 
 func benchmarkDocumentSnapshotEditRead(b *testing.B, prefix bool) {

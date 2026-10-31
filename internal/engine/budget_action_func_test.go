@@ -1,7 +1,7 @@
 package engine
 
 // budgetActionFunc is a test action function shared by the default and the
-// pego_budget_controls_reference builds.
+// zp_budget_controls_reference builds.
 type budgetActionFunc struct {
 	params int
 	fn     func(any, any) (any, error)

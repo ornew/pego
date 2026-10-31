@@ -1,4 +1,4 @@
-//go:build pego_reference_stream_text
+//go:build zp_reference_stream_text
 
 package core
 

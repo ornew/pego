@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/ornew/pego/parsers/csv"
+	"github.com/ornew/zeroparse/parsers/csv"
 )
 
 func ExampleRecords() {

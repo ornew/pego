@@ -264,4 +264,4 @@ The behavior is established by the tests of `internal/engine/document` (among
 them `document_edits_test.go`, `snapshot_test.go`, `document_changes_test.go`
 and `budget_document_test.go`), by `internal/engine/document_test.go`, which
 compares random edits with fresh parses, and by the edit fuzzer of
-`pego edit-fuzz`, which compares every reparse with a fresh parse.
+`zp edit-fuzz`, which compares every reparse with a fresh parse.

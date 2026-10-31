@@ -1,6 +1,6 @@
-# PEGO Bytecode Specification
+# ZeroParse Bytecode Specification
 
-This document specifies the bytecode (the *module*) that a PEGO grammar compiles to, and the behavior of the virtual machine (VM) that executes it.
+This document specifies the bytecode (the *module*) that a ZeroParse grammar compiles to, and the behavior of the virtual machine (VM) that executes it.
 A runtime for another language must implement this document. The meaning of the language that the bytecode implements is defined by the [Grammar Language Specification](../language/README.md); for the results a parse must produce, see [Parsing](../runtime/parsing.md).
 
 The reference implementation is the Go package `internal/bytecode` (`bytecode.go`, the instruction set and module) with the bytecode compiler `bcompile.go` in `internal/compile` and the VMs `vm.go` and `ivm.go` in `internal/engine/vm`. A bytecode VM must produce the same results as the closure backend.
@@ -253,7 +253,7 @@ A runtime implements one or both of two execution models, which differ in how ru
 - **Iterative model:** execution suspends at `CALL` and `OPERATORS_RULE` and resumes when the result is available (after a `CALL`, on success it pushes the value if keep is 1 and continues with the next instruction; on failure it proceeds as in [Failure](#failure)). Rule calls, left-recursion growth, the Operators Rule loop, longest match and skip are implemented as state machines whose state is kept in stack entries, and they perform the steps above in the same order. Host stack usage is constant, independent of how deeply the input nests.
 
 In the reference implementation, both models share the instruction interpreter (`step`) and the stages of a rule call (`callBegin`, `growBegin`, `growStep`, `growEnd`, `invokeBegin`, `invokeEnd`, `callEnd`); they differ only in the order in which these are invoked (`vm.go`, `ivm.go`).
-The reference implementation also limits the nesting depth of recursive rule calls, the rules on a cycle of the call graph (`Rec` in the rule table; 100,000 by default, 10,000,000 for the iterative model; configurable with `pego.WithMaxDepth`; see [Limits](../runtime/parsing.md#limits)), and reports a parse error when the limit is exceeded. A call of a rule without `Rec` does not change the depth.
+The reference implementation also limits the nesting depth of recursive rule calls, the rules on a cycle of the call graph (`Rec` in the rule table; 100,000 by default, 10,000,000 for the iterative model; configurable with `zeroparse.WithMaxDepth`; see [Limits](../runtime/parsing.md#limits)), and reports a parse error when the limit is exceeded. A call of a rule without `Rec` does not change the depth.
 Actions and predicates may be evaluated with host function calls in either model, because their nesting depth is fixed by the grammar and does not depend on the input.
 
 ## Expression Code
@@ -314,7 +314,7 @@ A compiled grammar uses container version 7. It stores one execution-only compil
 
 | Part | Contents |
 |:--|:--|
-| Magic | `PEGOC\x00` (6 bytes) |
+| Magic | `ZPC\x00` (6 bytes) |
 | Version | 1 byte: 6. A loader refuses any other value. |
 | Mode | 1 byte: 0 parse, 1 recognize, 2 document. The module serves the operations of this mode only. A parse-mode or document-mode module is the module of the grammar; a recognize-mode module is the module of its recognizer. A loader refuses any other value. |
 | Instruction-set version | Unsigned integer for this module: 29. Every module uses this version, whatever instructions it contains. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, carried text struct node types and the text flag of `EMEMBER` and `EBIN`, did not give the node type of an Operators Rule its meaning, had no whole-rule action of an Operators Rule, had no variable table, had no start rules, checked field values, rule results and bindings when they ran (the `ECHECK` instruction, the check operands of `BIND` and `ENODE`, and the checks of rules and lines), or had no member flag in the rule table; a runtime rejects them and asks for the grammar to be compiled again. |

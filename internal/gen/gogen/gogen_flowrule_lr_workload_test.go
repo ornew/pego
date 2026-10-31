@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
-// PEGO_TYPED_LR_DIR preserves both same-generator routes for prebuilt paired
+// ZP_TYPED_LR_DIR preserves both same-generator routes for prebuilt paired
 // benchmarks. Normal tests remove the fixture modules automatically.
 func TestGeneratedTypedLRWorkload(t *testing.T) {
 	t.Parallel()
@@ -22,11 +22,11 @@ func testGeneratedTypedLRWorkload(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	src, err := os.ReadFile("../../../examples/calculator/calc_lr.pego")
+	src, err := os.ReadFile("../../../examples/calculator/calc_lr.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir := os.Getenv("PEGO_TYPED_LR_DIR")
+	dir := os.Getenv("ZP_TYPED_LR_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}
@@ -42,7 +42,7 @@ func testGeneratedTypedLRActionWorkload(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	dir := os.Getenv("PEGO_TYPED_LR_DIR")
+	dir := os.Getenv("ZP_TYPED_LR_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	} else {
@@ -114,7 +114,7 @@ func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker stri
 const typedLRActionWorkloadFixture = `package lrfixture
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -130,9 +130,9 @@ func TestLRWorkload(t *testing.T) {
 			t.Fatalf("typed capture result: %v %v", saved, err)
 		}
 		before, _ := json.Marshal(saved)
-		p := &pegort.TParser{Parser: &pegort.Parser{}}
+		p := &zprt.TParser{Parser: &zprt.Parser{}}
 		for _, input := range []string{lrInput(1), lrInput(128), "a,b,c,", "a,b,", "a,b,c,;", "a,b,c,d,", "a,b,c,;d,é,f,", ""} {
-			v, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+			v, err := p.X_run(trules[0], input, zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
 			pooled, pooledErr := ParseAST(input, WithUnit(unit))
 			pooledData, _ := json.Marshal(struct { Value any; Error string }{pooled, fmt.Sprint(pooledErr)})
@@ -177,7 +177,7 @@ func BenchmarkTypedLR(b *testing.B) {
 const typedLRWorkloadFixture = `package lrfixture
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -193,9 +193,9 @@ func TestLRWorkload(t *testing.T) {
 			t.Fatal(err)
 		}
 		before, _ := json.Marshal(saved)
-		p := &pegort.TParser{Parser: &pegort.Parser{}}
+		p := &zprt.TParser{Parser: &zprt.Parser{}}
 		for _, input := range []string{"1", "1+2*3", lrInput(32), "(1+2)*3", "2^-1", "1+", "1+2*", "(1+2", "é+1", ""} {
-			v, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+			v, err := p.X_run(trules[0], input, zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
 			fmt.Printf("OBS %v %q %s\n", unit, input, data)
 			if _, err := ParseAST(input, WithUnit(unit)); (err == nil) != (input == "1" || input == "1+2*3" || input == lrInput(32) || input == "(1+2)*3" || input == "2^-1") {

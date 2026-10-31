@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/ornew/pego/internal/ir/exec"
+	. "github.com/ornew/zeroparse/internal/ir/exec"
 )
 
 // module declares a log component whose operations record calls, so that a test sees which

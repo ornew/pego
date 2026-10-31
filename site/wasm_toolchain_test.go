@@ -12,7 +12,7 @@ import (
 )
 
 func TestSelectWasmBuild(t *testing.T) {
-	const output = "/tmp/pego.wasm"
+	const output = "/tmp/zp.wasm"
 	for _, tc := range []struct {
 		name string
 		want wasmBuildSpec

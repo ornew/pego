@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/gen"
+	"github.com/ornew/zeroparse/gen"
 )
 
 func TestRuntimeMode(t *testing.T) {

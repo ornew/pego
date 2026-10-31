@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestParsePartialContextCancelsWithinLongStatement(t *testing.T) {

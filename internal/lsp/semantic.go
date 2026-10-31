@@ -3,7 +3,7 @@ package lsp
 import (
 	"encoding/json"
 
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // Semantic tokens tell rule names, type names, captures and fields apart, which a TextMate grammar

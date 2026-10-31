@@ -1,8 +1,8 @@
-package pego
+package zeroparse
 
 import (
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // WalkAction controls whether a walk descends, skips descendants, or stops.

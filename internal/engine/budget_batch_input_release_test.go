@@ -9,7 +9,7 @@ import (
 	"unsafe"
 	"weak"
 
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 //go:noinline

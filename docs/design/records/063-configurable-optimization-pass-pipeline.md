@@ -16,7 +16,7 @@ scattered booleans. This design makes a pass a declared unit and the sequence a 
 - named flag sets (generation profiles `speed`, `memory` and `size`) select a coherent set of optimizations;
 - the module can be printed after any pass.
 
-The default pipeline reproduces today's generated output byte for byte. Users select a profile with `pego gen
+The default pipeline reproduces today's generated output byte for byte. Users select a profile with `zp gen
 -optimize`, and per-optimization flags and the IR dump are available as options for development and advanced use.
 
 ## Motivation
@@ -168,7 +168,7 @@ memory on the checked-in parsers, and the measured result goes in the profile's 
 `disableTypedListSlabs`, `disableTypedOutputBootstrap`) are candidates for the `memory` profile
 but are not Core passes; whether a profile also sets them is an open question.
 
-The word "profile" already names the rule profiler (`pego profile`, `WithProfile`), so the flag that selects a profile is `-optimize`.
+The word "profile" already names the rule profiler (`zp profile`, `WithProfile`), so the flag that selects a profile is `-optimize`.
 
 ### Print After Pass
 
@@ -183,7 +183,7 @@ same hook. A command-line front end prints with `core.Print(m, true)`, and the F
    old straight-line sequences as an oracle. For every grammar of the corpus and every mode of `coreGenModes`, run
    the oracle and the pipeline and compare `core.Print(m, true)`. No call site changes.
 2. Switch `TypedCore` and `StartRecFlow` to the pipelines. Gate on three checks: `go generate ./parsers ./bench` leaves
-   no diff, the corpus tests of the generator pass in default and `PEGO_TEST_ORDINARY=1` runs, and a byte comparison
+   no diff, the corpus tests of the generator pass in default and `ZP_TEST_ORDINARY=1` runs, and a byte comparison
    of the generated sources of the corpus before and after the switch (all modes) is empty.
 3. Replace the `disable*` booleans with the flag set. Existing tests set flags instead of fields; the flag names come
    from the table above.
@@ -195,21 +195,21 @@ Each step is its own commit and can be reverted alone.
 
 Three surfaces were considered.
 
-**Option A: Internal only.** Flags exist for tests and diagnostics through the private `GenOptions` fields. `pego gen`
+**Option A: Internal only.** Flags exist for tests and diagnostics through the private `GenOptions` fields. `zp gen`
 and the Go options do not change. Profiles are not offered.
 
-**Option B: Profiles.** `pego gen -optimize speed|memory|size` and a Go option `WithOptimize` select a profile.
+**Option B: Profiles.** `zp gen -optimize speed|memory|size` and a Go option `WithOptimize` select a profile.
 Per-pass flags stay internal.
 
-**Option C: Profiles and per-optimization flags.** Option B plus `pego gen -no-opt name[,name]` and
+**Option C: Profiles and per-optimization flags.** Option B plus `zp gen -no-opt name[,name]` and
 `WithoutOptimizations(names ...string)`, for reproducing a miscompilation or measuring one optimization, and
 `-print-after name|all` (with a Go callback) for the IR dump.
 
-Decision: **C, with the profile flag named `-optimize`.** `pego gen -optimize speed|memory|size` and the Go option
+Decision: **C, with the profile flag named `-optimize`.** `zp gen -optimize speed|memory|size` and the Go option
 `WithOptimize` select a profile; `-no-opt name[,name]`, `WithoutOptimizations(names ...string)` and `-print-after
 name|all` serve development and advanced use, such as isolating a miscompilation or measuring one optimization. A
 profile is applied first and `-no-opt` removes optimizations from it, so `-optimize size -no-opt guards` is `size`
-without `guards`. The name `-optimize` avoids the rule profiler's `pego profile` and `WithProfile`. The flags are
+without `guards`. The name `-optimize` avoids the rule profiler's `zp profile` and `WithProfile`. The flags are
 described in the command-line reference only; no guide explains individual optimizations, and the
 [specification of generated parsers](../../../spec/runtime/generated-parsers.md) does not change, because it constrains the
 parser's behavior, not the generated code. Optimization names follow the pass set, which record 062 expects to
@@ -238,7 +238,7 @@ passes became rule-local. Rejected for now.
 **Profiles chosen by the generator from the grammar.** The generator could pick `size` or `speed` by grammar size.
 It makes the output depend on a heuristic that users cannot predict or override. Rejected.
 
-**Flags only on the command line, with no Go option.** Matches how `pego gen` options are read today, but the
+**Flags only on the command line, with no Go option.** Matches how `zp gen` options are read today, but the
 Go API (`gen.Go`) is what the build tooling of other projects calls. The options mirror each other today
 (`-types` and `Types`) and the new ones should too.
 

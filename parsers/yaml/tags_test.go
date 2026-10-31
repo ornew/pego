@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/yaml"
-	"github.com/ornew/pego/parsers/yaml/types"
+	"github.com/ornew/zeroparse/parsers/yaml"
+	"github.com/ornew/zeroparse/parsers/yaml/types"
 )
 
 func TestTagValidity(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/sample"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/sample"
 )
 
 func TestSampleOperatorsRuleLongestCallerStops(t *testing.T) {
@@ -81,9 +81,9 @@ func TestSampleOperatorsRuleLongestCallerStops(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			p := compile(t, "rule main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
-			for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
-				for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-					if _, err := p.Parse(c.input, pego.WithUnit(unit), pego.WithBackend(backend)); err != nil {
+			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+				for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+					if _, err := p.Parse(c.input, zeroparse.WithUnit(unit), zeroparse.WithBackend(backend)); err != nil {
 						t.Fatal(err)
 					}
 				}

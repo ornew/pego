@@ -4,7 +4,7 @@ package sourceast
 import (
 	"fmt"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // Metadata is the offset representation of a canonical SourceMetadata value.

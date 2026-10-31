@@ -33,7 +33,7 @@ table holds fewer rules.
 
 ## Results
 
-Bytes of `parser.ts` (`pego gen -lang ts -types -recognize -runtime import`):
+Bytes of `parser.ts` (`zp gen -lang ts -types -recognize -runtime import`):
 
 | Grammar | Before | After | Change |
 |:--|--:|--:|--:|

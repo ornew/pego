@@ -1,18 +1,18 @@
-# Generating Parsers With `pego gen`
+# Generating Parsers With `zp gen`
 
-`pego gen` turns a grammar into Go source files: a parser package you commit to your repository, build with your program, and
+`zp gen` turns a grammar into Go source files: a parser package you commit to your repository, build with your program, and
 call like any other package. By default the generated Go package depends only on the standard library: it carries a
-copy of the PEGO runtime in its `internal/runtime` directory, and it does not load or compile the grammar at run time.
+copy of the ZeroParse runtime in its `internal/runtime` directory, and it does not load or compile the grammar at run time.
 
-This guide shows how to generate a parser, what the generator supports compared with the engine (the `pego.Parser` of
+This guide shows how to generate a parser, what the generator supports compared with the engine (the `zeroparse.Parser` of
 [Running Parsers](running-parsers.md)), how to keep generated code up to date, and when it is the right choice. The API
 of the generated Go package is in [The Generated Go API](generated-go-api.md), and the options that add typed values,
-documents and streams have guides of their own, linked below. `pego gen -lang ts` generates
+documents and streams have guides of their own, linked below. `zp gen -lang ts` generates
 TypeScript modules with the same behavior instead; it has a guide of its own, [TypeScript parsers](typescript.md).
 
 - [Why generate](#why-generate)
 - [Quick start](#quick-start)
-- [The `pego gen` command](#the-pego-gen-command)
+- [The `zp gen` command](#the-zp-gen-command)
 - [What is supported](#what-is-supported)
 - [Keeping generated code up to date](#keeping-generated-code-up-to-date)
 - [Trade-offs](#trade-offs)
@@ -20,17 +20,17 @@ TypeScript modules with the same behavior instead; it has a guide of its own, [T
 
 ## Why Generate
 
-| | Engine (`pego.CompileSource`) | Generated parser |
+| | Engine (`zeroparse.CompileSource`) | Generated parser |
 |:--|:--|:--|
-| Speed | Closure backend by default | Generated Go takes 0.44–0.61× closure time in CodePoints and 0.50–0.66× in Bytes; direct typed values take 0.69–0.98× generated `Parse` time ([benchmarks](../benchmarks.md), [analysis](../performance.md#where-pego-stands)) |
-| Dependencies | `github.com/ornew/pego` | Standard library only (the runtime is copied into the package; `-runtime import` imports it from `github.com/ornew/pego/runtime` instead) |
-| Grammar at run time | Loaded and compiled (or loaded from `.pegoc`) | Gone: it is compiled into Go code |
+| Speed | Closure backend by default | Generated Go takes 0.44–0.61× closure time in CodePoints and 0.50–0.66× in Bytes; direct typed values take 0.69–0.98× generated `Parse` time ([benchmarks](../benchmarks.md), [analysis](../performance.md#where-zeroparse-stands)) |
+| Dependencies | `github.com/ornew/zeroparse` | Standard library only (the runtime is copied into the package; `-runtime import` imports it from `github.com/ornew/zeroparse/runtime` instead) |
+| Grammar at run time | Loaded and compiled (or loaded from `.zpc`) | Gone: it is compiled into Go code |
 | Grammar changes | Edit the grammar, restart | Regenerate and rebuild |
 | Recognition (no tree) | `RecognizeOnly` | `Recognize`, with [`-recognize`](generated-go-api.md#recognition--recognize) |
 | Streaming, incremental, backends | Yes | Go Node `ParseStream` with `-stream` (`-types` adds `ParseStreamAST`); Go Node `Document` with `-document`; `-types` adds `Document.ParseAST`, using direct incremental matching for eligible grammars and Node conversion otherwise. No backend choice (see [what is supported](#what-is-supported)) |
 
 Generate a parser when the grammar is fixed, the parser is on a hot path or in a small binary, or you want no
-dependency on PEGO at run time. Use the engine when the grammar is data. For streams of Nodes, generate a Go
+dependency on ZeroParse at run time. Use the engine when the grammar is data. For streams of Nodes, generate a Go
 `ParseStream` with `-stream`; for incremental Node parsing, generate a Go `Document` with `-document`. The engine offers
 the broader stream and Document APIs.
 A good deal of the time you can use both: the engine in tools and tests, and the generated code in production
@@ -42,9 +42,9 @@ change what your code sees. The test suite checks this for every grammar in `exa
 
 ## Quick Start
 
-A complete, runnable setup. The grammar, `pairs.pego`, is the one used in the [Running Parsers](running-parsers.md):
+A complete, runnable setup. The grammar, `pairs.zp`, is the one used in the [Running Parsers](running-parsers.md):
 
-```pego
+```zp
 type Pair = { Key node[string]; Value node[string] }
 
 @start(default)
@@ -62,7 +62,7 @@ package (see [why its own package](#one-grammar-one-package)):
 ```text
 example.com/pairs
 ├── go.mod
-├── pairs.pego
+├── pairs.zp
 ├── generate.go
 ├── main.go
 └── pairsparser/        # created by go generate
@@ -71,21 +71,21 @@ example.com/pairs
     └── internal/runtime/   # and, with -types, types/types.go
 ```
 
-Record `pego` as a tool dependency of the module, so that `go generate` runs the pinned version and nobody needs a
+Record `zp` as a tool dependency of the module, so that `go generate` runs the pinned version and nobody needs a
 separate install:
 
 ```bash
-go get -tool github.com/ornew/pego/cmd/pego
+go get -tool github.com/ornew/zeroparse/cmd/zp
 ```
 
-This adds a `tool github.com/ornew/pego/cmd/pego` line to `go.mod`. Then declare the generation step with a
-`go:generate` directive; `pego gen` creates the output directory:
+This adds a `tool github.com/ornew/zeroparse/cmd/zp` line to `go.mod`. Then declare the generation step with a
+`go:generate` directive; `zp gen` creates the output directory:
 
 ```go
 // generate.go
 package main
 
-//go:generate go tool pego gen -g pairs.pego -module example.com/pairs/pairsparser -o pairsparser
+//go:generate go tool zp gen -g pairs.zp -module example.com/pairs/pairsparser -o pairsparser
 ```
 
 ```bash
@@ -93,14 +93,14 @@ go generate ./...
 ```
 
 `-module` is the import path of the generated package, which the copy of the runtime in `pairsparser/internal/runtime`
-is imported by; `-o` is the output directory, which `pego gen` creates. The result is `pairsparser/parser.go`, with the
+is imported by; `-o` is the output directory, which `zp gen` creates. The result is `pairsparser/parser.go`, with the
 code generated from the grammar, `pairsparser/api.go`, which re-exports the runtime names the users of the parser need
 (`Node`, `SyntaxError` and so on), the runtime copy and, with `-types`, `pairsparser/types/types.go`, the package of the Go types of the grammar (the `-module` path is then required). `parser.go` starts with:
 
 ```go
-// Code generated by pego. DO NOT EDIT.
+// Code generated by zp. DO NOT EDIT.
 
-// Package pairsparser is a parser generated from a PEGO grammar.
+// Package pairsparser is a parser generated from a ZeroParse grammar.
 package pairsparser
 ```
 
@@ -163,22 +163,22 @@ true 1 5 [[0-9]] 1:5: syntax error: expected [0-9]
 
 The output is exactly what the engine prints for the same grammar and input.
 
-## The `pego gen` Command
+## The `zp gen` Command
 
 ```bash
-pego gen -g <grammar> -module <import path> [-pkg <package>] [-runtime embed|import|only] [-s <rule>] [-o <directory>] [-types] [-document] [-stream] [-recognize] [-expectations] [-observability] [-budget-controls] [-default-value] [-nodoc] [-max-depth <n>]
+zp gen -g <grammar> -module <import path> [-pkg <package>] [-runtime embed|import|only] [-s <rule>] [-o <directory>] [-types] [-document] [-stream] [-recognize] [-expectations] [-observability] [-budget-controls] [-default-value] [-nodoc] [-max-depth <n>]
 ```
 
 | Flag | Default | Meaning |
 |:--|:--|:--|
 | `-lang` | `go` | The language: `go`, or `ts` for TypeScript (see [TypeScript parsers](typescript.md)) |
-| `-g` | (required, except with `-runtime only`) | The grammar: `.pego` or `.json` |
+| `-g` | (required, except with `-runtime only`) | The grammar: `.zp` or `.json` |
 | `-module` | (required for Go with `-runtime embed`) | The import path of the generated package. The copy of the runtime is imported by `<module>/internal/runtime`. With `-runtime import`, `-pkg` can stand in for it, since the package then needs no import path of its own. |
 | `-pkg` | last element of `-module`, without a major version suffix (`example.com/m/v2` gives `m`) | The package name of the generated code. It must be a valid Go identifier; a module path whose last element is not one (`my-parser`) needs `-pkg`. |
-| `-runtime` | `embed` | How the generated code reaches the runtime: `embed` writes a copy (Go: `internal/runtime`; TypeScript: `runtime.ts`), `import` imports it (Go: `github.com/ornew/pego/runtime`; TypeScript: the module of `-runtime-module`), and `only` writes just the copy, to refresh it without regenerating the parser. `only` takes only `-o`; a grammar or any other generation flag is an error |
+| `-runtime` | `embed` | How the generated code reaches the runtime: `embed` writes a copy (Go: `internal/runtime`; TypeScript: `runtime.ts`), `import` imports it (Go: `github.com/ornew/zeroparse/runtime`; TypeScript: the module of `-runtime-module`), and `only` writes just the copy, to refresh it without regenerating the parser. `only` takes only `-o`; a grammar or any other generation flag is an error |
 | `-runtime-module` | (required for TypeScript with `-runtime import`) | The module specifier that the generated TypeScript imports the runtime from, for example `../shared/runtime.ts`. An error otherwise, and for Go |
 | `-s` | the default start rule | The start rule of the generated `Parse` function |
-| `-o` | (required) | The output directory (it is created). Generated files that the new run does not write again are removed, but `-runtime only` never removes `parser.go`, `api.go`, `types/types.go`, `parser.ts` or `types.ts`, and no file without the `// Code generated by pego.` header is replaced or removed: `pego gen` stops with an error instead. |
+| `-o` | (required) | The output directory (it is created). Generated files that the new run does not write again are removed, but `-runtime only` never removes `parser.go`, `api.go`, `types/types.go`, `parser.ts` or `types.ts`, and no file without the `// Code generated by zp.` header is replaced or removed: `zp gen` stops with an error instead. |
 | `-types` | off | Also generate the Go types for the grammar's types, in the package `<module>/types`, and `ParseAST` (see [typed values](generated-typed-values.md)) |
 | `-document` | off | Also generate the Go incremental Node `Document` API; with `-types`, it also exposes `Document.ParseAST` (see [incremental documents](generated-documents.md)); cannot be combined with `-lang ts` |
 | `-stream` | off | Also generate the Go Node `ParseStream` (see [streams](generated-streams.md)); the start rule must have a `#stream` repetition; with `-types` it also generates `ParseStreamAST`, and it cannot be combined with `-lang ts` |
@@ -189,7 +189,7 @@ pego gen -g <grammar> -module <import path> [-pkg <package>] [-runtime embed|imp
 | `-observability` | off | Emit opt-in tracing and profiling for Go or TypeScript parsers; combines with `-types`, `-recognize`, and Go `-document` and `-stream` (see [generated parser tracing and profiling](debugging.md#generated-go-node-and-typed-traces)) |
 | `-max-depth` | `0` | Default nested recursive rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
 | `-default-value` | off | Make the parser return the default node tree: value actions and declared rule types are dropped, predicates still run (see [Default Values](../../spec/language/actions.md#default-values)). Cannot be combined with `-types` |
-| `-nodoc` | off | Leave out the package comment (`// Package p is a parser generated from a PEGO grammar.`), for a package that has its own documentation in another file |
+| `-nodoc` | off | Leave out the package comment (`// Package p is a parser generated from a ZeroParse grammar.`), for a package that has its own documentation in another file |
 
 Details:
 
@@ -199,62 +199,62 @@ Details:
 - Grammar errors are reported with positions, before any file is written. A rule with no expression is a syntax
   error:
 
-  ```pego
-  // broken.pego
+  ```zp
+  // broken.zp
   @start
   rule main =
   ```
 
   ```bash
-  pego gen -g broken.pego -module example.com/pairs -o /dev/null
+  zp gen -g broken.zp -module example.com/pairs -o /dev/null
   ```
 
   ```text
-  pego: broken.pego:4:1: expected an expression, found end of file
+  zp: broken.zp:4:1: expected an expression, found end of file
   ```
 
   An action that reads a capture the rule does not have is a compile error:
 
-  ```pego
-  // typeerr.pego
+  ```zp
+  // typeerr.zp
   @start
   rule main = x:[a-z]+ => $y
   ```
 
   ```bash
-  pego gen -g typeerr.pego -module example.com/pairs -o /dev/null
+  zp gen -g typeerr.zp -module example.com/pairs -o /dev/null
   ```
 
   ```text
-  pego: typeerr.pego:3:25: undefined capture $y
+  zp: typeerr.zp:3:25: undefined capture $y
   ```
 
   ```bash
-  pego gen -g pairs.pego -module example.com/pairs -s nope -o /dev/null
+  zp gen -g pairs.zp -module example.com/pairs -s nope -o /dev/null
   ```
 
   ```text
-  pego: pairs.pego: rule nope is not defined
+  zp: pairs.zp: rule nope is not defined
   ```
 
   ```bash
-  pego gen -g pairs.pego -module example.com/pairs -pkg foo-bar -o /dev/null
+  zp gen -g pairs.zp -module example.com/pairs -pkg foo-bar -o /dev/null
   ```
 
   ```text
-  pego: pairs.pego: invalid package name "foo-bar"
+  zp: pairs.zp: invalid package name "foo-bar"
   ```
 
-- A `.pegoc` cannot be used, because code generation needs the grammar and a compiled grammar holds only bytecode:
-  `pego: pairs.pegoc: a compiled grammar holds only the bytecode of one mode; gen needs the grammar source (.pego or .json)`.
+- A `.zpc` cannot be used, because code generation needs the grammar and a compiled grammar holds only bytecode:
+  `zp: pairs.zpc: a compiled grammar holds only the bytecode of one mode; gen needs the grammar source (.zp or .json)`.
 - Without `-s`, the grammar's default start rule is used.
 
 ### From Go
 
-The same generator is available from Go, in package `github.com/ornew/pego/gen`, for build tools that produce parsers programmatically:
+The same generator is available from Go, in package `github.com/ornew/zeroparse/gen`, for build tools that produce parsers programmatically:
 
 ```go
-g, err := pego.ParseGrammar(src)
+g, err := zeroparse.ParseGrammar(src)
 if err != nil {
 	log.Fatal(err)
 }
@@ -273,9 +273,9 @@ for _, f := range files { // parser.go, api.go, types/types.go with Types, and i
 }
 ```
 
-The fields of `gen.Go` are the flags of `pego gen`: `Module` is `-module`; `Types: true` is `-types`; `Document` is `-document`; `Stream` is `-stream`; `Recognize` is `-recognize`; `TypedOnly` is `-typed-only`; `BudgetControls` is `-budget-controls`; `Observability` is `-observability`; `SourceInfo` is `-source-info`; `DefaultValue` is `-default-value`; `OmitPackageDoc` is `-nodoc`; `Runtime: gen.RuntimeImport` is `-runtime import`; `PackageName: "p"` is `-pkg p`; and `MaxDepth: 600_000` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, Go Documents and streams, and TypeScript batch parsers with or without `-types`. Generated Go Node, typed and Document packages expose `WithProfile`; TypeScript batch packages expose `Profile` through per-call options. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
+The fields of `gen.Go` are the flags of `zp gen`: `Module` is `-module`; `Types: true` is `-types`; `Document` is `-document`; `Stream` is `-stream`; `Recognize` is `-recognize`; `TypedOnly` is `-typed-only`; `BudgetControls` is `-budget-controls`; `Observability` is `-observability`; `SourceInfo` is `-source-info`; `DefaultValue` is `-default-value`; `OmitPackageDoc` is `-nodoc`; `Runtime: gen.RuntimeImport` is `-runtime import`; `PackageName: "p"` is `-pkg p`; and `MaxDepth: 600_000` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, Go Documents and streams, and TypeScript batch parsers with or without `-types`. Generated Go Node, typed and Document packages expose `WithProfile`; TypeScript batch packages expose `Profile` through per-call options. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
 
-`pego gen` is a thin wrapper around `gen.Go` (and `gen.TypeScript` with `-lang ts`, whose `Generate` returns the files too); both implement `gen.Generator`. Because a grammar built with the `grammar` package (see the
+`zp gen` is a thin wrapper around `gen.Go` (and `gen.TypeScript` with `-lang ts`, whose `Generate` returns the files too); both implement `gen.Generator`. Because a grammar built with the `grammar` package (see the
 [Running Parsers](running-parsers.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
 
 When `-observability` is enabled, the generated Go or TypeScript package
@@ -336,22 +336,22 @@ Notes:
 ## Keeping Generated Code Up to Date
 
 Generated code is source: commit it, review its diffs, and regenerate it whenever the grammar changes **or you upgrade
-PEGO** (the embedded runtime comes from the version of `pego` that generated it). Three habits keep it honest.
+ZeroParse** (the embedded runtime comes from the version of `zp` that generated it). Three habits keep it honest.
 
 **1. Generate with `go generate`.** Put the directive next to the grammar, as in [Quick start](#quick-start), and run `go generate ./...`. Pin the generator with
-`go get -tool` as shown above. (`go install github.com/ornew/pego/cmd/pego@latest` and
-`//go:generate pego gen ...` works, too, but every developer then has to install a matching version.) With several grammars, add one directive per grammar.
+`go get -tool` as shown above. (`go install github.com/ornew/zeroparse/cmd/zp@latest` and
+`//go:generate zp gen ...` works, too, but every developer then has to install a matching version.) With several grammars, add one directive per grammar.
 
 **2. Test that it is up to date.** A test regenerates in memory and compares with the committed file; it fails with a
 reminder when somebody changed the grammar and forgot to regenerate:
 
 ```go
-//go:embed pairs.pego
+//go:embed pairs.zp
 var grammarSrc string
 
-// The files of pairsparser are up to date with pairs.pego.
+// The files of pairsparser are up to date with pairs.zp.
 func TestGeneratedIsUpToDate(t *testing.T) {
-	g, err := pego.ParseGrammar(grammarSrc)
+	g, err := zeroparse.ParseGrammar(grammarSrc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -371,7 +371,7 @@ func TestGeneratedIsUpToDate(t *testing.T) {
 }
 ```
 
-If you change `pairs.pego` (here: `rule value =  [0-9a-f]+ #atomic `) and skip regeneration, the test fails. Among the output:
+If you change `pairs.zp` (here: `rule value =  [0-9a-f]+ #atomic `) and skip regeneration, the test fails. Among the output:
 
 ```text
 --- FAIL: TestGeneratedIsUpToDate (0.00s)
@@ -386,7 +386,7 @@ protects you from the two diverging (for example after an upgrade):
 
 ```go
 func TestGeneratedMatchesEngine(t *testing.T) {
-	p, err := pego.CompileSource(grammarSrc, "main")
+	p, err := zeroparse.CompileSource(grammarSrc, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -414,16 +414,16 @@ and inputs that exercise each feature of your grammar.
   `go run ./bench/report` to measure yours.
 - **Binary and repository size.** Each generated parser adds source that you commit and that compiles into your
   binary: `parser.go` and `api.go`, with `-types` `types/types.go`, and with `-runtime embed` a copy of the runtime in `internal/runtime` (the same for
-  every grammar; `-runtime import` shares one copy through `github.com/ornew/pego/runtime` instead). It does not pull in
-  PEGO's compiler, analyzer or VMs.
+  every grammar; `-runtime import` shares one copy through `github.com/ornew/zeroparse/runtime` instead). It does not pull in
+  ZeroParse's compiler, analyzer or VMs.
 - **Start-up.** There is none: no grammar to parse or compile. If start-up time is the only concern and a source file
-  is acceptable, loading a [`.pegoc`](compiled-grammars.md) is the cheaper alternative.
+  is acceptable, loading a [`.zpc`](compiled-grammars.md) is the cheaper alternative.
 - **Flexibility.** The grammar is frozen into the binary. Changing it means regenerating, rebuilding and redeploying;
   if users supply grammars at run time, use the engine.
 - **Features.** No backend choice; streaming requires `-stream` and incremental Node parsing `-document` (see
   [what is supported](#what-is-supported)).
-- **Review noise.** Large diffs on regeneration (particularly after upgrading PEGO) are expected. Mark the files as
-  generated for your review tool: the first line, `// Code generated by pego. DO NOT EDIT.`, follows the Go
+- **Review noise.** Large diffs on regeneration (particularly after upgrading ZeroParse) are expected. Mark the files as
+  generated for your review tool: the first line, `// Code generated by zp. DO NOT EDIT.`, follows the Go
   convention that tools recognize.
 - **Typed AST.** `Parse` returns generic `*Node` trees like the engine, which is what makes the two interchangeable.
   For Go types matching the grammar's types, generate with [`-types`](generated-typed-values.md) and call `ParseAST`;
@@ -447,14 +447,14 @@ want several entry points of one grammar, use `ParseRule` rather than generating
 
 ### Engine in Development, Generated in Production
 
-Keep one `.pego` file. Use `pego parse` and the engine (`CompileSource`) in tools, experiments and tests, where start-up
+Keep one `.zp` file. Use `zp parse` and the engine (`CompileSource`) in tools, experiments and tests, where start-up
 and features matter more than speed; generate the production parser from the same file; and let the
 [parity test](#keeping-generated-code-up-to-date) prove they agree.
 
 ### Choosing the Start Rule
 
 Mark every rule where parsing may begin with `@start`, and the usual entry rule with `@start(default)`, so that
-`Parse` is the common case; `-s` (for example `pego gen -g lang.pego -module example.com/lang -s program`) selects
+`Parse` is the common case; `-s` (for example `zp gen -g lang.zp -module example.com/lang -s program`) selects
 another start rule for `Parse`. Use `ParseRule("expr", input)` for the other start rules, for example for an
 expression evaluator embedded in a larger tool.
 

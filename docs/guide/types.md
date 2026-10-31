@@ -16,8 +16,8 @@ text of a literal, a class or `#atomic`, `node[(A, B)]` for a sequence of two va
 repetition. Every value has a static type; `node[_]`, a node of any value, is a last resort for a value whose type
 cannot be written.
 
-```pego
-// assign-ast.pego
+```zp
+// assign-ast.zp
 type Assign = {
     Name  node[string]
     Value node[string]
@@ -33,8 +33,8 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g assign-ast.pego -f sexpr -i 'ab = 12;'
-pego parse -g assign-ast.pego -f sexpr -i 'ab = cd;'
+zp parse -g assign-ast.zp -f sexpr -i 'ab = 12;'
+zp parse -g assign-ast.zp -f sexpr -i 'ab = cd;'
 ```
 
 ```text
@@ -55,8 +55,8 @@ joins reduced to one member follow the same rule; an alias does not create a dis
 A leaf of the tree that should have a type of its own and keep the text it matched is a named node type over
 `string`, declared as `type N = node[string]`:
 
-```pego
-// named-node.pego
+```zp
+// named-node.zp
 type Identifier = node[string]
 
 @start
@@ -64,7 +64,7 @@ rule ident Identifier = [a-z]+ #atomic
 ```
 
 ```bash
-pego parse -g named-node.pego -s ident -f json -i 'abc'
+zp parse -g named-node.zp -s ident -f json -i 'abc'
 ```
 
 ```json
@@ -81,7 +81,7 @@ prints just `"abc"`. A named node type over a tuple or a list is written the sam
 
 The rule matches the text with `#atomic` and needs no action: a rule whose declared type is exactly `Identifier` converts
 its value to that named type, which keeps the range and the text. The type name is recorded on the node, so `Node.Type()`
-reports `Identifier`. PEGO builds the node directly, so it is as cheap as a plain match. Use the value in other actions
+reports `Identifier`. ZeroParse builds the node directly, so it is as cheap as a plain match. Use the value in other actions
 as `text($ident)`, and in Go as `Text()` on the node (or as the `Value` field of a generated type).
 
 ## Optional and List Fields
@@ -89,8 +89,8 @@ as `text($ident)`, and in Go as `Text()` on the node (or as the `Value` field of
 A field type can be `*T` (a `T` or `nil`) or `[]T` (a list whose elements are `T`). Both are checked at compile time:
 a value that may be `nil` cannot go into a plain `T` field.
 
-```pego
-// decls.pego
+```zp
+// decls.zp
 type Decl = {
     Name  node[string]
     Value *node[string] // optional: nil when there is no initializer
@@ -110,7 +110,7 @@ rule ws = [ \n]*
 ```
 
 ```bash
-pego parse -g decls.pego -f sexpr -i 'let x = 1; let y;'
+zp parse -g decls.zp -f sexpr -i 'let x = 1; let y;'
 ```
 
 ```text
@@ -142,8 +142,8 @@ value, as in `node[(num, node[string], num), {"k": 0, "v": 2}]`.
 Any of these types can be written in a declaration. A field can hold a tuple node as `node[(node[string], Expr)]`, a
 tuple value as `(node[string], Expr)` and the node of a repetition as `node[[]Item]`, and an alias can name one:
 
-```pego
-// tuple-types.pego
+```zp
+// tuple-types.zp
 type Entry ~ node[(node[string], node[string], node[string])]
 type Table = { Entries []Entry }
 
@@ -156,7 +156,7 @@ rule ws = [ \n]*
 ```
 
 ```bash
-pego parse -g tuple-types.pego -f sexpr -i 'a=1 b=2'
+zp parse -g tuple-types.zp -f sexpr -i 'a=1 b=2'
 ```
 
 ```text
@@ -170,8 +170,8 @@ their types. See the [inference limits](../../spec/language/type-checking.md#typ
 Declare types on the rules whose values flow into struct fields, and on recursive rules; leave helpers inferred. The
 type shows up in the error messages, for example when a field expects an `int` and the rule returns a node:
 
-```pego
-// field-type.pego
+```zp
+// field-type.zp
 type Pair = { Key node[string]; Value int }
 @start
 rule pair Pair = k:key "=" v:value => Pair{Key: $k, Value: $v}
@@ -180,11 +180,11 @@ rule value = [0-9]+ #atomic
 ```
 
 ```bash
-pego parse -g field-type.pego -s pair -i 'a=1'
+zp parse -g field-type.zp -s pair -i 'a=1'
 ```
 
 ```text
-pego: field-type.pego:4:53: cannot use node[string] as int in field Value of Pair
+zp: field-type.zp:4:53: cannot use node[string] as int in field Value of Pair
 ```
 
 The fix is to declare the field `node[string]`, or to convert the text in the action, as in `Value: text($v)` for a `string` field.

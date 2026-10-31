@@ -8,10 +8,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // The rules of the Node table are printed from Flow IR (the lean value-free rules by the same route
@@ -87,7 +87,7 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 		{"document", false, false, true}, {"document+controls", true, false, true}} {
 		for _, name := range names {
 			t.Run(name+"/"+form.name, func(t *testing.T) {
-				src, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".pego"))
+				src, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".zp"))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -174,7 +174,7 @@ func testFlowNodeRecognizersOnGrammars(t *testing.T) {
 	var cases []gentest.Case
 	for _, name := range []string{"json", "cel", "cue", "duckdb", "golang", "python", "xml", "yaml", "csv", "typescript"} {
 		dir := filepath.Join("..", "..", "..", "parsers", name)
-		src, err := os.ReadFile(filepath.Join(dir, name+".pego"))
+		src, err := os.ReadFile(filepath.Join(dir, name+".zp"))
 		if err != nil {
 			t.Fatal(err)
 		}

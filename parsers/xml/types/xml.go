@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/ornew/pego/parsers/xml/internal/text"
+	"github.com/ornew/zeroparse/parsers/xml/internal/text"
 	"strings"
 )
 

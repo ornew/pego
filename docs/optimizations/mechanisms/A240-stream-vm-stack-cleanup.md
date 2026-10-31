@@ -17,7 +17,7 @@ stack; generated Go/TypeScript have no streaming API.
 
 ## Reference Control
 
-Build tag `pego_reference_stream_stack` restores the former inactive-reference
+Build tag `zp_reference_stream_stack` restores the former inactive-reference
 behavior. The combined storage tag also changes undo/prefix policy.
 
 ## Evidence and Implementation

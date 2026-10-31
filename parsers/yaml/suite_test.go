@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/corpora/corporatest"
-	"github.com/ornew/pego/parsers/yaml"
+	"github.com/ornew/zeroparse/internal/corpora/corporatest"
+	"github.com/ornew/zeroparse/parsers/yaml"
 )
 
 // suiteCase is a test of the yaml-test-suite: an input, and the events and JSON values it must give or

@@ -1,6 +1,6 @@
 package core
 
-import "github.com/ornew/pego/internal/value"
+import "github.com/ornew/zeroparse/internal/value"
 
 // pushFiltered keeps original node values in input order. The predicate must
 // return an actual bool; truthiness and static type narrowing are not implied.

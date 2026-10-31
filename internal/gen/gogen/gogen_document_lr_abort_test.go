@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // TestGeneratedDocumentLeftRecursionAbortedGrowth is the generated Document
@@ -118,7 +118,7 @@ func matchesTyped(t *testing.T, d *Document, unit PositionUnit) {
 const generatedDocumentGrowthConsumer = `package fixture
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 	"context"
 	"encoding/json"
 	"errors"
@@ -187,8 +187,8 @@ func TestInterruptedGrowth(t *testing.T) {
 		for _, cause := range []string{"cancel", "panic"} {
 			grown := 0
 			_, err := interrupt(t, unit, func(cancel context.CancelFunc) []ParseOption {
-				return []ParseOption{pegort.WithTrace(func(e pegort.TraceEvent) {
-					if e.Kind != pegort.TraceExit || !e.Memo || !e.Matched || e.Rule == "main" {
+				return []ParseOption{zprt.WithTrace(func(e zprt.TraceEvent) {
+					if e.Kind != zprt.TraceExit || !e.Memo || !e.Matched || e.Rule == "main" {
 						return
 					}
 					if grown++; grown == 2 {

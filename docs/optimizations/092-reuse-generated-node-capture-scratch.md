@@ -43,7 +43,7 @@ those fixtures, optimized, reference and parent outputs match in 216 checked
 fingerprints. Full root and parser-module suites, generation freshness, vet and
 site tests and shipped/benchmark parser regeneration pass. The clean 131-case,
 three-sample full snapshot at
-[f8c2399](https://github.com/ornew/pego/commit/f8c2399e4679af46e98dca39d1bd7ccc9c2a4b49)
+[f8c2399](https://github.com/ornew/zeroparse/commit/f8c2399e4679af46e98dca39d1bd7ccc9c2a4b49)
 is recorded in [the full results](../benchmarks.md), without attributing it to
 this optimization.
 
@@ -147,14 +147,14 @@ sources remain unchanged.
 ## Reproduction
 
 The generated fixture test preserves optimized/reference parsers under
-`PEGO_NODE_FRAME_DIR`; `PEGO_NODE_FRAME_TYPESCRIPT` adds the TypeScript-grammar
+`ZP_NODE_FRAME_DIR`; `ZP_NODE_FRAME_TYPESCRIPT` adds the TypeScript-grammar
 workload. Run the focused checks and export fixtures with:
 
 ```sh
 go test ./runtime -run '^TestNodeFrameScratch' -count=1
 go test ./internal/gen/gogen -run '^TestGeneratedNodeFrameScratch' -count=1
-PEGO_NODE_FRAME_DIR=/tmp/pego-node-frame \
-  PEGO_NODE_FRAME_TYPESCRIPT=1 \
+ZP_NODE_FRAME_DIR=/tmp/zp-node-frame \
+  ZP_NODE_FRAME_TYPESCRIPT=1 \
   go test ./internal/gen/gogen -run '^TestGeneratedNodeFrameScratchWorkloads$' -count=1
 ```
 

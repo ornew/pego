@@ -9,8 +9,8 @@ the grammar again, but takes every result that the change did not touch from the
 The grammar is that of [Report several errors in one run](several-errors.md), with a root that builds nothing. A text that
 is half typed is not valid, so the grammar recovers from errors, and every keystroke gets a tree and the errors so far.
 
-```pego
-// settings.pego
+```zp
+// settings.zp
 type Setting = { Key node[string]; Value node[string] }
 type Item ~ Setting | error
 
@@ -46,14 +46,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed settings.pego
+//go:embed settings.zp
 var grammar string
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func main() {
 		_, err := doc.Parse() // an editor would show the errors and use the tree where it can
 		elapsed := time.Since(start)
 		var n int
-		if errs, ok := err.(pego.SyntaxErrors); ok {
+		if errs, ok := err.(zeroparse.SyntaxErrors); ok {
 			n = len(errs)
 		}
 		fmt.Printf("typed %-12q %8s  evaluated %5d  reused %5d  errors %d\n",
@@ -136,9 +136,9 @@ parse from scratch  5.243ms
   takes the number of lines as an argument). Reuse is about four times faster here, not independent of the size, and
   the grammar decides how much: see below.
 - **Errors are part of the result.** A half-typed line is an error, and `Parse` returns the tree together with a
-  `pego.SyntaxErrors`, as in the previous recipe. After `timeout = 30;` is complete, the errors are gone.
+  `zeroparse.SyntaxErrors`, as in the previous recipe. After `timeout = 30;` is complete, the errors are gone.
 - **`Edit(start, end, text)` counts in the position unit of the document** (code points by default; `Bytes` with
-  `pego.WithUnit(pego.Bytes)` when `NewDocument` is created). It only records the change; the next `Parse` does the work, and
+  `zeroparse.WithUnit(zeroparse.Bytes)` when `NewDocument` is created). It only records the change; the next `Parse` does the work, and
   several edits can come before one.
 
 ## Writing a Grammar That Reuses Well

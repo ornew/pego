@@ -6,15 +6,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // legacyConstructorGrammar is constructorGrammar in the retired terminal type syntax, read with
-// syntax.ParseLegacy as the text structs that pego fix writes for it.
+// syntax.ParseLegacy as the text structs that zp fix writes for it.
 const legacyConstructorGrammar = `type Int terminal
 type Alias ~ Int
 type Values = { Items []Int; Nested [][]Int; Maybe []*Int; Default Int; Empty []Int }

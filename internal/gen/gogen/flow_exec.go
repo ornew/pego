@@ -8,13 +8,13 @@ import (
 
 	goast "go/ast"
 
-	"github.com/ornew/pego/internal/compile"
-	irc "github.com/ornew/pego/internal/ir/core"
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/core"
-	"github.com/ornew/pego/internal/ir/exec/execgo"
-	"github.com/ornew/pego/internal/ir/exec/lower"
-	"github.com/ornew/pego/internal/ir/flow"
+	"github.com/ornew/zeroparse/internal/compile"
+	irc "github.com/ornew/zeroparse/internal/ir/core"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/ir/exec/execgo"
+	"github.com/ornew/zeroparse/internal/ir/exec/lower"
+	"github.com/ornew/zeroparse/internal/ir/flow"
 )
 
 // Go rules printed from Exec IR.

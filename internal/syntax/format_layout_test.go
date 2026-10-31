@@ -3,7 +3,7 @@ package syntax
 import (
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // A comment before a value on the same line brings its own space, so the separator before it

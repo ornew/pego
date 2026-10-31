@@ -47,20 +47,20 @@ claimed for other backends or units.
 
 The measurements used Go 1.27.1 on an Apple M3 Max (darwin/arm64), with
 `GOMAXPROCS=16` and `GOGC=100`. The default build uses snapshot sharing; the
-`pego_snapshot_sharing_reference` build tag selects the copy baseline. Build
+`zp_snapshot_sharing_reference` build tag selects the copy baseline. Build
 binaries before timing and alternate fresh processes. Snapshot capture cases
 use three alternating 300 ms pairs. Retention cases use three alternating
 process pairs with forced GC.
 
 ```sh
-GOMAXPROCS=16 GOGC=100 go test -tags pego_snapshot_sharing_reference \
+GOMAXPROCS=16 GOGC=100 go test -tags zp_snapshot_sharing_reference \
   ./internal/engine -run '^$' \
   -bench '^BenchmarkDocumentSnapshotCapture$' -benchmem -benchtime=300ms -count=1
 GOMAXPROCS=16 GOGC=100 go test ./internal/engine -run '^$' \
   -bench '^BenchmarkDocumentSnapshotCapture$' \
   -benchmem -benchtime=300ms -count=1
 
-GOMAXPROCS=16 GOGC=100 go run -tags pego_snapshot_sharing_reference \
+GOMAXPROCS=16 GOGC=100 go run -tags zp_snapshot_sharing_reference \
   ./bench/snapshot-retained \
   -mode snapshot -edit replace-first -size 4096 -versions 64
 GOMAXPROCS=16 GOGC=100 go run \

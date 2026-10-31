@@ -16,7 +16,7 @@ element whose expression has no valued element, for example `(-"a")* #stream`, i
 the unit `()`.
 
 A **stream parse** is a parse started with `Parser.ParseStream` or
-`Parser.Iterate`, or with `pego parse -stream`. The **streaming repetition** is
+`Parser.Iterate`, or with `zp parse -stream`. The **streaming repetition** is
 the `#stream` repetition of the start rule.
 
 ## Contract
@@ -51,7 +51,7 @@ discarded. The start rule MUST contain a streaming repetition; otherwise
 start rule's name), even if a rule that the start rule calls has one. Another
 rule streams when it is made the start rule with `Parser.WithStart`.
 
-`pego parse -stream` prints each element on its own line (JSON by default, an
+`zp parse -stream` prints each element on its own line (JSON by default, an
 S-expression with `-f sexpr`) as it is delivered, then reports the final error,
 if any. It cannot be combined with `-check`.
 

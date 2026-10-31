@@ -11,9 +11,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego/internal/corpora/corporatest"
-	"github.com/ornew/pego/parsers/cel"
-	"github.com/ornew/pego/parsers/cel/internal/upstream"
+	"github.com/ornew/zeroparse/internal/corpora/corporatest"
+	"github.com/ornew/zeroparse/parsers/cel"
+	"github.com/ornew/zeroparse/parsers/cel/internal/upstream"
 )
 
 // refDir is the directory of the reference results of cel-go: testdata/ref, or the directory that the environment

@@ -8,7 +8,7 @@ parsers.
 
 ## Engine Tracing
 
-`pego.WithTrace(f)` calls `f` at the start and at the end of every rule call of
+`zeroparse.WithTrace(f)` calls `f` at the start and at the end of every rule call of
 the parse, in order, so that the events nest like the calls. With several
 `WithTrace` options each function is called in order; a nil `f` is ignored.
 Tracing works with every backend, with `Parse`, `ParsePrefix`, recognition,
@@ -53,7 +53,7 @@ does not change the result.
 
 ## Engine Profiling
 
-`pego.WithProfile(prof)` adds the cost of a parse to a `pego.Profile`, which
+`zeroparse.WithProfile(prof)` adds the cost of a parse to a `zeroparse.Profile`, which
 accumulates any number of parses. It traces the parse, so it composes with
 `WithTrace`; a nil `prof` is ignored. A `Profile` is not safe for concurrent use.
 Times include the cost of measuring them and are comparable with each other
@@ -86,7 +86,7 @@ when the position lies in input that a stream parse has discarded.
 ## Generated Go Batch Tracing
 
 Standalone generated Go Node parsers may be generated with tracing enabled by
-`Observability` of `gen.Go` or `pego gen -observability`. This mode
+`Observability` of `gen.Go` or `zp gen -observability`. This mode
 supports batch `Parse` and `ParseRule`; it also supports `Recognize` when that
 entry point is generated. With generated types, it additionally supports
 `ParseAST` and `ParseRuleAST`, for both direct typed execution and Node-conversion
@@ -217,7 +217,7 @@ Documents and batch `Parse` calls remain allowed from callbacks.
 ## Generated TypeScript Batch Tracing
 
 TypeScript batch tracing MUST be enabled at generation with
-`Observability` of `gen.TypeScript` or `pego gen -lang ts -observability`.
+`Observability` of `gen.TypeScript` or `zp gen -lang ts -observability`.
 It applies to generated `parseWithOptions`, `parseRuleWithOptions` and, when
 generated, `recognizeWithOptions`. With `-types`, the configured-start
 `parseASTWithOptions` also accepts trace options; the legacy positional-unit
@@ -255,7 +255,7 @@ TypeScript batch API does not provide Document event tracing.
 ### Generated TypeScript Batch Profiling
 
 TypeScript batch profiling MUST be emitted only when observability is enabled
-with `Observability` of `gen.TypeScript` or `pego gen -lang ts
+with `Observability` of `gen.TypeScript` or `zp gen -lang ts
 -observability`. The generated module MUST export `Profile` and
 `ProfileSnapshot`, and add `profile?: Profile | null` to `ParseOptions`.
 `parseWithOptions`, `parseRuleWithOptions`, and `recognizeWithOptions` MUST

@@ -10,8 +10,8 @@ A line looks like this:
 2026-10-09T11:12:41Z INFO api GET /users/42 200 12ms
 ```
 
-```pego
-// logs.pego
+```zp
+// logs.zp
 type Time = node[string]
 type Level = node[string]
 type Service = node[string]
@@ -48,7 +48,7 @@ rule millis Millis = ([0-9]+) #atomic
 ```
 
 Generate the parser with `-types` (Go types for the grammar's types and `ParseAST`) and `-recognize` (`Recognize`).
-The tool is recorded in the module with `go get -tool github.com/ornew/pego/cmd/pego`, and `pego gen` creates the output
+The tool is recorded in the module with `go get -tool github.com/ornew/zeroparse/cmd/zp`, and `zp gen` creates the output
 directory:
 
 ```bash
@@ -68,7 +68,7 @@ import (
 	"example.com/logs/logparser"
 )
 
-//go:generate go tool pego gen -g logs.pego -module example.com/logs/logparser -types -recognize -o logparser
+//go:generate go tool zp gen -g logs.zp -module example.com/logs/logparser -types -recognize -o logparser
 
 func main() {
 	data, err := io.ReadAll(os.Stdin)
@@ -135,7 +135,7 @@ printf '2026-10-09T11:12:41Z INFO api GET /x 200 12ms\n2026-10-09T11:12:41Z INFO
 
 ## How It Works
 
-- **A generated parser is the fast one.** `pego gen` writes a Go package with no dependency on PEGO. With `-types`, every
+- **A generated parser is the fast one.** `zp gen` writes a Go package with no dependency on ZeroParse. With `-types`, every
   rule here has a Go type of its own, so `ParseAST` builds `*Line` values directly, without the generic nodes `Parse`
   would build first. The values are plain structs: `l.Level.Value`, `l.Millis.Value`.
 - **Strings stay strings.** `Millis` is a string node, so its `Value` is the matched digits, and you convert
@@ -146,8 +146,8 @@ printf '2026-10-09T11:12:41Z INFO api GET /x 200 12ms\n2026-10-09T11:12:41Z INFO
 ## How Fast
 
 A benchmark in the same directory parses 100,000 lines (5.7 MB) of the same shape, once per iteration, with each entry
-point in turn (`b.Loop()`, `b.SetBytes(len(input))`): `p.Parse` and `p.Parse(input, pego.RecognizeOnly())` of the engine
-(`pego.CompileSource`), and `Parse`, `ParseAST` and `Recognize` of the generated parser. This is the output of
+point in turn (`b.Loop()`, `b.SetBytes(len(input))`): `p.Parse` and `p.Parse(input, zeroparse.RecognizeOnly())` of the engine
+(`zeroparse.CompileSource`), and `Parse`, `ParseAST` and `Recognize` of the generated parser. This is the output of
 `go test -bench . -benchmem` on an Apple M3 Max with Go 1.27.1, rounded, with the columns that are not used here left
 out:
 
@@ -170,8 +170,8 @@ and inputs; measure your own grammar and input (see [Debugging and Profiling](..
   [error recovery](several-errors.md) so that a bad line becomes an `error` value and parsing goes on.
 - **More input than memory.** The generated parser needs the whole input in memory; use the engine and
   [`#stream`](big-files.md).
-- **Without a generated file.** `p.Parse(text, pego.RecognizeOnly())` is the engine's recognition mode, and the typed
-  structs can be replaced by the `Field` and `Elems` of `*pego.Node`.
+- **Without a generated file.** `p.Parse(text, zeroparse.RecognizeOnly())` is the engine's recognition mode, and the typed
+  structs can be replaced by the `Field` and `Elems` of `*zeroparse.Node`.
 
 See [Code generation](../guide/code-generation.md) for what generated parsers support and
 [Running parsers](../guide/running-parsers.md) for recognition mode.

@@ -1,4 +1,4 @@
-//go:build pego_reference_stream_frames
+//go:build zp_reference_stream_frames
 
 package core
 

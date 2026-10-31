@@ -22,7 +22,7 @@ shared by this immutable-record policy.
 
 ## Reference Control
 
-Build tag `pego_snapshot_sharing_reference` selects copied records at the same
+Build tag `zp_snapshot_sharing_reference` selects copied records at the same
 source. It controls record sharing, not parsing, text ownership or
 materialization behavior.
 

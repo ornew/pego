@@ -8,9 +8,9 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/limits"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/limits"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // PositionUnit is the unit of positions in the input.

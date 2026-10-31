@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/parsers/cel/types"
+	"github.com/ornew/zeroparse/parsers/cel/types"
 )
 
 // Limits are limits on an expression, which a CEL implementation is free to choose (the specification only requires

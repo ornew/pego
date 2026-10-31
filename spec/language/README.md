@@ -1,12 +1,12 @@
-# PEGO Grammar Language Specification
+# ZeroParse Grammar Language Specification
 
-PEGO is a parser framework built around a grammar language that extends PEG
-(Parsing Expression Grammar); PEGO is not plain PEG. In addition to describing
-syntax, a PEGO grammar specifies how a typed abstract syntax tree is built, how
+ZeroParse is a parser framework built around a grammar language that extends PEG
+(Parsing Expression Grammar); ZeroParse is not plain PEG. In addition to describing
+syntax, a ZeroParse grammar specifies how a typed abstract syntax tree is built, how
 context-sensitive constructs are recognized, and how the parser reports and
 recovers from syntax errors.
 
-This specification is the reference for the syntax and meaning of `.pego`
+This specification is the reference for the syntax and meaning of `.zp`
 grammar files: their characters and tokens, types, rule expressions, actions,
 annotations and the checks that the compiler applies. How a grammar runs on
 input, and the results it produces, are defined by the

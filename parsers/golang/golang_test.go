@@ -15,7 +15,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego/parsers/golang"
+	"github.com/ornew/zeroparse/parsers/golang"
 )
 
 // compare parses src with go/parser and with the package, and returns a description of the first

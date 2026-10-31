@@ -13,7 +13,7 @@ succeeds. It may refer to variables and named captures visible at its
 position. Square brackets remain character classes; braces are predicates
 only where a primary form of a Rule Expression is expected.
 
-```pego
+```zp
 // Match indentation deeper than the current level, then update it.
 var indent int
 rule deeper_indent = s:spaces { len($s) > indent } { indent := len($s) }
@@ -23,7 +23,7 @@ A nonempty Predicate Action block may contain statements separated by
 semicolons or hard newlines. It is shorthand for adjacent Predicate Actions at
 the same Rule Expression position, so these two rules behave alike:
 
-```pego
+```zp
 var count int
 rule item = { count := 1; count == 1 } "a"
 rule item = { count := 1 } { count == 1 } "a"
@@ -88,7 +88,7 @@ back under the same rules as adjacent Predicate Actions.
   called rule are not visible to its caller.
 - **Backtracking.** Bindings made after a backtracked-to point are undone.
 
-```pego
+```zp
 var x int = 0
 rule a = {x := 1} b
 rule b = {x == 1}

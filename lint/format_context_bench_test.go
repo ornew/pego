@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 func BenchmarkDiagnosticFormatCancellation(b *testing.B) {

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"unicode/utf16"
 
-	"github.com/ornew/pego/parsers/xml"
+	"github.com/ornew/zeroparse/parsers/xml"
 )
 
 func TestLongEncodingDeclarations(t *testing.T) {

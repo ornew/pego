@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 func TestGenerateDocumentDiagnosticOwnership(t *testing.T) {
@@ -30,7 +30,7 @@ rule token Token = t:("a;" @error(message="want token")) #atomic => Token{Text: 
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	export := os.Getenv("PEGO_DOCUMENT_DIAGNOSTIC_BENCH_DIR")
+	export := os.Getenv("ZP_DOCUMENT_DIAGNOSTIC_BENCH_DIR")
 	if export != "" {
 		dir = export
 		if err := os.MkdirAll(dir, 0755); err != nil {

@@ -3,8 +3,8 @@ package compile
 import (
 	"fmt"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // TypeResolver turns the type expressions of a grammar into types. It reports undefined names,

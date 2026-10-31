@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compiletest"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/compiletest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 // DirectTypedDocument builds typed Document parsers generated with the options extra, which
@@ -113,7 +113,7 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 
 const DirectTypedDocumentTests = `package PACKAGE
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
  "context"
  "encoding/json"
  "errors"
@@ -134,7 +134,7 @@ func assertDirect(t *testing.T,d *Document,unit PositionUnit){
  if !reflect.DeepEqual(got,want)||!reflect.DeepEqual(gotErr,wantErr){t.Fatalf("unit %v input %q: Document %#v / %#v; batch %#v / %#v",unit,d.Text(),got,gotErr,want,wantErr)}
  ref,refErr:=reference.ParseAST(d.Text(),reference.WithUnit(reference.PositionUnit(unit)))
  if jsonValue(t,got)!=jsonValue(t,ref)||errorValue(gotErr)!=errorValue(refErr){t.Fatalf("unit %v input %q differs from conversion: %s / %s; %v / %v",unit,d.Text(),jsonValue(t,got),jsonValue(t,ref),gotErr,refErr)}
- if _,ok:=d.X_typedMemo.(*pegort.X_typedDocumentState);!ok{t.Fatal("direct typed cache not retained")}
+ if _,ok:=d.X_typedMemo.(*zprt.X_typedDocumentState);!ok{t.Fatal("direct typed cache not retained")}
 }
 func TestEditsAndReuse(t *testing.T){
  for _,unit:=range []PositionUnit{CodePoints,Bytes}{

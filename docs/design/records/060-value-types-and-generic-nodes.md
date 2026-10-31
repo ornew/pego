@@ -135,7 +135,7 @@ underlying type is the right-hand side. Only struct literals are allowed today;
 `type Int = int` parses but is a semantic error. `type T ~ U` is an alias: `T`
 is only another name that resolves to `U` and creates no type.
 
-```pego
+```zp
 type T = {}   // a new type, distinct from {} and from any other definition
 type T ~ {}   // another name for the unnamed type {}
 ```
@@ -255,12 +255,12 @@ and every guide. Saved bytecode and schema formats need new versions.
 - **Casts are written `x.(T)`.** The postfix form chains with field access and
   fails at run time with an action error when the value is not a `T`.
 - **Migration replaces the old syntax at once.** No compatibility mode is
-  kept. A `pego fix` rewrite handles the mechanical parts (struct definitions,
+  kept. A `zp fix` rewrite handles the mechanical parts (struct definitions,
   `--` to `#cut`, positional to named captures, lambda parameters), and the
   repository grammars and `parsers/` are migrated with it.
 - **Terminal types become one-field structs.** A terminal type names the kind
   of a token, and joins of them, such as `Number | String | Bool`, tell the
-  kinds apart, which `node[string]` cannot do. `pego fix` rewrites
+  kinds apart, which `node[string]` cannot do. `zp fix` rewrites
   `type T terminal` to `type T = { Text string }`, a rule `rule r T = e`
   without an action to `rule r T = t:(e) #atomic => T{Text: text($t)}`
   (without `#atomic` when `e` has captures, which predicates may read), and a
@@ -300,7 +300,7 @@ and every guide. Saved bytecode and schema formats need new versions.
   capture names are written only when the grammar is compiled with source
   information, as `"rule"` and `"captures"` members in JSON and as `@rule`
   and a `name:` label before the element in S-expressions, for example
-  `(k:["a"]@key ":" v:["1"]@num)@main`. `pego parse` does not request source
+  `(k:["a"]@key ":" v:["1"]@num)@main`. `zp parse` does not request source
   information unless asked to.
 - **The Go node is opaque.** The public `Node` exposes methods only: its
   range, its value, the elements of a tuple or list value, and, with source

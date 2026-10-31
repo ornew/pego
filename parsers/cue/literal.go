@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/ornew/pego/parsers/cue/types"
+	"github.com/ornew/zeroparse/parsers/cue/types"
 )
 
 // The decoding of string literals is adapted from cuelang.org/go/cue/literal (Apache License 2.0,

@@ -1,9 +1,9 @@
 // Smoke test of the playground's WebAssembly API in Node.
 //
-//   node smoke.mjs --wasm pego.wasm --wasm-exec wasm_exec.js --cli path/to/pego --repo path/to/repository
+//   node smoke.mjs --wasm zp.wasm --wasm-exec wasm_exec.js --cli path/to/zp --repo path/to/repository
 //
-// It loads pego.wasm, and for each example of cmd/playground/examples.txt compiles the grammar, parses the
-// sample input and checks that the results match what the pego command prints: the JSON tree, the
+// It loads zp.wasm, and for each example of cmd/playground/examples.txt compiles the grammar, parses the
+// sample input and checks that the results match what the zp command prints: the JSON tree, the
 // S-expression, the errors, recognition (-check), other backends and units, fmt and gen -types.
 // It exits with status 1 if any check fails. cmd/playground/wasm_test.go runs it as part of go test.
 
@@ -47,29 +47,29 @@ function diff(got, want) {
   return "";
 }
 
-// Load the Go runtime support and start the program, which installs globalThis.pego.
+// Load the Go runtime support and start the program, which installs globalThis.zp.
 createRequire(import.meta.url)(path.resolve(args["wasm-exec"]));
 const go = new globalThis.Go();
 const { instance } = await WebAssembly.instantiate(readFileSync(args.wasm), go.importObject);
 const exited = go.run(instance);
-if (!globalThis.pego) {
+if (!globalThis.zp) {
   await Promise.race([exited, new Promise((r) => setTimeout(r, 100))]);
 }
-if (!globalThis.pego) {
-  console.error("pego.wasm did not install globalThis.pego");
+if (!globalThis.zp) {
+  console.error("zp.wasm did not install globalThis.zp");
   process.exit(1);
 }
-const call = (method, req) => JSON.parse(globalThis.pego[method](JSON.stringify(req ?? {})));
+const call = (method, req) => JSON.parse(globalThis.zp[method](JSON.stringify(req ?? {})));
 
-// cli runs the pego command and returns its standard output, error (without the "pego: " prefix) and
+// cli runs the zp command and returns its standard output, error (without the "zp: " prefix) and
 // exit status.
 function cli(...argv) {
   const r = spawnSync(args.cli, argv, { cwd: args.repo, encoding: "utf8", maxBuffer: 1 << 28 });
   if (r.error) throw r.error;
-  return { out: r.stdout, err: r.stderr.replace(/^pego: /, "").replace(/\n$/, ""), status: r.status };
+  return { out: r.stdout, err: r.stderr.replace(/^zp: /, "").replace(/\n$/, ""), status: r.status };
 }
 
-// errorText renders syntax errors as the pego command prints them.
+// errorText renders syntax errors as the zp command prints them.
 const errorText = (res) => (res.errors ?? []).map((e) => `${e.line}:${e.col}: ${e.message}`).join("\n");
 
 const manifest = readFileSync(path.join(args.repo, "cmd", "playground", "examples.txt"), "utf8")
@@ -119,7 +119,7 @@ for (const ex of manifest) {
 
   const gen = call("generate", { grammar, package: "parser", types: true });
   // The playground shows the generated files one after another, each under a banner, and offers each on its own.
-  const outDir = mkdtempSync(path.join(os.tmpdir(), "pego-smoke-"));
+  const outDir = mkdtempSync(path.join(os.tmpdir(), "zp-smoke-"));
   const wantGen = cli("gen", "-g", ex.grammar, "-module", "example.com/parser", "-runtime", "import", "-types", "-o", outDir);
   const goFiles = ["parser.go", "api.go", "types/types.go"];
   const wantCode = goFiles
@@ -135,7 +135,7 @@ for (const ex of manifest) {
 // Deep nesting ends with an error instead of overflowing the JavaScript stack, which would stop the
 // program (every later call would then fail).
 {
-  const grammar = readFileSync(path.join(args.repo, "parsers/json/json.pego"), "utf8");
+  const grammar = readFileSync(path.join(args.repo, "parsers/json/json.zp"), "utf8");
   for (const n of [400, 5000]) {
     const input = "[".repeat(n) + "]".repeat(n);
     for (const backend of ["", "closure", "bytecode"]) {
@@ -168,7 +168,7 @@ const bad = call("compile", { grammar: "rule main = (\n" });
 check("diagnostic position", bad.ok === false && bad.diagnostics[0]?.line === 2 && bad.diagnostics[0]?.col === 1,
   JSON.stringify(bad));
 // The program keeps running after an error response.
-const invalid = JSON.parse(globalThis.pego.parse("{"));
+const invalid = JSON.parse(globalThis.zp.parse("{"));
 check("invalid request", invalid.error?.startsWith("invalid request"), JSON.stringify(invalid));
 check("version", call("version").go?.startsWith("go"));
 

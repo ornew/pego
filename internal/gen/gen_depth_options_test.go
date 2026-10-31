@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestGeneratedMaxDepthValidation(t *testing.T) {
@@ -54,7 +54,7 @@ func testGeneratedMaxDepthValidation(t *testing.T) {
 				}
 				continue
 			}
-			want := fmt.Sprintf("var pegoGrammar = rt.NewGrammar(%d)", n)
+			want := fmt.Sprintf("var zpGrammar = rt.NewGrammar(%d)", n)
 			if ts {
 				want = fmt.Sprintf("const G = mkGrammar(%d, ", n)
 			}

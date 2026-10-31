@@ -6,7 +6,7 @@
 
 ## Summary
 
-Define a versioned JSON suite for repeatable grammar examples and a `pego test`
+Define a versioned JSON suite for repeatable grammar examples and a `zp test`
 command/API to run them. A fixture can assert accepted, recovered, or rejected
 outcomes, canonical node JSON, source spans, and syntax-error locations.
 Optional backend equivalence is a separate result, never a substitute for
@@ -16,7 +16,7 @@ backend has no inherited value.
 
 ## Motivation
 
-Grammar-specific tests can assert parser behavior, but PEGO has no common fixture
+Grammar-specific tests can assert parser behavior, but ZeroParse has no common fixture
 contract for parse outcomes, values, locations, and backend
 comparisons. A shared format lets grammar authors reuse examples across
 packages without treating backend agreement as the correctness oracle.
@@ -26,7 +26,7 @@ packages without treating backend agreement as the correctness oracle.
 - Define a versioned, strict fixture format for accepted, recovered, and
   rejected examples.
 - Assert canonical node JSON and explicit node and syntax-error locations.
-- Run an explicit, ordered selection of PEGO execution backends.
+- Run an explicit, ordered selection of ZeroParse execution backends.
 - Keep each backend's fixture result independent of cross-backend equivalence.
 - Produce deterministic JSON reports and readable expected/actual differences.
 - Update only node/location goldens, without changing inputs or outcome
@@ -36,8 +36,8 @@ packages without treating backend agreement as the correctness oracle.
 
 - Generate inputs, mutate documents, minimize failures, or perform
   coverage-guided fuzzing.
-- Compare PEGO with an external parser or treat reference deviations as correct.
-- Run generated Go or TypeScript parsers; this design covers PEGO's own
+- Compare ZeroParse with an external parser or treat reference deviations as correct.
+- Run generated Go or TypeScript parsers; this design covers ZeroParse's own
   execution backends.
 - Update fixture inputs or outcome expectations automatically.
 
@@ -51,7 +51,7 @@ whose defaults are omitted are described below.
 ```json
 {
   "version": 1,
-  "grammar": "grammar.pego",
+  "grammar": "grammar.zp",
   "start": "main",
   "unit": "codepoints",
   "backends": ["closure", "bytecode", "bytecode-iterative"],
@@ -75,9 +75,9 @@ whose defaults are omitted are described below.
 ```
 
 `version` is required and unsupported versions fail to load. `grammar` is
-required and names a PEGO source (`.pego`) or grammar JSON (`.json`) file,
+required and names a ZeroParse source (`.zp`) or grammar JSON (`.json`) file,
 resolved relative to the suite file unless absolute. The proposed v1 accepts
-source and JSON grammars; compiled `.pegoc` support is deferred pending a scope
+source and JSON grammars; compiled `.zpc` support is deferred pending a scope
 decision. `start` defaults to `main`. `unit` defaults to `codepoints`; `bytes`
 selects UTF-8 byte positions. `backends` defaults to `default`. Supported names
 are `default`, `closure`, `bytecode`, and `bytecode-iterative`; duplicates are
@@ -93,7 +93,7 @@ validate field presence rather than relying on
 the decoded string's zero value. `expect.outcome` is required in the shared
 expectation or a backend override. Optional fields are:
 
-- `node`: expected PEGO node JSON, compared after canonicalizing JSON object
+- `node`: expected ZeroParse node JSON, compared after canonicalizing JSON object
   key order. Array order and JSON scalar types remain significant.
 - `start` and `end`: root node span in the suite's selected unit. Values are
   nonnegative, and `end` cannot precede `start` when both are supplied.
@@ -162,7 +162,7 @@ How runtime-error categories participate in equivalence remains unresolved.
 The proposed command is:
 
 ```text
-pego test -f suite.json [-format text|json]
+zp test -f suite.json [-format text|json]
             [-backend closure,bytecode] [-equivalence] [-update]
 ```
 
@@ -220,7 +220,7 @@ clearing a backend override without changing shared expectations.
 
 This is additive and does not change grammar syntax, parser semantics, node
 serialization, or existing parser APIs. The proposed execution backends are
-closure, recursive bytecode, and iterative bytecode. `default` follows PEGO's
+closure, recursive bytecode, and iterative bytecode. `default` follows ZeroParse's
 public default. Backend-specific expected values document observed differences
 without changing runtime selection.
 
@@ -285,7 +285,7 @@ single `default` backend, with equivalence explicitly requested.
   intentional deviations without weakening common expectations.
 - Confirm whether update creates missing node/location goldens. It must refuse
   to write when the observed parse outcome disagrees with the expected outcome.
-- Decide whether compiled `.pegoc` suites are required in the initial release.
+- Decide whether compiled `.zpc` suites are required in the initial release.
 - Decide whether equivalence should compare runtime-error categories; do not
   compare unstable error text.
 - Backend equivalence does not explain why a known deviation exists. If fixture

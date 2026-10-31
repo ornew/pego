@@ -6,7 +6,7 @@
 
 ## Summary
 
-Every backend of PEGO lowers the grammar AST (`grammar.Expr`) by itself, so every optimization is written
+Every backend of ZeroParse lowers the grammar AST (`grammar.Expr`) by itself, so every optimization is written
 once per lowering and generated Go is repaired after it has been printed. This design puts two internal
 representations between the checked grammar and the backends:
 
@@ -25,7 +25,7 @@ Document parses. Each existing lowering is removed in the stage that replaces it
 
 ```text
                                                    ┌─ closure pipeline ──▶ closures (Closure backend)
-grammar.Grammar ──check, analyze──▶ Core IR ───────┼─ bytecode pipeline ─▶ bytecode module (RVM, IVM, .pegoc)
+grammar.Grammar ──check, analyze──▶ Core IR ───────┼─ bytecode pipeline ─▶ bytecode module (RVM, IVM, .zpc)
                                                    └─ generated pipeline ▶ Flow IR ──▶ Go
                                                                                    └──▶ TypeScript
 ```
@@ -194,11 +194,11 @@ Counts in the checked-in parsers (`parsers/*/parser.go`):
 An excerpt of the start rule of `cel`, as generated today:
 
 ```go
-func i0(p *pegort.TParser) (any, bool) {
+func i0(p *zprt.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		c     *pegort.TActCtx
+		c     *zprt.TActCtx
 		ok    bool
 		k1    any
 		x2    int
@@ -216,7 +216,7 @@ The post-passes also dominate generation time. `gen.Go{Types: true}.Generate` on
 the ordinary-method specialization 24.5 %, the removal of unreached typed entries 8.6 %, the charge stripping 7.5 % and the final
 `go/format.Source` 5.4 %; compilation and emission had less than 2 %. `qualifyRuntime` inserts each
 qualifier by copying the rest of the source, which is quadratic and can be fixed independently of this
-design. `pego gen -types -typed-only` on the same grammar took 4.0 s; with Node output as well it took 14.9
+design. `zp gen -types -typed-only` on the same grammar took 4.0 s; with Node output as well it took 14.9
 s and 412 MB of resident memory for a 6.9 MB `parser.go`.
 
 ## Goals
@@ -736,7 +736,7 @@ The baseline for each stage is the commit before it, measured on the same machin
 `parser.ts` is 16% to 23% smaller except DuckDB (14% larger) but 6% to 46% larger after gzip for every grammar. The
 comparison sets the old printer, which always spends budget, against the new form without budget controls. The measured quantities of every stage are:
 
-- **Generation:** wall time, CPU and allocations of `pego gen` for each repository parser with its
+- **Generation:** wall time, CPU and allocations of `zp gen` for each repository parser with its
   `parsers/generate.go` options, plus DuckDB and Python with Node and typed output. The `QualifyRuntime`
   fix is measured on its own, so that its gain is not attributed to this design.
 - **Generated code:** `parser.go` bytes, lines and functions; `go build` time and binary size of each

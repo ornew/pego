@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // TestGeneratedDocumentBenchmarkFixture exports source for a focused benchmark.
@@ -16,9 +16,9 @@ import (
 // batch control compiles the same grammar with and without Document generation.
 func TestGeneratedDocumentBenchmarkFixture(t *testing.T) {
 	t.Parallel()
-	dir := os.Getenv("PEGO_GENERATED_DOCUMENT_BENCH_DIR")
+	dir := os.Getenv("ZP_GENERATED_DOCUMENT_BENCH_DIR")
 	if dir == "" {
-		t.Skip("set PEGO_GENERATED_DOCUMENT_BENCH_DIR to export the benchmark fixture")
+		t.Skip("set ZP_GENERATED_DOCUMENT_BENCH_DIR to export the benchmark fixture")
 	}
 	// The exported fixture has budget controls unless the run is restricted to the ordinary form.
 	if gentest.EnvForm == "" {
@@ -98,7 +98,7 @@ func testGeneratedDocumentBenchmarkFixtureGrammarsTypeCheck(t *testing.T) {
 // writeGeneratedDocumentBenchmarkFixture writes the benchmark module of the Document fixture into dir.
 func writeGeneratedDocumentBenchmarkFixture(t testing.TB, dir string) {
 	t.Helper()
-	observability := os.Getenv("PEGO_GENERATED_DOCUMENT_OBSERVABILITY") == "1"
+	observability := os.Getenv("ZP_GENERATED_DOCUMENT_OBSERVABILITY") == "1"
 	g, err := parseTest(documentBenchNodeGrammar)
 	if err != nil {
 		t.Fatal(err)

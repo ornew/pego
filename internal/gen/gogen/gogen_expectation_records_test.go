@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestGeneratedExpectationRecords(t *testing.T) {
@@ -31,9 +31,9 @@ rule main N = ("é") #atomic`)
 	}
 	// The fixture is also a test of the core package; the generated runtime exports the names it
 	// uses except for the expectation record itself, which the runtime keeps unexported.
-	fixture = []byte(strings.NewReplacer("package core", "package engine", "&Parser{", "&pegort.Parser{", "ExpID", "pegort.ExpID", "ExpMark", "pegort.ExpMark", "MsgBit", "pegort.MsgBit",
+	fixture = []byte(strings.NewReplacer("package core", "package engine", "&Parser{", "&zprt.Parser{", "ExpID", "zprt.ExpID", "ExpMark", "zprt.ExpMark", "MsgBit", "zprt.MsgBit",
 		"p.ExpBase", "p.expBase", "p.Expect(", "p.Expect(", "p.Exp", "p.exp", "p.Farthest", "p.farthest").Replace(string(fixture)))
-	fixture = []byte(strings.Replace(string(fixture), "import (", "import (\n\tpegort \"github.com/ornew/pego/runtime\"", 1))
+	fixture = []byte(strings.Replace(string(fixture), "import (", "import (\n\tzprt \"github.com/ornew/zeroparse/runtime\"", 1))
 	for _, mode := range []string{"plain", "direct", "conversion"} {
 		t.Run(mode, func(t *testing.T) {
 			code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "engine", Start: "main", Types: mode != "plain", ConvertTypes: mode == "conversion"})
@@ -86,4 +86,4 @@ func TestTypedExpectationPoolReuse(t *testing.T) {
 }
 
 // qualifyFixtureNames qualifies the runtime names that the code of the fixtures above uses.
-var qualifyFixtureNames = strings.NewReplacer("TParser", "pegort.TParser", "Parser:", "Parser:", "Parser", "pegort.Parser", "ExpID", "pegort.ExpID", "MsgBit", "pegort.MsgBit")
+var qualifyFixtureNames = strings.NewReplacer("TParser", "zprt.TParser", "Parser:", "Parser:", "Parser", "zprt.Parser", "ExpID", "zprt.ExpID", "MsgBit", "zprt.MsgBit")

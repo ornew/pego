@@ -33,7 +33,7 @@ gives its value; when at least one of those captures is always made, the join is
 taken without nil, and otherwise each capture that may not be made contributes nil,
 so the type is optional, `*T`.
 
-```pego
+```zp
 rule r = x:"a"? y:("b" / z:"c") // $x: *node[string], $y: node[string], $z: *node[string]
 rule s = k:num "=" k:("x" "y")  // $k: num | node[(node[string], node[string])]
 ```
@@ -135,7 +135,7 @@ types retain their types. These are resource limits, not proofs of infinite
 growth: a finite recursive type can also reach them. Declare recursive result
 types when precise checking is required.
 
-```pego
+```zp
 rule num = [0-9]+ #atomic // node[string]
 rule pair = k:num "=" v:num // node[(num, node[string], num), {"k": 0, "v": 2}]
 ```

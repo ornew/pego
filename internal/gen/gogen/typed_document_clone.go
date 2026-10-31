@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gen"
 )
 
 // documentClone emits the CloneAST path, which copies the private values retained

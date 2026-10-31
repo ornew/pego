@@ -12,10 +12,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/limits"
-	"github.com/ornew/pego/internal/value"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/limits"
+	"github.com/ornew/zeroparse/internal/value"
+	"github.com/ornew/zeroparse/schema"
 )
 
 // Pattern is a programmatic structural pattern. Empty Type, Rule and Category are
@@ -58,7 +58,7 @@ type Edge struct {
 type Capture struct {
 	Name, Category string
 	Value          any
-	Parent         *pego.Node
+	Parent         *zeroparse.Node
 	Path           []Edge
 }
 
@@ -80,7 +80,7 @@ func WithContext(ctx context.Context) Option {
 
 // WithLimits bounds the budget a query may spend. Budget is charged for traversal, matching, paths and
 // results. A zero or Unlimited limit means an unlimited budget.
-func WithLimits(limits pego.Limits) Option {
+func WithLimits(limits zeroparse.Limits) Option {
 	return func(o *options) { o.limits = limits }
 }
 
@@ -263,7 +263,7 @@ func (b *budget) charge(n uint64) error {
 // therefore charges no input. Cancellation, budget limit exhaustion and cycles (ErrCycle)
 // return an error without partial results. A query with a rule constraint reports
 // ErrNoSourceInfo when the graph has nodes but none records a rule.
-func (q *Query) Matches(root *pego.Node, opts ...Option) ([]Match, error) {
+func (q *Query) Matches(root *zeroparse.Node, opts ...Option) ([]Match, error) {
 	if q == nil {
 		return nil, fmt.Errorf("nil structural query")
 	}

@@ -1,40 +1,40 @@
 package bench
 
 import (
-	"github.com/ornew/pego/internal/bench/inputs"
+	"github.com/ornew/zeroparse/internal/bench/inputs"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 const streamAdoptionElements = 50001 // inputs.CSVInput(50000) includes the header.
 
 var (
-	cacheAdoptionStats pego.CacheStats
-	cacheAdoptionNode  *pego.Node
+	cacheAdoptionStats zeroparse.CacheStats
+	cacheAdoptionNode  *zeroparse.Node
 )
 
 // BenchmarkStreamDeliveryAdoption compares the two public delivery interfaces
 // on BenchmarkStream's unchanged CSV grammar and input. Both run to clean EOF.
 // Count ok rather than non-nil nodes: a successful stream element may be nil.
 func BenchmarkStreamDeliveryAdoption(b *testing.B) {
-	p := load(b, "../parsers/csv/csv.pego")
+	p := load(b, "../parsers/csv/csv.zp")
 	input := inputs.CSVInput(50000)
 	for _, be := range backends {
 		for _, u := range units {
 			for _, mode := range []string{"callback", "iterator"} {
 				b.Run(be.name+"/"+u.name+"/"+mode, func(b *testing.B) {
-					opts := []pego.ParseOption{pego.WithBackend(be.b), pego.WithUnit(u.u)}
+					opts := []zeroparse.ParseOption{zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u)}
 					b.SetBytes(int64(len(input)))
 					b.ReportAllocs()
 					for b.Loop() {
 						count := 0
 						reader := strings.NewReader(input)
 						if mode == "callback" {
-							err := p.ParseStream(reader, func(*pego.Node) error {
+							err := p.ParseStream(reader, func(*zeroparse.Node) error {
 								count++
 								return nil
 							}, opts...)
@@ -73,20 +73,20 @@ func BenchmarkStreamDeliveryAdoption(b *testing.B) {
 // until its first committed element. Parsing continues to clean EOF so this
 // measurement does not include a callback-error or early-close path.
 func BenchmarkStreamFirstElementAdoption(b *testing.B) {
-	p := load(b, "../parsers/csv/csv.pego")
+	p := load(b, "../parsers/csv/csv.zp")
 	input := inputs.CSVInput(50000)
 	for _, be := range backends {
 		for _, u := range units {
 			for _, mode := range []string{"callback", "iterator"} {
 				b.Run(be.name+"/"+u.name+"/"+mode, func(b *testing.B) {
-					opts := []pego.ParseOption{pego.WithBackend(be.b), pego.WithUnit(u.u)}
+					opts := []zeroparse.ParseOption{zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u)}
 					var firstTotal time.Duration
 					for b.Loop() {
 						count := 0
 						reader := strings.NewReader(input)
 						start := time.Now()
 						if mode == "callback" {
-							err := p.ParseStream(reader, func(*pego.Node) error {
+							err := p.ParseStream(reader, func(*zeroparse.Node) error {
 								count++
 								if count == 1 {
 									firstTotal += time.Since(start)
@@ -131,13 +131,13 @@ func BenchmarkStreamFirstElementAdoption(b *testing.B) {
 // ResetAndParse measures the explicit reset plus the next parse; FreshDocument
 // includes constructing and parsing a new Document with the same options.
 func BenchmarkDocumentCacheAdoption(b *testing.B) {
-	p := load(b, "../examples/minilang/minilang.pego")
+	p := load(b, "../examples/minilang/minilang.zp")
 	input := inputs.MinilangInput(300, 0)
 	for _, be := range backends {
 		for _, u := range units {
 			for _, mode := range []string{"CacheStats", "ResetAndParse", "FreshDocument"} {
 				b.Run(be.name+"/"+u.name+"/"+mode, func(b *testing.B) {
-					opts := []pego.ParseOption{pego.WithBackend(be.b), pego.WithUnit(u.u)}
+					opts := []zeroparse.ParseOption{zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u)}
 					if mode == "FreshDocument" {
 						b.ReportAllocs()
 						for b.Loop() {
@@ -185,7 +185,7 @@ func BenchmarkDocumentCacheAdoption(b *testing.B) {
 					}
 					if mode == "ResetAndParse" {
 						d.ResetHistory()
-						if after := d.CacheStats(); after != (pego.CacheStats{}) {
+						if after := d.CacheStats(); after != (zeroparse.CacheStats{}) {
 							b.Fatalf("reset retained cache state: %+v", after)
 						}
 					}

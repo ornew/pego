@@ -1,6 +1,6 @@
 package ops
 
-import "github.com/ornew/pego/internal/ir/exec"
+import "github.com/ornew/zeroparse/internal/ir/exec"
 
 // State components of the transitional operations.
 const (

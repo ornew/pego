@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/schema"
 )
 
 // A query pattern compiled with a schema must be able to match some value the schema admits where

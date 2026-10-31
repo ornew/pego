@@ -1,4 +1,4 @@
-// Web Worker that runs pego.wasm, so that a long parse never freezes the page. The page sends
+// Web Worker that runs zp.wasm, so that a long parse never freezes the page. The page sends
 // {type: "init", base, wasm, module?} once, then {id, method, req}; each call is answered with
 // {id, out} (the JSON response) or {id, error}.
 
@@ -7,7 +7,7 @@ let ready = null;
 async function init(msg) {
   let runtime = msg.base + "wasm_exec.js";
   const wasmURL = new URL(msg.wasm);
-  if (/\/wasm\/pego-[0-9a-f]{16}\.wasm$/.test(wasmURL.pathname)) {
+  if (/\/wasm\/zp-[0-9a-f]{16}\.wasm$/.test(wasmURL.pathname)) {
     const resp = await fetch(msg.base + "assets.json", { cache: "no-cache" });
     if (!resp.ok) throw new Error(`cannot load playground assets: ${resp.status}`);
     const manifest = await resp.json();
@@ -30,8 +30,8 @@ async function init(msg) {
   go.run(instance).then(() => {
     self.postMessage({ type: "exit" });
   });
-  if (!self.pego) throw new Error("pego.wasm did not start");
-  const v = JSON.parse(self.pego.version("{}"));
+  if (!self.zp) throw new Error("zp.wasm did not start");
+  const v = JSON.parse(self.zp.version("{}"));
   self.postMessage({ type: "ready", version: v });
 }
 
@@ -46,7 +46,7 @@ self.onmessage = async (e) => {
   }
   try {
     await ready;
-    const out = self.pego[msg.method](JSON.stringify(msg.req ?? {}));
+    const out = self.zp[msg.method](JSON.stringify(msg.req ?? {}));
     self.postMessage({ id: msg.id, out });
   } catch (err) {
     self.postMessage({ id: msg.id, error: String(err && err.message ? err.message : err) });

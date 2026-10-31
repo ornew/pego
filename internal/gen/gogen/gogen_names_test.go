@@ -13,11 +13,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // runtimeNameTypes are names that the runtime and the generated parser package declare. A type of a
@@ -195,7 +195,7 @@ func TestGeneratedTypeNamedLikeTypesPackageName(t *testing.T) {
 		rejected      bool
 	}{
 		{"TNode", "type TNode = { Value int }\nrule main = \"a\"\n", true},
-		{"hooks", "type PegoHooks = { Value int }\nrule main = \"a\"\n", true},
+		{"hooks", "type ZPHooks = { Value int }\nrule main = \"a\"\n", true},
 		{"unit used", "type Unit = { Value int }\nrule main = \"a\" => ()\n", true},
 		{"unit unused", "type Unit = { Value int }\nrule main = \"a\"\n", false},
 		{"tuple used", "type Tuple2 = { Value int }\nrule main = \"a\" \"b\" => (1, 2)\n", true},
@@ -238,7 +238,7 @@ func TestGeneratedTypesPackageNamesTheRuntimeExplicitly(t *testing.T) {
 	}
 	for _, name := range []string{"json", "csv", "cel", "yaml"} {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".pego"))
+			data, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".zp"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -539,7 +539,7 @@ func TestEmbeddedModeCompilesRichGrammars(t *testing.T) {
 	}
 	for _, name := range []string{"json", "csv", "cel", "yaml"} {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".pego"))
+			data, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".zp"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -587,7 +587,7 @@ func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
 	declares := regexp.MustCompile(`(?m)^\s*type\s+(\w+)`)
 	for _, name := range []string{"json", "csv", "cel", "yaml"} {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".pego"))
+			data, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".zp"))
 			if err != nil {
 				t.Fatal(err)
 			}

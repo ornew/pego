@@ -1,4 +1,4 @@
-//go:build !pego_reference_stream_prefix && !pego_reference_stream_storage
+//go:build !zp_reference_stream_prefix && !zp_reference_stream_storage
 
 package core
 

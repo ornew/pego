@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/yaml"
+	"github.com/ornew/zeroparse/parsers/yaml"
 )
 
 // TestBudgetErrorsAreDeterministic requires that a parse under a finite budget fails the same way

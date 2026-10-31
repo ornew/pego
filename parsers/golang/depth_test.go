@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/golang"
+	"github.com/ornew/zeroparse/parsers/golang"
 )
 
 // TestNesting checks the one known deviation in the language: go/parser accepts nesting up to

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/parsers/python/types"
+	"github.com/ornew/zeroparse/parsers/python/types"
 )
 
 // EllipsisType is the type of Ellipsis.

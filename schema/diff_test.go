@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/schema"
 )
 
 func diffSchema(types []schema.Type, rules []schema.Rule) *schema.Output {
@@ -37,7 +37,7 @@ func diffSchema(types []schema.Type, rules []schema.Rule) *schema.Output {
 		rule.Result = schema.Shape{Kind: "ref", Ref: id}
 	}
 	return &schema.Output{
-		Format: "pego-output-schema", Version: 2, Start: start,
+		Format: "zp-output-schema", Version: 2, Start: start,
 		PositionUnitIndependent: true, Types: types, Rules: rules,
 	}
 }
@@ -151,7 +151,7 @@ func TestCompareRejectsMalformedIdentities(t *testing.T) {
 		want string
 	}{
 		{"nil", nil, "nil output schema"},
-		{"version", &schema.Output{Format: "pego-output-schema", Version: 3}, "unsupported output schema"},
+		{"version", &schema.Output{Format: "zp-output-schema", Version: 3}, "unsupported output schema"},
 		{"empty type ID", diffSchema([]schema.Type{{Name: "T", Origin: "declared", Shape: schema.Shape{Kind: "struct"}}}, nil), "empty output schema type ID"},
 		{"wrong namespace", diffSchema([]schema.Type{{ID: "inferred/T", Name: "T", Origin: "declared", Shape: schema.Shape{Kind: "struct"}}}, nil), "type identity"},
 		{"duplicate type ID", diffSchema([]schema.Type{{ID: "declared/T", Name: "T", Origin: "declared", Shape: schema.Shape{Kind: "struct"}}, {ID: "declared/T", Name: "T", Origin: "declared", Shape: schema.Shape{Kind: "struct"}}}, nil), "duplicate"},

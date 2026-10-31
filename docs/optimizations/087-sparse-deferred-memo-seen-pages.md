@@ -34,7 +34,7 @@ Generated TypeScript measurements used Node 22.18.0, five rotating rounds, three
 
 Focused boundary/reset tests, generated Go and Node 22 strict-TypeScript controls, and public Go result/budget-hash equality among parent, candidate and dense reference passed. Parser and benchmark generation passed. The full root suite and all ten parser-module vet/test runs passed. Site tests and the pinned-WASM build with link validation passed. At this savepoint, the full benchmark checkpoint remained pending; 32-bit validation was not claimed.
 
-For repeatable controls, export optimized and dense-reference generated Go fixtures with `PEGO_SPARSE_MEMO_GENERATED_DIR`; export TypeScript fixtures with `PEGO_SPARSE_MEMO_TS_DIR`. The tests compare results before timing. Example commands:
+For repeatable controls, export optimized and dense-reference generated Go fixtures with `ZP_SPARSE_MEMO_GENERATED_DIR`; export TypeScript fixtures with `ZP_SPARSE_MEMO_TS_DIR`. The tests compare results before timing. Example commands:
 
 ```sh
 go test ./internal/engine -run '^TestSparseMemo' -count=1
@@ -47,7 +47,7 @@ go test ./internal/engine -run '^$' -bench '^BenchmarkSparseMemoDenseGenerated$'
 node --expose-gc bench.mjs
 ```
 
-Build the dense reference with the private `pego_reference_sparse_memo` control; regenerate reference artifacts using the generation-time reference switches. Keep parent, candidate and same-source reference on identical grammar, operation, input and unit. Serialize runs and report time, B/op and allocs/op separately.
+Build the dense reference with the private `zp_reference_sparse_memo` control; regenerate reference artifacts using the generation-time reference switches. Keep parent, candidate and same-source reference on identical grammar, operation, input and unit. Serialize runs and report time, B/op and allocs/op separately.
 
 ## Historical Savepoint Results (f01bd8b)
 
@@ -97,7 +97,7 @@ The full 131-case, three-sample snapshot at `c73bda3` was an earlier same-revisi
 
 ### Supplemental Storage-Only Probe
 
-At that checkpoint, twelve synthetic core cases measured sparse storage against a same-source dense build using `pego_reference_sparse_memo`: closure, recursive VM and iterative VM; Parse and Recognize; CodePoints and Bytes. Seen backing, both before and after reset, was 2,573,184–2,583,528 bytes versus 9,101,312 bytes in the dense build (0.2827–0.2839×, about 72% lower). The probe reports storage outside the timer; its one-iteration run does not support timing or B/op claims. These figures exclude memo entries, call counters, the rest of the memo table and total heap. The dense reference includes the shared 64-byte layout overhead. This is a separate storage-only result, distinct from the f01 synthetic timing and storage results above.
+At that checkpoint, twelve synthetic core cases measured sparse storage against a same-source dense build using `zp_reference_sparse_memo`: closure, recursive VM and iterative VM; Parse and Recognize; CodePoints and Bytes. Seen backing, both before and after reset, was 2,573,184–2,583,528 bytes versus 9,101,312 bytes in the dense build (0.2827–0.2839×, about 72% lower). The probe reports storage outside the timer; its one-iteration run does not support timing or B/op claims. These figures exclude memo entries, call counters, the rest of the memo table and total heap. The dense reference includes the shared 64-byte layout overhead. This is a separate storage-only result, distinct from the f01 synthetic timing and storage results above.
 
 
 This historical checkpoint narrows its parent-relative comparison to the listed matrix; it does not cover other workloads, 32-bit targets, Documents or streams, and does not prove statistical significance or universal allocation parity.

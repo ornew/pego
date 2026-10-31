@@ -173,7 +173,7 @@ func TestParserGenArgsAdaptsGoOptionsToTypeScript(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := strings.Join(args, " ")
-	if !strings.HasSuffix(got, "cel/cel.pego -types") || !strings.Contains(got, "-g "+filepath.Join(root, "parsers", "cel", "cel.pego")) {
+	if !strings.HasSuffix(got, "cel/cel.zp -types") || !strings.Contains(got, "-g "+filepath.Join(root, "parsers", "cel", "cel.zp")) {
 		t.Errorf("cel args: %s", got)
 	}
 	for _, bad := range []string{"-module", "-runtime", "-nodoc", "-typed-only", "-o "} {

@@ -8,12 +8,12 @@
 
 ## Summary
 
-Add support for **Operators Rule declarations** to PEGO to declare operator precedence and associativity.
+Add support for **Operators Rule declarations** to ZeroParse to declare operator precedence and associativity.
 
 An Operators Rule is a dedicated rule declaration. The *shapes* of operands and operators are written as ordinary parser expressions (PEG), while *how they are combined* (precedence and associativity) is decided by the Operators Rule parsing algorithm.
 Operands and operator parts can call ordinary rules and other Operators Rule declarations, so PEG handles the syntax inside expressions (parentheses, call arguments and so on).
 
-```pego
+```zp
 rule expr Expr = #operators {
     skip ws
     operand number / ident / "(" e:expr ")" => $e
@@ -38,7 +38,7 @@ rule expr Expr = #operators {
 
 The standard way to express operator precedence in PEG is to write one rule per precedence level and have the rules call each other hierarchically.
 
-```pego
+```zp
 rule expr = term (("+" / "-") term)*
 rule term = factor (("*" / "/") factor)*
 rule factor = "-" factor / primary
@@ -77,7 +77,7 @@ Assoc       = "left" / "right" / "none"
 
 ### `skip`
 
-PEGO has no scanner, so whitespace handling must be explicit.
+ZeroParse has no scanner, so whitespace handling must be explicit.
 The expression given to `skip` is **implicitly inserted before each operand and before each operator part** in the Operators Rule, and its result is discarded (as with `-`).
 If `skip` is omitted, nothing is inserted. It is not inserted inside an operator part (for example, between `"("` and `args` in `"(" args ")"`).
 
@@ -100,7 +100,7 @@ A level can be named (`level assignment { ... }`). Names are unique within a rul
 When a parser expression calls an Operators Rule with a level name, as in `level(expr, assignment)`, the expression is parsed **using only the operators of that level and stronger levels** (parsing starts at `parse(level(assignment) - 1)`).
 A call without a level, `expr`, starts at `parse(0)`.
 
-```pego
+```zp
 rule expr Expr = #operators {
     operand number / ident / "(" e:expr ")" => $e
     level { infix left "," => Comma{L: $lhs, R: $rhs} }
@@ -126,7 +126,7 @@ rule expr Expr = #operators {
 The operator part `P` is an arbitrary parser expression and may call the Operators Rule's own rule or other rules.
 This makes it possible to express so-called mixfix operators.
 
-```pego
+```zp
 infix right "?" then:expr ":" // ternary operator  lhs ? then : rhs
 postfix "[" i:expr "]" // subscript         lhs[i]
 prefix "if" c:expr "then" t:expr "else" // if expression    if c then t else rhs

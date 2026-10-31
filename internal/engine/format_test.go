@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 func TestFormatPreservesMinusSemantics(t *testing.T) {
@@ -60,7 +60,7 @@ func TestFormatPreservesCorpus(t *testing.T) {
 	for _, c := range gentest.GenCorpus(t) {
 		sources = append(sources, source{c.Name, c.Src, c.Inputs})
 	}
-	out, err := exec.Command("git", "-C", "../..", "ls-files", "*.pego").Output()
+	out, err := exec.Command("git", "-C", "../..", "ls-files", "*.zp").Output()
 	if err != nil {
 		t.Skip("git ls-files:", err)
 	}

@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ornew/pego/parsers/yaml"
-	"github.com/ornew/pego/parsers/yaml/types"
+	"github.com/ornew/zeroparse/parsers/yaml"
+	"github.com/ornew/zeroparse/parsers/yaml/types"
 )
 
 func ExampleLoad() {
 	v, err := yaml.Load(`
-name: pego
+name: zp
 tags: [peg, pratt]
 stars: 42
 license: ~
@@ -20,7 +20,7 @@ license: ~
 	}
 	m := v.(map[string]any)
 	fmt.Println(m["name"], m["tags"], m["stars"], m["license"])
-	// Output: pego [peg pratt] 42 <nil>
+	// Output: zp [peg pratt] 42 <nil>
 }
 
 func ExampleLoadAll() {

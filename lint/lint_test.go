@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/starttest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/starttest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // lintSource lints src (which must compile) from the rule main and returns the findings as
@@ -203,7 +203,7 @@ func TestNullableRepetition(t *testing.T) {
 		{name: "lookahead element", src: `rule main = (&"a")+ "a"`, want: []string{"1:13 warning nullable-repetition"}},
 		{name: "nullable rule", src: "rule main = ws*\nrule ws = [ ]*", want: []string{"1:13 warning nullable-repetition"}},
 		{name: "consuming element", src: `rule main = ("a" "b"?)*`},
-		// A line that is not at the end of the input must consume its line break: like csv.pego.
+		// A line that is not at the end of the input must consume its line break: like csv.zp.
 		{name: "not nullable because of the end of input", src: "rule main = line* $$\nrule line = !$$ [^\\n]* (\"\\n\" / $$)"},
 		{name: "nullable at the end of input", src: "rule main = line* $$\nrule line = [^\\n]* (\"\\n\" / $$)",
 			want: []string{"1:13 warning nullable-repetition"}},
@@ -238,7 +238,7 @@ func TestUnusedCapture(t *testing.T) {
 		{name: "repetition element read by its predicate", src: `rule main = (x:"a" {len($x) > 0})* => nil`},
 		{name: "lambda parameter of the same name", src: `rule main = r:(x:"a")* x:"b" => map($r, (x) => x.$x)`,
 			want: []string{"1:24 warning unused-capture"}},
-		// pego fix wraps the body of a terminal rule in a capture of its own, which leaves the
+		// zp fix wraps the body of a terminal rule in a capture of its own, which leaves the
 		// capture the terminal discarded unused.
 		{name: "terminal type", src: "type T terminal\nrule main T = a:\"x\"", want: []string{"2:18 warning unused-capture"},
 			msg: "the action does not refer to it", fix: true},
@@ -368,7 +368,7 @@ func TestDirectives(t *testing.T) {
 // TestExamples lints the example grammars. They have no findings: any finding is a false positive
 // (or a new mistake in an example).
 func TestExamples(t *testing.T) {
-	files, err := filepath.Glob("../examples/*/*.pego")
+	files, err := filepath.Glob("../examples/*/*.zp")
 	if err != nil || len(files) == 0 {
 		t.Fatalf("no example grammars: %v", err)
 	}

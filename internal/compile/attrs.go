@@ -1,6 +1,6 @@
 package compile
 
-import "github.com/ornew/pego/grammar"
+import "github.com/ornew/zeroparse/grammar"
 
 func validArg(attr, arg string) bool {
 	switch attr {

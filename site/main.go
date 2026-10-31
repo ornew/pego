@@ -1,4 +1,4 @@
-// Command site builds the PEGO web site: a landing page, the documentation rendered from the
+// Command site builds the ZeroParse web site: a landing page, the documentation rendered from the
 // repository's Markdown, an API reference generated from the Go source, and the playground.
 //
 // Usage (from the site directory):
@@ -20,12 +20,12 @@ import (
 func main() {
 	var cfg Config
 	previous, deploy := deploymentURLs(os.Getenv)
-	flag.StringVar(&cfg.Repo, "repo", "..", "root of the PEGO repository")
+	flag.StringVar(&cfg.Repo, "repo", "..", "root of the ZeroParse repository")
 	flag.StringVar(&cfg.Out, "out", "dist", "output directory (replaced by each build)")
 	flag.BoolVar(&cfg.Wasm, "wasm", true, "build the playground's WebAssembly binary")
 	flag.StringVar(&cfg.WasmMode, "wasm-mode", "go", "playground WASM binaries: go or dual (Go and TinyGo)")
 	flag.BoolVar(&cfg.Check, "check", true, "fail if a generated page links to a missing page or anchor")
-	flag.StringVar(&cfg.GitHub, "github", "https://github.com/ornew/pego", "repository URL for links to source files")
+	flag.StringVar(&cfg.GitHub, "github", "https://github.com/ornew/zeroparse", "repository URL for links to source files")
 	flag.StringVar(&cfg.Ref, "ref", "main", "branch or tag for links to source files")
 	flag.StringVar(&cfg.PreviousSite, "previous-site", previous, "retain the current WASM/runtime pair from this published site URL (automatic for Workers Builds of the production branch)")
 	flag.StringVar(&cfg.DeployURL, "deploy-url", deploy, "immutable URL of this deploy, for fetching its assets on the next production build")

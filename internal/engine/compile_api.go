@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
 )
 
 // Options configures compilation.

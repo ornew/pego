@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 const nodeFrameScratchGrammar = `type Tok = { Text string }
@@ -24,8 +24,8 @@ rule abort = x:"é"* #atomic => Bad{N: 10 / len($x)}
 rule recovering = x:("é" "!") #recover(skip="?") $$ => $x
 `
 
-// PEGO_NODE_FRAME_DIR preserves paired fixtures. Optional
-// PEGO_NODE_FRAME_TYPESCRIPT adds the unchanged TypeScript grammar workload.
+// ZP_NODE_FRAME_DIR preserves paired fixtures. Optional
+// ZP_NODE_FRAME_TYPESCRIPT adds the unchanged TypeScript grammar workload.
 // This test validates fixtures without running their benchmarks.
 func TestGeneratedNodeFrameScratchWorkloads(t *testing.T) {
 	t.Parallel()
@@ -36,7 +36,7 @@ func testGeneratedNodeFrameScratchWorkloads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated fixtures")
 	}
-	dir := os.Getenv("PEGO_NODE_FRAME_DIR")
+	dir := os.Getenv("ZP_NODE_FRAME_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}
@@ -45,8 +45,8 @@ func testGeneratedNodeFrameScratchWorkloads(t *testing.T) {
 		{"nocapture", `type Tok = { Text string }
 rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func frameInputs() (string,string,string) {return "é",strings.Repeat("é",5000),"é!"}`},
 	}
-	if os.Getenv("PEGO_NODE_FRAME_TYPESCRIPT") != "" {
-		source, err := os.ReadFile("../../../parsers/typescript/typescript.pego")
+	if os.Getenv("ZP_NODE_FRAME_TYPESCRIPT") != "" {
+		source, err := os.ReadFile("../../../parsers/typescript/typescript.zp")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -83,7 +83,7 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 				depthLimit := "maxDepth"
 				if strings.Contains(string(code), "type ParseOption ") {
 					workload = strings.ReplaceAll(workload, ", unit)", ", WithUnit(unit))")
-					depthLimit = "pegoGrammar.X_maxDepth"
+					depthLimit = "zpGrammar.X_maxDepth"
 				}
 				fixture = strings.ReplaceAll(fixture, "FRAME_DEPTH_LIMIT", depthLimit)
 				path := filepath.Join(dir, c.name, variant)
@@ -111,11 +111,11 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 
 const frameScratchFixture = `package framefixture
 
-import pegort "github.com/ornew/pego/runtime"
+import zprt "github.com/ornew/zeroparse/runtime"
 import("crypto/sha256";"encoding/json";"fmt";"strings";"sync";"testing")
 const captureCase = CAPTURE_CASE
 func frameJSON(n *Node,err error)string {out:=map[string]any{"node":n};if err!=nil {out["err"]=err.Error()};b,_:=json.Marshal(out);return string(b)}
-func frameCleared(t *testing.T,p *pegort.Parser) {
+func frameCleared(t *testing.T,p *zprt.Parser) {
  t.Helper()
  if p.X_captureScratch.X_frameN!=0 || p.X_captureScratch.X_slotCI!=0 || p.X_captureScratch.X_slotOff!=0 {t.Fatal("scratch cursor survived release")}
  for _,chunk:=range p.X_captureScratch.X_frames {for _,f:=range chunk {if f.Vals!=nil {t.Fatal("released frame retains values")}}}
@@ -153,20 +153,20 @@ func TestFrameResults(t *testing.T) {
  }
 }
 func TestFrameAbortCleanup(t *testing.T) {
- var observed *pegort.Parser
- r:=&pegort.Rule{Name:"abort-test",Seen:-1,Scope:[]string{"x"},Body:func(p *pegort.Parser,_ int)(*Node,bool){
-  observed=p;p.SetCapture(0,p.NewNode(Node{RawText:"abandoned"}));p.X_saved=append(p.X_saved,p.Frame.Vals[0]);panic(pegort.X_fatal{fmt.Errorf("fixture abort")})
+ var observed *zprt.Parser
+ r:=&zprt.Rule{Name:"abort-test",Seen:-1,Scope:[]string{"x"},Body:func(p *zprt.Parser,_ int)(*Node,bool){
+  observed=p;p.SetCapture(0,p.NewNode(Node{RawText:"abandoned"}));p.X_saved=append(p.X_saved,p.Frame.Vals[0]);panic(zprt.X_fatal{fmt.Errorf("fixture abort")})
  }}
- g:=pegort.NewGrammar(0);g.SetRules([]*pegort.Rule{r},0);g.Share(pegoGrammar)
- if _,err:=pegort.RunParse(r,"",nil);err==nil || err.Error()!="fixture abort" {t.Fatal("abort did not propagate")}
+ g:=zprt.NewGrammar(0);g.SetRules([]*zprt.Rule{r},0);g.Share(zpGrammar)
+ if _,err:=zprt.RunParse(r,"",nil);err==nil || err.Error()!="fixture abort" {t.Fatal("abort did not propagate")}
  frameCleared(t,observed)
 }
 func TestFrameDepthAbortCleanup(t *testing.T) {
- var observed *pegort.Parser
- r:=&pegort.Rule{Name:"depth-abort",Rec:true,Seen:-1,Scope:[]string{"x"}}
- r.Body=func(p *pegort.Parser,_ int)(*Node,bool){observed=p;p.SetCapture(0,p.NewNode(Node{RawText:"abandoned"}));p.Depth=FRAME_DEPTH_LIMIT;return p.Call(r,0)}
- g:=pegort.NewGrammar(0);g.SetRules([]*pegort.Rule{r},0);g.Share(pegoGrammar)
- if _,err:=pegort.RunParse(r,"",nil);err==nil || !strings.Contains(err.Error(),"nesting too deep") {t.Fatal("depth abort did not propagate")}
+ var observed *zprt.Parser
+ r:=&zprt.Rule{Name:"depth-abort",Rec:true,Seen:-1,Scope:[]string{"x"}}
+ r.Body=func(p *zprt.Parser,_ int)(*Node,bool){observed=p;p.SetCapture(0,p.NewNode(Node{RawText:"abandoned"}));p.Depth=FRAME_DEPTH_LIMIT;return p.Call(r,0)}
+ g:=zprt.NewGrammar(0);g.SetRules([]*zprt.Rule{r},0);g.Share(zpGrammar)
+ if _,err:=zprt.RunParse(r,"",nil);err==nil || !strings.Contains(err.Error(),"nesting too deep") {t.Fatal("depth abort did not propagate")}
  frameCleared(t,observed)
 }
 func TestFrameConcurrentReuse(t *testing.T) {

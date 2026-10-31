@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/xml"
-	"github.com/ornew/pego/parsers/xml/types"
+	"github.com/ornew/zeroparse/parsers/xml"
+	"github.com/ornew/zeroparse/parsers/xml/types"
 )
 
 // The differential tests compare Decode (with ResolveNamespaces) with encoding/xml's Decoder.Token on

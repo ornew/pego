@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/tsgen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/tsgen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // tsStrictFlags are the strictest checks there are, so that generated code compiles in any project;

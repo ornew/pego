@@ -7,8 +7,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func TestBytePositions(t *testing.T) {

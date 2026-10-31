@@ -3,15 +3,15 @@ package schema_test
 import (
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/schema"
 )
 
 // A field that changes between error and missing is a change of its type.
 func TestCompareMissingAndError(t *testing.T) {
 	compile := func(typ string) *schema.Output {
 		t.Helper()
-		p, err := pego.CompileSource("type P = { S "+typ+" }\n@start\nrule main = \"(\" semi \")\" $$ => P{}\nrule semi = \";\" #missing", "main")
+		p, err := zeroparse.CompileSource("type P = { S "+typ+" }\n@start\nrule main = \"(\" semi \")\" $$ => P{}\nrule semi = \";\" #missing", "main")
 		if err != nil {
 			t.Fatal(err)
 		}

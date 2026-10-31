@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestCompileContextCancelsDuringGrammarValidation(t *testing.T) {

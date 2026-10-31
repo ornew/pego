@@ -10,7 +10,7 @@ Add a postfix `@diagnostic(name="...")` attribute that gives a parsing expressio
 
 The target may be any parsing expression, including a complete rule body:
 
-```pego
+```zp
 rule number Number = ([0-9]+ "." [0-9]+) @diagnostic(name="number")
 ```
 
@@ -45,7 +45,7 @@ The grammar already represents postfix attributes with `grammar.Attributed`. Reu
 
 Attributes keep their normal postfix binding and written order. Each attribute wraps the expression immediately before it, and several attributes compose from the innermost outward. `@diagnostic` is valid on any parsing expression; it is not class metadata and must not be hoisted through semantic wrappers. For example:
 
-```pego
+```zp
 rule digit = [0-9] @diagnostic(name="digit")
 rule number Number = ([0-9]+ "." [0-9]+) @diagnostic(name="number")
 rule recovered = expression @diagnostic(name="expression") #recover(skip=";")
@@ -66,7 +66,7 @@ The attribute must not change whether the expression matches, which branch wins,
 
 The baseline measurements below were executed on main `7cc59d8` using the grammar source form supported by that revision. They establish the existing diagnostic positions, not implementation or acceptance of the selected target syntax.
 
-```pego
+```zp
 rule number = [0-9]+ "." [0-9]+
 ```
 
@@ -75,7 +75,7 @@ rule number = [0-9]+ "." [0-9]+
 
 With the proposed whole-body wrapper:
 
-```pego
+```zp
 rule number Number = ([0-9]+ "." [0-9]+) @diagnostic(name="number")
 ```
 

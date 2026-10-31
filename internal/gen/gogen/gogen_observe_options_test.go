@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // TestGeneratedTraceOptionsNeedObservability checks that a parser generated without observability
@@ -52,20 +52,20 @@ import (
 	"strings"
 	"testing"
 
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 )
 
 func TestTraceOptions(t *testing.T) {
 	observed := `+want+`
 	var events int
-	var profile pegort.Profile
-	trace := func(pegort.TraceEvent) { events++ }
+	var profile zprt.Profile
+	trace := func(zprt.TraceEvent) { events++ }
 	for name, opts := range map[string][]ParseOption{
-		"trace":       {pegort.WithTrace(trace)},
-		"profile":     {pegort.WithProfile(&profile)},
-		"filter":      {pegort.WithTraceFilter("main")},
-		"trace depth": {pegort.WithTraceMaxDepth(1)},
-		"both":        {pegort.WithTrace(trace), pegort.WithProfile(&profile)},
+		"trace":       {zprt.WithTrace(trace)},
+		"profile":     {zprt.WithProfile(&profile)},
+		"filter":      {zprt.WithTraceFilter("main")},
+		"trace depth": {zprt.WithTraceMaxDepth(1)},
+		"both":        {zprt.WithTrace(trace), zprt.WithProfile(&profile)},
 	} {
 		entries := map[string]func() error{
 			"Parse":     func() error { _, err := Parse("aa", opts...); return err },

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/gen"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/gen"
 )
 
 // manifestFile is the checked-in manifest of the generated output of manifestGrammars in every
@@ -25,20 +25,20 @@ var outputTree = flag.String("output-tree", "", "with TestGeneratedOutputManifes
 // manifestGrammars are the grammars of the output manifest: the repository parsers and the examples
 // that the benchmarks generate. Paths are relative to this package.
 var manifestGrammars = []struct{ name, path string }{
-	{"cel", "cel/cel.pego"},
-	{"csv", "csv/csv.pego"},
-	{"cue", "cue/cue.pego"},
-	{"duckdb", "duckdb/duckdb.pego"},
-	{"golang", "golang/golang.pego"},
-	{"json", "json/json.pego"},
-	{"python", "python/python.pego"},
-	{"typescript", "typescript/typescript.pego"},
-	{"xml", "xml/xml.pego"},
-	{"yaml", "yaml/yaml.pego"},
-	{"calc", "../examples/calculator/calc.pego"},
-	{"calclr", "../examples/calculator/calc_lr.pego"},
-	{"minilang", "../examples/minilang/minilang.pego"},
-	{"outline", "../examples/outline/outline.pego"},
+	{"cel", "cel/cel.zp"},
+	{"csv", "csv/csv.zp"},
+	{"cue", "cue/cue.zp"},
+	{"duckdb", "duckdb/duckdb.zp"},
+	{"golang", "golang/golang.zp"},
+	{"json", "json/json.zp"},
+	{"python", "python/python.zp"},
+	{"typescript", "typescript/typescript.zp"},
+	{"xml", "xml/xml.zp"},
+	{"yaml", "yaml/yaml.zp"},
+	{"calc", "../examples/calculator/calc.zp"},
+	{"calclr", "../examples/calculator/calc_lr.zp"},
+	{"minilang", "../examples/minilang/minilang.zp"},
+	{"outline", "../examples/outline/outline.zp"},
 }
 
 // manifestModes are the configurations of the output manifest. Each is generated for every grammar.
@@ -78,7 +78,7 @@ func manifestOutputs(t *testing.T) ([]string, map[string]string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		gr, err := pego.ParseGrammar(string(src))
+		gr, err := zeroparse.ParseGrammar(string(src))
 		if err != nil {
 			t.Fatalf("%s: %v", g.path, err)
 		}

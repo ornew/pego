@@ -159,7 +159,7 @@ func (p *TParser) skipTerminal(t *TerminalProgram, pc int) bool {
 		p.Pos = start
 		return !ok
 	}
-	panic("pego: unknown terminal operation")
+	panic("zp: unknown terminal operation")
 }
 
 // skipTerminalSeq matches the operations from pc to end in turn.

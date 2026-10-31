@@ -32,7 +32,7 @@ in alternating paired runs. The five-pair 500 ms batch comparisons covered
 JSON and XML, closure, bytecode and iterative backends, and both `CodePoints`
 and `Bytes` input. The five-pair 500 ms incremental and long-CSV comparisons
 were in `CodePoints` mode. A same-source flat control was selected with the
-`pego_reference_document_pieces` build tag. A separate live-heap script
+`zp_reference_document_pieces` build tag. A separate live-heap script
 measured a retained 4 MiB `Document` after 0, 1, 10 and 100 edits without
 parsing or retaining Nodes. The reported ratios are scoped to these workloads,
 not universal estimates. Raw per-run output is not part of the repository.

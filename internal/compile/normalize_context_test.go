@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestNormalizationContextCancellation(t *testing.T) {

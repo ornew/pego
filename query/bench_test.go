@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ornew/pego/query"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/query"
+	"github.com/ornew/zeroparse/schema"
 )
 
 var compileSink *query.Query

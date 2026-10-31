@@ -1,7 +1,7 @@
 // A bounded, paged view of the worker's tree. Parsing limits do not bound DOM work.
 import { escapeHTML } from "../assets/highlight.js";
 
-// The tree is the JSON of pego parse: a node is an object with start and end, whose value is a
+// The tree is the JSON of zp parse: a node is an object with start and end, whose value is a
 // string or an array (a tuple or a list) and which may name its rule and captures; an error value
 // has an error message instead of a value; a struct is an object with type, start, end and fields,
 // whose range is that of its rule; a tuple or list value is an array; any other value is a plain

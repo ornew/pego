@@ -1,8 +1,8 @@
-//go:build !pego_snapshot_position_overlays
+//go:build !zp_snapshot_position_overlays
 
 package document
 
-import "github.com/ornew/pego/internal/engine/core"
+import "github.com/ornew/zeroparse/internal/engine/core"
 
 const snapshotPositionOverlayEnabled = false
 

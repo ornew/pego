@@ -3,7 +3,7 @@ package document
 import (
 	"fmt"
 
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 // OutputChange describes whole-result equality, not a minimal tree difference.

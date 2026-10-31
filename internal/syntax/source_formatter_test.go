@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestFormatInteriorCommentOwners(t *testing.T) {

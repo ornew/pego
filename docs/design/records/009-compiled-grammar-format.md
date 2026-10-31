@@ -1,4 +1,4 @@
-# 009. Saving and Loading Compiled Grammars (.Pegoc)
+# 009. Saving and Loading Compiled Grammars (.zpc)
 
 - **Status**: Implemented
 - **Author**: @ornew
@@ -8,7 +8,7 @@
 
 ## Summary
 
-Save a compiled grammar to a file, and later load it and run the parser without compiling again (`pego compile`, `Parser.MarshalBinary`, `LoadParser`).
+Save a compiled grammar to a file, and later load it and run the parser without compiling again (`zp compile`, `Parser.MarshalBinary`, `LoadParser`).
 This is useful for distributing grammars, or when the grammar should not be compiled on every start-up.
 
 ## What to Save
@@ -28,7 +28,7 @@ Preparing from source takes about 0.78 ms, while loading saved data takes about 
 ## Format
 
 ```
-magic    "PEGOC\x00"
+magic    "ZPC\x00"
 version  1 byte
 payload  string table, package name, default start rule, statements (type and rule definitions)
 crc32    CRC-32 (IEEE, little-endian) of everything from magic through payload

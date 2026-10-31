@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/value"
-	pegort "github.com/ornew/pego/runtime"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/value"
+	zprt "github.com/ornew/zeroparse/runtime"
 )
 
 // Exercise the exported APIs against the same hand-built DAG, including nil,
@@ -23,11 +23,11 @@ import (
 func TestTreeRuntimeParity(t *testing.T) {
 	t.Parallel()
 	leaf := value.Ptr(value.Data{Kind: value.MatchKind, Terminal: true, Text: "é<&>", Start: 1, End: 3})
-	gLeaf := pegort.NewNode(pegort.KindString, 1, 3, value.D(leaf).Text, nil, "", nil, nil)
+	gLeaf := zprt.NewNode(zprt.KindString, 1, 3, value.D(leaf).Text, nil, "", nil, nil)
 	child := value.Ptr(value.Data{Children: []*value.Node{leaf}, Fields: value.Fields{{Name: "list", Value: []any{leaf, nil, []byte{1, 2}}}}})
-	gChild := pegort.NewNode(pegort.KindStruct, 0, 0, "", []*pegort.Node{gLeaf}, "", pegort.Fields{{Name: "list", Value: []any{gLeaf, nil, []byte{1, 2}}}}, nil)
+	gChild := zprt.NewNode(zprt.KindStruct, 0, 0, "", []*zprt.Node{gLeaf}, "", zprt.Fields{{Name: "list", Value: []any{gLeaf, nil, []byte{1, 2}}}}, nil)
 	root := value.Ptr(value.Data{Children: []*value.Node{child, nil, leaf}, Fields: value.Fields{{Name: "z", Value: true}, {Name: "a", Value: leaf}}})
-	gRoot := pegort.NewNode(pegort.KindStruct, 0, 0, "", []*pegort.Node{gChild, nil, gLeaf}, "", pegort.Fields{{Name: "z", Value: true}, {Name: "a", Value: gLeaf}}, nil)
+	gRoot := zprt.NewNode(zprt.KindStruct, 0, 0, "", []*zprt.Node{gChild, nil, gLeaf}, "", zprt.Fields{{Name: "z", Value: true}, {Name: "a", Value: gLeaf}}, nil)
 	core, err := root.MarshalJSON()
 	if err != nil {
 		t.Fatal(err)
@@ -51,7 +51,7 @@ func TestTreeRuntimeParity(t *testing.T) {
 		a = append(a, describe(v.Depth, uint8(v.Edge.Kind), v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex, n, p))
 		return value.WalkContinue, nil
 	}
-	cb := func(v pegort.WalkVisit) (pegort.WalkAction, error) {
+	cb := func(v zprt.WalkVisit) (zprt.WalkAction, error) {
 		n, p := "", ""
 		if v.Node != nil {
 			n = v.Node.Text()
@@ -60,12 +60,12 @@ func TestTreeRuntimeParity(t *testing.T) {
 			p = v.Parent.Text()
 		}
 		b = append(b, describe(v.Depth, uint8(v.Edge.Kind), v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex, n, p))
-		return pegort.WalkContinue, nil
+		return zprt.WalkContinue, nil
 	}
 	if err := value.Walk(root, ca); err != nil {
 		t.Fatal(err)
 	}
-	if err := pegort.Walk(gRoot, cb); err != nil {
+	if err := zprt.Walk(gRoot, cb); err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(a, b) {
@@ -77,7 +77,7 @@ func TestTreeRuntimeParity(t *testing.T) {
 			if err := (engine.Cursor{Root: root, Unit: unit}).Range(span[0], span[1], ca); err != nil {
 				t.Fatal(err)
 			}
-			if err := (pegort.Cursor{Root: gRoot, Unit: pegort.PositionUnit(unit)}).Range(span[0], span[1], cb); err != nil {
+			if err := (zprt.Cursor{Root: gRoot, Unit: zprt.PositionUnit(unit)}).Range(span[0], span[1], cb); err != nil {
 				t.Fatal(err)
 			}
 			if !reflect.DeepEqual(a, b) {
@@ -86,10 +86,10 @@ func TestTreeRuntimeParity(t *testing.T) {
 		}
 	}
 	value.D(root).Children = []*value.Node{root}
-	pegort.SetNodeElems(gRoot, []*pegort.Node{gRoot})
+	zprt.SetNodeElems(gRoot, []*zprt.Node{gRoot})
 	var c *value.CycleError
-	var gc *pegort.CycleError
-	if !errors.As(value.Walk(root, ca), &c) || !errors.As(pegort.Walk(gRoot, cb), &gc) {
+	var gc *zprt.CycleError
+	if !errors.As(value.Walk(root, ca), &c) || !errors.As(zprt.Walk(gRoot, cb), &gc) {
 		t.Fatal("missing cycle errors")
 	}
 	if len(c.Path) != len(gc.Path) || uint8(c.Path[1].Kind) != uint8(gc.Path[1].Kind) {
@@ -140,15 +140,15 @@ func testGeneratedTreeTraversal(t *testing.T) {
 	// The traversal itself is the runtime's and is tested there; this checks that the generated
 	// package declares the colliding grammar types beside the runtime's names and walks a tree.
 	var consumer strings.Builder
-	consumer.WriteString("package tree\n\nimport (\n\t\"testing\"\n\n\t\"gentest/tree/types\"\n\tpegort \"github.com/ornew/pego/runtime\"\n)\n\nfunc TestWalk(t *testing.T) {\n")
+	consumer.WriteString("package tree\n\nimport (\n\t\"testing\"\n\n\t\"gentest/tree/types\"\n\tzprt \"github.com/ornew/zeroparse/runtime\"\n)\n\nfunc TestWalk(t *testing.T) {\n")
 	for _, name := range names {
 		fmt.Fprintf(&consumer, "\t_ = types.%s{Value: 1}\n", name)
 	}
-	consumer.WriteString(`	root := &pegort.Node{RawChildren: []*pegort.Node{{RawText: "é"}}}
+	consumer.WriteString(`	root := &zprt.Node{RawChildren: []*zprt.Node{{RawText: "é"}}}
 	visits := 0
-	if err := pegort.Walk(root, func(v pegort.WalkVisit) (pegort.WalkAction, error) {
+	if err := zprt.Walk(root, func(v zprt.WalkVisit) (zprt.WalkAction, error) {
 		visits++
-		return pegort.WalkContinue, nil
+		return zprt.WalkContinue, nil
 	}); err != nil || visits != 2 {
 		t.Fatalf("visits=%d err=%v", visits, err)
 	}

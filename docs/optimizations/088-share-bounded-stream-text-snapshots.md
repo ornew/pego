@@ -19,7 +19,7 @@ normalized string. The cache owner is released when compaction makes it
 obsolete; returned strings remain valid and can retain at most one snapshot
 (up to 4,096 bytes) each. The input buffer and discard policy are unchanged.
 
-A same-source build with `pego_reference_stream_text` selects the existing
+A same-source build with `zp_reference_stream_text` selects the existing
 copy path. The implementation adds a 56-byte field on 64-bit and 28-byte field
 on 32-bit inputs. This field is present in both same-source default and
 reference builds; the exact-parent comparison includes its layout cost. These
@@ -79,28 +79,28 @@ default/reference stream tests pass for both units and all three engine
 backends, including the frame-reference interaction. Independent source review
 passes.
 
-Build the default and `pego_reference_stream_text` binaries from the same
+Build the default and `zp_reference_stream_text` binaries from the same
 bounded-snapshot source based on `b18832d`. Build exact-parent binaries from a
 separate `b18832d` worktree with the same Go version. For each case, run
 parent, reference and default in alternating ABC/CBA order for five pairs;
 keep backend and unit fixed. Each timed case uses a 500 ms benchmark interval:
 
 ```sh
-git worktree add --detach /tmp/pego-stream-text-parent b18832d
-(cd /tmp/pego-stream-text-parent && go test -c \
-  -o /tmp/pego-stream-text-parent.test ./bench)
-(cd /tmp/pego-stream-text-parent && go test -c \
-  -o /tmp/pego-stream-text-engine-parent.test ./internal/engine)
-go test -c -o /tmp/pego-stream-text-candidate.test ./bench
-go test -tags=pego_reference_stream_text -c \
-  -o /tmp/pego-stream-text-reference.test ./bench
-(cd bench && GOMAXPROCS=4 /tmp/pego-stream-text-parent.test \
+git worktree add --detach /tmp/zp-stream-text-parent b18832d
+(cd /tmp/zp-stream-text-parent && go test -c \
+  -o /tmp/zp-stream-text-parent.test ./bench)
+(cd /tmp/zp-stream-text-parent && go test -c \
+  -o /tmp/zp-stream-text-engine-parent.test ./internal/engine)
+go test -c -o /tmp/zp-stream-text-candidate.test ./bench
+go test -tags=zp_reference_stream_text -c \
+  -o /tmp/zp-stream-text-reference.test ./bench
+(cd bench && GOMAXPROCS=4 /tmp/zp-stream-text-parent.test \
   -test.run='^$' -test.bench='^BenchmarkStream$/(closure|bytecode|iterative)$' \
   -test.benchtime=500ms -test.benchmem)
-(cd bench && GOMAXPROCS=4 /tmp/pego-stream-text-reference.test \
+(cd bench && GOMAXPROCS=4 /tmp/zp-stream-text-reference.test \
   -test.run='^$' -test.bench='^BenchmarkStream$/(closure|bytecode|iterative)$' \
   -test.benchtime=500ms -test.benchmem)
-(cd bench && GOMAXPROCS=4 /tmp/pego-stream-text-candidate.test \
+(cd bench && GOMAXPROCS=4 /tmp/zp-stream-text-candidate.test \
   -test.run='^$' -test.bench='^BenchmarkStream$/(closure|bytecode|iterative)$' \
   -test.benchtime=500ms -test.benchmem)
 ```
@@ -110,14 +110,14 @@ package. Run the corresponding parent, same-source reference and default
 binaries in alternating ABC/CBA order for five 500 ms pairs:
 
 ```sh
-go test -c -o /tmp/pego-stream-text-engine-candidate.test ./internal/engine
-go test -tags=pego_reference_stream_text -c \
-  -o /tmp/pego-stream-text-engine-reference.test ./internal/engine
-GOMAXPROCS=4 /tmp/pego-stream-text-engine-parent.test -test.run='^$' \
+go test -c -o /tmp/zp-stream-text-engine-candidate.test ./internal/engine
+go test -tags=zp_reference_stream_text -c \
+  -o /tmp/zp-stream-text-engine-reference.test ./internal/engine
+GOMAXPROCS=4 /tmp/zp-stream-text-engine-parent.test -test.run='^$' \
   -test.bench='^BenchmarkStreamFrameScratch$' -test.benchtime=500ms -test.benchmem
-GOMAXPROCS=4 /tmp/pego-stream-text-engine-reference.test -test.run='^$' \
+GOMAXPROCS=4 /tmp/zp-stream-text-engine-reference.test -test.run='^$' \
   -test.bench='^BenchmarkStreamFrameScratch$' -test.benchtime=500ms -test.benchmem
-GOMAXPROCS=4 /tmp/pego-stream-text-engine-candidate.test -test.run='^$' \
+GOMAXPROCS=4 /tmp/zp-stream-text-engine-candidate.test -test.run='^$' \
   -test.bench='^BenchmarkStreamFrameScratch$' -test.benchtime=500ms -test.benchmem
 ```
 
@@ -126,9 +126,9 @@ The retained-heap check uses one iteration of
 engine binaries in five alternating rounds:
 
 ```sh
-GOMAXPROCS=4 /tmp/pego-stream-text-engine-reference.test -test.run='^$' \
+GOMAXPROCS=4 /tmp/zp-stream-text-engine-reference.test -test.run='^$' \
   -test.bench='^BenchmarkStreamTextRetainedHeap$' -test.benchtime=1x
-GOMAXPROCS=4 /tmp/pego-stream-text-engine-candidate.test -test.run='^$' \
+GOMAXPROCS=4 /tmp/zp-stream-text-engine-candidate.test -test.run='^$' \
   -test.bench='^BenchmarkStreamTextRetainedHeap$' -test.benchtime=1x
 ```
 

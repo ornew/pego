@@ -1,9 +1,9 @@
-package pego
+package zeroparse
 
 import (
-	"github.com/ornew/pego/internal/engine"
-	ischema "github.com/ornew/pego/internal/schema"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/internal/engine"
+	ischema "github.com/ornew/zeroparse/internal/schema"
+	"github.com/ornew/zeroparse/schema"
 )
 
 // ErrSchemaUnavailable reports that checked grammar metadata is unavailable.

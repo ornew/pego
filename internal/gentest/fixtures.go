@@ -14,9 +14,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
 )
 
 // The generated fixtures are built in two forms: with budget controls, so that the tests of
@@ -29,7 +29,7 @@ import (
 // subtests inherit it, so that tests in either form run in parallel. Set in the environment of go
 // test, modeEnv restricts the run to one form: EachMode then runs its body once, in that form,
 // and the tests that need controls skip under "1".
-const modeEnv = "PEGO_TEST_ORDINARY"
+const modeEnv = "ZP_TEST_ORDINARY"
 
 // EnvForm is the form to which the environment restricts the run, or "".
 var EnvForm = os.Getenv(modeEnv)
@@ -169,7 +169,7 @@ var (
 // identifiers that testdata/export_names.txt lists renamed (see ExportNames).
 func RuntimeCopy() string {
 	runtimeCopyOnce.Do(func() {
-		dir, err := os.MkdirTemp("", "pegort-copy")
+		dir, err := os.MkdirTemp("", "zprt-copy")
 		if err != nil {
 			panic(err)
 		}
@@ -194,7 +194,7 @@ func writeRuntimeCopy(dir string, patch func(name, src string) string, extra map
 			panic(err)
 		}
 	}
-	must(os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module github.com/ornew/pego\n\ngo 1.27.1\n"), 0o644))
+	must(os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module github.com/ornew/zeroparse\n\ngo 1.27.1\n"), 0o644))
 	rt := filepath.Join(dir, "runtime")
 	must(os.MkdirAll(rt, 0o755))
 	src := filepath.Join(moduleRoot(), "runtime")
@@ -225,7 +225,7 @@ func GoMod(module string) string {
 
 // GoModAt returns the go.mod of a test module that imports the runtime from the module in dir.
 func GoModAt(module, dir string) string {
-	return "module " + module + "\n\ngo 1.27.1\n\nrequire github.com/ornew/pego v0.0.0\n\nreplace github.com/ornew/pego => " + dir + "\n"
+	return "module " + module + "\n\ngo 1.27.1\n\nrequire github.com/ornew/zeroparse v0.0.0\n\nreplace github.com/ornew/zeroparse => " + dir + "\n"
 }
 
 // WriteGenerated writes the files of a generated package into dir. A go.mod for the module is

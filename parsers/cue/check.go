@@ -7,7 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/parsers/cue/types"
+	"github.com/ornew/zeroparse/parsers/cue/types"
 )
 
 // A SemanticError is an error that the syntax does not show, found after parsing: a name declared twice in a

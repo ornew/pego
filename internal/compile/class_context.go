@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // FirstTerminalControlled is firstTerminal polling control. Ordinary compilation and code

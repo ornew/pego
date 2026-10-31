@@ -1,4 +1,4 @@
-//go:build pego_reference_document_pieces
+//go:build zp_reference_document_pieces
 
 package core
 

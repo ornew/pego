@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/limits"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/limits"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func changeGraphSnapshot(t *testing.T, root *value.Node) *Snapshot {

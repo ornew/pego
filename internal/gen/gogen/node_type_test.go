@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
-// TestGeneratedNamedNodeTypes checks the Go types that pego gen -types gives named node types: a
+// TestGeneratedNamedNodeTypes checks the Go types that zp gen -types gives named node types: a
 // defined type embedding TNode of the underlying value, which implements the unions it is a
 // member of.
 func TestGeneratedNamedNodeTypes(t *testing.T) {

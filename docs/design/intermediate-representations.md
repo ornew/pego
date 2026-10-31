@@ -103,7 +103,7 @@ presets and a flag per optimization.
 
 A grammar with a rule that matches optional whitespace and one that reads a name:
 
-```pego
+```zp
 package list
 
 type Item = { Name node[string] }

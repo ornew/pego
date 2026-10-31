@@ -16,8 +16,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/flow"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/flow"
 )
 
 // Component is the state component of the operations that stand for Flow IR primitives: the state

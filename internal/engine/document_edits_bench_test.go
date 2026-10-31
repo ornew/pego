@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/internal/compile"
 )
 
 // BenchmarkDocumentOwnerCreation excludes compilation and parsing. It tracks

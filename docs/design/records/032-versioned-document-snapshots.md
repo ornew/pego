@@ -29,7 +29,7 @@ versions, and batch rollback.
 Source inspection at `d16f33e04d9f71605682166a4dccddbc072e4c51` establishes these
 facts, rather than current performance estimates:
 
-- [`Document`](../../../pego.go) is single-owner mutable state. Several edits may
+- [`Document`](../../../zeroparse.go) is single-owner mutable state. Several edits may
   precede one parse; construction does not parse the input.
 - [`Document.Parse`](../../../internal/engine/document/document.go) reuses memo results and
   repetition records. [`moveResult` and `moveTree`](../../../internal/engine/core/runtime.go)
@@ -488,7 +488,7 @@ unmeasured, so no general performance benefit is claimed.
 The stage-1 implementation of version tokens and atomic edit batches has
 preliminary measurements against the
 source-equivalent baseline
-[`69af68e`](https://github.com/ornew/pego/commit/69af68ecdec1dea942db89158c36a21ad18ae505).
+[`69af68e`](https://github.com/ornew/zeroparse/commit/69af68ecdec1dea942db89158c36a21ad18ae505).
 Those measurements cover edit and batch behavior only.
 
 Existing Edit and Document-creation measurements used three alternating

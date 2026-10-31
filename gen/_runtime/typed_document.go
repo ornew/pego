@@ -2,7 +2,7 @@ package runtime
 
 import "fmt"
 
-// The typed Document runtime, appended to generated parsers made with both pego gen -types and
+// The typed Document runtime, appended to generated parsers made with both zp gen -types and
 // -document: Document.ParseAST parses directly into typed values, which a typed Document keeps
 // privately (typedDocumentState) and publishes as read-only values that later results may share.
 // The generated CloneAST copies a published value.

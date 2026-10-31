@@ -5,12 +5,12 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine/closure"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/engine/vm"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine/closure"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/engine/vm"
 )
 
 // sharedProgram names the part of a program that every backend shares, so that Program embeds it

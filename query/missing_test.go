@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/query"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/query"
+	"github.com/ornew/zeroparse/schema"
 )
 
 const missingSchemaGrammar = `type P = { M missing; E error; O *missing; L []missing }
@@ -15,7 +15,7 @@ rule semi = ";" #missing`
 
 func missingSchema(t *testing.T) *schema.Output {
 	t.Helper()
-	return mustSchema(t, mustCompile(t, missingSchemaGrammar), pego.WithAllSchemaRules())
+	return mustSchema(t, mustCompile(t, missingSchemaGrammar), zeroparse.WithAllSchemaRules())
 }
 
 // Patterns of errors apply to the values of the shape missing, and others do not.

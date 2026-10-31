@@ -1,11 +1,11 @@
 # Position Units
 
-Every position that PEGO reports is a count in one of two units. This guide shows what the unit changes, how to choose
+Every position that ZeroParse reports is a count in one of two units. This guide shows what the unit changes, how to choose
 it and what invalid UTF-8 does.
 
-The examples use `pairs.pego` and a parser `p` compiled as in [Running Parsers](running-parsers.md):
+The examples use `pairs.zp` and a parser `p` compiled as in [Running Parsers](running-parsers.md):
 
-```pego
+```zp
 type Pair = { Key node[string]; Value node[string] }
 
 @start
@@ -22,27 +22,27 @@ the `Pos` and `Col` of syntax errors, `.Start` and `.End` in actions, the `len` 
 
 ```go
 n, _ := p.Parse("あい=3")
-fmt.Println(n.Elem(0).Field("Key").(*pego.Node).End()) // 2
-n, _ = p.Parse("あい=3", pego.WithUnit(pego.Bytes))
-fmt.Println(n.Elem(0).Field("Key").(*pego.Node).End()) // 6
+fmt.Println(n.Elem(0).Field("Key").(*zeroparse.Node).End()) // 2
+n, _ = p.Parse("あい=3", zeroparse.WithUnit(zeroparse.Bytes))
+fmt.Println(n.Elem(0).Field("Key").(*zeroparse.Node).End()) // 6
 ```
 
 Syntax errors follow the unit, too (the same `あい=x` input, with the error at the `x`):
 
 ```bash
-pego parse -g pairs.pego -i 'あい=x'
+zp parse -g pairs.zp -i 'あい=x'
 ```
 
 ```text
-pego: 1:4: syntax error: expected [0-9]
+zp: 1:4: syntax error: expected [0-9]
 ```
 
 ```bash
-pego parse -g pairs.pego -unit bytes -i 'あい=x'
+zp parse -g pairs.zp -unit bytes -i 'あい=x'
 ```
 
 ```text
-pego: 1:8: syntax error: expected [0-9]
+zp: 1:8: syntax error: expected [0-9]
 ```
 
 Choosing:

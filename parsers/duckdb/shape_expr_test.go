@@ -3,7 +3,7 @@ package duckdb_test
 import (
 	"strings"
 
-	"github.com/ornew/pego/parsers/duckdb/types"
+	"github.com/ornew/zeroparse/parsers/duckdb/types"
 )
 
 // lambda maps LAMBDA x, y: body.

@@ -3,7 +3,7 @@ package gogen
 import (
 	"strings"
 
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/internal/compile"
 )
 
 // anonJoinName returns the Go name of the interface of an undeclared join: its members in the order

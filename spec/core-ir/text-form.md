@@ -52,7 +52,7 @@ for the final struct of a rule or line; `Node(term)` for a conversion; `(a, b)` 
 
 The example grammar is the following.
 
-```pego
+```zp
 package list
 
 type Item = { Name node[string] }

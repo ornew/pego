@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package bench
 
@@ -6,15 +6,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/ornew/pego"
-	gcalc "github.com/ornew/pego/internal/bench/gen/calc"
-	gcalclr "github.com/ornew/pego/internal/bench/gen/calclr"
-	gcsv "github.com/ornew/pego/internal/bench/gen/csv"
-	gjson "github.com/ornew/pego/internal/bench/gen/json"
-	gminilang "github.com/ornew/pego/internal/bench/gen/minilang"
-	goutline "github.com/ornew/pego/internal/bench/gen/outline"
-	gxml "github.com/ornew/pego/internal/bench/gen/xml"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse"
+	gcalc "github.com/ornew/zeroparse/internal/bench/gen/calc"
+	gcalclr "github.com/ornew/zeroparse/internal/bench/gen/calclr"
+	gcsv "github.com/ornew/zeroparse/internal/bench/gen/csv"
+	gjson "github.com/ornew/zeroparse/internal/bench/gen/json"
+	gminilang "github.com/ornew/zeroparse/internal/bench/gen/minilang"
+	goutline "github.com/ornew/zeroparse/internal/bench/gen/outline"
+	gxml "github.com/ornew/zeroparse/internal/bench/gen/xml"
+	"github.com/ornew/zeroparse/internal/value"
 	"reflect"
 	"testing"
 )
@@ -193,25 +193,25 @@ func TestControlledFullWorkloads(t *testing.T) {
 				for _, u := range units {
 					t.Run(be.name+"/"+u.name, func(t *testing.T) {
 						// Unlimited keeps the plain parse uncontrolled: a zero budget selects the default counter.
-						opts := []pego.ParseOption{pego.WithBackend(be.b), pego.WithUnit(u.u), pego.WithLimits(pego.Limits{Budget: pego.Unlimited})}
+						opts := []zeroparse.ParseOption{zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u), zeroparse.WithLimits(zeroparse.Limits{Budget: zeroparse.Unlimited})}
 						plain, plainErr := p.Parse(input, opts...)
 						want := check(plain, plainErr)
 						for _, mode := range []string{"budget", "context", "combined"} {
-							active := append([]pego.ParseOption{}, opts...)
+							active := append([]zeroparse.ParseOption{}, opts...)
 							if mode != "context" {
-								active = append(active, pego.WithLimits(pego.Limits{Budget: ^uint64(0) - 1}))
+								active = append(active, zeroparse.WithLimits(zeroparse.Limits{Budget: ^uint64(0) - 1}))
 							}
 							if mode != "budget" {
 								ctx, cancel := context.WithCancel(context.Background())
 								defer cancel()
-								active = append(active, pego.WithContext(ctx))
+								active = append(active, zeroparse.WithContext(ctx))
 							}
 							n, err := p.Parse(input, active...)
 							if got := check(n, err); got != want {
 								t.Fatalf("%s full fingerprint differs", mode)
 							}
-							recNode, recErr := p.Parse(input, append(active, pego.RecognizeOnly())...)
-							plainRecNode, plainRecErr := p.Parse(input, append(opts, pego.RecognizeOnly())...)
+							recNode, recErr := p.Parse(input, append(active, zeroparse.RecognizeOnly())...)
+							plainRecNode, plainRecErr := p.Parse(input, append(opts, zeroparse.RecognizeOnly())...)
 							if recNode != nil || plainRecNode != nil {
 								t.Fatal("recognition returned a tree")
 							}
@@ -221,8 +221,8 @@ func TestControlledFullWorkloads(t *testing.T) {
 								t.Fatalf("%s recognition diagnostics differ", mode)
 							}
 						}
-						n, err := p.Parse(input, append(opts, pego.WithLimits(pego.Limits{Budget: 1}))...)
-						if n != nil || !errors.Is(err, pego.ErrLimit) {
+						n, err := p.Parse(input, append(opts, zeroparse.WithLimits(zeroparse.Limits{Budget: 1}))...)
+						if n != nil || !errors.Is(err, zeroparse.ErrLimit) {
 							t.Fatalf("full-input interruption: %v", err)
 						}
 						retry, retryErr := p.Parse(input, opts...)
@@ -275,7 +275,7 @@ func TestControlledFullWorkloads(t *testing.T) {
 }
 
 func TestFullFingerprintDetectsObservableGraphChanges(t *testing.T) {
-	hash := func(n *pego.Node) string {
+	hash := func(n *zeroparse.Node) string {
 		t.Helper()
 		s, e := fullFingerprint(n)
 		if e != nil {
@@ -283,13 +283,13 @@ func TestFullFingerprintDetectsObservableGraphChanges(t *testing.T) {
 		}
 		return s
 	}
-	str := func(start, end int, text string) *pego.Node {
+	str := func(start, end int, text string) *zeroparse.Node {
 		return value.NewNode(value.KindString, start, end, text, nil, "", nil, nil)
 	}
-	tuple := func(elems ...*pego.Node) *pego.Node {
+	tuple := func(elems ...*zeroparse.Node) *zeroparse.Node {
 		return value.NewNode(value.KindTuple, 0, 0, "", elems, "", nil, nil)
 	}
-	object := func(fields ...value.NodeField) *pego.Node {
+	object := func(fields ...value.NodeField) *zeroparse.Node {
 		return value.NewNode(value.KindStruct, 0, 0, "", nil, "T", value.Fields(fields), nil)
 	}
 	if hash(str(0, 0, "\xff")) == hash(str(0, 0, "\xfe")) {
@@ -324,9 +324,9 @@ func TestFullFingerprintDetectsObservableGraphChanges(t *testing.T) {
 		t.Fatal("carried values were discarded")
 	}
 	cycle := tuple()
-	value.SetNodeElems(cycle, []*pego.Node{cycle})
+	value.SetNodeElems(cycle, []*zeroparse.Node{cycle})
 	other := tuple()
-	value.SetNodeElems(other, []*pego.Node{other})
+	value.SetNodeElems(other, []*zeroparse.Node{other})
 	if hash(cycle) != hash(other) {
 		t.Fatal("equivalent cycles differ")
 	}

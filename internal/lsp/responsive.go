@@ -54,7 +54,7 @@ func (s *Server) runResponsive() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	actor := &responsiveActor{server: s, ctx: ctx, cancel: cancel, requests: map[string]*snapshotRequest{}, results: make(chan snapshotResponse, responsiveMaxRequests), slots: make(chan struct{}, responsiveRequestWorkers)}
 	s.actor = actor
-	lintEnabled := s.client.Experimental.Pego.LintDiagnostics
+	lintEnabled := s.client.Experimental.ZP.LintDiagnostics
 	s.queue = newAnalysisQueue(func(ctx context.Context, snapshot analysisSnapshot) (*analysis, error) {
 		a, err := analyzeContextSafely(ctx, snapshot.Text)
 		if err != nil {

@@ -19,7 +19,7 @@ linter, identified by a name.
 
 | | Command line | Go |
 |:--|:--|:--|
-| Lint a grammar | `pego lint -g g.pego` | `lint.Config.Run(ctx, g, start)` |
+| Lint a grammar | `zp lint -g g.zp` | `lint.Config.Run(ctx, g, start)` |
 | Machine-readable output | `-f json` | `[]lint.Finding` |
 | Turn checks off | `-disable check,...` (or the flag repeated) | `lint.Config.Disable` |
 | Classify the cost | `-classify` | `lint.Config.Classify` |
@@ -33,13 +33,13 @@ linter, identified by a name.
 - `lint.Config.RunUnchecked` returns the same findings as `Run` for a grammar that compiles and a
   start rule of it, without compiling the grammar. It does not check either condition; its findings
   for any other input are unspecified. Cancelling its context discards all findings.
-- `pego lint` accepts PEGO source and grammar JSON; a compiled grammar holds no
+- `zp lint` accepts ZeroParse source and grammar JSON; a compiled grammar holds no
   grammar and is an error. The start rule is the one `-s` names, otherwise the
   default start rule of the grammar. A grammar that does not compile is reported with its compile
   errors.
 - Each finding prints on one line as `file:line:col: severity: message [check]`,
   followed by a line `fix: ...` when there is a suggested fix. A run that exits
-  with status 1 ends with the error line `pego: lint: N errors, N warnings, N hints`
+  with status 1 ends with the error line `zp: lint: N errors, N warnings, N hints`
   on the standard error, where each count is written as `1 error`, `1 warning` or `1 hint`
   when it is one and in the plural otherwise; a run that exits with status 0 prints no summary.
 - `-f json` prints one JSON document with the members `grammar`, `start` and
@@ -57,7 +57,7 @@ linter, identified by a name.
   member `classification` with `class`, `degree` (for a polynomial class), and
   every witness and reason in `witnesses` and `reasons`, each with `line`,
   `col`, `rule` and `message`.
-- `pego lint` exits with status 1 if there is a finding of severity `error`, and
+- `zp lint` exits with status 1 if there is a finding of severity `error`, and
   with 0 otherwise. With `-strict`, a warning also gives status 1. A hint never
   does.
 - A grammar decoded from JSON has no source
@@ -161,7 +161,7 @@ and `#atomic` do not change this, as groups do not. Each
 evaluation can then at least double the size of the variable, so that its size
 can grow exponentially with the input:
 
-```pego
+```zp
 var s string = "a"
 
 @start
@@ -237,7 +237,7 @@ finding per cause, at the scanning source, binding or operation that causes it.
 Its message names the class and the witness path, as positions of the rules
 and expressions on it. In
 
-```pego
+```zp
 @start
 rule main = (A / "a")* $$
 
@@ -289,11 +289,11 @@ as `lint-directive`.
 |:--|:--|
 | The grammar does not compile | `lint.Config.Run` returns the compile errors and no findings |
 | `-disable` or `Config.Disable` names an unknown check | An error |
-| A compiled grammar | Error: `lint needs the grammar source (.pego or .json)` |
+| A compiled grammar | Error: `lint needs the grammar source (.zp or .json)` |
 
 ## Compatibility and Support
 
-The linter is available from the Go API and the `pego` command. Generated parsers
+The linter is available from the Go API and the `zp` command. Generated parsers
 do not include it. The linter does not find what it cannot prove (a choice whose
 alternatives start with overlapping characters, shadowing through predicates, an
 Operators Rule with level-restricted calls, or left-recursive rules), mistakes the

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func sourceInfoAt(line, col, endLine, endCol int) grammar.SourceInfo {
@@ -98,14 +98,14 @@ func TestCanonicalNodeParityNegativeControl(t *testing.T) {
 	if r := got[nodeKey("Ref", sourceInfoAt(4, 5, 4, 6))]; !slices.Equal(r.TrailingComments, []string{" trail\n"}) {
 		t.Fatalf("the operand before a comment owns it: %+v", r)
 	}
-	manual, err := pego.ParseGrammar(strings.Replace(src, "// trail", "// other", 1))
+	manual, err := zeroparse.ParseGrammar(strings.Replace(src, "// trail", "// other", 1))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if reflect.DeepEqual(got, manualNodes(t, manual)) {
 		t.Fatal("changed comment was not detected")
 	}
-	manual, err = pego.ParseGrammar(src)
+	manual, err = zeroparse.ParseGrammar(src)
 	if err != nil {
 		t.Fatal(err)
 	}

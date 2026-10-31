@@ -6,7 +6,7 @@
 
 ## Summary
 
-Generate TypeScript modules for a parser, without dependencies, from a grammar (`pego gen -lang ts`,
+Generate TypeScript modules for a parser, without dependencies, from a grammar (`zp gen -lang ts`,
 `gen.TypeScript.Generate`). They return the same trees and errors as the engine and the generated Go parsers
 ([008](008-code-generation.md)). The runtime is a module of its own, `runtime.ts`, the same for every grammar; the
 parser of the grammar is `parser.ts`, and its types (`-types`) are `types.ts`.
@@ -131,7 +131,7 @@ The test is skipped without `node`, and the type check without `tsc`.
 
 ### Alternatives Considered
 
-- **A TypeScript VM for the bytecode ([010](010-bytecode-vm.md)).** One runtime for all grammars, loading `.pegoc`
+- **A TypeScript VM for the bytecode ([010](010-bytecode-vm.md)).** One runtime for all grammars, loading `.zpc`
   files, and an iterative VM would have no stack problem. But an interpreter in JavaScript is slower than generated
   functions that the JIT compiles, and the generator had all the machinery already.
 - **Compiling the Go runtime to WebAssembly.** Exact by construction, but the module would carry a Go runtime, cross a

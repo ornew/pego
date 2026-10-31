@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 var depthBackends = []Backend{Closure, Bytecode, BytecodeIterative}

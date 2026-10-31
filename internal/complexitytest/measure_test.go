@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // series builds a series of three doubling sizes from f.
@@ -81,7 +81,7 @@ func TestOrderString(t *testing.T) {
 	}
 }
 
-func mustCompile(t *testing.T, src string) *pego.Parser {
+func mustCompile(t *testing.T, src string) *zeroparse.Parser {
 	t.Helper()
 	p, err := Compile(src)
 	if err != nil {
@@ -149,8 +149,8 @@ func TestStepsLenient(t *testing.T) {
 		if err != nil || c.ParseErr == nil || c.Capped || c.Steps == 0 {
 			t.Errorf("%s: lenient cost %+v, %v", BackendName(b), c, err)
 		}
-		var se *pego.SyntaxError
-		var ses pego.SyntaxErrors
+		var se *zeroparse.SyntaxError
+		var ses zeroparse.SyntaxErrors
 		if !errors.As(c.ParseErr, &se) && !errors.As(c.ParseErr, &ses) {
 			t.Errorf("%s: ParseErr %T is no syntax error", BackendName(b), c.ParseErr)
 		}
@@ -192,8 +192,8 @@ func TestStepsLenientRejectsRuntimeError(t *testing.T) {
 			t.Errorf("%s: run-time error accepted as %T in %+v", BackendName(b), c.ParseErr, c)
 			continue
 		}
-		var se *pego.SyntaxError
-		var ses pego.SyntaxErrors
+		var se *zeroparse.SyntaxError
+		var ses zeroparse.SyntaxErrors
 		if errors.As(err, &se) || errors.As(err, &ses) {
 			t.Errorf("%s: error %v is a syntax error, want a run-time error", BackendName(b), err)
 		}

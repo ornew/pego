@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/ir/exec/execgo"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/ir/exec/execgo"
 )
 
 // Flat and framed rules of the Node and recognizer tables, as the Flow IR printer shapes them.

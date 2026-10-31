@@ -19,12 +19,12 @@ results document.
 The measured results of every benchmark are in [benchmarks.md](benchmarks.md), which is generated from a run; this
 document describes the benchmarks, analyzes the results, and records how they came about.
 
-- [Where PEGO stands](#where-pego-stands): an analysis of the latest results
+- [Where ZeroParse stands](#where-zeroparse-stands): an analysis of the latest results
 - [How to measure](#how-to-measure): the benchmarks, their workloads and method, and tools for measuring a change
 - [Optimization catalog](optimizations/README.md): mechanisms, applicability,
   numbered evidence records and experiments
 
-## Where PEGO Stands
+## Where ZeroParse Stands
 
 This analysis describes the generated full-suite snapshot in [benchmarks.md](benchmarks.md), measured on 2026-10-29 at commit `13b3d186` (Go 1.27.1, Apple M3 Max, darwin/arm64, 16 cores, `GOMAXPROCS=16`). It contains 253 benchmark cases, three samples per case, and the Go benchmarks took 892.334 seconds; the generated TypeScript timings and the parser sizes were captured in the same run. This is one revision's snapshot, not a before-and-after comparison; ratios below compare operations within this run and do not attribute changes to a particular mechanism.
 Budget-control behavior and its generated-Go cost are described in
@@ -36,7 +36,7 @@ units, a cancelable context takes 1.45–1.68× the time, finite budget limits 1
 the same allocation counts. Generated Go with finite budget limits takes 1.30–1.47× its ordinary `Parse` time and
 1.47–1.61× its ordinary (CodePoints) `ParseAST` time. Neither this snapshot nor these records imply deployed behavior.
 
-**Backends.** Across all eight parsing workloads, generated Go Node parsing takes 0.44–0.61× closure time in CodePoints and 0.50–0.66× in Bytes. Recursive VM parsing takes 1.14–1.32× closure time in CodePoints and 1.13–1.35× in Bytes. Iterative VM parsing takes 1.33–1.76× closure time in CodePoints and 1.35–1.76× in Bytes. The slowest relative case is iterative Operators Rule arithmetic at 1.76× closure in both units. Closure remains the default (see the [Choosing a Backend](guide/backends.md)); the VMs serve loaded compiled grammars (a `.pegoc` file holds one bytecode module of one mode and loads on the bytecode backends only) and, iteratively, deep nesting.
+**Backends.** Across all eight parsing workloads, generated Go Node parsing takes 0.44–0.61× closure time in CodePoints and 0.50–0.66× in Bytes. Recursive VM parsing takes 1.14–1.32× closure time in CodePoints and 1.13–1.35× in Bytes. Iterative VM parsing takes 1.33–1.76× closure time in CodePoints and 1.35–1.76× in Bytes. The slowest relative case is iterative Operators Rule arithmetic at 1.76× closure in both units. Closure remains the default (see the [Choosing a Backend](guide/backends.md)); the VMs serve loaded compiled grammars (a `.zpc` file holds one bytecode module of one mode and loads on the bytecode backends only) and, iteratively, deep nesting.
 
 **Typed values.** `ParseAST` directly constructs values for JSON, CSV, XML, both calculator grammars and Outline. For those six direct workloads, it takes 0.69–0.98× generated CodePoints `Parse` time and allocates 0.27–0.41× its bytes. Minilang and Recovery use converted output: `ParseAST` takes 0.95× generated `Parse` time on both and allocates 0.28× and 0.30× its bytes, respectively. On JSON and XML, direct `ParseAST` takes 1.11× and 1.33× standard-library time, with 1.18× and 1.25× its allocated bytes. These operations return different structures and should not be treated as equivalent outputs. CSV constructs typed `File`, `Record` and `Field` values directly.
 
@@ -49,7 +49,7 @@ A separate generated-Go typed-allocation bootstrap and its focused measurements 
 
 **Generated TypeScript.** Under Node 24.13.0, generated `parse` takes 2.43–4.00× the time of generated Go `Parse` on the seven workloads that the TypeScript benchmark covers (Recovery is not measured). `parseAST` takes 1.12–1.43× `parse` time and `recognize` 0.31–0.72×. These are single-process means on the same inputs, not a comparison of equivalent outputs.
 
-**Generated size.** A generated Go `parser.go` ranges from 25.3 KB (CSV) to 1.59 MB (DuckDB), and a binary that calls the parser's `ParseAST` from 2.15 to 6.45 MB, most of which is the PEGO runtime and the standard library. The TypeScript `parser.ts` ranges from 32.0 KB to 3.32 MB, which is 6.57–257 KB gzipped with `gzip -9`, plus a runtime of 146 KB (36.9 KB gzipped) that every parser shares.
+**Generated size.** A generated Go `parser.go` ranges from 25.3 KB (CSV) to 1.59 MB (DuckDB), and a binary that calls the parser's `ParseAST` from 2.15 to 6.45 MB, most of which is the ZeroParse runtime and the standard library. The TypeScript `parser.ts` ranges from 32.0 KB to 3.32 MB, which is 6.57–257 KB gzipped with `gzip -9`, plus a runtime of 146 KB (36.9 KB gzipped) that every parser shares.
 
 **Grammar style.** The calculator workload takes 2.30× as long with left recursion as with Operators Rule parsing on closure (1.98× generated, 1.62× typed). The generated Recovery workload takes about the same time as Minilang, but skips broken statements and therefore performs different matching work.
 
@@ -79,9 +79,9 @@ also favored scratch in the medians. Intervening changes prevent attribution
 of the parent comparison to scratch. [Record 092](optimizations/092-reuse-generated-node-capture-scratch.md)
 preserves the earlier result, the paired ranges, and the measurement limits.
 
-**Streaming.** In this run, reading and discarding 50,000 CSV records plus the header takes 78.5–99.0 ms and 22–28 MB/s. Cumulative allocation is 94.8–106 MB/op, or about 44–49 bytes per input byte. The PEGO streaming backends allocate about 0.16–0.21 objects per data record. Batch closure parsing of 5,000 records (211 KB) uses about 28 bytes per input byte and 0.06 allocations per record. These are cumulative allocation figures, not retained-heap measurements. The focused stream-storage measurements are described in [record 089](optimizations/089-isolate-stream-prefixes-and-batch-scratch-cleanup.md). The full snapshot does not isolate the effect of any individual change.
+**Streaming.** In this run, reading and discarding 50,000 CSV records plus the header takes 78.5–99.0 ms and 22–28 MB/s. Cumulative allocation is 94.8–106 MB/op, or about 44–49 bytes per input byte. The ZeroParse streaming backends allocate about 0.16–0.21 objects per data record. Batch closure parsing of 5,000 records (211 KB) uses about 28 bytes per input byte and 0.06 allocations per record. These are cumulative allocation figures, not retained-heap measurements. The focused stream-storage measurements are described in [record 089](optimizations/089-isolate-stream-prefixes-and-batch-scratch-cleanup.md). The full snapshot does not isolate the effect of any individual change.
 
-**Preparation.** A compiled grammar holds the module of one mode. Loading a `.pegoc` file in this snapshot takes 0.15× (JSON) and 0.07× (Minilang) of source-compilation time in parse mode, 0.09× and 0.05× in recognize mode, and 0.16× and 0.08× in document mode. Loading runs on the bytecode backend and includes backend setup by one parse that the mode serves, with empty input. Focused allocation and timing measurements for attribute normalization are recorded in [optimization 095](optimizations/095-attribute-copy-on-change.md); this full snapshot does not attribute preparation results to that mechanism.
+**Preparation.** A compiled grammar holds the module of one mode. Loading a `.zpc` file in this snapshot takes 0.15× (JSON) and 0.07× (Minilang) of source-compilation time in parse mode, 0.09× and 0.05× in recognize mode, and 0.16× and 0.08× in document mode. Loading runs on the bytecode backend and includes backend setup by one parse that the mode serves, with empty input. Focused allocation and timing measurements for attribute normalization are recorded in [optimization 095](optimizations/095-attribute-copy-on-change.md); this full snapshot does not attribute preparation results to that mechanism.
 
 ## How to Measure
 
@@ -140,7 +140,7 @@ does not count as slab retention. See [record 098](optimizations/098-bootstrap-g
 for the focused results and limits.
 
 ```bash
-PEGO_TYPED_OUTPUT_RETENTION_DIR=/tmp/typed-output-retention \
+ZP_TYPED_OUTPUT_RETENTION_DIR=/tmp/typed-output-retention \
   go test ./internal/gen/gogen -run '^TestGeneratedTypedOutputRetentionFixture$' -count=1
 cd /tmp/typed-output-retention/slabs
 go test -c -o typed-retention.test .
@@ -174,7 +174,7 @@ string-node control in both position units.
 ### Benchmark Workloads
 
 `TestWorkloads` in `bench/` checks, on reduced inputs, that every input can be parsed by every backend and that the
-PEGO backends return the same results.
+ZeroParse backends return the same results.
 
 - Inputs are generated by `internal/bench/inputs` from a fixed random seed, so they are identical across runs. They include
   multi-byte characters such as Japanese text.
@@ -182,7 +182,7 @@ PEGO backends return the same results.
   left-recursive forms, minilang, and outline). The generated parsers in `internal/bench/gen/` are generated from them (`go generate ./bench`);
   the `Document` and stream parsers are separate packages, so the batch parsers keep their generated form.
 - Each benchmark runs three times and the median is reported.
-- Comparisons with the standard library measure different outputs. Every PEGO backend builds a tree whose nodes carry
+- Comparisons with the standard library measure different outputs. Every ZeroParse backend builds a tree whose nodes carry
   positions (start and end) and rule names, and records the expectations at the farthest failure. The standard-library
   parsers produce:
   - `encoding/json`: decoding into `any` (no positions).
@@ -195,15 +195,15 @@ PEGO backends return the same results.
 | JSON | `parsers/json` | Array of objects, 262 KB | Lexical repetition, AST of join types |
 | CSV | `parsers/csv` | 5,000 rows (211 KB); fields with quotes, commas and newlines | Simple repetition, many terminals |
 | XML | `parsers/xml` | Nesting, attributes, character references, comments, CDATA; 262 KB | Nesting, a predicate comparing start-tag and end-tag names |
-| Arith_OperatorsRule | `examples/calculator/calc.pego` | Expression with 20,000 terms (133 KB), parentheses nested up to depth 40 | Operators Rule loop and longest match |
-| Arith_LeftRec | `examples/calculator/calc_lr.pego` | Same as above | Left-recursion seed growing |
+| Arith_OperatorsRule | `examples/calculator/calc.zp` | Expression with 20,000 terms (133 KB), parentheses nested up to depth 40 | Operators Rule loop and longest match |
+| Arith_LeftRec | `examples/calculator/calc_lr.zp` | Same as above | Left-recursion seed growing |
 | Minilang | `examples/minilang` | 300 functions (89 KB) | PEG statements nested with Operators Rule expressions, keyword exclusion |
 | Recovery | `examples/minilang` | Same as above, with one line in seven broken | `#recover`, expectation recording |
 | Outline | `examples/outline` | 5,000 lines (83 KB), depth up to 10 | Predicates and variables (non-memoized rules) |
 | Incremental | `examples/minilang` | Repeated one-character insertions and deletions in 300 functions | Memo reuse with `Document`, on every backend and a parser generated with `-document` (compared with a full parse each time) |
 | Incremental, long | `parsers/csv` | Repeated one-character insertions and deletions in the middle of 50,000 records | Resuming long repetitions with `Document`, on every backend and a parser generated with `-document` |
 | Stream | `parsers/csv` | 50,000 rows (2.2 MB) | Reading and discarding with `ParseStream`, on every backend and a parser generated with `-stream` |
-| Prepare | JSON, minilang | None | Compiling from source and loading `.pegoc` (in each mode) |
+| Prepare | JSON, minilang | None | Compiling from source and loading `.zpc` (in each mode) |
 
 The 2026-10-09 run and the current analysis use the ready-made grammars in `parsers/csv` and `parsers/xml`.
 Older runs used the simpler grammars of `examples/csv` and `examples/xml`, since removed. Their figures do not
@@ -221,7 +221,7 @@ Generated TypeScript parsers are measured with Node (24 or later) by running a g
 `node --experimental-strip-types`: `bench/ts-parse.mjs` for parsing a file with `parse`, `parseAST` or `recognize` (the
 entry points that [benchmarks.md](benchmarks.md) reports, captured by `go run ./bench/report`), `bench/ts-typed.mjs` for the typed
 workloads that `TestGeneratedTSTypedWorkloads` and `TestGeneratedTSTypedSharedDAG` write when
-`PEGO_TS_TYPED_DIR` is set, and `bench/ts-literal.mjs` for literal matching. Compare two generators by
+`ZP_TS_TYPED_DIR` is set, and `bench/ts-literal.mjs` for literal matching. Compare two generators by
 alternating them in each round, run at least six rounds, and compare medians and ranges. The form without
 `-budget-controls` is the default, so compare it with the controlled form separately. Results are in
 [record 122](optimizations/122-typescript-from-flow-ir.md).

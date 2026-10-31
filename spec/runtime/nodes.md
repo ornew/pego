@@ -2,7 +2,7 @@
 
 A parse that succeeds returns a value. The value of a rule that has no action is
 a **node**: a value together with the range of input that it covers. This
-chapter defines the node model, the Go type `pego.Node` and its accessors, the
+chapter defines the node model, the Go type `zeroparse.Node` and its accessors, the
 traversal of a node graph, and the text and JSON renderings of values. The text
 and JSON renderings are specified in their own sections.
 
@@ -20,7 +20,7 @@ An **error value** is what [error recovery](../language/pragmas.md#recover) and 
 [missing token](../language/pragmas.md#missing) produce. An action can also build a **struct**
 (`T{...}`), a tuple or list without a range, and an `int`, `string` or `bool`.
 A **value** is any of these or `nil`; Go code reads it through the accessors of
-`pego.Node`, which stands for every one of them except `nil`. A **node graph** is the set
+`zeroparse.Node`, which stands for every one of them except `nil`. A **node graph** is the set
 of nodes reachable from a root through elements and fields. A graph is usually a
 tree, but a node MAY be reachable by several edges (shared), and a graph MAY
 contain a cycle when a caller builds one.
@@ -52,8 +52,8 @@ that rule when the parser records [source information](#source-information).
 
 ### Source Information
 
-A parser compiled with **source information** (`pego.WithSourceInfo()`,
-`pego parse -source-info`, or the option of `pego compile` and `pego gen`) records
+A parser compiled with **source information** (`zeroparse.WithSourceInfo()`,
+`zp parse -source-info`, or the option of `zp compile` and `zp gen`) records
 two things that are otherwise not part of a result: the rule that produced each node
 that a rule without an action created in its own body, and where the captures of that
 node are. `Node.Rule`, `Node.Field` and `Node.Fields` on a node, the `rule` and
@@ -64,7 +64,7 @@ or the ranges.
 
 ### The Go Type
 
-`pego.Node` is an opaque type: no field is exported, and no method commits to
+`zeroparse.Node` is an opaque type: no field is exported, and no method commits to
 a layout in memory. A `*Node` is nil where a value is `nil`. `Text`, `Len`,
 `Elems`, `Value`, `Field`, `Fields` and `IsTerminal` accept a nil receiver; the
 other methods do not.
@@ -88,7 +88,7 @@ func (n *Node) String() string
 func (n *Node) WriteJSON(w io.Writer) error
 ```
 
-`NodeKind` is `pego.NodeKind`, with the constants below.
+`NodeKind` is `zeroparse.NodeKind`, with the constants below.
 
 | `Kind()` | The node is | Methods that apply |
 |:--|:--|:--|
@@ -122,7 +122,7 @@ slicing the input with its range or with `text(...)` in an action.
 
 ### Traversal
 
-`pego.Walk(root, visit)` visits a node graph in a defined order. `visit`
+`zeroparse.Walk(root, visit)` visits a node graph in a defined order. `visit`
 receives a `WalkVisit` and returns a `WalkAction` and an error.
 
 | `WalkVisit` member | Meaning |
@@ -142,7 +142,7 @@ receives a `WalkVisit` and returns a `WalkAction` and an error.
   them again would make a walk exponential in the nesting of operators.
   Scalar and nil values are visited. Other containers are leaves.
 - A shared node or list is visited once for each incoming edge. Only a cycle on
-  the active traversal path is an error: `Walk` returns `*pego.CycleError`, which
+  the active traversal path is an error: `Walk` returns `*zeroparse.CycleError`, which
   holds the path of the back edge.
 - `WalkSkip` omits the descendants of the visit; `WalkStop` ends the walk
   successfully. An error returned by `visit` stops the walk and is returned
@@ -150,7 +150,7 @@ receives a `WalkVisit` and returns a `WalkAction` and an error.
 - `Walk` does not mutate or retain the graph. The graph MUST NOT be mutated while
   the walk or its callback runs.
 
-`pego.Cursor{Root, Unit}` selects nodes by position, using `Walk` order. `Unit`
+`zeroparse.Cursor{Root, Unit}` selects nodes by position, using `Walk` order. `Unit`
 MUST be the unit of the parse that produced the positions; it is not inferred or
 converted, and an invalid unit is an error. A parent's range does not prune
 traversal, so a matching descendant is visited even if its parent does not match.
@@ -192,7 +192,7 @@ as `&name:value`. For example, `(k:["a"]@key ":" v:["1"]@num)@main` is a tuple
 produced by `main` whose first element is the list `["a"]` of `key`, captured as
 `k`, and whose last element is the list of `num`, captured as `v`.
 
-The command `pego parse -f sexpr` prints this form.
+The command `zp parse -f sexpr` prints this form.
 
 ### JSON Encoding
 
@@ -212,7 +212,7 @@ with `path`, the indexes that lead from the node's tuple to the element that the
 capture labels (the first index is an element of the node's tuple, each further one an
 element of the tuple in the element before it), or to an object with `value` for a
 capture that is not an element. A tuple and a list encode the same way; the schema
-tells them apart (see [Output Schemas](schemas-and-queries.md)). `pego parse`
+tells them apart (see [Output Schemas](schemas-and-queries.md)). `zp parse`
 prints this form by default.
 
 Nodes cannot be decoded from JSON; the encoding is for inspection and for
@@ -233,7 +233,7 @@ mutated concurrently.
 | Condition | Result |
 |:--|:--|
 | `Walk` with a nil callback | Error |
-| A cycle on the active path of `Walk` or `WriteJSON` | `*pego.CycleError` (`Walk`) or an error (`WriteJSON`) |
+| A cycle on the active path of `Walk` or `WriteJSON` | `*zeroparse.CycleError` (`Walk`) or an error (`WriteJSON`) |
 | `Cursor` with an invalid unit or range | Error |
 | `Field` on a nil node, on a node without source information, or for an absent field | `nil` |
 | `Elem` with an index outside the elements | Panic |
@@ -248,7 +248,7 @@ JSON and text renderings. See [Generated Parsers](generated-parsers.md).
 
 ## Conformance
 
-The tests of `internal/apitest` (`pego_test.go`, `traversal_test.go`) and the
+The tests of `internal/apitest` (`zeroparse_test.go`, `traversal_test.go`) and the
 node JSON tests of the repository establish the model, the order of traversal
 and the JSON form, and the backend equivalence tests require every backend to
 return identical nodes.

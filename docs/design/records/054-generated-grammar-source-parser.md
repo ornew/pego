@@ -6,7 +6,7 @@
 
 ## Summary
 
-Provide a typed Go parser for PEGO grammar source generated from PEGO's own
+Provide a typed Go parser for ZeroParse grammar source generated from ZeroParse's own
 complete grammar, while retaining the hand-written source parser as a
 selectable implementation. Differential tests must establish equivalent
 grammar ASTs and diagnostics. Paired measurements determine which parser is
@@ -15,8 +15,8 @@ assumed.
 
 ## Motivation
 
-The hand-written parser is currently the only implementation of PEGO grammar
-syntax. A parser described by PEGO's own grammar could reduce duplicated
+The hand-written parser is currently the only implementation of ZeroParse grammar
+syntax. A parser described by ZeroParse's own grammar could reduce duplicated
 syntax logic and make grammar evolution easier to inspect, while a generated
 typed Go implementation may offer a practical fast path. Retaining the manual
 parser as an explicit alternative provides an independent oracle and fallback
@@ -25,9 +25,9 @@ established.
 
 ## Goals
 
-- Describe the complete grammar-file syntax in a canonical root `.pego` file.
+- Describe the complete grammar-file syntax in a canonical root `.zp` file.
 - Generate a typed Go parser from that grammar without requiring users to run
-  generation before building or using PEGO.
+  generation before building or using ZeroParse.
 - Keep both generated and manual source parsers selectable at source-parsing
   entry points, without mutable global configuration.
 - Compare parser outputs, source metadata and errors before changing defaults.
@@ -43,7 +43,7 @@ This proposal does not replace the grammar compiler, type checker, formatter,
 semantic analysis, or the `Compile(*grammar.Grammar, ...)` AST entry point.
 It does not make generated Go the default before differential and performance
 gates pass, and it does not remove the manual parser in the first stage. It
-does not claim PEGO can generate its parser without a checked-in bootstrap
+does not claim ZeroParse can generate its parser without a checked-in bootstrap
 artifact.
 
 ## Proposed Design
@@ -83,7 +83,7 @@ The checked-in generated Go source is the bootstrap artifact used during an
 ordinary build. Regeneration must be reproducible and must not invoke the
 parser being regenerated to construct itself at runtime. Keep the generator
 and generated parser in package boundaries that avoid an import cycle through
-`pego.CompileSource` or grammar compilation. A generation check fails when the
+`zeroparse.CompileSource` or grammar compilation. A generation check fails when the
 generated source is stale.
 
 ### Incremental Source Span Construction
@@ -193,7 +193,7 @@ work.
 
 Existing source APIs and commands retain their defaults until the selection
 is validated. An explicit manual-parser selection provides a diagnostic
-fallback. Existing `.pego`, JSON grammar AST, compiled grammar and generated
+fallback. Existing `.zp`, JSON grammar AST, compiled grammar and generated
 parser formats remain unchanged; generated grammar parsing is only a frontend
 change. The root grammar and checked-in generated Go parser must be updated
 together. Bootstrap and generation checks must work from a clean checkout
@@ -201,7 +201,7 @@ without network access or a prior generated artifact outside the repository.
 
 ## Acceptance Tests
 
-- Differentially parse every repository `.pego` file, grammar fixture and
+- Differentially parse every repository `.zp` file, grammar fixture and
   documentation example with both parsers. For the generated path, compare
   the concrete source AST with the root grammar's declared node structure,
   then compare its adapter output with the manual parser's public
@@ -244,11 +244,11 @@ source AST without the public adapter.
 Diagnostic equivalence was not checked, so these timings and byte counts are
 not a fair frontend comparison and do not establish a winner or default. The
 medians below were measured at source revision `90b4cf7`. Each operation parses
-the complete source string: `pego.ParseGrammar` for the manual frontend and
+the complete source string: `zeroparse.ParseGrammar` for the manual frontend and
 generated Go `ParseAST` in CodePoints for the typed frontend. Compilation and
 code generation are outside the timed region. Small uses
-`rule main = [a-z]+ #atomic`; the other inputs are `pego.pego`,
-`parsers/golang/golang.pego` and `parsers/python/python.pego`.
+`rule main = [a-z]+ #atomic`; the other inputs are `zeroparse.zp`,
+`parsers/golang/golang.zp` and `parsers/python/python.zp`.
 
 | Grammar | Input bytes | Manual ns/op | Manual B/op | Manual allocs/op | Generated ns/op | Generated B/op | Generated allocs/op |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |

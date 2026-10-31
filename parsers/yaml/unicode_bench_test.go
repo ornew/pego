@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/yaml"
+	"github.com/ornew/zeroparse/parsers/yaml"
 )
 
 func TestUnicodeScalarContent(t *testing.T) {

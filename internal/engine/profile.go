@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 // Profile accumulates the cost of each rule over the parses it is attached to (as their trace

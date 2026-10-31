@@ -3,7 +3,7 @@ package sourceast
 import (
 	"fmt"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // Gap is the canonical record of the trivia between two tokens when it holds a

@@ -3,9 +3,9 @@ package engine
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/limits"
 )
 
 // TestLeftRecursionGuardIgnoresVariables checks that a left-recursive re-entry at the same

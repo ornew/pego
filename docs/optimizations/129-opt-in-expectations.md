@@ -15,7 +15,7 @@ Recording is now a choice made by the caller. Parsing records nothing by default
 farthest failure position with an empty expected list. The `WithExpectations` parse option (and the
 `Expectations` field of `ParseOptions`) turns it on for the interpreters. A generated parser needs
 both steps: the `Expectations` generation option of `gen.Go` and `gen.TypeScript` (the
-`-expectations` flag of `pego gen`) gives it the descriptor table and a parse option
+`-expectations` flag of `zp gen`) gives it the descriptor table and a parse option
 (`WithExpectations` in Go, `expectations` in TypeScript), and a parse records only when it passes
 that option. A Document fixes the choice when it is created. `@error` messages are part of the
 record, so they follow the same choice.

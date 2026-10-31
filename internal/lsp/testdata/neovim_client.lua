@@ -1,9 +1,9 @@
--- Drives `pego lsp` from Neovim 0.11 or later, configured as in the editor guide. Each edit is
+-- Drives `zp lsp` from Neovim 0.11 or later, configured as in the editor guide. Each edit is
 -- made with an ordinary editor command; the didChange notifications Neovim sends are recorded, and
 -- the server's text is checked by comparing semantic tokens of the edited document with those of a
 -- freshly opened copy of the buffer.
 --
--- Usage: PEGO=<pego binary> RESPONSIVE=0|1 nvim --headless --clean -l neovim_client.lua <empty dir>
+-- Usage: ZP=<zp binary> RESPONSIVE=0|1 nvim --headless --clean -l neovim_client.lua <empty dir>
 local dir = _G.arg[1]
 local responsive = os.getenv("RESPONSIVE") == "1"
 local function say(s) io.stdout:write(s .. "\n") end
@@ -12,16 +12,16 @@ local function fail(msg)
   os.exit(1)
 end
 
-vim.filetype.add({ extension = { pego = "pego" } })
+vim.filetype.add({ extension = { zp = "zp" } })
 local capabilities = vim.lsp.protocol.make_client_capabilities()
-capabilities.experimental = { pego = { responsiveAnalysis = responsive } }
-vim.lsp.config("pego", {
-  cmd = { os.getenv("PEGO"), "lsp" },
-  filetypes = { "pego" },
+capabilities.experimental = { zp = { responsiveAnalysis = responsive } }
+vim.lsp.config("zp", {
+  cmd = { os.getenv("ZP"), "lsp" },
+  filetypes = { "zp" },
   root_markers = { ".git" },
   capabilities = capabilities,
 })
-vim.lsp.enable("pego")
+vim.lsp.enable("zp")
 
 local lines = {}
 for i = 1, 200 do
@@ -30,18 +30,18 @@ end
 lines[#lines + 1] = 'rule r201 = "z"'
 lines[#lines + 1] = 'rule main = r1 ("é😀" / [0-9])* $$'
 vim.fn.mkdir(dir .. "/.git", "p")
-local path = dir .. "/edit.pego"
+local path = dir .. "/edit.zp"
 vim.fn.writefile(lines, path)
 vim.cmd.edit(path)
 local buf = vim.api.nvim_get_current_buf()
 
 if not vim.wait(10000, function()
-  local c = vim.lsp.get_clients({ bufnr = buf, name = "pego" })[1]
+  local c = vim.lsp.get_clients({ bufnr = buf, name = "zp" })[1]
   return c ~= nil and c.initialized
 end, 20) then
   fail("client did not attach")
 end
-local client = vim.lsp.get_clients({ bufnr = buf, name = "pego" })[1]
+local client = vim.lsp.get_clients({ bufnr = buf, name = "zp" })[1]
 
 local sent = {}
 local notify = client.rpc.notify
@@ -100,11 +100,11 @@ local function check(name, edit)
     multi[#multi + 1] = kind .. "=" .. n
   end
   table.sort(multi)
-  local fresh = string.format("%s/fresh-%s.pego", dir, name)
+  local fresh = string.format("%s/fresh-%s.zp", dir, name)
   vim.fn.writefile(vim.api.nvim_buf_get_lines(buf, 0, -1, false), fresh)
   local fb = vim.fn.bufadd(fresh)
   vim.fn.bufload(fb)
-  vim.bo[fb].filetype = "pego"
+  vim.bo[fb].filetype = "zp"
   vim.lsp.buf_attach_client(fb, client.id)
   local same = vim.deep_equal(tokens(buf), tokens(fb))
   vim.lsp.buf_detach_client(fb, client.id)
@@ -158,8 +158,8 @@ local big = { "rule main = " .. table.concat(vim.tbl_map(function(i) return stri
 for i = 0, 1023 do
   big[#big + 1] = string.format('rule e%04d = "token%04d"', i, i)
 end
-vim.fn.writefile(big, dir .. "/cancel.pego")
-vim.cmd.edit(dir .. "/cancel.pego")
+vim.fn.writefile(big, dir .. "/cancel.zp")
+vim.cmd.edit(dir .. "/cancel.zp")
 local cbuf = vim.api.nvim_get_current_buf()
 if not vim.wait(10000, function() return vim.lsp.buf_is_attached(cbuf, client.id) end, 20) then
   fail("cancellation buffer did not attach")

@@ -76,7 +76,7 @@ changed by this design.
 
 The mechanism applies to closure, recursive VM and iterative VM streaming in
 the engine. Generated Go, typed Go and TypeScript parsers do not expose this
-streaming path. The private `pego_reference_stream_text` build tag selects the
+streaming path. The private `zp_reference_stream_text` build tag selects the
 copying reference implementation without adding a public option.
 
 ### Alternatives Considered

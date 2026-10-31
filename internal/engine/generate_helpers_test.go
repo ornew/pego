@@ -1,13 +1,13 @@
 package engine
 
 import (
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	ischema "github.com/ornew/pego/internal/schema"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	ischema "github.com/ornew/zeroparse/internal/schema"
+	"github.com/ornew/zeroparse/schema"
 )
 
-// The engine does not import the generators or the output schema; packages gen and pego join them
+// The engine does not import the generators or the output schema; packages gen and zp join them
 // (gen.Go, gen.TypeScript and Parser.OutputSchema). These helpers join them the
 // same way for the tests of this package.
 

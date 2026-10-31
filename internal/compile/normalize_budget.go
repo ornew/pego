@@ -1,6 +1,6 @@
 package compile
 
-import "github.com/ornew/pego/grammar"
+import "github.com/ornew/zeroparse/grammar"
 
 // Copies use private destination storage, so cancellation never changes the
 // source AST. Allocations themselves remain nonpreemptible.

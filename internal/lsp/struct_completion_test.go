@@ -47,7 +47,7 @@ func assertStructCompletion(t *testing.T, source string, fieldName, snippets boo
 	source = "type Other = { Text string }\n" + source
 	off := strings.Index(source, "|")
 	source = strings.Replace(source, "|", "", 1)
-	const uri = "file:///struct-completion.pego"
+	const uri = "file:///struct-completion.zp"
 	c.open(uri, source)
 	position := newTextIndex(source).position(off)
 	var got completionList
@@ -87,7 +87,7 @@ func assertStructCompletion(t *testing.T, source string, fieldName, snippets boo
 func TestStructDeclarationCompletionPreservesConstructors(t *testing.T) {
 	c := newInitialized(t)
 	defer c.exit()
-	const uri = "file:///constructor-completion.pego"
+	const uri = "file:///constructor-completion.zp"
 	source := "type Box = { Name node[string]; Count int }\nrule main = a:\"a\" => Box{Name: $a, |}"
 	off := strings.Index(source, "|")
 	source = strings.Replace(source, "|", "", 1)

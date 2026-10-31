@@ -3,12 +3,12 @@
 **Problem.** After parsing, you want to answer two questions about the tree without writing a recursive function for each:
 where in the text are all the nodes of one kind (every function call, say), and which node is under the cursor.
 
-Use `pego.Walk` for the first question: it visits every node, and the visit gives the node, its parent and its depth. Use
-`pego.Cursor` for the second: `At` visits the nodes whose span contains a position, outermost first. This recipe lists
+Use `zeroparse.Walk` for the first question: it visits every node, and the visit gives the node, its parent and its depth. Use
+`zeroparse.Cursor` for the second: `At` visits the nodes whose span contains a position, outermost first. This recipe lists
 the calls of a small program with their positions, and finds the call that contains a position and the argument under it.
 
-```pego
-// calls.pego
+```zp
+// calls.zp
 package calls
 
 type Name = node[string]
@@ -37,16 +37,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed calls.pego
+//go:embed calls.zp
 var grammar string
 
 const source = "print(add(1, mul(2, x)));\nlog(sum());\n"
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -58,12 +58,12 @@ func main() {
 	}
 
 	// Every node of one kind, with its depth.
-	err = pego.Walk(root, func(v pego.WalkVisit) (pego.WalkAction, error) {
+	err = zeroparse.Walk(root, func(v zeroparse.WalkVisit) (zeroparse.WalkAction, error) {
 		if v.Node != nil && v.Node.Type() == "Call" {
-			name := v.Node.Field("Name").(*pego.Node).Text()
+			name := v.Node.Field("Name").(*zeroparse.Node).Text()
 			fmt.Printf("call %-5s [%2d,%2d) depth %d\n", name, v.Node.Start(), v.Node.End(), v.Depth)
 		}
-		return pego.WalkContinue, nil
+		return zeroparse.WalkContinue, nil
 	})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -72,23 +72,23 @@ func main() {
 
 	// The nodes at a position, outermost first.
 	pos := int32(17) // the 2 in mul(2, x)
-	cursor := pego.Cursor{Root: root, Unit: pego.CodePoints}
-	var innermostCall, innermost *pego.Node
-	err = cursor.At(pos, func(v pego.WalkVisit) (pego.WalkAction, error) {
+	cursor := zeroparse.Cursor{Root: root, Unit: zeroparse.CodePoints}
+	var innermostCall, innermost *zeroparse.Node
+	err = cursor.At(pos, func(v zeroparse.WalkVisit) (zeroparse.WalkAction, error) {
 		if v.Node != nil {
 			innermost = v.Node
 			if v.Node.Type() == "Call" {
 				innermostCall = v.Node
 			}
 		}
-		return pego.WalkContinue, nil
+		return zeroparse.WalkContinue, nil
 	})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	fmt.Printf("at %d: innermost node %s %q, innermost call %s\n", pos, innermost.Type(), innermost.Text(),
-		innermostCall.Field("Name").(*pego.Node).Text())
+		innermostCall.Field("Name").(*zeroparse.Node).Text())
 }
 ```
 
@@ -106,8 +106,8 @@ at 17: innermost node Num "2", innermost call mul
 ## How It Works
 
 - `Walk` visits every edge of the graph in order: first the node, then what it holds. The `Depth` counts edges, so it is
-  larger than the nesting of the source, because lists and fields are edges too. Return `pego.WalkSkip` to leave a
-  subtree out, or `pego.WalkStop` to stop at the first match.
+  larger than the nesting of the source, because lists and fields are edges too. Return `zeroparse.WalkSkip` to leave a
+  subtree out, or `zeroparse.WalkStop` to stop at the first match.
 - `Cursor.At(pos, fn)` calls `fn` for the nodes whose span contains `pos`, from the outermost to the innermost. Keeping
   the last visit of each kind gives the innermost node of that kind. The cursor's `Unit` must be the unit of the parse
   (code points by default).
@@ -119,4 +119,4 @@ at 17: innermost node Num "2", innermost call mul
   Structural Queries](../guide/output-schemas-and-queries.md).
 - For a range, such as a selection in an editor, use `Cursor.Range(start, end, fn)`.
 - A span is half open: `[start, end)`. A position at the end of a node, such as 22 for `mul` (the `)` after `x`), is not inside it.
-- `Walk` visits a shared node once for each edge that reaches it, and returns a `*pego.CycleError` for a cycle.
+- `Walk` visits a shared node once for each edge that reaches it, and returns a `*zeroparse.CycleError` for a cycle.

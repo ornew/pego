@@ -1,14 +1,14 @@
 # Reading Trees
 
-A successful parse returns a tree of `*pego.Node`. This guide shows how to read that tree from Go: values, positions,
+A successful parse returns a tree of `*zeroparse.Node`. This guide shows how to read that tree from Go: values, positions,
 printing, JSON, reading a whole tree and typed values. [Walking Trees](walking-trees.md) visits and selects nodes
 without writing the recursion, and [Output Schemas and Structural Queries](output-schemas-and-queries.md) describes and
 searches the output of a grammar. How a grammar shapes the tree is the subject of [Shaping Trees](shaping-trees.md);
 the exact node model is defined in [Nodes and Values](../../spec/runtime/nodes.md).
 
-The examples use the grammar `pairs.pego`:
+The examples use the grammar `pairs.zp`:
 
-```pego
+```zp
 type Pair = { Key node[string]; Value node[string] }
 
 @start
@@ -25,16 +25,16 @@ A node is an opaque value that stands for what a rule produced, and `node.Kind()
 
 | Kind | The node is | Read it with |
 |:--|:--|:--|
-| `pego.KindString` | A string that the input matched, with a range | `Text()` |
-| `pego.KindTuple`, `pego.KindList` | A tuple or a list, with a range | `Len()`, `Elem(i)`, `Elems()` |
-| `pego.KindError` | An error that recovery produced | `Text()` (its message) |
-| `pego.KindStruct` | A struct that an action built | `Type()`, `Field(name)`, `Fields()` |
-| `pego.KindTupleValue`, `pego.KindListValue` | A tuple or a list that an action built, without a range | `Len()`, `Elem(i)`, `Elems()` |
-| `pego.KindValue` | Another value that an action built, such as an `int` or a `bool` | `Value()` |
+| `zeroparse.KindString` | A string that the input matched, with a range | `Text()` |
+| `zeroparse.KindTuple`, `zeroparse.KindList` | A tuple or a list, with a range | `Len()`, `Elem(i)`, `Elems()` |
+| `zeroparse.KindError` | An error that recovery produced | `Text()` (its message) |
+| `zeroparse.KindStruct` | A struct that an action built | `Type()`, `Field(name)`, `Fields()` |
+| `zeroparse.KindTupleValue`, `zeroparse.KindListValue` | A tuple or a list that an action built, without a range | `Len()`, `Elem(i)`, `Elems()` |
+| `zeroparse.KindValue` | Another value that an action built, such as an `int` or a `bool` | `Value()` |
 
 `Elem(i)` returns `nil` for an optional element that did not match. `node.Field(name)` returns the value of a field of a
 struct, or `nil` if the field is absent or the node is `nil`, and ranging over `node.Fields()` yields each field name
-and value in the order the action wrote them. A field value is a `*pego.Node`, an `int`, a `string`, a `bool` or `nil`.
+and value in the order the action wrote them. A field value is a `*zeroparse.Node`, an `int`, a `string`, a `bool` or `nil`.
 `Field` and `Fields` also return the captures of a node, but only when the parser is compiled with source information
 (see [Printing and JSON](#printing-and-json)). `node.IsTerminal()` reports whether a node is a leaf: a string that the input matched, or an error.
 
@@ -42,7 +42,7 @@ The root of the grammar above is the list that `$ps` captured, and its elements 
 
 ```go
 for _, pair := range node.Elems() {
-	key := pair.Field("Key").(*pego.Node)
+	key := pair.Field("Key").(*zeroparse.Node)
 	fmt.Printf("%s %q at %d-%d\n", pair.Type(), key.Text(), key.Start(), key.End())
 }
 
@@ -63,17 +63,17 @@ Value "12"
 true
 ```
 
-Because a field is an `any`, assert its type: `.(*pego.Node)` for nodes and captures, `.(int)` for integers.
+Because a field is an `any`, assert its type: `.(*zeroparse.Node)` for nodes and captures, `.(int)` for integers.
 
 `Start()` and `End()` return `int`. They delimit the input a node covers as a half-open range in the position unit of
 the parse. A rule that includes trailing white space covers it: the first `Pair` above ends at 8, after `"; "`. To get
-the matched text of any node, slice the input (a plain Go slice when you parse with `pego.WithUnit(pego.Bytes)`) or use
+the matched text of any node, slice the input (a plain Go slice when you parse with `zeroparse.WithUnit(zeroparse.Bytes)`) or use
 `text(...)` in an action. [Running Parsers](position-units.md) explains how to choose a unit.
 
 ## Printing and JSON
 
 `node.String()`, which `fmt.Println` uses, renders the value of a node as an S-expression for tests and debugging, and
-`pego parse -f sexpr` prints it. A tuple is written in parentheses, a list in square brackets, a string in quotes, an
+`zp parse -f sexpr` prints it. A tuple is written in parentheses, a list in square brackets, a string in quotes, an
 absent optional as `nil` and a struct as `Type{Field: value}`; positions are not written. A node of a named node type
 (`type Ident = node[string]`) keeps its type name before its brackets, as `Ident("x")`, while a plain `node[string]` is
 just `"x"`. A node also encodes with
@@ -94,13 +94,13 @@ fmt.Println(string(out))
 A node of a string, a tuple or a list is `{"start": S, "end": E, "value": V}`, where `V` is a string, an array for a
 tuple or a list, or `null` for an optional that did not match. A struct is `{"type": T, "start": S, "end": E, "fields": {...}}`, with the range of the rule that built it, and an `int`
 or a `bool` that an action returned is a bare JSON number or boolean. The keys of `fields` are sorted, so the output
-is deterministic. This is also what `pego parse` prints by default. Nodes cannot be decoded back from JSON; the JSON is
+is deterministic. This is also what `zp parse` prints by default. Nodes cannot be decoded back from JSON; the JSON is
 for inspection and for exchanging results with other programs.
 
-Source information is opt-in. When the parser is compiled with `pego.WithSourceInfo()` (the `-source-info` flag of
-`pego parse`), each node also records the rule that produced it and the captures of its tuple, and `Rule()`, `Field`
+Source information is opt-in. When the parser is compiled with `zeroparse.WithSourceInfo()` (the `-source-info` flag of
+`zp parse`), each node also records the rule that produced it and the captures of its tuple, and `Rule()`, `Field`
 and `Fields` report them. The JSON gains the members `"rule"` and `"captures"`, and the S-expression gains `@rule`
-suffixes and `name:` labels. The grammar `kv.pego` is `rule main = k:key ":" v:num` with `key = [a-z]+ #atomic` and
+suffixes and `name:` labels. The grammar `kv.zp` is `rule main = k:key ":" v:num` with `key = [a-z]+ #atomic` and
 `num = [0-9]+ #atomic`; for the input `a:1` the S-expression is `("a" ":" "1")` without source information and with it:
 
 ```text
@@ -109,8 +109,8 @@ suffixes and `name:` labels. The grammar `kv.pego` is `rule main = k:key ":" v:n
 
 The forms are defined in [Text Rendering and JSON Encoding](../../spec/runtime/nodes.md#text-rendering).
 
-Default values are also opt-in. A parser compiled with `pego.WithDefaultValue()` (the `-default-value` flag of
-`pego parse`) drops the value actions and the declared rule types before it compiles the grammar, so every rule
+Default values are also opt-in. A parser compiled with `zeroparse.WithDefaultValue()` (the `-default-value` flag of
+`zp parse`) drops the value actions and the declared rule types before it compiles the grammar, so every rule
 returns the default node tree even when the grammar has actions. Predicates still run, and the rules whose values
 predicates read keep their actions. The exact rules are in [Default Values](../../spec/language/actions.md#default-values).
 
@@ -127,7 +127,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 const src = `type Bin = {
@@ -147,7 +147,7 @@ rule op = "+" / "-"
 rule ws = " "* `
 
 func main() {
-	p, err := pego.CompileSource(src, "sum")
+	p, err := zeroparse.CompileSource(src, "sum")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,22 +158,22 @@ func main() {
 	dump(n, 0)
 
 	// Struct fields are read by name; a string node carries its text.
-	right := n.Field("Right").(*pego.Node)
+	right := n.Field("Right").(*zeroparse.Node)
 	fmt.Println("right operand:", right.Text(), right.Start(), right.End())
 }
 
-func dump(n *pego.Node, depth int) {
+func dump(n *zeroparse.Node, depth int) {
 	indent := strings.Repeat("  ", depth)
 	switch n.Kind() {
-	case pego.KindStruct:
+	case zeroparse.KindStruct:
 		fmt.Printf("%s%s [%d,%d)\n", indent, n.Type(), n.Start(), n.End())
 		for name, v := range n.Fields() {
-			if c, ok := v.(*pego.Node); ok && c != nil {
+			if c, ok := v.(*zeroparse.Node); ok && c != nil {
 				fmt.Printf("%s  .%s\n", indent, name)
 				dump(c, depth+2)
 			}
 		}
-	case pego.KindString:
+	case zeroparse.KindString:
 		fmt.Printf("%s%q [%d,%d)\n", indent, n.Text(), n.Start(), n.End())
 	}
 }

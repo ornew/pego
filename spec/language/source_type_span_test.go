@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/spec/language/internal/sourceast"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/spec/language/internal/sourceast"
 )
 
 func TestCanonicalTypeDeclarationSpans(t *testing.T) {
@@ -25,7 +25,7 @@ func TestCanonicalTypeDeclarationSpans(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assertCanonicalTypeSpans(t, p, tc.source, tc.spans)
-			manual, err := pego.ParseGrammar(tc.source)
+			manual, err := zeroparse.ParseGrammar(tc.source)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -36,14 +36,14 @@ func TestCanonicalTypeDeclarationSpans(t *testing.T) {
 	}
 }
 
-func assertCanonicalTypeSpans(t *testing.T, p *pego.Parser, source string, expected []string) {
+func assertCanonicalTypeSpans(t *testing.T, p *zeroparse.Parser, source string, expected []string) {
 	t.Helper()
-	manual, err := pego.ParseGrammar(source)
+	manual, err := zeroparse.ParseGrammar(source)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		n, err := p.Parse(source, pego.WithBackend(backend))
+	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+		n, err := p.Parse(source, zeroparse.WithBackend(backend))
 		if err != nil {
 			t.Fatalf("%v: %v", backend, err)
 		}

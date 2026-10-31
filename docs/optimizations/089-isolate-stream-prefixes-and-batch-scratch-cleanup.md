@@ -28,9 +28,9 @@ input positions have been consumed since the prior prune. Until that boundary,
 inactive references may remain; scratch capacity itself is retained.
 
 Build-time constants select independent reference paths:
-`pego_reference_stream_prefix`, `pego_reference_stream_undo`, and
-`pego_reference_stream_stack`. The combined
-`pego_reference_stream_storage` tag selects all three reference paths. These
+`zp_reference_stream_prefix`, `zp_reference_stream_undo`, and
+`zp_reference_stream_stack`. The combined
+`zp_reference_stream_storage` tag selects all three reference paths. These
 controls add no parser fields or dynamic option checks. The change adds no public
 API, bytecode or generated-parser behavior.
 
@@ -115,9 +115,9 @@ Run focused tests and stream controls with:
 
 ```sh
 go test ./internal/engine/... -run '^(TestStream(Storage|Prefix|Frame)|TestVMStreamRepeat|TestFiniteStreamRepetitions)' -count=1
-go test -tags=pego_reference_stream_storage ./internal/engine/... -run '^(TestStream(Storage|Prefix|Frame)|TestVMStreamRepeat|TestFiniteStreamRepetitions)' -count=1
+go test -tags=zp_reference_stream_storage ./internal/engine/... -run '^(TestStream(Storage|Prefix|Frame)|TestVMStreamRepeat|TestFiniteStreamRepetitions)' -count=1
 go test ./internal/engine -run '^$' -bench '^(BenchmarkStreamPrefixSize|BenchmarkStreamFrameScratch|BenchmarkStreamRetentionWorkload)$' -benchtime=500ms -count=1 -benchmem
-go test -tags=pego_reference_stream_storage ./internal/engine -run '^$' -bench '^(BenchmarkStreamPrefixSize|BenchmarkStreamFrameScratch|BenchmarkStreamRetentionWorkload)$' -benchtime=500ms -count=1 -benchmem
+go test -tags=zp_reference_stream_storage ./internal/engine -run '^$' -bench '^(BenchmarkStreamPrefixSize|BenchmarkStreamFrameScratch|BenchmarkStreamRetentionWorkload)$' -benchtime=500ms -count=1 -benchmem
 ```
 
 The prefix-size benchmark covers 32- and 5,000-value prefixes, with and without
@@ -128,9 +128,9 @@ five fresh-process rounds. Single-mechanism reference tags are:
 
 | Enabled mechanism | Reference build tags |
 |:--|:--|
-| Prefix only | `pego_reference_stream_undo,pego_reference_stream_stack` |
-| Undo only | `pego_reference_stream_prefix,pego_reference_stream_stack` |
-| Stack only | `pego_reference_stream_prefix,pego_reference_stream_undo` |
+| Prefix only | `zp_reference_stream_undo,zp_reference_stream_stack` |
+| Undo only | `zp_reference_stream_prefix,zp_reference_stream_stack` |
+| Stack only | `zp_reference_stream_prefix,zp_reference_stream_undo` |
 
 Set `GOMAXPROCS=4` for all variants. These samples force GC; duration is not
 throughput. `BenchmarkStreamFrameScratch` covers 32- and 5,000-row Unicode streams. CSV stream and batch controls live in

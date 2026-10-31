@@ -1,4 +1,4 @@
-# PEGO Core IR Specification
+# ZeroParse Core IR Specification
 
 Core IR is the intermediate representation that sits between a checked grammar and the code a backend emits. It
 describes each rule of a grammar as a tree of typed parsing expressions whose observable effects are explicit: the
@@ -8,7 +8,7 @@ are rewrites of Core IR, and each of them is valid exactly when it preserves tho
 This specification defines what Core IR denotes, its node kinds and their meaning, the attributes and effects that
 analysis computes, the invariants that every well-formed module satisfies, and the text form that the IR package
 prints. It does not define how a target turns Core IR into code, the passes that rewrite it, or Flow IR, the
-lower-level representation that follows it. Core IR is internal to the PEGO engine and written for engine maintainers and pass authors: it is not a public API, and
+lower-level representation that follows it. Core IR is internal to the ZeroParse engine and written for engine maintainers and pass authors: it is not a public API, and
 nothing here changes how a grammar behaves, which the [Grammar Language Specification](../language/README.md) and the
 [Parser and Runtime Specification](../runtime/README.md) define.
 

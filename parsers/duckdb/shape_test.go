@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/duckdb"
-	"github.com/ornew/pego/parsers/duckdb/types"
+	"github.com/ornew/zeroparse/parsers/duckdb"
+	"github.com/ornew/zeroparse/parsers/duckdb/types"
 )
 
 // This file checks the syntax tree against the AST of DuckDB. The reference data holds, for each SELECT statement

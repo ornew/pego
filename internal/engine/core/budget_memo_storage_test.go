@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package core
 
@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/limits"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/limits"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func memoStorageParser(t *MemoTable, limits limits.Limits) *Parser {

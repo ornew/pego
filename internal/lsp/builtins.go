@@ -1,6 +1,6 @@
 package lsp
 
-// Built-in names of the PEGO language, for hover and completion. The descriptions follow the
+// Built-in names of the ZeroParse language, for hover and completion. The descriptions follow the
 // specification (spec/).
 
 type builtin struct {

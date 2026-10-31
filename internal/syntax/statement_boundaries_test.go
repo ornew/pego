@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // A newline ends a statement, and an expression crosses a newline only inside
@@ -60,8 +60,8 @@ func TestStatementBoundaries(t *testing.T) {
 		{"operators reference and a predicate", "rule operators = \"x\"\nrule b = \"a\" operators {1 == 1}\n", "", ""},
 		{"operators reference first and a predicate", "rule operators = \"x\"\nrule b = operators {1 == 1} \"y\"\n", "", ""},
 		{"operators reference and a predicate on an item word", "rule operators = \"x\"\nrule b = operators {skip == 1}\n", "", ""},
-		{"old spelling of an Operators Rule", "rule a = operators { operand \"x\" }\n", "1:10", "an Operators Rule is written #operators { ... }; run pego fix"},
-		{"old spelling with a type", "rule a T = operators {\n  level { infix left \"+\" }\n}\n", "1:12", "run pego fix"},
+		{"old spelling of an Operators Rule", "rule a = operators { operand \"x\" }\n", "1:10", "an Operators Rule is written #operators { ... }; run zp fix"},
+		{"old spelling with a type", "rule a T = operators {\n  level { infix left \"+\" }\n}\n", "1:12", "run zp fix"},
 		{"newline between operators and {", "rule a = operators\n{ operand \"x\" }\n", "2:1", ""},
 		{"newline between => and an action inside a group", "rule a = (b =>\n{x; y})\n", "", ""},
 	} {

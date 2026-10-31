@@ -1,4 +1,4 @@
-package pego
+package zeroparse
 
 // PrefixResult reports a rule's value and successful cursor. Consumption comes
 // from the runtime cursor, even when Node is nil or its span differs.

@@ -64,7 +64,7 @@ type editorResult struct {
 
 func newEditorSession(t *testing.T, text string) *editorSession {
 	t.Helper()
-	s := &editorSession{t: t, uri: "file:///probe.pego", text: "// \n" + text, sent: map[int]editorRequest{}, replies: map[int]editorReply{}, versions: map[int]time.Time{}, nextID: 100}
+	s := &editorSession{t: t, uri: "file:///probe.zp", text: "// \n" + text, sent: map[int]editorRequest{}, replies: map[int]editorReply{}, versions: map[int]time.Time{}, nextID: 100}
 	s.peer = newResourcePeer(t)
 	c := s.peer.client
 	// Writes go through a queue, as in an editor, so that a server blocked writing replies
@@ -78,7 +78,7 @@ func newEditorSession(t *testing.T, text string) *editorSession {
 			}
 		}
 	}()
-	c.request("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"pego": map[string]any{"responsiveAnalysis": true, "lintDiagnostics": true}}}})
+	c.request("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"zp": map[string]any{"responsiveAnalysis": true, "lintDiagnostics": true}}}})
 	c.notify("initialized", map[string]any{})
 	if d := c.open(s.uri, s.text); d == nil {
 		t.Fatal("no diagnostics for the opened grammar")
@@ -278,11 +278,11 @@ func runEditorSession(t *testing.T, text string, keystrokes int, interval time.D
 	return result
 }
 
-// TestEditorWorkloadProbe (PEGO_LSP_EDITOR_PROBE=1) runs editor sessions on the repository's
-// large grammars. PEGO_LSP_EDITOR_GRAMMAR selects parsers/<name>/<name>.pego, PEGO_LSP_EDITOR_INTERVAL_MS
-// the keystroke interval, PEGO_LSP_EDITOR_WORKERS and PEGO_LSP_EDITOR_MAX_REQUESTS the capacity.
+// TestEditorWorkloadProbe (ZP_LSP_EDITOR_PROBE=1) runs editor sessions on the repository's
+// large grammars. ZP_LSP_EDITOR_GRAMMAR selects parsers/<name>/<name>.zp, ZP_LSP_EDITOR_INTERVAL_MS
+// the keystroke interval, ZP_LSP_EDITOR_WORKERS and ZP_LSP_EDITOR_MAX_REQUESTS the capacity.
 func TestEditorWorkloadProbe(t *testing.T) {
-	if os.Getenv("PEGO_LSP_EDITOR_PROBE") != "1" {
+	if os.Getenv("ZP_LSP_EDITOR_PROBE") != "1" {
 		t.Skip("manual editor workload probe")
 	}
 	env := func(name string, def int) int {
@@ -291,15 +291,15 @@ func TestEditorWorkloadProbe(t *testing.T) {
 		}
 		return def
 	}
-	name := os.Getenv("PEGO_LSP_EDITOR_GRAMMAR")
+	name := os.Getenv("ZP_LSP_EDITOR_GRAMMAR")
 	if name == "" {
 		name = "duckdb"
 	}
-	data, err := os.ReadFile(filepath.Join("../../parsers", name, name+".pego"))
+	data, err := os.ReadFile(filepath.Join("../../parsers", name, name+".zp"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	result := runEditorSession(t, string(data), env("PEGO_LSP_EDITOR_KEYSTROKES", 60), time.Duration(env("PEGO_LSP_EDITOR_INTERVAL_MS", 20))*time.Millisecond, env("PEGO_LSP_EDITOR_WORKERS", 4), env("PEGO_LSP_EDITOR_MAX_REQUESTS", 64))
+	result := runEditorSession(t, string(data), env("ZP_LSP_EDITOR_KEYSTROKES", 60), time.Duration(env("ZP_LSP_EDITOR_INTERVAL_MS", 20))*time.Millisecond, env("ZP_LSP_EDITOR_WORKERS", 4), env("ZP_LSP_EDITOR_MAX_REQUESTS", 64))
 	raw, _ := json.Marshal(result)
 	t.Logf("editor %s %s", name, raw)
 }

@@ -10,16 +10,16 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 type legacyResult struct {
-	version pego.DocumentVersion
-	unit    pego.PositionUnit
+	version zeroparse.DocumentVersion
+	unit    zeroparse.PositionUnit
 	text    string
-	root    *pego.Node
+	root    *zeroparse.Node
 	err     error
-	stats   pego.ParseStats
+	stats   zeroparse.ParseStats
 }
 
 type result struct {
@@ -54,33 +54,33 @@ func run() error {
 	if *size < 1 || *versions < 1 || *window < 0 {
 		return fmt.Errorf("size and versions must be positive; window must be nonnegative")
 	}
-	var backend pego.Backend
+	var backend zeroparse.Backend
 	switch *backendName {
 	case "closure":
-		backend = pego.Closure
+		backend = zeroparse.Closure
 	case "bytecode":
-		backend = pego.Bytecode
+		backend = zeroparse.Bytecode
 	case "bytecode-iterative":
-		backend = pego.BytecodeIterative
+		backend = zeroparse.BytecodeIterative
 	default:
 		return fmt.Errorf("invalid backend %q", *backendName)
 	}
-	var unit pego.PositionUnit
+	var unit zeroparse.PositionUnit
 	switch *unitName {
 	case "codepoints":
-		unit = pego.CodePoints
+		unit = zeroparse.CodePoints
 	case "bytes":
-		unit = pego.Bytes
+		unit = zeroparse.Bytes
 	default:
 		return fmt.Errorf("invalid unit %q", *unitName)
 	}
-	parser, err := pego.CompileSource(`@start
+	parser, err := zeroparse.CompileSource(`@start
 rule main = item* $$
 rule item = [a-z]`, "main")
 	if err != nil {
 		return err
 	}
-	doc, err := parser.NewDocument(strings.Repeat("a", *size), pego.WithBackend(backend), pego.WithUnit(unit))
+	doc, err := parser.NewDocument(strings.Repeat("a", *size), zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
 	if err != nil {
 		return err
 	}

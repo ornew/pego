@@ -6,10 +6,10 @@
 
 ## Summary
 
-A parse can report every rule call to a function (`pego.WithTrace`): the rule, its position and binding level, the
+A parse can report every rule call to a function (`zeroparse.WithTrace`): the rule, its position and binding level, the
 nesting depth, and at the end of the call its outcome, end position, whether the memo answered it, how many times it
 evaluated the body, how far it examined the input, and the farthest failure it recorded. A per-rule profile
-(`pego.Profile`, `pego.WithProfile`) is built on the same events. The `pego` command gains `trace`, `profile` and
+(`zeroparse.Profile`, `zeroparse.WithProfile`) is built on the same events. The `zp` command gains `trace`, `profile` and
 `explain`. Tracing works on the closure backend and both bytecode VMs, in recognition mode, in stream parses and in
 `Document`; the engine tracing API does not instrument standalone generated Go parsers (see [Generated Parser Tracing and Profiling](043-generated-parser-observability.md)). When tracing is off, an ordinary parse pays one nil check per call
 that goes through the general call path, and nothing on the plain call path. The user guide is
@@ -117,7 +117,7 @@ positions evaluated), so one `Profile` collects any number of parses, including 
 examined at least 16 positions, and rules whose failed calls examined more input in all than the parse did. They are
 deliberately few and name what to look at.
 
-### `pego explain`
+### `zp explain`
 
 `explain` parses once without tracing to get the syntax errors, then parses again with a trace that watches only the
 errors' positions. When a call ends with a failure at such a position, the expectations it recorded itself are those
@@ -133,12 +133,12 @@ separately.
 
 ### Command-Line Output
 
-`pego trace` prints a call whose nested calls are not shown on one line (`rule line:col -> result`) and other calls as
+`zp trace` prints a call whose nested calls are not shown on one line (`rule line:col -> result`) and other calls as
 an enter line and an exit line around their nested calls. It buffers only the last enter event, so the output streams.
 `-rule` and `-max-depth` select calls by rule and by depth relative to the top call shown; `-f json` prints one object
 per event. Exit text appends `[N reused elements]` when repetition reuse is nonzero. Exit JSON appends
 `reusedElements` only when nonzero; enter events and zero-reuse exits omit that field, preserving the other fields.
-`pego profile` prints the table with `text/tabwriter` and the hints; `-f json` prints the same data. Text output keeps
+`zp profile` prints the table with `text/tabwriter` and the hints; `-f json` prints the same data. Text output keeps
 the execution-count summary and adds a root-only reused-element summary. The final `reused` column contains each
 rule's inclusive count; existing columns retain their order.
 

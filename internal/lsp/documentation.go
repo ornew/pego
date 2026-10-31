@@ -23,7 +23,7 @@ func documentationControlled(text string, formats []string, control *renderContr
 	return markupContent{Kind: "plaintext", Value: plainDocumentationControlled(text, control)}
 }
 
-// plainDocumentation renders the markup emitted by PEGO's documentation builders.
+// plainDocumentation renders the markup emitted by ZeroParse's documentation builders.
 // Code content and punctuation in code blocks remain unchanged.
 func plainDocumentationControlled(text string, control *renderControl) string {
 	control.poll()

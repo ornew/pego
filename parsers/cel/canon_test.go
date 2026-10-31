@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/parsers/cel"
-	"github.com/ornew/pego/parsers/cel/types"
+	"github.com/ornew/zeroparse/parsers/cel"
+	"github.com/ornew/zeroparse/parsers/cel/types"
 )
 
 // canon prints an expression in the canonical form that internal/refgen prints for the AST of cel-go, so that the

@@ -28,7 +28,7 @@ type Comment struct {
 	Run []*Comment
 }
 
-// LineBreak describes the start of a line in PEGO source: the comments
+// LineBreak describes the start of a line in ZeroParse source: the comments
 // before it and the comment at its end.
 type LineBreak struct {
 	// Comments are the comments on their own lines before the node, in

@@ -14,7 +14,7 @@ func BenchmarkResponsiveDispatch(b *testing.B) {
 		b.Run(method, func(b *testing.B) {
 			b.StopTimer()
 			peer := newF08BenchmarkPeer(b)
-			uri := "file:///dispatch.pego"
+			uri := "file:///dispatch.zp"
 			peer.send("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 1, "text": "@start\nrule main = \"a\""}}, false)
 			notification := peer.receive()
 			if notification.Method != "textDocument/publishDiagnostics" {

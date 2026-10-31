@@ -80,7 +80,7 @@ func TestWranglerAssetsDirectory(t *testing.T) {
 // site files and documentation.
 func TestNoNetlify(t *testing.T) {
 	name := "net" + "lify"
-	oldHost := "pego." + "ornew.net"
+	oldHost := "zp." + "ornew.net"
 	for _, f := range []string{"../netlify.toml", "../.netlify", "../netlify"} {
 		if _, err := os.Stat(f); err == nil {
 			t.Errorf("%s still exists", f)

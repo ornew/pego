@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"github.com/ornew/pego/internal/bench/inputs"
+	"github.com/ornew/zeroparse/internal/bench/inputs"
 	"go/parser"
 	"io"
 	"os"
@@ -14,18 +14,18 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/ornew/pego"
-	gcalc "github.com/ornew/pego/internal/bench/gen/calc"
-	gcalclr "github.com/ornew/pego/internal/bench/gen/calclr"
-	gcsv "github.com/ornew/pego/internal/bench/gen/csv"
-	gcsvdoc "github.com/ornew/pego/internal/bench/gen/csvdoc"
-	gcsvstream "github.com/ornew/pego/internal/bench/gen/csvstream"
-	gjson "github.com/ornew/pego/internal/bench/gen/json"
-	gminilang "github.com/ornew/pego/internal/bench/gen/minilang"
-	gminilangdoc "github.com/ornew/pego/internal/bench/gen/minilangdoc"
-	goutline "github.com/ornew/pego/internal/bench/gen/outline"
-	gxml "github.com/ornew/pego/internal/bench/gen/xml"
-	rt "github.com/ornew/pego/runtime"
+	"github.com/ornew/zeroparse"
+	gcalc "github.com/ornew/zeroparse/internal/bench/gen/calc"
+	gcalclr "github.com/ornew/zeroparse/internal/bench/gen/calclr"
+	gcsv "github.com/ornew/zeroparse/internal/bench/gen/csv"
+	gcsvdoc "github.com/ornew/zeroparse/internal/bench/gen/csvdoc"
+	gcsvstream "github.com/ornew/zeroparse/internal/bench/gen/csvstream"
+	gjson "github.com/ornew/zeroparse/internal/bench/gen/json"
+	gminilang "github.com/ornew/zeroparse/internal/bench/gen/minilang"
+	gminilangdoc "github.com/ornew/zeroparse/internal/bench/gen/minilangdoc"
+	goutline "github.com/ornew/zeroparse/internal/bench/gen/outline"
+	gxml "github.com/ornew/zeroparse/internal/bench/gen/xml"
+	rt "github.com/ornew/zeroparse/runtime"
 )
 
 // workload is the grammar and input of one benchmark.
@@ -50,7 +50,7 @@ func genErr[N any](_ N, err error) error { return err }
 
 var workloads = []workload{
 	{
-		name: "JSON", grammar: "../parsers/json/json.pego", input: func(k int) string { return inputs.JSONInput(256 << 10 / k) },
+		name: "JSON", grammar: "../parsers/json/json.zp", input: func(k int) string { return inputs.JSONInput(256 << 10 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gjson.Parse(s, gjson.WithUnit(gjson.Bytes)))
@@ -65,7 +65,7 @@ var workloads = []workload{
 		},
 	},
 	{
-		name: "CSV", grammar: "../parsers/csv/csv.pego", input: func(k int) string { return inputs.CSVInput(5000 / k) },
+		name: "CSV", grammar: "../parsers/csv/csv.zp", input: func(k int) string { return inputs.CSVInput(5000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gcsv.Parse(s, gcsv.WithUnit(gcsv.Bytes)))
@@ -82,7 +82,7 @@ var workloads = []workload{
 		},
 	},
 	{
-		name: "XML", grammar: "../parsers/xml/xml.pego", input: func(k int) string { return inputs.XMLInput(256 << 10 / k) },
+		name: "XML", grammar: "../parsers/xml/xml.zp", input: func(k int) string { return inputs.XMLInput(256 << 10 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gxml.Parse(s, gxml.WithUnit(gxml.Bytes)))
@@ -103,7 +103,7 @@ var workloads = []workload{
 		},
 	},
 	{
-		name: "Arith_OperatorsRule", grammar: "../examples/calculator/calc.pego", input: func(k int) string { return inputs.ArithInput(20000 / k) },
+		name: "Arith_OperatorsRule", grammar: "../examples/calculator/calc.zp", input: func(k int) string { return inputs.ArithInput(20000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gcalc.Parse(s, gcalc.WithUnit(gcalc.Bytes)))
@@ -115,7 +115,7 @@ var workloads = []workload{
 		stdName: "go_parser", std: func(s string) error { return genErr(parser.ParseExpr(s)) },
 	},
 	{
-		name: "Arith_LeftRec", grammar: "../examples/calculator/calc_lr.pego", input: func(k int) string { return inputs.ArithInput(20000 / k) },
+		name: "Arith_LeftRec", grammar: "../examples/calculator/calc_lr.zp", input: func(k int) string { return inputs.ArithInput(20000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gcalclr.Parse(s, gcalclr.WithUnit(gcalclr.Bytes)))
@@ -127,7 +127,7 @@ var workloads = []workload{
 		stdName: "go_parser", std: func(s string) error { return genErr(parser.ParseExpr(s)) },
 	},
 	{
-		name: "Minilang", grammar: "../examples/minilang/minilang.pego", input: func(k int) string { return inputs.MinilangInput(300/k, 0) },
+		name: "Minilang", grammar: "../examples/minilang/minilang.zp", input: func(k int) string { return inputs.MinilangInput(300/k, 0) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gminilang.Parse(s, gminilang.WithUnit(gminilang.Bytes)))
@@ -138,7 +138,7 @@ var workloads = []workload{
 		ast: func(s string) error { return genErr(gminilang.ParseAST(s)) },
 	},
 	{
-		name: "Recovery", grammar: "../examples/minilang/minilang.pego", input: func(k int) string { return inputs.MinilangInput(300/k, 7) },
+		name: "Recovery", grammar: "../examples/minilang/minilang.zp", input: func(k int) string { return inputs.MinilangInput(300/k, 7) },
 		partial: true,
 		gen: func(s string, b bool) error {
 			u := gminilang.CodePoints
@@ -159,7 +159,7 @@ var workloads = []workload{
 		},
 	},
 	{
-		name: "Outline", grammar: "../examples/outline/outline.pego", input: func(k int) string { return inputs.OutlineInput(5000 / k) },
+		name: "Outline", grammar: "../examples/outline/outline.zp", input: func(k int) string { return inputs.OutlineInput(5000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(goutline.Parse(s, goutline.WithUnit(goutline.Bytes)))
@@ -173,35 +173,35 @@ var workloads = []workload{
 
 var backends = []struct {
 	name string
-	b    pego.Backend
+	b    zeroparse.Backend
 }{
-	{"closure", pego.Closure},
-	{"bytecode", pego.Bytecode},
-	{"iterative", pego.BytecodeIterative},
+	{"closure", zeroparse.Closure},
+	{"bytecode", zeroparse.Bytecode},
+	{"iterative", zeroparse.BytecodeIterative},
 }
 
 var units = []struct {
 	name string
-	u    pego.PositionUnit
+	u    zeroparse.PositionUnit
 }{
-	{"codepoints", pego.CodePoints},
-	{"bytes", pego.Bytes},
+	{"codepoints", zeroparse.CodePoints},
+	{"bytes", zeroparse.Bytes},
 }
 
-func load(tb testing.TB, path string) *pego.Parser {
+func load(tb testing.TB, path string) *zeroparse.Parser {
 	tb.Helper()
 	src, err := os.ReadFile(path)
 	if err != nil {
 		tb.Fatal(err)
 	}
-	p, err := pego.CompileSource(string(src), "main")
+	p, err := zeroparse.CompileSource(string(src), "main")
 	if err != nil {
 		tb.Fatal(err)
 	}
 	return p
 }
 
-func parseOK(p *pego.Parser, w *workload, input string, opts ...pego.ParseOption) error {
+func parseOK(p *zeroparse.Parser, w *workload, input string, opts ...zeroparse.ParseOption) error {
 	n, err := p.Parse(input, opts...)
 	if w.partial && n != nil {
 		return nil
@@ -209,7 +209,7 @@ func parseOK(p *pego.Parser, w *workload, input string, opts ...pego.ParseOption
 	return err
 }
 
-// TestWorkloads checks that every input parses on every backend and that the PEGO backends agree.
+// TestWorkloads checks that every input parses on every backend and that the ZeroParse backends agree.
 func TestWorkloads(t *testing.T) {
 	for i := range workloads {
 		w := &workloads[i]
@@ -219,11 +219,11 @@ func TestWorkloads(t *testing.T) {
 			var want string
 			for _, be := range backends {
 				for _, u := range units {
-					n, err := p.Parse(input, pego.WithBackend(be.b), pego.WithUnit(u.u))
+					n, err := p.Parse(input, zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u))
 					if err != nil && !(w.partial && n != nil) {
 						t.Fatalf("%s/%s: %v", be.name, u.name, err)
 					}
-					if u.u == pego.Bytes {
+					if u.u == zeroparse.Bytes {
 						continue
 					}
 					got, _ := json.Marshal(n)
@@ -311,9 +311,9 @@ func TestGeneratedDocumentAndStream(t *testing.T) {
 	})
 	t.Run("Stream", func(t *testing.T) {
 		input := inputs.CSVInput(500)
-		p := load(t, "../parsers/csv/csv.pego")
+		p := load(t, "../parsers/csv/csv.zp")
 		var want, got []string
-		if err := p.ParseStream(strings.NewReader(input), func(n *pego.Node) error {
+		if err := p.ParseStream(strings.NewReader(input), func(n *zeroparse.Node) error {
 			b, err := json.Marshal(n)
 			want = append(want, string(b))
 			return err
@@ -333,7 +333,7 @@ func TestGeneratedDocumentAndStream(t *testing.T) {
 	})
 }
 
-// BenchmarkParse parses each workload with every PEGO backend (closure, recursive and iterative bytecode,
+// BenchmarkParse parses each workload with every ZeroParse backend (closure, recursive and iterative bytecode,
 // generated Go) in both position units, and with the standard library parser where one exists.
 func BenchmarkParse(b *testing.B) {
 	for i := range workloads {
@@ -347,7 +347,7 @@ func BenchmarkParse(b *testing.B) {
 						b.SetBytes(int64(len(input)))
 						b.ReportAllocs()
 						for b.Loop() {
-							if err := parseOK(p, w, input, pego.WithBackend(be.b), pego.WithUnit(u.u)); err != nil {
+							if err := parseOK(p, w, input, zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u)); err != nil {
 								b.Fatal(err)
 							}
 						}
@@ -359,7 +359,7 @@ func BenchmarkParse(b *testing.B) {
 					b.SetBytes(int64(len(input)))
 					b.ReportAllocs()
 					for b.Loop() {
-						if err := w.gen(input, u.u == pego.Bytes); err != nil {
+						if err := w.gen(input, u.u == zeroparse.Bytes); err != nil {
 							b.Fatal(err)
 						}
 					}
@@ -404,7 +404,7 @@ func BenchmarkRecognize(b *testing.B) {
 					b.SetBytes(int64(len(input)))
 					b.ReportAllocs()
 					for b.Loop() {
-						if _, err := p.Parse(input, pego.WithBackend(be.b), pego.RecognizeOnly()); err != nil && !w.partial {
+						if _, err := p.Parse(input, zeroparse.WithBackend(be.b), zeroparse.RecognizeOnly()); err != nil && !w.partial {
 							b.Fatal(err)
 						}
 					}
@@ -465,13 +465,13 @@ func documentEdits(b *testing.B, at int, edit func(start, end int, text string) 
 // Document (incremental) and with a fresh parse each time, on every backend and with the generated
 // parser (generated with -document; its fresh parse is the same package's Parse).
 func BenchmarkIncremental(b *testing.B) {
-	p := load(b, "../examples/minilang/minilang.pego")
+	p := load(b, "../examples/minilang/minilang.zp")
 	input := inputs.MinilangInput(300, 0)
 	// Document positions are in code points.
 	at := utf8.RuneCountInString(input[:strings.Index(input, "fn f150(")+len("fn f150(")])
 	for _, be := range backends {
 		b.Run(be.name+"/document", func(b *testing.B) {
-			doc, err := p.NewDocument(input, pego.WithBackend(be.b))
+			doc, err := p.NewDocument(input, zeroparse.WithBackend(be.b))
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -496,7 +496,7 @@ func BenchmarkIncremental(b *testing.B) {
 		b.Run(be.name+"/fresh", func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := p.Parse(input, pego.WithBackend(be.b)); err != nil {
+				if _, err := p.Parse(input, zeroparse.WithBackend(be.b)); err != nil {
 					b.Fatal(err)
 				}
 			}
@@ -523,12 +523,12 @@ func BenchmarkIncremental(b *testing.B) {
 // records) followed by a parse with a Document, on every backend and with the generated parser
 // (generated with -document).
 func BenchmarkIncrementalLong(b *testing.B) {
-	p := load(b, "../parsers/csv/csv.pego")
+	p := load(b, "../parsers/csv/csv.zp")
 	input := inputs.CSVInput(50000)
 	at := utf8.RuneCountInString(input[:strings.Index(input, "\n25000,")+len("\n25000,")])
 	for _, be := range backends {
 		b.Run(be.name, func(b *testing.B) {
-			doc, err := p.NewDocument(input, pego.WithBackend(be.b))
+			doc, err := p.NewDocument(input, zeroparse.WithBackend(be.b))
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -562,7 +562,7 @@ func BenchmarkIncrementalLong(b *testing.B) {
 // BenchmarkStream parses CSV as a stream, receiving one record at a time, on every backend, with the
 // generated parser (generated with -stream) and with encoding/csv.
 func BenchmarkStream(b *testing.B) {
-	p := load(b, "../parsers/csv/csv.pego")
+	p := load(b, "../parsers/csv/csv.zp")
 	input := inputs.CSVInput(50000)
 	for _, be := range backends {
 		b.Run(be.name, func(b *testing.B) {
@@ -570,7 +570,7 @@ func BenchmarkStream(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
 				n := 0
-				err := p.ParseStream(strings.NewReader(input), func(*pego.Node) error { n++; return nil }, pego.WithBackend(be.b))
+				err := p.ParseStream(strings.NewReader(input), func(*zeroparse.Node) error { n++; return nil }, zeroparse.WithBackend(be.b))
 				if err != nil || n != 50001 {
 					b.Fatalf("%d records: %v", n, err)
 				}
@@ -612,8 +612,8 @@ func BenchmarkStream(b *testing.B) {
 // BenchmarkPrepare compares compiling a grammar from source with loading a compiled grammar of each mode,
 // including backend setup on the first parse after loading.
 func BenchmarkPrepare(b *testing.B) {
-	for _, path := range []string{"../parsers/json/json.pego", "../examples/minilang/minilang.pego"} {
-		name := strings.TrimSuffix(path[strings.LastIndex(path, "/")+1:], ".pego")
+	for _, path := range []string{"../parsers/json/json.zp", "../examples/minilang/minilang.zp"} {
+		name := strings.TrimSuffix(path[strings.LastIndex(path, "/")+1:], ".zp")
 		src, err := os.ReadFile(path)
 		if err != nil {
 			b.Fatal(err)
@@ -622,28 +622,28 @@ func BenchmarkPrepare(b *testing.B) {
 		b.Run(name+"/source", func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := pego.CompileSource(string(src), "main"); err != nil {
+				if _, err := zeroparse.CompileSource(string(src), "main"); err != nil {
 					b.Fatal(err)
 				}
 			}
 		})
 		for _, c := range []struct {
-			mode pego.CompiledMode
-			opts []pego.ParseOption // a parse the mode serves
+			mode zeroparse.CompiledMode
+			opts []zeroparse.ParseOption // a parse the mode serves
 		}{
-			{pego.CompiledParse, nil},
-			{pego.CompiledRecognize, []pego.ParseOption{pego.RecognizeOnly()}},
-			{pego.CompiledDocument, []pego.ParseOption{pego.WithTrace(func(pego.TraceEvent) {})}},
+			{zeroparse.CompiledParse, nil},
+			{zeroparse.CompiledRecognize, []zeroparse.ParseOption{zeroparse.RecognizeOnly()}},
+			{zeroparse.CompiledDocument, []zeroparse.ParseOption{zeroparse.WithTrace(func(zeroparse.TraceEvent) {})}},
 		} {
 			data, err := p.Marshal(c.mode)
 			if err != nil {
 				b.Fatal(err)
 			}
-			opts := append([]pego.ParseOption{pego.WithBackend(pego.Bytecode)}, c.opts...)
-			b.Run(name+"/pegoc/"+c.mode.String()+"/bytecode", func(b *testing.B) {
+			opts := append([]zeroparse.ParseOption{zeroparse.WithBackend(zeroparse.Bytecode)}, c.opts...)
+			b.Run(name+"/zpc/"+c.mode.String()+"/bytecode", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					lp, err := pego.LoadParser(data)
+					lp, err := zeroparse.LoadParser(data)
 					if err != nil {
 						b.Fatal(err)
 					}

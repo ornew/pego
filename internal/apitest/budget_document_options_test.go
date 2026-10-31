@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package apitest_test
 
@@ -8,26 +8,26 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/engine"
 )
 
 func TestBudgetDocumentPublicDefaultsAndOptionsOnce(t *testing.T) {
-	p, err := pego.CompileSource(`@start
+	p, err := zeroparse.CompileSource(`@start
 rule main = inner $$
 
 rule inner = "(" inner ")" / "a"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
 			constructCalls, parseCalls := 0, 0
 			var order []string
-			d, err := p.NewDocument("((a))", pego.WithBackend(backend), pego.WithMaxDepth(1),
+			d, err := p.NewDocument("((a))", zeroparse.WithBackend(backend), zeroparse.WithMaxDepth(1),
 				func(o *engine.ParseOptions) { constructCalls++ },
-				pego.WithTrace(func(e pego.TraceEvent) {
-					if e.Rule == "main" && e.Kind == pego.TraceEnter {
+				zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
+					if e.Rule == "main" && e.Kind == zeroparse.TraceEnter {
 						order = append(order, "default")
 					}
 				}))
@@ -38,9 +38,9 @@ rule inner = "(" inner ")" / "a"`, "main")
 				t.Fatalf("default depth: node=%v error=%v", n, err)
 			}
 			order = nil
-			n, err := d.Parse(pego.WithMaxDepth(20), func(o *engine.ParseOptions) { parseCalls++ },
-				pego.WithTrace(func(e pego.TraceEvent) {
-					if e.Rule == "main" && e.Kind == pego.TraceEnter {
+			n, err := d.Parse(zeroparse.WithMaxDepth(20), func(o *engine.ParseOptions) { parseCalls++ },
+				zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
+					if e.Rule == "main" && e.Kind == zeroparse.TraceEnter {
 						order = append(order, "invocation")
 					}
 				}))
@@ -63,14 +63,14 @@ rule inner = "(" inner ")" / "a"`, "main")
 }
 
 func TestBudgetDocumentPublicContextOverrideAndTraceOrder(t *testing.T) {
-	p, err := pego.CompileSource(`@start
+	p, err := zeroparse.CompileSource(`@start
 rule main = "a" $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
 		ctx, cancel := context.WithCancel(context.Background())
-		d, err := p.NewDocument("a", pego.WithBackend(backend), pego.WithContext(ctx), pego.WithLimits(pego.Limits{Budget: 10000}))
+		d, err := p.NewDocument("a", zeroparse.WithBackend(backend), zeroparse.WithContext(ctx), zeroparse.WithLimits(zeroparse.Limits{Budget: 10000}))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -78,7 +78,7 @@ rule main = "a" $$`, "main")
 		if n, err := d.Parse(); n != nil || !errors.Is(err, context.Canceled) {
 			t.Fatalf("%s defaults: node=%v error=%v", backend, n, err)
 		}
-		if n, err := d.Parse(pego.WithContext(nil), pego.WithLimits(pego.Limits{})); n == nil || err != nil {
+		if n, err := d.Parse(zeroparse.WithContext(nil), zeroparse.WithLimits(zeroparse.Limits{})); n == nil || err != nil {
 			t.Fatalf("%s override: node=%v error=%v", backend, n, err)
 		}
 		if n, err := d.Parse(); n != nil || !errors.Is(err, context.Canceled) {
@@ -86,7 +86,7 @@ rule main = "a" $$`, "main")
 		}
 		ctx, cancel = context.WithCancel(context.Background())
 		first, second := 0, 0
-		_, err = d.Parse(pego.WithContext(ctx), pego.WithTrace(func(pego.TraceEvent) { first++; cancel() }), pego.WithTrace(func(pego.TraceEvent) { second++ }))
+		_, err = d.Parse(zeroparse.WithContext(ctx), zeroparse.WithTrace(func(zeroparse.TraceEvent) { first++; cancel() }), zeroparse.WithTrace(func(zeroparse.TraceEvent) { second++ }))
 		cancel()
 		if !errors.Is(err, context.Canceled) || first != 1 || second != 0 {
 			t.Fatalf("%s callbacks: error=%v first=%d second=%d", backend, err, first, second)

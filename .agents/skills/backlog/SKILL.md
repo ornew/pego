@@ -1,11 +1,11 @@
 ---
 name: backlog
-description: Maintain PEGO's Issue #1 backlog, its status comment, and recent completions.
+description: Maintain ZeroParse's Issue #1 backlog, its status comment, and recent completions.
 ---
 
 # Backlog
 
-- Use PEGO Issue #1: https://github.com/ornew/pego/issues/1. Retrieve current
+- Use ZeroParse Issue #1: https://github.com/ornew/zeroparse/issues/1. Retrieve current
   issue content and the status comment before proposing or making updates.
 - Categories use two-digit IDs: B bugs, O optimizations, F features, Q quality
   and tools, I improvements, D docs, and M ready-made parsers. Preserve existing

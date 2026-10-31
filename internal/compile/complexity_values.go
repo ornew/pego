@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // termCtx is the context of a value expression in the walk.

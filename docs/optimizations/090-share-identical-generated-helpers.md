@@ -107,8 +107,8 @@ without an established general parsing-speed improvement.
 
 The generated-sharing harness is `TestGeneratedSharingWorkloads` and
 `BenchmarkGeneratedSharing` in `internal/engine`. It writes standalone Go and
-TypeScript fixtures when `PEGO_GENERATED_SHARING_DIR` is set. The benchmark
-controls are selected with `PEGO_GENERATED_SHARING`:
+TypeScript fixtures when `ZP_GENERATED_SHARING_DIR` is set. The benchmark
+controls are selected with `ZP_GENERATED_SHARING`:
 
 | Mode | Go generation | TypeScript generation |
 |:--|:--|:--|
@@ -121,9 +121,9 @@ controls are selected with `PEGO_GENERATED_SHARING`:
 For example, generate fixtures and run one measurement mode with:
 
 ```sh
-PEGO_GENERATED_SHARING_DIR=/tmp/pego-generated-sharing \
+ZP_GENERATED_SHARING_DIR=/tmp/zp-generated-sharing \
   go test ./internal/gen -run '^TestGeneratedSharingWorkloads$' -count=1
-PEGO_GENERATED_SHARING=literals go test ./internal/gen -run '^$' \
+ZP_GENERATED_SHARING=literals go test ./internal/gen -run '^$' \
   -bench '^BenchmarkGeneratedSharing$' -benchmem
 ```
 

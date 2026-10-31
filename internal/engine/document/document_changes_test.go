@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/limits"
+	. "github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/limits"
 )
 
 func TestDocumentChangesComparisonInterruptionPublication(t *testing.T) {

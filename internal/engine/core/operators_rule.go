@@ -1,9 +1,9 @@
 package core
 
 import (
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // OperatorsRule is a compiled Operators Rule expression. Binding levels are numbered from 1 in declaration

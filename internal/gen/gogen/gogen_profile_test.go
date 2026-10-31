@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestGeneratedGoProfile(t *testing.T) {
@@ -66,14 +66,14 @@ func TestGeneratedGoProfile(t *testing.T) {
 
 const generatedProfileConsumer = `package PACKAGE
 
-import pegort "github.com/ornew/pego/runtime"
+import zprt "github.com/ornew/zeroparse/runtime"
 import("context";"encoding/json";"fmt";"reflect";"sync";"testing";"time")
 func TestProfile(t *testing.T){
  operations:=[]func(...ParseOption)(any,error){func(opts ...ParseOption)(any,error){return Parse(INPUT,opts...)},func(opts ...ParseOption)(any,error){return ParseRule("main",INPUT,opts...)},func(opts ...ParseOption)(any,error){return nil,Recognize(INPUT,opts...)}}
  TYPED
  for _,unit:=range []PositionUnit{CodePoints,Bytes}{for op,parse:=range operations{
-  var pr pegort.Profile;var events []pegort.TraceEvent
-  got,err:=parse(WithUnit(unit),pegort.WithProfile(&pr),pegort.WithTrace(func(e pegort.TraceEvent){events=append(events,e)}));expected,base:=parse(WithUnit(unit));if !reflect.DeepEqual(got,expected){t.Fatal("profile changed value")}
+  var pr zprt.Profile;var events []zprt.TraceEvent
+  got,err:=parse(WithUnit(unit),zprt.WithProfile(&pr),zprt.WithTrace(func(e zprt.TraceEvent){events=append(events,e)}));expected,base:=parse(WithUnit(unit));if !reflect.DeepEqual(got,expected){t.Fatal("profile changed value")}
   if fmt.Sprint(err)!=fmt.Sprint(base){t.Fatal("error changed",err,base)}
   s:=pr.Snapshot();checkProfile(t,s,events)
   if op<2{CHECKS}
@@ -81,20 +81,20 @@ func TestProfile(t *testing.T){
   bytes1,_:=json.Marshal(s);bytes2,_:=json.Marshal(pr.Snapshot());if string(bytes1)!=string(bytes2){t.Fatal("unstable snapshot")}
   if len(s.Rules)>0{s.Rules[0].Rule="mutated";if len(s.Rules[0].SkipReasons)>0{s.Rules[0].SkipReasons[0].Count=999}}
   if b,_:=json.Marshal(pr.Snapshot());string(b)!=string(bytes1){t.Fatal("snapshot aliases sink")}
-  before:=pr.Snapshot();parse(WithUnit(unit),pegort.WithProfile(&pr),pegort.WithTrace(func(pegort.TraceEvent){t.Fatal("filtered event")}),pegort.WithTraceFilter("absent"),pegort.WithTraceMaxDepth(1));after:=pr.Snapshot()
+  before:=pr.Snapshot();parse(WithUnit(unit),zprt.WithProfile(&pr),zprt.WithTrace(func(zprt.TraceEvent){t.Fatal("filtered event")}),zprt.WithTraceFilter("absent"),zprt.WithTraceMaxDepth(1));after:=pr.Snapshot()
   if after.Parses!=2||after.Calls!=2*before.Calls||after.Evals!=2*before.Evals||after.Skipped!=2*before.Skipped{t.Fatal("filter affected profile",before,after)}
   for i,r:=range after.Rules{if r.Repeats!=2*before.Rules[i].Repeats||r.MaxEvals!=before.Rules[i].MaxEvals{t.Fatal("history crossed invocation",r,before.Rules[i])}}
-  saved:=pr.Snapshot();parse(pegort.WithProfile(nil));if !reflect.DeepEqual(saved,pr.Snapshot()){t.Fatal("sink retained")}
-  var reentrant pegort.Profile;once:=false;parse(pegort.WithProfile(&reentrant),pegort.WithTrace(func(pegort.TraceEvent){if !once{once=true;parse(pegort.WithProfile(&reentrant))}}));re:=reentrant.Snapshot();if re.Parses!=2||re.Calls!=2*before.Calls{t.Fatal("reentrant state",re,before)}
-  var aborted pegort.Profile;marker:=new(int);func(){defer func(){if recover()!=marker{t.Fatal("panic identity")}}();parse(pegort.WithProfile(&aborted),pegort.WithTrace(func(pegort.TraceEvent){panic(marker)}));t.Fatal("missing panic")}();a:=aborted.Snapshot();if a.Parses!=1||a.Entered!=1||a.Calls!=0||a.Evals!=0||a.Time!=0{t.Fatal("fabricated completion",a)}
-  parse(pegort.WithProfile(&aborted));a=aborted.Snapshot();if a.Parses!=2||a.Calls!=before.Calls||a.Entered!=before.Entered+1{t.Fatal("abort poisoned next parse",a)}
-  var exitPanic pegort.Profile;func(){defer func(){if recover()!=marker{t.Fatal("exit panic identity")}}();parse(pegort.WithProfile(&exitPanic),pegort.WithTrace(func(e pegort.TraceEvent){if e.Kind==pegort.TraceExit{panic(marker)}}));t.Fatal("missing exit panic")}();if x:=exitPanic.Snapshot();x.Calls!=1{t.Fatal("exit panic lost completed call",x)}
-  if PLAIN&&op==0{var timed pegort.Profile;var delay time.Duration;parse(pegort.WithProfile(&timed),pegort.WithTrace(func(e pegort.TraceEvent){if e.Rule=="part"&&e.Kind==pegort.TraceExit{start:=time.Now();time.Sleep(time.Millisecond);delay+=time.Since(start)}}));for _,r:=range timed.Snapshot().Rules{if r.Rule=="part"&&r.Time<delay{t.Fatal("child exit callback attributed outside child",r.Time,delay)}}}
-  ctx,cancel:=context.WithCancel(context.Background());cancel();var canceled pegort.Profile;parse(pegort.WithProfile(&canceled),WithContext(ctx));if canceled.Snapshot().Entered!=0{t.Fatal("canceled call entered")}
-  var wg sync.WaitGroup;for range 4{wg.Go(func(){var p pegort.Profile;parse(pegort.WithProfile(&p));if p.Snapshot().Parses!=1{t.Error("concurrent isolation")}})};wg.Wait()
+  saved:=pr.Snapshot();parse(zprt.WithProfile(nil));if !reflect.DeepEqual(saved,pr.Snapshot()){t.Fatal("sink retained")}
+  var reentrant zprt.Profile;once:=false;parse(zprt.WithProfile(&reentrant),zprt.WithTrace(func(zprt.TraceEvent){if !once{once=true;parse(zprt.WithProfile(&reentrant))}}));re:=reentrant.Snapshot();if re.Parses!=2||re.Calls!=2*before.Calls{t.Fatal("reentrant state",re,before)}
+  var aborted zprt.Profile;marker:=new(int);func(){defer func(){if recover()!=marker{t.Fatal("panic identity")}}();parse(zprt.WithProfile(&aborted),zprt.WithTrace(func(zprt.TraceEvent){panic(marker)}));t.Fatal("missing panic")}();a:=aborted.Snapshot();if a.Parses!=1||a.Entered!=1||a.Calls!=0||a.Evals!=0||a.Time!=0{t.Fatal("fabricated completion",a)}
+  parse(zprt.WithProfile(&aborted));a=aborted.Snapshot();if a.Parses!=2||a.Calls!=before.Calls||a.Entered!=before.Entered+1{t.Fatal("abort poisoned next parse",a)}
+  var exitPanic zprt.Profile;func(){defer func(){if recover()!=marker{t.Fatal("exit panic identity")}}();parse(zprt.WithProfile(&exitPanic),zprt.WithTrace(func(e zprt.TraceEvent){if e.Kind==zprt.TraceExit{panic(marker)}}));t.Fatal("missing exit panic")}();if x:=exitPanic.Snapshot();x.Calls!=1{t.Fatal("exit panic lost completed call",x)}
+  if PLAIN&&op==0{var timed zprt.Profile;var delay time.Duration;parse(zprt.WithProfile(&timed),zprt.WithTrace(func(e zprt.TraceEvent){if e.Rule=="part"&&e.Kind==zprt.TraceExit{start:=time.Now();time.Sleep(time.Millisecond);delay+=time.Since(start)}}));for _,r:=range timed.Snapshot().Rules{if r.Rule=="part"&&r.Time<delay{t.Fatal("child exit callback attributed outside child",r.Time,delay)}}}
+  ctx,cancel:=context.WithCancel(context.Background());cancel();var canceled zprt.Profile;parse(zprt.WithProfile(&canceled),WithContext(ctx));if canceled.Snapshot().Entered!=0{t.Fatal("canceled call entered")}
+  var wg sync.WaitGroup;for range 4{wg.Go(func(){var p zprt.Profile;parse(zprt.WithProfile(&p));if p.Snapshot().Parses!=1{t.Error("concurrent isolation")}})};wg.Wait()
  }}
- var rejected pegort.Profile;_,rejectedError:=Parse("\x00",pegort.WithProfile(&rejected));if rejectedError==nil{t.Fatal("invalid input accepted")};failedRoot:=false;for _,r:=range rejected.Snapshot().Rules{if r.Rule=="main"&&r.Failed==1{failedRoot=true}};if !failedRoot{t.Fatal("failed root unrecorded",rejected.Snapshot())}
- var nilProfile *pegort.Profile;if len(nilProfile.Snapshot().Rules)!=0{t.Fatal("nil snapshot")}
+ var rejected zprt.Profile;_,rejectedError:=Parse("\x00",zprt.WithProfile(&rejected));if rejectedError==nil{t.Fatal("invalid input accepted")};failedRoot:=false;for _,r:=range rejected.Snapshot().Rules{if r.Rule=="main"&&r.Failed==1{failedRoot=true}};if !failedRoot{t.Fatal("failed root unrecorded",rejected.Snapshot())}
+ var nilProfile *zprt.Profile;if len(nilProfile.Snapshot().Rules)!=0{t.Fatal("nil snapshot")}
 }
 ` + generatedProfileCheck
 

@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // Generated Go parsers, plain and typed, and generated TypeScript parsers read a scalar operator

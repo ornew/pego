@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/parsers/golang/types"
+	"github.com/ornew/zeroparse/parsers/golang/types"
 )
 
 // ToGoAST converts a file parsed from src with the Bytes position unit into the go/ast tree that

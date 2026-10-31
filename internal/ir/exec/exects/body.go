@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/pass"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/pass"
 )
 
 // Grammar code lowered from Flow IR prints with Body, by the conventions of the TypeScript printer

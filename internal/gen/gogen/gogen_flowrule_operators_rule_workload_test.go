@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
-// PEGO_TYPED_OPERATORS_RULE_DIR preserves latest-generator controls for paired timing.
+// ZP_TYPED_OPERATORS_RULE_DIR preserves latest-generator controls for paired timing.
 func TestGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
 	t.Parallel()
 	gentest.EachMode(t, testGeneratedTypedOperatorsRuleWorkload)
@@ -20,11 +20,11 @@ func testGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	src, err := os.ReadFile("../../../examples/calculator/calc.pego")
+	src, err := os.ReadFile("../../../examples/calculator/calc.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir := os.Getenv("PEGO_TYPED_OPERATORS_RULE_DIR")
+	dir := os.Getenv("ZP_TYPED_OPERATORS_RULE_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}
@@ -42,7 +42,7 @@ func testGeneratedTypedOperatorsRuleActionWorkload(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	dir := os.Getenv("PEGO_TYPED_OPERATORS_RULE_DIR")
+	dir := os.Getenv("ZP_TYPED_OPERATORS_RULE_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	} else {
@@ -66,7 +66,7 @@ rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
 const typedOperatorsRuleActionWorkloadFixture = `package lrfixture
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -83,9 +83,9 @@ func TestOperatorsRuleWorkload(t *testing.T) {
 			t.Fatalf("typed capture result: %v %v", saved, err)
 		}
 		before, _ := json.Marshal(saved)
-		p := &pegort.TParser{Parser: &pegort.Parser{}}
+		p := &zprt.TParser{Parser: &zprt.Parser{}}
 		for _, input := range []string{operatorsRuleInput(1), operatorsRuleInput(128), "a", "a[b,c,]", "a[b,c,d,", "a[b,c,d,e,]", "a[b,é,d,]", "", "a[b,c,d,]?"} {
-			v, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+			v, err := p.X_run(trules[0], input, zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
 			pooled, pooledErr := ParseAST(input, WithUnit(unit))
 			pooledData, _ := json.Marshal(struct { Value any; Error string }{pooled, fmt.Sprint(pooledErr)})

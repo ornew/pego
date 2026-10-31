@@ -1,10 +1,10 @@
-module github.com/ornew/pego/parsers/cel/internal/refgen
+module github.com/ornew/zeroparse/parsers/cel/internal/refgen
 
 go 1.27.1
 
 require (
 	cel.dev/cel-go v0.32.0
-	github.com/ornew/pego/parsers/cel v0.0.0-00010101000000-000000000000
+	github.com/ornew/zeroparse/parsers/cel v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -16,6 +16,6 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 )
 
-replace github.com/ornew/pego/parsers/cel => ../..
+replace github.com/ornew/zeroparse/parsers/cel => ../..
 
-replace github.com/ornew/pego => ../../../..
+replace github.com/ornew/zeroparse => ../../../..

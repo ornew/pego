@@ -12,17 +12,17 @@ accepts in place of the source.
 
 ## Before You Start
 
-Complete [Building Typed Trees](typed-trees.md): you need `config.pego` and a Go module (`go mod init example.com/hello`).
+Complete [Building Typed Trees](typed-trees.md): you need `config.zp` and a Go module (`go mod init example.com/hello`).
 
 ## Generating a Standalone Go Parser
 
-`pego gen` turns a grammar into Go source, so your program does not need the PEGO library or the grammar at run time.
+`zp gen` turns a grammar into Go source, so your program does not need the ZeroParse library or the grammar at run time.
 The generated package (`parser.go`, `api.go` and a copy of the runtime in `internal/runtime`) uses only the standard
 library. `-module` is the import path the package will have, so it starts with your module path. Generate it into a
 `config` package:
 
 ```bash
-pego gen -g config.pego -module example.com/hello/config -o config
+zp gen -g config.zp -module example.com/hello/config -o config
 ```
 
 and call it:
@@ -50,10 +50,10 @@ func main() {
 Config{Entries: [Entry{Key: Key("port"), Value: Number("8080")}]}
 ```
 
-The generated `Node` type mirrors `pego.Node`, and the generated parser gives the same trees and errors as the
+The generated `Node` type mirrors `zeroparse.Node`, and the generated parser gives the same trees and errors as the
 library. `config.ParseRule(name, input)` starts at another rule. The generated entry points accept functional
 options: `config.Parse(input, config.WithUnit(config.Bytes), config.WithMaxDepth(600_000))`.
-`pego gen -max-depth 600000` sets the generated default; omitted or zero keeps 100,000.
+`zp gen -max-depth 600000` sets the generated default; omitted or zero keeps 100,000.
 
 ## Backends and Compiled Grammars
 
@@ -62,21 +62,21 @@ a bytecode VM that uses an explicit stack instead of the Go stack for deeply nes
 or in Go:
 
 ```bash
-pego parse -g config.pego -f sexpr -backend bytecode < example.conf
-pego parse -g config.pego -check -backend bytecode-iterative < example.conf   # validate only, prints ok
+zp parse -g config.zp -f sexpr -backend bytecode < example.conf
+zp parse -g config.zp -check -backend bytecode-iterative < example.conf   # validate only, prints ok
 ```
 
 ```go
-n, err := p.Parse("abc=12", pego.WithBackend(pego.Bytecode)) // also pego.WithUnit(pego.Bytes), pego.RecognizeOnly()
+n, err := p.Parse("abc=12", zeroparse.WithBackend(zeroparse.Bytecode)) // also zeroparse.WithUnit(zeroparse.Bytes), zeroparse.RecognizeOnly()
 ```
 
-`pego compile -g config.pego -o config.pegoc` saves a compiled grammar that `pego parse` accepts in place of the
-`.pego` file (`pego parse -g config.pegoc ...`), and `pego.LoadParser` loads it without recompiling. The file serves
+`zp compile -g config.zp -o config.zpc` saves a compiled grammar that `zp parse` accepts in place of the
+`.zp` file (`zp parse -g config.zpc ...`), and `zeroparse.LoadParser` loads it without recompiling. The file serves
 the parses of one mode: `-mode parse` (the default) for parsing, `-mode recognize` for `-check`, and `-mode document`
 for documents and traces.
-`pego convert -to json config.pego` converts a grammar to JSON, which is handy for tools that generate grammars.
+`zp convert -to json config.zp` converts a grammar to JSON, which is handy for tools that generate grammars.
 The [Running Parsers](../guide/running-parsers.md) guide describes the backends and options in detail, and the
-[Compiled Grammars](../guide/compiled-grammars.md) guide the `.pegoc` format.
+[Compiled Grammars](../guide/compiled-grammars.md) guide the `.zpc` format.
 
 ## Next Steps
 

@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/csv"
+	"github.com/ornew/zeroparse/parsers/csv"
 )
 
 // benchInput is a file of 5,000 records (about 210 KB) with quoted fields that contain commas, doubled
-// quotes and line breaks, like the CSV workload of the benchmarks of PEGO (bench/ in
-// github.com/ornew/pego).
+// quotes and line breaks, like the CSV workload of the benchmarks of ZeroParse (bench/ in
+// github.com/ornew/zeroparse).
 var benchInput = func() string {
 	words := []string{"alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta"}
 	r := rand.New(rand.NewPCG(1, 2))

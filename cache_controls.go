@@ -1,6 +1,6 @@
-package pego
+package zeroparse
 
-import "github.com/ornew/pego/internal/engine"
+import "github.com/ornew/zeroparse/internal/engine"
 
 // CacheStats describes the incremental reuse history retained by a Document.
 // EstimatedBytes is an approximation of cache-owned backing storage, excluding

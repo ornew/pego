@@ -9,9 +9,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // A render control belongs to one analysis or immutable-snapshot request. It is

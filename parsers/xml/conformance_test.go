@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/xml"
-	"github.com/ornew/pego/parsers/xml/types"
+	"github.com/ornew/zeroparse/parsers/xml"
+	"github.com/ornew/zeroparse/parsers/xml/types"
 )
 
 // suiteCase is a TEST of the W3C XML Conformance Test Suite.

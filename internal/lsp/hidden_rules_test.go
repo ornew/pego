@@ -31,12 +31,12 @@ func hiddenAt(line int, name string, nth int) (int, int) {
 
 func TestHiddenRuleNavigation(t *testing.T) {
 	c := newServer(t)
-	capabilities := map[string]any{"experimental": map[string]any{"pego": map[string]any{"lintDiagnostics": true}}}
+	capabilities := map[string]any{"experimental": map[string]any{"zp": map[string]any{"lintDiagnostics": true}}}
 	for k, v := range fullCapabilities {
 		capabilities[k] = v
 	}
 	c.request("initialize", map[string]any{"capabilities": capabilities})
-	uri := "file:///hidden.pego"
+	uri := "file:///hidden.zp"
 	var unreachable []string
 	for _, d := range c.open(uri, hiddenSrc) {
 		if d.Code != "unreachable-rule" {
@@ -93,8 +93,8 @@ func TestHiddenRuleNavigation(t *testing.T) {
 		want       string
 		wantNoType bool
 	}{
-		{"_sp", 2, 1, "```pego\nrule _sp\n```\n\n*Hidden rule: it makes no node of its own.*", true},
-		{"_tail", 2, 1, "```pego\nrule _tail\n```\n\n*Hidden rule: it makes no node of its own.*", true},
+		{"_sp", 2, 1, "```zp\nrule _sp\n```\n\n*Hidden rule: it makes no node of its own.*", true},
+		{"_tail", 2, 1, "```zp\nrule _tail\n```\n\n*Hidden rule: it makes no node of its own.*", true},
 		{"_num", 5, 1, "", false},
 	} {
 		line, char := hiddenAt(tc.line, tc.name, tc.nth)
@@ -106,7 +106,7 @@ func TestHiddenRuleNavigation(t *testing.T) {
 		if tc.wantNoType && got != tc.want {
 			t.Errorf("hover on %s = %q, want %q", tc.name, got, tc.want)
 		}
-		if !tc.wantNoType && (strings.Contains(got, "Hidden rule") || !strings.HasPrefix(got, "```pego\nrule "+tc.name+" node[")) {
+		if !tc.wantNoType && (strings.Contains(got, "Hidden rule") || !strings.HasPrefix(got, "```zp\nrule "+tc.name+" node[")) {
 			t.Errorf("hover on %s = %q, want the type of its action", tc.name, got)
 		}
 	}
@@ -134,7 +134,7 @@ func TestHiddenRuleNavigation(t *testing.T) {
 
 func TestHiddenRuleCompletionAndRename(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///hidden-rename.pego"
+	uri := "file:///hidden-rename.zp"
 	c.open(uri, hiddenSrc+"rule use = main")
 	labels := completionLabels(c, uri, 8, len("rule use = "))
 	for _, name := range []string{"_sp", "_tail", "_num", "_dead", "main"} {
@@ -212,7 +212,7 @@ func TestInlineActionCaptureScopes(t *testing.T) {
 		{"inline action around a closed one", "rule num = [0-9]+\nrule q = a:num ((b:num => $b) c:num => $", []string{"c"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			uri := "file:///scopes-" + strings.ReplaceAll(tc.name, " ", "-") + ".pego"
+			uri := "file:///scopes-" + strings.ReplaceAll(tc.name, " ", "-") + ".zp"
 			c.open(uri, tc.src)
 			lines := strings.Split(tc.src, "\n")
 			last := len(lines) - 1
@@ -237,14 +237,14 @@ func contains(xs []string, x string) bool {
 // the position in the source, and name no rule that the compiler generates for the inline action.
 func TestInlineActionDiagnostics(t *testing.T) {
 	c := newServer(t)
-	capabilities := map[string]any{"experimental": map[string]any{"pego": map[string]any{"lintDiagnostics": true}}}
+	capabilities := map[string]any{"experimental": map[string]any{"zp": map[string]any{"lintDiagnostics": true}}}
 	for k, v := range fullCapabilities {
 		capabilities[k] = v
 	}
 	c.request("initialize", map[string]any{"capabilities": capabilities})
 	src := "@start\nrule main = (\"a\" / \"ab\" => \"x\") (a:\"c\" \"d\" => \"y\")"
 	got := map[string]Range{}
-	for _, d := range c.open("file:///inline-lint.pego", src) {
+	for _, d := range c.open("file:///inline-lint.zp", src) {
 		if strings.Contains(d.Message, "_main_") {
 			t.Errorf("a generated name in %+v", d)
 		}

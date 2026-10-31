@@ -1,6 +1,6 @@
 ---
 name: performance
-description: Maintain PEGO's optimization method and reproducible performance evidence.
+description: Maintain ZeroParse's optimization method and reproducible performance evidence.
 ---
 
 # Performance Evidence

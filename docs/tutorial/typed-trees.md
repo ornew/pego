@@ -6,7 +6,7 @@ reads them from Go.
 
 ## What You Will Build
 
-A `config.pego` grammar whose result is a `Config` with a list of `Entry` values, and a Go program that prints them.
+A `config.zp` grammar whose result is a `Config` with a list of `Entry` values, and a Go program that prints them.
 
 ## Before You Start
 
@@ -14,10 +14,10 @@ Complete [Parsing Structured Input](structured-input.md): you need `example.conf
 
 ## Declaring Types and Actions
 
-A `Config` has a list of `Entry` values, each with a key and a typed value. In PEGO you declare these types in the
-grammar and construct them with actions. Save as `config.pego`:
+A `Config` has a list of `Entry` values, each with a key and a typed value. In ZeroParse you declare these types in the
+grammar and construct them with actions. Save as `config.zp`:
 
-```pego
+```zp
 package config
 
 type Key = node[string]
@@ -52,7 +52,7 @@ rule comment = "#" [^\n]*
 ```
 
 ```bash
-pego parse -g config.pego -f sexpr < example.conf
+zp parse -g config.zp -f sexpr < example.conf
 ```
 
 ```text
@@ -72,36 +72,36 @@ What is new:
   interface. `~` declares an alias, another name for a type; `=` defines a new struct type. Because `value` is declared as `Value`, the compiler checks that each alternative is one of the members.
 - `type Entry = { ... }` defines a **struct type**; fields are separated by newlines or semicolons. Field types can be
   lists (`[]Entry`), optional values (`*T`), or joins.
-- `rule name [Type] = expression` states the optional type of a rule. You can omit it and PEGO infers the type from the body, but
+- `rule name [Type] = expression` states the optional type of a rule. You can omit it and ZeroParse infers the type from the body, but
   declaring the types of the rules that build your tree documents them and keeps mistakes close to where they happen.
 - `es:entry*` captures the whole list of entries. `$es` is a node, so `$es.Value` is its value, the list that
   `Config{Entries: $es.Value}` stores in the `Config` struct. Every node has the members `.Start`, `.End` and `.Value`.
 
-The compiler rejects ill-typed grammars with a position in the grammar file. In a copy of `config.pego`, swapping the
+The compiler rejects ill-typed grammars with a position in the grammar file. In a copy of `config.zp`, swapping the
 arguments in the `entry` action:
 
 ```bash
-pego parse -g bad-type.pego -f sexpr -i 'a=1'   # ... Entry{Key: $v, Value: $k}
+zp parse -g bad-type.zp -f sexpr -i 'a=1'   # ... Entry{Key: $v, Value: $k}
 ```
 
 ```text
-pego: bad-type.pego:21:60: cannot use Number | String | Bool as Key in field Key of Entry
-bad-type.pego:21:69: cannot use Key as Number | String | Bool in field Value of Entry
+zp: bad-type.zp:21:60: cannot use Number | String | Bool as Key in field Key of Entry
+bad-type.zp:21:69: cannot use Key as Number | String | Bool in field Value of Entry
 ```
 
 and misspelling a field name:
 
 ```bash
-pego parse -g bad-field.pego -f sexpr -i 'a=1'   # ... Entry{Key: $k, Valu: $v}
+zp parse -g bad-field.zp -f sexpr -i 'a=1'   # ... Entry{Key: $k, Valu: $v}
 ```
 
 ```text
-pego: bad-field.pego:21:69: Entry has no field Valu
+zp: bad-field.zp:21:69: Entry has no field Valu
 ```
 
 ### Using the Tree From Go
 
-The typed tree is what your program consumes. Put `config.pego` and an `example.conf` next to this `main.go`, which
+The typed tree is what your program consumes. Put `config.zp` and an `example.conf` next to this `main.go`, which
 embeds the grammar and prints the entries:
 
 ```go
@@ -114,14 +114,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed config.pego
+//go:embed config.zp
 var grammarSource string
 
 func main() {
-	p, err := pego.CompileSource(grammarSource, "main")
+	p, err := zeroparse.CompileSource(grammarSource, "main")
 	if err != nil {
 		log.Fatal(err) // a mistake in the grammar
 	}
@@ -133,7 +133,7 @@ func main() {
 
 	cfg, err := p.Parse(string(input))
 	if err != nil {
-		var se *pego.SyntaxError
+		var se *zeroparse.SyntaxError
 		if errors.As(err, &se) {
 			fmt.Printf("line %d, column %d: %s\n", se.Line, se.Col, se.Message())
 			fmt.Println("expected:", se.Expected)
@@ -141,10 +141,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	entries := cfg.Field("Entries").(*pego.Node)
+	entries := cfg.Field("Entries").(*zeroparse.Node)
 	for _, e := range entries.Elems() {
-		key := e.Field("Key").(*pego.Node)
-		value := e.Field("Value").(*pego.Node)
+		key := e.Field("Key").(*zeroparse.Node)
+		value := e.Field("Value").(*zeroparse.Node)
 		fmt.Printf("%-6s %-7s %s\n", key.Text(), value.Type(), value.Text())
 	}
 }
@@ -160,7 +160,7 @@ port   Number  8080
 debug  Bool    true
 ```
 
-`node.Field(name)` returns the value of a struct field as an `any`: a `*pego.Node` for node values, lists, tuples and
+`node.Field(name)` returns the value of a struct field as an `any`: a `*zeroparse.Node` for node values, lists, tuples and
 structs, or an `int`, `string` or `bool`. A list is a node whose elements `Len()`, `Elem(i)` and `Elems()` give.
 A string node keeps the text it matched, which `Text()` returns. `value.Type()` tells you which member of the `Value` join
 you got, so a `switch` on it is how you walk a join.

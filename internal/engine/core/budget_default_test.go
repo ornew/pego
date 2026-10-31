@@ -1,11 +1,11 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package core
 
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/zeroparse/internal/limits"
 )
 
 func TestResolveLimits(t *testing.T) {

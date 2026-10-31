@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestExpressionArgsPollingOrderAndOwnership(t *testing.T) {

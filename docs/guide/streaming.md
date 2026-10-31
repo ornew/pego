@@ -10,7 +10,7 @@ until EOF; `WithDiagnosticLimit` can bound the retained diagnostic tail.
 |  |  |
 |:--|:--|
 | Input | An `io.Reader`, possibly unbounded |
-| API | `Parser.ParseStream`, `Parser.Iterate`, and `pego parse -stream` on the command line |
+| API | `Parser.ParseStream`, `Parser.Iterate`, and `zp parse -stream` on the command line |
 | Grammar | The start rule has a `#stream` repetition |
 | You get | Each element of that repetition, as soon as it matches |
 | Saves | Memory: neither the input nor the tree ever exists whole |
@@ -43,7 +43,7 @@ backends as well as Closure; recognition from a saved grammar requires its AST.
 `#stream` marks a repetition at the top level of the start rule. Everything the repetition matches is handed to your
 function one element at a time, and forgotten.
 
-```pego
+```zp
 package kv
 
 type Pair = { Key node[string]; Value node[string] }
@@ -56,20 +56,20 @@ rule key = [a-z_]+ #atomic
 rule value = [0-9]+ #atomic
 ```
 
-From the command line, `pego parse -stream` prints one line per element (JSON by default, `-f sexpr` for
+From the command line, `zp parse -stream` prints one line per element (JSON by default, `-f sexpr` for
 S-expressions). Elements that matched before an error are printed, then the error is reported:
 
 ```bash
-printf 'a=1\nbb=22\nccc=x\n' | pego parse -g kv.pego -stream
+printf 'a=1\nbb=22\nccc=x\n' | zp parse -g kv.zp -stream
 ```
 
 ```text
 {"type":"Pair","start":0,"end":4,"fields":{"Key":{"start":0,"end":1,"value":"a"},"Value":{"start":2,"end":3,"value":"1"}}}
 {"type":"Pair","start":4,"end":10,"fields":{"Key":{"start":4,"end":6,"value":"bb"},"Value":{"start":7,"end":9,"value":"22"}}}
-pego: 3:5: syntax error: expected [0-9]
+zp: 3:5: syntax error: expected [0-9]
 ```
 
-From Go (in a module that requires `github.com/ornew/pego`):
+From Go (in a module that requires `github.com/ornew/zeroparse`):
 
 ```go
 package main
@@ -78,7 +78,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 const grammar = `package kv
@@ -93,14 +93,14 @@ rule key = [a-z_]+ #atomic
 rule value = [0-9]+ #atomic `
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
-	err = p.ParseStream(os.Stdin, func(n *pego.Node) error {
-		key := n.Field("Key").(*pego.Node)
-		value := n.Field("Value").(*pego.Node)
+	err = p.ParseStream(os.Stdin, func(n *zeroparse.Node) error {
+		key := n.Field("Key").(*zeroparse.Node)
+		value := n.Field("Value").(*zeroparse.Node)
 		fmt.Printf("[%d,%d) %s = %s\n", n.Start(), n.End(), key.Text(), value.Text())
 		return nil
 	})
@@ -185,12 +185,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // run feeds the chunks to the parser through a pipe, 200 ms apart, and prints when each element arrives.
 func run(grammar string, chunks ...string) {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -206,7 +206,7 @@ func run(grammar string, chunks ...string) {
 		}
 		pw.Close()
 	}()
-	err = p.ParseStream(pr, func(n *pego.Node) error {
+	err = p.ParseStream(pr, func(n *zeroparse.Node) error {
 		fmt.Printf("%4dms  element [%d,%d)\n", time.Since(start).Milliseconds()/100*100, n.Start(), n.End())
 		return nil
 	})
@@ -264,7 +264,7 @@ The rules that matter when you write a grammar, in short:
 - `#recover` cannot wrap the `#stream` repetition, because rewinding could reach input that is already discarded. Put
   recovery inside each repeated element or its rule.
 - An element that can match nothing is delivered once and then ends the repetition. Without a guard like the `!$$` in
-  [parsers/csv](../../parsers/csv/csv.pego), a record rule whose fields and line end can all match nothing delivers
+  [parsers/csv](../../parsers/csv/csv.zp), a record rule whose fields and line end can all match nothing delivers
   one extra empty record at the end of the input.
 - `WithUnit`, `WithBackend` and `WithMaxDepth` work; `RecognizeOnly` is an error. After an element only the one
   character before it is kept, so `^` still works at the start of the next element.
@@ -279,7 +279,7 @@ Misplaced `#stream` pragmas are compile errors; the specification lists them und
 
 `Node.Start()` and `Node.End()`, `.Start` and `.End` in actions, `SyntaxError.Pos`, `Line` and `Col` all count from the
 start of the whole input, whichever part has been dropped (the parser keeps a running line and column for the dropped
-part). `WithUnit(pego.Bytes)` switches all of them to bytes: the `!` in `éé!` is at column 3 counted in code points and at
+part). `WithUnit(zeroparse.Bytes)` switches all of them to bytes: the `!` in `éé!` is at column 3 counted in code points and at
 column 5 counted in bytes.
 
 The parser does not keep text for you. String nodes (literals, character classes, `(...) #atomic`) carry their text, which
@@ -298,11 +298,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-func compile(src string) *pego.Parser {
-	p, err := pego.CompileSource(src, "main")
+func compile(src string) *zeroparse.Parser {
+	p, err := zeroparse.CompileSource(src, "main")
 	if err != nil {
 		panic(err)
 	}
@@ -328,7 +328,7 @@ func main() {
 	lines := compile(`@start
 rule main =  line* #stream $$
 rule line =  [a-z0-9]+ #atomic "\n" `)
-	print := func(n *pego.Node) error {
+	print := func(n *zeroparse.Node) error {
 		fmt.Printf("  element [%d,%d)\n", n.Start(), n.End())
 		return nil
 	}
@@ -336,7 +336,7 @@ rule line =  [a-z0-9]+ #atomic "\n" `)
 	// 1. The input stops matching the grammar after some elements were handed over.
 	fmt.Println("syntax error:")
 	err := lines.ParseStream(strings.NewReader("ab\ncd\n!\n"), print)
-	var se *pego.SyntaxError
+	var se *zeroparse.SyntaxError
 	if errors.As(err, &se) {
 		fmt.Printf("  %v (line %d, column %d, position %d)\n", err, se.Line, se.Col, se.Pos)
 	}
@@ -345,7 +345,7 @@ rule line =  [a-z0-9]+ #atomic "\n" `)
 	fmt.Println("callback error:")
 	errEnough := errors.New("enough")
 	seen := 0
-	err = lines.ParseStream(strings.NewReader("a\nb\nc\nd\n"), func(*pego.Node) error {
+	err = lines.ParseStream(strings.NewReader("a\nb\nc\nd\n"), func(*zeroparse.Node) error {
 		if seen++; seen == 2 {
 			return errEnough
 		}
@@ -366,11 +366,11 @@ rule main =  entry* #stream $$
 rule entry =  (name "=" num "\n") #recover(skip=[^\n]* "\n")
 rule name =  [a-z]+ #atomic
 rule num =  [0-9]+ #atomic `)
-	err = entries.ParseStream(strings.NewReader("a=1\nb=x\nc=3\nd\n"), func(n *pego.Node) error {
+	err = entries.ParseStream(strings.NewReader("a=1\nb=x\nc=3\nd\n"), func(n *zeroparse.Node) error {
 		fmt.Printf("  element %v\n", n)
 		return nil
 	})
-	var recovered pego.SyntaxErrors
+	var recovered zeroparse.SyntaxErrors
 	if errors.As(err, &recovered) {
 		for _, e := range recovered {
 			fmt.Printf("  recovered: %v\n", e)
@@ -400,7 +400,7 @@ recovered errors:
 ```
 
 1. **The input does not match.** Elements that matched before the failure have already been delivered. The error is a
-   `*pego.SyntaxError` with the absolute position, line and column. Here the first two lines were delivered, and the
+   `*zeroparse.SyntaxError` with the absolute position, line and column. Here the first two lines were delivered, and the
    error is reported at line 3: the repetition ended at the `!`, so the parser expected either another element or the
    end of input. A trailing `$$` is the usual way to make "unparsable input" an error rather than a silent stop.
 2. **Your callback returns an error.** Parsing stops at once and `ParseStream` returns your error unchanged, so
@@ -410,12 +410,12 @@ recovered errors:
    delivered; an element cut in two by the failure is not.
 4. **Recovered errors.** With [`#recover`](../../spec/language/pragmas.md#recover) inside the element, a bad element becomes
    an error value (delivered like any other element) and parsing continues. At the end, `ParseStream` returns the
-   recorded errors as `pego.SyntaxErrors`, even though every element was delivered. Treat that as "success with
+   recorded errors as `zeroparse.SyntaxErrors`, even though every element was delivered. Treat that as "success with
    diagnostics" and use `errors.As(err, &recovered)` to tell it from a fatal `*SyntaxError`. By default all recovered
    errors are kept until the end, so a very large input with an error on every line holds one `SyntaxError` per line.
    See [Recovering from Errors](recovery.md).
 
-Use `pego.WithDiagnosticCallback(func(e *pego.SyntaxError) error { ... })` with
+Use `zeroparse.WithDiagnosticCallback(func(e *zeroparse.SyntaxError) error { ... })` with
 `ParseStream` or `Iterate` to receive each committed recovery immediately before
 its element. `Next` invokes the diagnostic callback while advancing to that
 element. Backtracked recoveries are not reported. The callback receives a copy
@@ -424,9 +424,9 @@ an error, parsing stops with that error and the corresponding element is not
 delivered. Recoveries in a successful suffix are reported before the terminal
 result.
 
-By default, the terminal error retains every recovered diagnostic as `pego.SyntaxErrors`, so an input with an error on
-every line holds them all. Add `pego.WithDiagnosticLimit(n)` to retain only the latest `n`. If any were dropped, the
-terminal error is a `*pego.TruncatedSyntaxErrors`, which you inspect with `errors.As` (`Errors`, `Total`, `Dropped`).
+By default, the terminal error retains every recovered diagnostic as `zeroparse.SyntaxErrors`, so an input with an error on
+every line holds them all. Add `zeroparse.WithDiagnosticLimit(n)` to retain only the latest `n`. If any were dropped, the
+terminal error is a `*zeroparse.TruncatedSyntaxErrors`, which you inspect with `errors.As` (`Errors`, `Total`, `Dropped`).
 The callback still receives every committed recovery, and errors that the callback stores itself are not bounded. The
 diagnostic options are for streams only; `Parse`, `ParsePrefix` and `Document` reject them. `WithContext` and
 `WithLimits` cover the callbacks too, but a callback or reader that is blocked in your code cannot be preempted. The
@@ -462,7 +462,7 @@ set, and one huge element, such as a whole document wrapped in a single rule, de
 the last few elements, your callback's own state, and the list of recovered errors.
 
 The effect on a real input, a 27 MiB CSV file with 1,000,000 records (Apple silicon, Go 1.27.1, with the grammar of
-[parsers/csv](../../parsers/csv/csv.pego) and a callback that sums a column): `ParseStream` finished in about 1.4 seconds
+[parsers/csv](../../parsers/csv/csv.zp) and a callback that sums a column): `ParseStream` finished in about 1.4 seconds
 with a peak resident size of about 13 MB, and `Parse` finished in about 0.8 seconds with about 1.0 GB. Streaming is not faster: it trades a little
 time for memory, and the memory is bounded by the working set rather than by the size of the input.
 
@@ -481,7 +481,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // Two grammars for the same input: the elements are either tuple nodes or structs built by an action.
@@ -517,12 +517,12 @@ func (r *repeat) Read(b []byte) (int, error) {
 }
 
 func main() {
-	p, err := pego.CompileSource(grammars[os.Args[1]], "main")
+	p, err := zeroparse.CompileSource(grammars[os.Args[1]], "main")
 	if err != nil {
 		panic(err)
 	}
 	count := 0
-	err = p.ParseStream(&repeat{line: "key=42\n", n: 400000}, func(*pego.Node) error {
+	err = p.ParseStream(&repeat{line: "key=42\n", n: 400000}, func(*zeroparse.Node) error {
 		count++
 		if count%100000 == 0 {
 			var ms runtime.MemStats
@@ -566,12 +566,12 @@ number that does not grow with the input.
 
 ## Cancelling a Stream
 
-Pass `pego.WithContext(ctx)` to interrupt engine execution cooperatively, or
-`pego.WithLimits(pego.Limits{Budget: ...})` to bound
+Pass `zeroparse.WithContext(ctx)` to interrupt engine execution cooperatively, or
+`zeroparse.WithLimits(zeroparse.Limits{Budget: ...})` to bound
 one invocation. A zero budget selects the default, which is `max(2^20, 1024 * d)` for the furthest position `d` that the parser has
-asked the stream for, however the reader chunks the input; `pego.Unlimited` disables the limit. `Limits.MaxInput` bounds the length of the stream: with a finite value the stream fails with `pego.LimitInput` when the parser asks for a unit beyond it and the stream has one, whichever way the reader chunks the input. Budget counts depend on the backend,
+asked the stream for, however the reader chunks the input; `zeroparse.Unlimited` disables the limit. `Limits.MaxInput` bounds the length of the stream: with a finite value the stream fails with `zeroparse.LimitInput` when the parser asks for a unit beyond it and the stream has one, whichever way the reader chunks the input. Budget counts depend on the backend,
 position unit and implementation; reused or copied storage also consumes budget.
-Exhaustion matches `pego.ErrLimit` through `errors.Is`.
+Exhaustion matches `zeroparse.ErrLimit` through `errors.Is`.
 Text materialization also consumes budget, including building a cached stream
 snapshot and its CodePoints position table. Reading an already cached substring
 requires no additional materialization work; snapshot creation never reads ahead.

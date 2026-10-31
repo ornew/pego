@@ -72,13 +72,13 @@ increased by 8 and 14 bytes respectively.
 The reproducible fixture exporter is:
 
 ```sh
-PEGO_LITERAL_DISPATCH_DIR=/tmp/pego-literal-dispatch \
+ZP_LITERAL_DISPATCH_DIR=/tmp/zp-literal-dispatch \
   go test ./internal/gen -run '^TestGeneratedLiteralDispatchWorkload$' -count=1
 ```
 
 The measured revision was based on `7f20034` with the literal-dispatch change.
 Full generated plain-Go, typed-Go and TypeScript corpus validation and all
 parser-module suites pass. The clean 131-case, three-sample full snapshot at
-[f8c2399](https://github.com/ornew/pego/commit/f8c2399e4679af46e98dca39d1bd7ccc9c2a4b49)
+[f8c2399](https://github.com/ornew/zeroparse/commit/f8c2399e4679af46e98dca39d1bd7ccc9c2a4b49)
 is recorded in [the full results](../benchmarks.md), without attributing it to
 this optimization.

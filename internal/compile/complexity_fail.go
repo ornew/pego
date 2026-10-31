@@ -1,6 +1,6 @@
 package compile
 
-import "github.com/ornew/pego/grammar"
+import "github.com/ornew/zeroparse/grammar"
 
 // A unit restarts the input that a scanning source inside it examined only when it fails after
 // the source has run. A unit whose sources are followed by nothing that can fail, such as the

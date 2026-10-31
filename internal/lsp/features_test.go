@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 func TestDiagnostics(t *testing.T) {
@@ -56,10 +56,10 @@ func TestDiagnostics(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			uri := "file:///" + strings.ReplaceAll(tc.name, " ", "_") + ".pego"
+			uri := "file:///" + strings.ReplaceAll(tc.name, " ", "_") + ".zp"
 			got := c.open(uri, tc.text)
 			for i := range tc.want {
-				tc.want[i].Severity, tc.want[i].Source = severityError, "pego"
+				tc.want[i].Severity, tc.want[i].Source = severityError, "zp"
 			}
 			if len(got) != len(tc.want) || len(got) > 0 && !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("got  %+v\nwant %+v", got, tc.want)
@@ -96,7 +96,7 @@ func messages(diags []Diagnostic) string {
 
 func TestIncrementalChanges(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///inc.pego"
+	uri := "file:///inc.zp"
 	if d := c.open(uri, "@start\nrule main = \"😀\" x"); messages(d) != "undefined rule x" || d[0].Range != rng(1, 17, 1, 18) {
 		t.Fatalf("diagnostics %+v", d)
 	}
@@ -157,25 +157,25 @@ func TestFormatting(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := grammar.Format(g)
-	c.open("file:///f.pego", src)
-	if got := formatDoc(c, "file:///f.pego", src); got != want {
+	c.open("file:///f.zp", src)
+	if got := formatDoc(c, "file:///f.zp", src); got != want {
 		t.Errorf("got\n%s\nwant\n%s", got, want)
 	}
 	// Formatted source needs no edits.
-	c.open("file:///formatted.pego", want)
-	if r := c.request("textDocument/formatting", docParams("file:///formatted.pego")); string(r) != "[]" {
+	c.open("file:///formatted.zp", want)
+	if r := c.request("textDocument/formatting", docParams("file:///formatted.zp")); string(r) != "[]" {
 		t.Errorf("edits for formatted source: %s", r)
 	}
 	// CRLF line terminators are kept.
 	crlf := strings.ReplaceAll(src, "\n", "\r\n")
-	c.open("file:///crlf.pego", crlf)
-	if got := formatDoc(c, "file:///crlf.pego", crlf); got != strings.ReplaceAll(want, "\n", "\r\n") {
+	c.open("file:///crlf.zp", crlf)
+	if got := formatDoc(c, "file:///crlf.zp", crlf); got != strings.ReplaceAll(want, "\n", "\r\n") {
 		t.Errorf("CRLF: got %q", got)
 	}
 	// Source with syntax errors is not formatted: the definitions with errors would be lost.
 	bad := "rule  a { \"x\" }\nrule b = (\n"
-	c.open("file:///bad.pego", bad)
-	if r := c.request("textDocument/formatting", docParams("file:///bad.pego")); string(r) != "[]" {
+	c.open("file:///bad.zp", bad)
+	if r := c.request("textDocument/formatting", docParams("file:///bad.zp")); string(r) != "[]" {
 		t.Errorf("edits for source with errors: %s", r)
 	}
 	c.exit()
@@ -201,7 +201,7 @@ rule main = (pair / num) $$`
 
 func TestDefinitionAndReferences(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///nav.pego"
+	uri := "file:///nav.zp"
 	if d := c.open(uri, navSrc); len(d) != 0 {
 		t.Fatalf("diagnostics %+v", d)
 	}
@@ -261,7 +261,7 @@ func TestDefinitionAndReferences(t *testing.T) {
 
 func TestDocumentSymbols(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///sym.pego"
+	uri := "file:///sym.zp"
 	c.open(uri, navSrc)
 	var syms []DocumentSymbol
 	c.requestInto("textDocument/documentSymbol", docParams(uri), &syms)
@@ -294,8 +294,8 @@ func TestDocumentSymbols(t *testing.T) {
 	}
 	// With syntax errors, the definitions that parsed are still listed.
 	syms = nil
-	c.open("file:///broken.pego", "rule a = (\nrule b = \"x\" }")
-	c.requestInto("textDocument/documentSymbol", docParams("file:///broken.pego"), &syms)
+	c.open("file:///broken.zp", "rule a = (\nrule b = \"x\" }")
+	c.requestInto("textDocument/documentSymbol", docParams("file:///broken.zp"), &syms)
 	if len(syms) != 1 || syms[0].Name != "b" || syms[0].Detail != "" {
 		t.Errorf("symbols with errors: %+v", syms)
 	}
@@ -317,7 +317,7 @@ func hoverText(c *testClient, uri string, line, char int) (string, *Range) {
 
 func TestHover(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///hover.pego"
+	uri := "file:///hover.zp"
 	src := navSrc + "\nrule lst = xs:num* {len($xs) > 0} @error(message=\"e\") => $xs\nrule s = x:\"a\" {$x.Start > 0}"
 	if d := c.open(uri, src); len(d) != 0 {
 		t.Fatalf("diagnostics %+v", d)
@@ -327,17 +327,17 @@ func TestHover(t *testing.T) {
 		want       string
 		r          Range
 	}{
-		{12, 6, "```pego\nrule pair Pair\n```\n\n*Inferred type.*\n\nTwo numbers\nwith an emoji.", rng(12, 5, 12, 9)},
-		{14, 13, "```pego\nrule pair Pair\n```\n\n*Inferred type.*\n\nTwo numbers\nwith an emoji.", rng(14, 13, 14, 17)},
-		{12, 26, "```pego\nrule num Num\n```", rng(12, 25, 12, 28)},
-		{14, 5, "```pego\nrule main node[(pair | Num,)]\n```\n\n*Inferred type.*", rng(14, 5, 14, 9)},
-		{15, 5, "```pego\nrule lst node[[]Num]\n```\n\n*Inferred type.*", rng(15, 5, 15, 8)},
-		{1, 6, "```pego\ntype Num = { Text string }\n```\n\nA number.", rng(1, 5, 1, 8)},
-		{12, 34, "```pego\ntype Pair = {\n    Left  Num // the left\n    Right *Num\n}\n```", rng(12, 33, 12, 37)},
-		{6, 6, "```pego\ntype Any ~ Pair | Num\n```\n\nanything", rng(6, 5, 6, 8)},
-		{15, 22, "```pego\nlen(x) int\n```\n" + findBuiltin(builtinFuncs, "len").doc, rng(15, 20, 15, 23)},
-		{15, 33, "```pego\n@error(message=\"...\")\n```\n" + findBuiltin(attributes, "error").doc, rng(15, 32, 15, 37)},
-		{16, 19, "```pego\nStart int\n```\n" + findBuiltin(builtinMembers, "Start").doc, rng(16, 18, 16, 23)},
+		{12, 6, "```zp\nrule pair Pair\n```\n\n*Inferred type.*\n\nTwo numbers\nwith an emoji.", rng(12, 5, 12, 9)},
+		{14, 13, "```zp\nrule pair Pair\n```\n\n*Inferred type.*\n\nTwo numbers\nwith an emoji.", rng(14, 13, 14, 17)},
+		{12, 26, "```zp\nrule num Num\n```", rng(12, 25, 12, 28)},
+		{14, 5, "```zp\nrule main node[(pair | Num,)]\n```\n\n*Inferred type.*", rng(14, 5, 14, 9)},
+		{15, 5, "```zp\nrule lst node[[]Num]\n```\n\n*Inferred type.*", rng(15, 5, 15, 8)},
+		{1, 6, "```zp\ntype Num = { Text string }\n```\n\nA number.", rng(1, 5, 1, 8)},
+		{12, 34, "```zp\ntype Pair = {\n    Left  Num // the left\n    Right *Num\n}\n```", rng(12, 33, 12, 37)},
+		{6, 6, "```zp\ntype Any ~ Pair | Num\n```\n\nanything", rng(6, 5, 6, 8)},
+		{15, 22, "```zp\nlen(x) int\n```\n" + findBuiltin(builtinFuncs, "len").doc, rng(15, 20, 15, 23)},
+		{15, 33, "```zp\n@error(message=\"...\")\n```\n" + findBuiltin(attributes, "error").doc, rng(15, 32, 15, 37)},
+		{16, 19, "```zp\nStart int\n```\n" + findBuiltin(builtinMembers, "Start").doc, rng(16, 18, 16, 23)},
 	} {
 		if tc.line == 15 && strings.Contains(tc.want, "@error") {
 			line := strings.Split(src, "\n")[15]
@@ -359,17 +359,17 @@ func TestHover(t *testing.T) {
 	}
 
 	// Built-in and undefined names; a grammar with errors has no inferred types.
-	c.open("file:///hover2.pego", "type T = { M node[string] }\nrule a = x\nrule b T = v1:\"b\" => T{M: $v1}")
+	c.open("file:///hover2.zp", "type T = { M node[string] }\nrule a = x\nrule b T = v1:\"b\" => T{M: $v1}")
 	for _, tc := range []struct {
 		line, char int
 		want       string
 	}{
-		{0, 14, "```pego\ntype node\n```\n" + findBuiltin(builtinTypes, "node").doc},
-		{1, 9, "```pego\nrule x\n```\nUndefined rule."},
-		{1, 5, "```pego\nrule a\n```\n\n*The type is inferred when the grammar has no errors.*"},
-		{2, 5, "```pego\nrule b T\n```"},
+		{0, 14, "```zp\ntype node\n```\n" + findBuiltin(builtinTypes, "node").doc},
+		{1, 9, "```zp\nrule x\n```\nUndefined rule."},
+		{1, 5, "```zp\nrule a\n```\n\n*The type is inferred when the grammar has no errors.*"},
+		{2, 5, "```zp\nrule b T\n```"},
 	} {
-		if got, _ := hoverText(c, "file:///hover2.pego", tc.line, tc.char); got != tc.want {
+		if got, _ := hoverText(c, "file:///hover2.zp", tc.line, tc.char); got != tc.want {
 			t.Errorf("hover at %d:%d: got %q, want %q", tc.line, tc.char, got, tc.want)
 		}
 	}
@@ -378,7 +378,7 @@ func TestHover(t *testing.T) {
 
 func TestRename(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///rename.pego"
+	uri := "file:///rename.zp"
 	c.open(uri, navSrc)
 	var prep *prepareRenameResult
 	c.requestInto("textDocument/prepareRename", at(uri, 12, 26), &prep)
@@ -431,15 +431,15 @@ func TestRename(t *testing.T) {
 		}
 	}
 	// Built-in and undefined names cannot be renamed, nor anything while there are syntax errors.
-	c.open("file:///r2.pego", "type T = { M node[string] }\nrule a = x")
-	if e := c.requestError("textDocument/prepareRename", at("file:///r2.pego", 0, 14)); e.Message != "cannot rename the built-in type node" {
+	c.open("file:///r2.zp", "type T = { M node[string] }\nrule a = x")
+	if e := c.requestError("textDocument/prepareRename", at("file:///r2.zp", 0, 14)); e.Message != "cannot rename the built-in type node" {
 		t.Errorf("built-in type: %+v", e)
 	}
-	if e := c.requestError("textDocument/prepareRename", at("file:///r2.pego", 1, 9)); e.Message != "rule x is not defined" {
+	if e := c.requestError("textDocument/prepareRename", at("file:///r2.zp", 1, 9)); e.Message != "rule x is not defined" {
 		t.Errorf("undefined rule: %+v", e)
 	}
-	c.open("file:///r3.pego", "rule a = b }\nrule b = (")
-	if e := c.requestError("textDocument/prepareRename", at("file:///r3.pego", 0, 5)); !strings.Contains(e.Message, "syntax errors") {
+	c.open("file:///r3.zp", "rule a = b }\nrule b = (")
+	if e := c.requestError("textDocument/prepareRename", at("file:///r3.zp", 0, 5)); !strings.Contains(e.Message, "syntax errors") {
 		t.Errorf("syntax errors: %+v", e)
 	}
 	c.exit()
@@ -459,7 +459,7 @@ func completionLabels(c *testClient, uri string, line, char int) []string {
 
 func TestCompletion(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///comp.pego"
+	uri := "file:///comp.zp"
 	// Each line is a context; the cursor is at the end of the line unless noted.
 	lines := []string{
 		"type Num = { Text string }",                        // 0
@@ -537,19 +537,19 @@ func TestCompletion(t *testing.T) {
 		}
 	}
 	// After "type T =" only a struct body can follow, so no type names are offered.
-	c.open("file:///define.pego", "type P = {}\ntype T = ")
-	if got := completionLabels(c, "file:///define.pego", 1, 9); len(got) != 0 {
+	c.open("file:///define.zp", "type P = {}\ntype T = ")
+	if got := completionLabels(c, "file:///define.zp", 1, 9); len(got) != 0 {
 		t.Errorf("after type T =: %q", got)
 	}
 	// At the start of an empty file.
-	c.open("file:///empty.pego", "")
-	if got := completionLabels(c, "file:///empty.pego", 0, 0); !reflect.DeepEqual(got, []string{"package", "rule", "type", "var"}) {
+	c.open("file:///empty.zp", "")
+	if got := completionLabels(c, "file:///empty.zp", 0, 0); !reflect.DeepEqual(got, []string{"package", "rule", "type", "var"}) {
 		t.Errorf("empty file: %q", got)
 	}
 	// Items carry the rule's type and documentation, and snippets for functions.
-	c.open("file:///items.pego", "// The digits.\nrule num = [0-9]+\n@start\nrule main = num")
+	c.open("file:///items.zp", "// The digits.\nrule num = [0-9]+\n@start\nrule main = num")
 	var list completionList
-	c.requestInto("textDocument/completion", at("file:///items.pego", 3, 14), &list)
+	c.requestInto("textDocument/completion", at("file:///items.zp", 3, 14), &list)
 	var num CompletionItem
 	for _, it := range list.Items {
 		if it.Label == "num" {
@@ -567,7 +567,7 @@ func TestCompletion(t *testing.T) {
 func TestCaptureMemberCompletion(t *testing.T) {
 	c := newInitialized(t)
 	defer c.exit()
-	uri := "file:///capture-members.pego"
+	uri := "file:///capture-members.zp"
 	lines := []string{
 		`rule item = key:name "=" value:name`,
 		`rule name = [a-z]+`,
@@ -612,7 +612,7 @@ func TestOperatorsPragmaCompletion(t *testing.T) {
 		{"rule a = (#", false},
 		{"var v = #", false},
 	} {
-		uri := fmt.Sprintf("file:///operators-pragma-%d.pego", i)
+		uri := fmt.Sprintf("file:///operators-pragma-%d.zp", i)
 		c.open(uri, tc.src)
 		got := completionLabels(c, uri, 0, len([]rune(tc.src)))
 		if has := slices.Contains(got, "operators"); has != tc.want {
@@ -628,19 +628,19 @@ func TestFilterBuiltinHoverAndCompletion(t *testing.T) {
 	c := newInitialized(t)
 	defer c.exit()
 
-	hoverURI := "file:///filter-hover.pego"
+	hoverURI := "file:///filter-hover.zp"
 	source := "@start\nrule main = x:value => filter(list($x), (item) => true)\nrule value = \"x\""
 	if d := c.open(hoverURI, source); len(d) != 0 {
 		t.Fatalf("diagnostics %+v", d)
 	}
 	filterStart := strings.Index(source, "filter") - len("@start\n")
 	got, _ := hoverText(c, hoverURI, 1, filterStart+1)
-	want := "```pego\nfilter(list, (item) => bool) []T\n```\n" + findBuiltin(builtinFuncs, "filter").doc
+	want := "```zp\nfilter(list, (item) => bool) []T\n```\n" + findBuiltin(builtinFuncs, "filter").doc
 	if got != want {
 		t.Errorf("filter hover = %q, want %q", got, want)
 	}
 
-	completionURI := "file:///filter-completion.pego"
+	completionURI := "file:///filter-completion.zp"
 	completionSource := `rule main = "x" => fi`
 	c.open(completionURI, completionSource)
 	var completions completionList
@@ -692,7 +692,7 @@ func semanticTokenTexts(t *testing.T, c *testClient, uri, src string) []string {
 
 func TestSemanticTokens(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///sem.pego"
+	uri := "file:///sem.zp"
 	src := "type N = { Text string } // c\n@start(default)\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).Start}\nrule n N = #operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}\nrule lam = xs:n* => map($xs, (e) => e)"
 	got := semanticTokenTexts(t, c, uri, src)
 	want := []string{
@@ -717,7 +717,7 @@ func TestSemanticTokens(t *testing.T) {
 func TestSemanticTokensCaseInsensitiveLiteral(t *testing.T) {
 	c := newInitialized(t)
 	defer c.exit()
-	got := semanticTokenTexts(t, c, "file:///fold.pego", "rule main = \"select\"i \"from\"")
+	got := semanticTokenTexts(t, c, "file:///fold.zp", "rule main = \"select\"i \"from\"")
 	want := []string{"rule keyword", "main function.declaration", `"select"i string`, `"from" string`}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got\n%q\nwant\n%q", got, want)
@@ -725,10 +725,10 @@ func TestSemanticTokensCaseInsensitiveLiteral(t *testing.T) {
 }
 
 // TestExampleGrammars checks that the example grammars have no diagnostics, that every name
-// resolves to a definition, and that the formatting edits give what pego fmt prints.
+// resolves to a definition, and that the formatting edits give what zp fmt prints.
 func TestExampleGrammars(t *testing.T) {
-	paths, err := filepath.Glob("../../examples/*/*.pego")
-	more, err2 := filepath.Glob("../../parsers/*/*.pego")
+	paths, err := filepath.Glob("../../examples/*/*.zp")
+	more, err2 := filepath.Glob("../../parsers/*/*.zp")
 	paths = append(paths, more...)
 	if err != nil || err2 != nil || len(paths) == 0 {
 		t.Fatalf("no example grammars: %v", err)
@@ -763,7 +763,7 @@ func TestExampleGrammars(t *testing.T) {
 // BenchmarkAnalyze measures the analysis that runs after every change, on the largest example
 // grammars.
 func BenchmarkAnalyze(b *testing.B) {
-	for _, name := range []string{"golang/golang.pego", "python/python.pego"} {
+	for _, name := range []string{"golang/golang.zp", "python/python.zp"} {
 		data, err := os.ReadFile("../../parsers/" + name)
 		if err != nil {
 			b.Fatal(err)
@@ -780,7 +780,7 @@ func BenchmarkAnalyze(b *testing.B) {
 // grammar does not compile (unnamed struct types are not supported yet).
 func TestReservedTypeReferences(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///reserved.pego"
+	uri := "file:///reserved.zp"
 	d := c.open(uri, "type Num = { Text string }\ntype A ~ node[Num] | (Num, A) | { F Num }\n@start\nrule main = \"a\"\n")
 	if !slices.ContainsFunc(d, func(x Diagnostic) bool { return strings.Contains(x.Message, "not supported yet") }) {
 		t.Fatalf("diagnostics %+v", d)

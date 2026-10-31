@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ornew/pego/parsers/xml"
+	"github.com/ornew/zeroparse/parsers/xml"
 )
 
 // TestBudgetControls checks that the parser, generated with budget controls, stops at a budget limit

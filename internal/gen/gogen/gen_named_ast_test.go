@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestGeneratedNamedAST(t *testing.T) {
@@ -187,7 +187,7 @@ func testGeneratedNamedASTXMLFragments(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated XML workload")
 	}
-	source, err := os.ReadFile("../../../parsers/xml/xml.pego")
+	source, err := os.ReadFile("../../../parsers/xml/xml.zp")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,6 +1,6 @@
 package complexitytest
 
-import "github.com/ornew/pego/internal/engine"
+import "github.com/ornew/zeroparse/internal/engine"
 
 // The classes that the complexity classifier assigns to a start rule.
 const (
@@ -15,7 +15,7 @@ const (
 type Control struct {
 	Name   string
 	Family string // E0 to E10, or a name for a case outside the table
-	Source string // PEGO source with the start rule main
+	Source string // ZeroParse source with the start rule main
 	// Input builds the input of size n.
 	Input func(n int) string
 	// Sizes are n of the series n, 2n, 4n; ShortSizes are used with testing.Short.

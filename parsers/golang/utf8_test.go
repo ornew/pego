@@ -3,7 +3,7 @@ package golang_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/parsers/golang"
+	"github.com/ornew/zeroparse/parsers/golang"
 )
 
 // TestInvalidUTF8 checks that the grammar itself rejects invalid UTF-8 with the Bytes position

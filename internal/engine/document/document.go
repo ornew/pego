@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"weak"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // Document parses a text that is edited repeatedly. It reuses the memo of the previous parse for

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compiletest"
-	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/zeroparse/internal/compiletest"
+	"github.com/ornew/zeroparse/internal/gen"
 )
 
 // AnonJoinGrammar is the grammar whose anonymous joins the generated types name.

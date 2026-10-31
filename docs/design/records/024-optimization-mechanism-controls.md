@@ -6,7 +6,7 @@
 
 ## Summary
 
-PEGO's numbered optimization records preserve implementation details and
+ZeroParse's numbered optimization records preserve implementation details and
 evidence for individual changes, while commits provide chronology. A
 comparison with an older commit can mix the target optimization with later
 correctness fixes, compiler changes and unrelated optimizations. This design

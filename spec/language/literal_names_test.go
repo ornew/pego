@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // literalNameSources declare a name that would hide the literal true, false or nil.
@@ -26,7 +26,7 @@ func TestLiteralNamesAreReserved(t *testing.T) {
 	p, _ := sourceGrammar(t)
 	for _, tc := range literalNameSources {
 		t.Run(tc.name, func(t *testing.T) {
-			g, err := pego.ParseGrammar(tc.src)
+			g, err := zeroparse.ParseGrammar(tc.src)
 			if err != nil {
 				t.Fatalf("hand-written frontend: %v", err)
 			}
@@ -36,7 +36,7 @@ func TestLiteralNamesAreReserved(t *testing.T) {
 			if err := grammar.Validate(g); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("Validate: got %v; want %q", err, tc.want)
 			}
-			if _, err := pego.CompileSource(tc.src, "main"); err == nil || !strings.Contains(err.Error(), tc.want) {
+			if _, err := zeroparse.CompileSource(tc.src, "main"); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("CompileSource: got %v; want %q", err, tc.want)
 			}
 		})
@@ -45,7 +45,7 @@ func TestLiteralNamesAreReserved(t *testing.T) {
 	for _, src := range []string{
 		"rule main = x:\"a\" => map($x, (false) => false)", "rule main = x:\"a\" => map($x, (a, nil) => a)",
 	} {
-		if _, err := pego.ParseGrammar(src); err == nil || !strings.Contains(err.Error(), "cannot name a lambda parameter") {
+		if _, err := zeroparse.ParseGrammar(src); err == nil || !strings.Contains(err.Error(), "cannot name a lambda parameter") {
 			t.Errorf("hand-written frontend: %s: %v", src, err)
 		}
 		if _, err := p.Parse(src); err == nil {
@@ -63,7 +63,7 @@ func TestLiteralNamesAreReserved(t *testing.T) {
 		"rule truely = \"a\"", "var nilable bool\nrule main = \"a\"", "rule main = true_:\"a\" => $true_",
 		"type True = { N int }", "rule main = x:\"a\" => map($x, (nilx) => nilx)",
 	} {
-		g, err := pego.ParseGrammar(src)
+		g, err := zeroparse.ParseGrammar(src)
 		if err != nil {
 			t.Fatalf("%s: %v", src, err)
 		}

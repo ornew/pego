@@ -15,7 +15,7 @@ func TestNegotiatedDocumentationProtocol(t *testing.T) {
 				"hover": map[string]any{"contentFormat": formats}, "completion": map[string]any{"completionItem": map[string]any{"documentationFormat": formats}},
 			}}})
 			defer c.exit()
-			uri := "file:///formats.pego"
+			uri := "file:///formats.zp"
 			c.open(uri, "rule main = helper\n// Uses `text`.\nrule helper = \"a\"")
 			var h hover
 			c.requestInto("textDocument/hover", at(uri, 0, 13), &h)
@@ -65,7 +65,7 @@ func TestCompletionCurrentContextsProtocol(t *testing.T) {
 		t.Run(tc.source, func(t *testing.T) {
 			c := newInitialized(t)
 			defer c.exit()
-			uri := "file:///contexts.pego"
+			uri := "file:///contexts.zp"
 			off := strings.Index(tc.source, "|")
 			source := strings.Replace(tc.source, "|", "", 1)
 			c.open(uri, source)
@@ -94,7 +94,7 @@ func TestCommentAssociativityCurrentSyntaxProtocol(t *testing.T) {
 	for _, newline := range []string{"\n", "\r\n", "\r"} {
 		for _, assoc := range []string{"left", "right", "none"} {
 			c := newInitialized(t)
-			uri := "file:///associativity.pego"
+			uri := "file:///associativity.zp"
 			source := "@start" + newline + "rule main = #operators {" + newline + "operand [0-9]" + newline + "level { infix " + assoc + " ( // 😀 gap" + newline + "// second" + newline + "\"+\" ) }" + newline + "}"
 			if diags := c.open(uri, source); len(diags) != 0 {
 				t.Fatalf("current grammar diagnostics: %+v", diags)
@@ -130,7 +130,7 @@ func TestCommentAssociativityCurrentSyntaxProtocol(t *testing.T) {
 }
 
 func TestPlainDocumentationPreservesCode(t *testing.T) {
-	got := documentation("```pego\nrule main = \"*`*\"\n```\n\n*Inferred type.*\nUses `text`.\nstart_pos_name foo__bar__baz café_pos_nom\n__Strong__ and _emphasized_, plus `_literal_` and __start_pos_name__.", []string{"plaintext"})
+	got := documentation("```zp\nrule main = \"*`*\"\n```\n\n*Inferred type.*\nUses `text`.\nstart_pos_name foo__bar__baz café_pos_nom\n__Strong__ and _emphasized_, plus `_literal_` and __start_pos_name__.", []string{"plaintext"})
 	want := markupContent{Kind: "plaintext", Value: "rule main = \"*`*\"\n\nInferred type.\nUses text.\nstart_pos_name foo__bar__baz café_pos_nom\nStrong and emphasized, plus _literal_ and start_pos_name."}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %+v want %+v", got, want)
@@ -144,7 +144,7 @@ func TestRejectedHeaderCommentsProtocol(t *testing.T) {
 		"@start\nrule main = #operators {\noperand [0-9]\nlevel { infix // gap\nleft \"+\" }\n}",
 	} {
 		c := newInitialized(t)
-		if diagnostics := c.open("file:///invalid-header.pego", source); len(diagnostics) == 0 {
+		if diagnostics := c.open("file:///invalid-header.zp", source); len(diagnostics) == 0 {
 			t.Errorf("invalid header accepted: %s", source)
 		}
 		c.exit()
@@ -206,10 +206,10 @@ func TestGuardedCodeActionsProtocol(t *testing.T) {
 			c := newServer(t)
 			c.request("initialize", map[string]any{"capabilities": map[string]any{
 				"workspace":    map[string]any{"workspaceEdit": map[string]any{"documentChanges": true}},
-				"experimental": map[string]any{"pego": map[string]any{"lintDiagnostics": true, "showExplanation": true}},
+				"experimental": map[string]any{"zp": map[string]any{"lintDiagnostics": true, "showExplanation": true}},
 			}})
 			defer c.exit()
-			uri := "file:///actions.pego"
+			uri := "file:///actions.zp"
 			source := "@start" + newline + "rule main = (" + newline + "  a:\"a\" b:\"b\"" + newline + ") => $a"
 			diagnostics := c.open(uri, source)
 			var target Diagnostic
@@ -219,13 +219,13 @@ func TestGuardedCodeActionsProtocol(t *testing.T) {
 					break
 				}
 			}
-			if target.Data == nil || target.Severity != 2 || target.Source != "pego-lint" {
+			if target.Data == nil || target.Severity != 2 || target.Source != "zp-lint" {
 				t.Fatalf("diagnostics = %+v", diagnostics)
 			}
 			params := map[string]any{"textDocument": map[string]any{"uri": uri}, "range": target.Range, "context": map[string]any{"diagnostics": []Diagnostic{target}}}
 			var actions []codeAction
 			c.requestInto("textDocument/codeAction", params, &actions)
-			if len(actions) != 2 || actions[0].Command == nil || actions[0].Command.Command != "pego.showExplanation" || actions[1].Edit == nil {
+			if len(actions) != 2 || actions[0].Command == nil || actions[0].Command.Command != "zp.showExplanation" || actions[1].Edit == nil {
 				t.Fatalf("actions = %+v", actions)
 			}
 			change := actions[1].Edit.DocumentChanges[0]
@@ -266,7 +266,7 @@ func TestGuardedCodeActionsProtocol(t *testing.T) {
 func TestLintDiagnosticsPrototypeIsOptIn(t *testing.T) {
 	c := newInitialized(t)
 	defer c.exit()
-	uri := "file:///ordinary.pego"
+	uri := "file:///ordinary.zp"
 	if got := c.open(uri, "@start\nrule main = \"a\" / \"ab\""); len(got) != 0 {
 		t.Fatalf("changed default diagnostics: %+v", got)
 	}

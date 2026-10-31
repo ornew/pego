@@ -1,19 +1,19 @@
 package bench
 
 import (
-	"github.com/ornew/pego/internal/bench/inputs"
+	"github.com/ornew/zeroparse/internal/bench/inputs"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 // TestExportTSInputs writes the inputs of the plain-parse TypeScript throughput script
-// (ts-parse.mjs) to the directory named by PEGO_TS_INPUT_DIR, one file per workload. It does
+// (ts-parse.mjs) to the directory named by ZP_TS_INPUT_DIR, one file per workload. It does
 // nothing without the variable.
 func TestExportTSInputs(t *testing.T) {
-	dir := os.Getenv("PEGO_TS_INPUT_DIR")
+	dir := os.Getenv("ZP_TS_INPUT_DIR")
 	if dir == "" {
-		t.Skip("PEGO_TS_INPUT_DIR is not set")
+		t.Skip("ZP_TS_INPUT_DIR is not set")
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)

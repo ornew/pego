@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/ref"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/ref"
 )
 
 var allOps = []string{"memo.lookup", "memo.lookupGrowing", "memo.store", "memo.seed", "memo.reseed", "memo.finishSeed",

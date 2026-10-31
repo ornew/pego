@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/schema"
 )
 
 func shapeOf(kind string) schema.Shape { return schema.Shape{Kind: kind} }

@@ -3,7 +3,7 @@ package golang_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/parsers/golang"
+	"github.com/ornew/zeroparse/parsers/golang"
 )
 
 // FuzzParseFile compares the package with go/parser on arbitrary input (go test -fuzz

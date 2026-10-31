@@ -6,12 +6,12 @@
 
 ## Summary
 
-Provide a read-only, simplified syntax view derived from a complete PEGO
+Provide a read-only, simplified syntax view derived from a complete ZeroParse
 grammar. The view removes value-construction actions, result-type annotations,
 metadata attributes and recovery directives while preserving Predicate
 Actions, recognition predicates and non-recovery pragmas such as `#repeat`,
 `#atomic` and `#stream`. Keep the existing full formatter unchanged. Expose the view through
-`grammar.FormatSyntax(g) string` and `pego fmt -syntax`, and generate a
+`grammar.FormatSyntax(g) string` and `zp fmt -syntax`, and generate a
 documentation page that displays both full and simplified source from the
 canonical root grammar.
 
@@ -85,15 +85,15 @@ formatter. `grammar.FormatSyntax(g) string` returns the simplified view
 without mutating the input AST. It uses the canonical formatter rules where
 they remain applicable.
 
-The `pego fmt -syntax` mode writes the simplified view to standard output.
+The `zp fmt -syntax` mode writes the simplified view to standard output.
 It rejects combining the mode with `-w` or `-l`; it is output-only. Ordinary
-`pego fmt`, `pego fmt -w` and `pego fmt -l` continue to use the full formatter.
+`zp fmt`, `zp fmt -w` and `zp fmt -l` continue to use the full formatter.
 
 ### Generated Documentation
 
 Use `spec/language/syntax.md.tmpl` as the Markdown template, with one fenced-code
 placeholder for the full grammar and one for the simplified view. Generate
-`spec/language/syntax.md` from the exact root `pego.pego` bytes for the full section and
+`spec/language/syntax.md` from the exact root `zeroparse.zp` bytes for the full section and
 from the parsed grammar plus the same projection used by the Go API for the
 simple section. `go generate ./spec/language` refreshes the page deterministically.
 Keep the result as ordinary Markdown so the current site
@@ -147,7 +147,7 @@ normal generation test.
   limitation rather than asserting parity.
 - Include a predicate dependent on a constructed value and verify the API and
   generated page communicate that recognition equivalence is not guaranteed.
-- Verify `pego fmt -syntax` output, standard full formatting, and rejection of
+- Verify `zp fmt -syntax` output, standard full formatting, and rejection of
   `-syntax -w` without modifying input files.
 - Regenerate the Markdown page twice and require identical output; check both
   sections against the Go API and run the ordinary site Markdown/link checks.

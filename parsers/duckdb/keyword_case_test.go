@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/duckdb"
-	"github.com/ornew/pego/parsers/duckdb/types"
+	"github.com/ornew/zeroparse/parsers/duckdb"
+	"github.com/ornew/zeroparse/parsers/duckdb/types"
 )
 
 func alternatingCase(word string, upperFirst bool) string {

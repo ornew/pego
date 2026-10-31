@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/grammaranalysis"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/grammaranalysis"
 )
 
 // analysis holds what the checks need to know about a grammar. Every property is either an

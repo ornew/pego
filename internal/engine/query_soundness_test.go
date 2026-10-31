@@ -3,11 +3,11 @@ package engine_test
 import (
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/starttest"
-	"github.com/ornew/pego/internal/value"
-	"github.com/ornew/pego/query"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/starttest"
+	"github.com/ornew/zeroparse/internal/value"
+	"github.com/ornew/zeroparse/query"
 )
 
 // queryShapeCase nests unions, optional values and lists of declared types.
@@ -54,12 +54,12 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 	}
 	schemas, patterns, recovered := 0, 0, 0
 	for _, c := range cases {
-		g, err := pego.ParseGrammar(c.Src)
+		g, err := zeroparse.ParseGrammar(c.Src)
 		if err != nil {
 			continue
 		}
 		start := g.Rules()[0].Name
-		p, err := pego.Compile(starttest.MarkAll(g), start, pego.WithSourceInfo())
+		p, err := zeroparse.Compile(starttest.MarkAll(g), start, zeroparse.WithSourceInfo())
 		if err != nil {
 			continue
 		}
@@ -74,7 +74,7 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 		}
 		for _, in := range c.Inputs {
 			// Recovered parses report errors with their trees.
-			root, _ := p.Parse(in, pego.WithMissingTokens(3))
+			root, _ := p.Parse(in, zeroparse.WithMissingTokens(3))
 			if root == nil {
 				continue
 			}

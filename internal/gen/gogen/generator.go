@@ -13,10 +13,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/ir/core"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/ir/core"
 )
 
 // defaultPackageName returns the package name of the generated code for a module path: its last
@@ -232,19 +232,19 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Ho
 		}
 		return nil, goGen.finishReach(prog, rec)
 	}
-	fmt.Fprintf(&goGen.Init, "\tpegoGrammar.Starts = %s\n", goStrings(prog.StartRules))
-	fmt.Fprintf(&goGen.Init, "\tpegoGrammar.DefaultStart = %q\n", prog.DefaultStartRule)
+	fmt.Fprintf(&goGen.Init, "\tzpGrammar.Starts = %s\n", goStrings(prog.StartRules))
+	fmt.Fprintf(&goGen.Init, "\tzpGrammar.DefaultStart = %q\n", prog.DefaultStartRule)
 	if !opts.TypedOnly {
 		goGen.writeDescs(opts)
 	}
 	if opts.Observability {
-		goGen.Init.WriteString("\tpegoGrammar.Observable = true\n")
+		goGen.Init.WriteString("\tzpGrammar.Observable = true\n")
 	}
 	if !opts.BudgetControls {
-		goGen.Init.WriteString("\tpegoGrammar.NoBudgetControls = true\n")
+		goGen.Init.WriteString("\tzpGrammar.NoBudgetControls = true\n")
 	}
 	if prog.RecordsSourceInfo {
-		goGen.Init.WriteString("\tpegoGrammar.SourceInfo = true\n")
+		goGen.Init.WriteString("\tzpGrammar.SourceInfo = true\n")
 	}
 	if t := prog.Vars; t != nil {
 		var names, vals []string
@@ -252,10 +252,10 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Ho
 			names = append(names, d.Name)
 			vals = append(vals, fmt.Sprintf("%#v", d.Init))
 		}
-		fmt.Fprintf(&goGen.Init, "\tpegoGrammar.SetVars(%s, []any{%s})\n", goStrings(names), strings.Join(vals, ", "))
+		fmt.Fprintf(&goGen.Init, "\tzpGrammar.SetVars(%s, []any{%s})\n", goStrings(names), strings.Join(vals, ", "))
 	}
 	if rec != nil {
-		goGen.Init.WriteString("\tpegoRecGrammar.Share(pegoGrammar)\n")
+		goGen.Init.WriteString("\tzpRecGrammar.Share(zpGrammar)\n")
 	}
 
 	var out strings.Builder
@@ -276,7 +276,7 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Ho
 // far as each call to Next needs. Options are validated before it returns; r is first read by Next.
 // The parser's lookahead and buffering may read ahead of the returned elements.
 func Iterate(r io.Reader, opts ...ParseOption) (*StreamIterator, error) {
-	pull, err := IterateStream(pegoGrammar, opts, func(emit func(*Node) error) error { return RunParseStream(streamRule, r, emit, opts) })
+	pull, err := IterateStream(zpGrammar, opts, func(emit func(*Node) error) error { return RunParseStream(streamRule, r, emit, opts) })
 	if err != nil {
 		return nil, err
 	}
@@ -297,18 +297,18 @@ func Iterate(r io.Reader, opts ...ParseOption) (*StreamIterator, error) {
 		fmt.Fprintf(&out, "// Recognize checks that the whole input matches the rule %s without building a tree, and returns the\n", start.Name)
 		out.WriteString("// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions needed by\n// predicates are evaluated and can report runtime errors; other actions are skipped.\n")
 		fmt.Fprintf(&out, "func Recognize(input string, opts ...ParseOption) error {\n\t_, err := RunParse(recRules[%d], input, opts)\n\treturn err\n}\n\n", rec.ByName[start.Name].ID)
-		fmt.Fprintf(&out, "// recRules is the rule table of Recognize, and pegoRecGrammar its grammar.\nvar recRules []*Rule\nvar pegoRecGrammar = NewGrammar(%d)\n\n", gen.GeneratedMaxDepth(opts))
+		fmt.Fprintf(&out, "// recRules is the rule table of Recognize, and zpRecGrammar its grammar.\nvar recRules []*Rule\nvar zpRecGrammar = NewGrammar(%d)\n\n", gen.GeneratedMaxDepth(opts))
 	}
-	fmt.Fprintf(&out, "// rules is the rule table, and pegoGrammar its grammar.\nvar rules []*Rule\nvar pegoGrammar = NewGrammar(%d)\n\n", gen.GeneratedMaxDepth(opts))
+	fmt.Fprintf(&out, "// rules is the rule table, and zpGrammar its grammar.\nvar rules []*Rule\nvar zpGrammar = NewGrammar(%d)\n\n", gen.GeneratedMaxDepth(opts))
 	if !opts.TypedOnly {
 		out.WriteString(`// ParseRule parses the whole input with the start rule name, a rule marked @start; an empty
 // name selects the grammar's default start rule.
 func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
-	o, err := ResolveOptions(pegoGrammar, opts)
+	o, err := ResolveOptions(zpGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
-	r, err := pegoGrammar.StartRule(name)
+	r, err := zpGrammar.StartRule(name)
 	if err != nil {
 		return nil, err
 	}
@@ -374,7 +374,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	var file strings.Builder
 	file.WriteString(generatedHeader + "\n\n")
 	if !opts.OmitPackageDoc {
-		fmt.Fprintf(&file, "// Package %s is a parser generated from a PEGO grammar.\n", opts.Package)
+		fmt.Fprintf(&file, "// Package %s is a parser generated from a ZeroParse grammar.\n", opts.Package)
 	}
 	fmt.Fprintf(&file, "package %s\n\n%s", opts.Package, body)
 	src, err := format.Source([]byte(file.String()))
@@ -832,8 +832,8 @@ func (g *Generator) rules() {
 		for _, f := range compile.DefFields(g.Prog.Types[name].(*grammar.TypeDef)) {
 			fields = append(fields, fmt.Sprintf("%q: true", f.Name))
 		}
-		fmt.Fprintf(init, "\tpegoGrammar.StructFields[%q] = map[string]bool{%s}\n", name, strings.Join(fields, ", "))
-		fmt.Fprintf(init, "\tpegoGrammar.TypeKinds[%q] = KindOf(%q, \"\")\n", name, name)
+		fmt.Fprintf(init, "\tzpGrammar.StructFields[%q] = map[string]bool{%s}\n", name, strings.Join(fields, ", "))
+		fmt.Fprintf(init, "\tzpGrammar.TypeKinds[%q] = KindOf(%q, \"\")\n", name, name)
 	}
 	// The kinds of the named node types, under their names and those of their aliases.
 	names = names[:0]
@@ -842,7 +842,7 @@ func (g *Generator) rules() {
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		fmt.Fprintf(init, "\tpegoGrammar.NodeTypes[%q] = NewNodeTypeKinds(%q)\n", name, g.Prog.NodeKinds[name][0].Type)
+		fmt.Fprintf(init, "\tzpGrammar.NodeTypes[%q] = NewNodeTypeKinds(%q)\n", name, g.Prog.NodeKinds[name][0].Type)
 	}
 }
 
@@ -1106,9 +1106,9 @@ func (g *Generator) rt() string       { return g.pick("rt", "trt") }
 // grammarVar returns the generated grammar of the rule table being generated.
 func (g *Generator) grammarVar() string {
 	if g.Table == "rules" {
-		return "pegoGrammar"
+		return "zpGrammar"
 	}
-	return "pegoRecGrammar"
+	return "zpRecGrammar"
 }
 
 // Method emits a method with the given body and returns its name.
@@ -1871,6 +1871,6 @@ func (g *Generator) writeDescs(opts gen.GenOptions) {
 	if !opts.Expectations {
 		return
 	}
-	fmt.Fprintf(&g.Init, "\tpegoGrammar.Descs = %s\n", goStrings(g.Descs))
-	g.Init.WriteString("\tpegoGrammar.Expectations = true\n")
+	fmt.Fprintf(&g.Init, "\tzpGrammar.Descs = %s\n", goStrings(g.Descs))
+	g.Init.WriteString("\tzpGrammar.Expectations = true\n")
 }

@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
-// PEGO_TYPED_RECOVERY_DIR retains generated modules for separately built,
+// ZP_TYPED_RECOVERY_DIR retains generated modules for separately built,
 // alternating benchmark binaries; ordinary tests use a temporary directory.
 func TestGeneratedTypedRecoveryWorkloads(t *testing.T) {
 	t.Parallel()
@@ -18,7 +18,7 @@ func TestGeneratedTypedRecoveryWorkloads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	dir := os.Getenv("PEGO_TYPED_RECOVERY_DIR")
+	dir := os.Getenv("ZP_TYPED_RECOVERY_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}
@@ -58,11 +58,11 @@ rule main Doc = items:(e:expr -";")* $$ => Doc{Items: map($items, (x) => x.$e), 
 // Generation includes compilation, runtime embedding and formatting, but not
 // parsing the source grammar or building/running the resulting Go code.
 func BenchmarkTypedRecoveryGeneration(b *testing.B) {
-	calculator, err := os.ReadFile("../../../examples/calculator/calc.pego")
+	calculator, err := os.ReadFile("../../../examples/calculator/calc.zp")
 	if err != nil {
 		b.Fatal(err)
 	}
-	typescript, err := os.ReadFile("../../../parsers/typescript/typescript.pego")
+	typescript, err := os.ReadFile("../../../parsers/typescript/typescript.zp")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -96,7 +96,7 @@ func BenchmarkTypedRecoveryGeneration(b *testing.B) {
 const typedRecoveryWorkloadFixture = `package lrfixture
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
     "encoding/json"
     "fmt"
     "strings"
@@ -137,12 +137,12 @@ func TestRecoveryWorkload(t *testing.T) {
         saved, savedErr := ParseAST(recoveryInput("recovered", 2), WithUnit(unit))
         if !checkRecovery(saved, savedErr, "recovered", 2) { t.Fatalf("saved value %v %v", saved, savedErr) }
         before, _ := json.Marshal(struct { Value any; Error any }{saved, savedErr})
-        p := &pegort.TParser{Parser:&pegort.Parser{}}
+        p := &zprt.TParser{Parser:&zprt.Parser{}}
         for _, n := range []int{1,128,1} {
             for _, mode := range []string{"accepted","recovered","rejected"} {
                 input := recoveryInput(mode,n)
-                value, err := p.X_run(trules[0],input,pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth},&tslabs{})
-                v := pegort.TAs[*Doc](value)
+                value, err := p.X_run(trules[0],input,zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth},&tslabs{})
+                v := zprt.TAs[*Doc](value)
                 if !checkRecovery(v,err,mode,n) { t.Fatalf("%s/%d: %v %v",mode,n,v,err) }
                 data, _ := json.Marshal(struct { Value any; Error any }{v,err})
                 pooled, pooledErr := ParseAST(input,WithUnit(unit))

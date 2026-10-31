@@ -7,9 +7,9 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/schema"
 )
 
 // ErrUnavailable reports missing checked grammar metadata: it is compile.ErrSchemaUnavailable,

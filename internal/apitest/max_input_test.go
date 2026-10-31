@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package apitest_test
 
@@ -7,16 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func wantInputLimit(t *testing.T, what string, err error, limit, length uint64) {
 	t.Helper()
-	var le *pego.LimitError
-	if !errors.As(err, &le) || !errors.Is(err, pego.ErrLimit) {
+	var le *zeroparse.LimitError
+	if !errors.As(err, &le) || !errors.Is(err, zeroparse.ErrLimit) {
 		t.Fatalf("%s: error %v, want a LimitError", what, err)
 	}
-	if le.Kind != pego.LimitInput || le.Limit != limit || le.Requested != length {
+	if le.Kind != zeroparse.LimitInput || le.Limit != limit || le.Requested != length {
 		t.Errorf("%s: %+v, want kind LimitInput, limit %d, length %d", what, *le, limit, length)
 	}
 }
@@ -24,12 +24,12 @@ func wantInputLimit(t *testing.T, what string, err error, limit, length uint64) 
 // Limits.MaxInput bounds the input of every public entry point in the position unit: zero and
 // Unlimited set no bound, and an input over it fails with LimitInput and its length.
 func TestMaxInputPublic(t *testing.T) {
-	p, err := pego.CompileSource(`@start
+	p, err := zeroparse.CompileSource(`@start
 rule main = [a-zé]* $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	stream, err := pego.CompileSource(`@start
+	stream, err := zeroparse.CompileSource(`@start
 rule main = line* #stream $$
 rule line = [a-z]+ "\n"`, "main")
 	if err != nil {
@@ -37,13 +37,13 @@ rule line = [a-z]+ "\n"`, "main")
 	}
 	text := "ééé" // 3 code points, 6 bytes
 	for _, c := range []struct {
-		unit pego.PositionUnit
+		unit zeroparse.PositionUnit
 		n    uint64
-	}{{pego.CodePoints, 3}, {pego.Bytes, 6}} {
-		with := func(max uint64) []pego.ParseOption {
-			return []pego.ParseOption{pego.WithUnit(c.unit), pego.WithLimits(pego.Limits{MaxInput: max})}
+	}{{zeroparse.CodePoints, 3}, {zeroparse.Bytes, 6}} {
+		with := func(max uint64) []zeroparse.ParseOption {
+			return []zeroparse.ParseOption{zeroparse.WithUnit(c.unit), zeroparse.WithLimits(zeroparse.Limits{MaxInput: max})}
 		}
-		for _, max := range []uint64{0, pego.Unlimited, c.n} {
+		for _, max := range []uint64{0, zeroparse.Unlimited, c.n} {
 			if _, err := p.Parse(text, with(max)...); err != nil {
 				t.Errorf("unit %d, MaxInput %d: %v", c.unit, max, err)
 			}

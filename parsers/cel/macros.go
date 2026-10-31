@@ -1,6 +1,6 @@
 package cel
 
-import "github.com/ornew/pego/parsers/cel/types"
+import "github.com/ornew/zeroparse/parsers/cel/types"
 
 // The standard macros of CEL (has, all, exists, exists_one, map and filter) are written as calls, and the grammar
 // parses them as calls: an application of CEL chooses which macros it supports, and expands them after parsing. What

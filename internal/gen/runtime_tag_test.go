@@ -3,7 +3,7 @@ package gen_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // The go commands that the tests run build the runtime that the generators of the test binary

@@ -14,9 +14,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 // documentProbeMain is the consumer of the generated packages with the prefix PREFIX. For each input it creates a
@@ -33,19 +33,19 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 IMPORTS)
 
 type doc struct {
-	parse func() (*pegort.Node, error)
+	parse func() (*zprt.Node, error)
 	edit  func(int, int, string) error
 	text  func() string
-	stats func() pegort.ParseStats
+	stats func() zprt.ParseStats
 }
 
 type entry struct {
 	newDoc func(string) (*doc, error)
-	parse  func(string) (*pegort.Node, error)
+	parse  func(string) (*zprt.Node, error)
 }
 
 var entries = []entry{
@@ -226,8 +226,8 @@ func runDocumentProbes(t *testing.T, cases []documentCase, start string, mutate 
 		if err != nil {
 			return nil, err
 		}
-		return &doc{func() (*pegort.Node, error) { return d.Parse() }, d.Edit, d.Text, d.Stats}, nil
-	}, parse: func(s string) (*pegort.Node, error) { return f%[1]d.Parse(s) }},
+		return &doc{func() (*zprt.Node, error) { return d.Parse() }, d.Edit, d.Text, d.Stats}, nil
+	}, parse: func(s string) (*zprt.Node, error) { return f%[1]d.Parse(s) }},
 `, i)
 	}
 	write("main.go", strings.NewReplacer("IMPORTS", imports.String(), "ENTRIES", entries.String()).Replace(documentProbeMain))

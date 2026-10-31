@@ -86,7 +86,7 @@ decisions printed by `-gcflags=-m` differ only by the removed functions. What ch
 addresses of the functions, because 22 functions around them are gone, so the difference is
 attributed to code layout; it was not reproduced as a difference in the code that runs.
 
-Generation time of `pego gen` for the Node and recognizer tables (five runs each, medians), compared with a generator
+Generation time of `zp gen` for the Node and recognizer tables (five runs each, medians), compared with a generator
 that prints every rule: duckdb Node with recognizer 6.39 s before and 3.85 s after, duckdb typed 7.13 s and 5.21 s, golang Node with recognizer
 1.77 s and 1.22 s, golang typed 1.59 s and 1.24 s: the smaller output costs less to format.
 
@@ -103,7 +103,7 @@ golang 540,810 and 540,772; json 116,593 and 116,592; python 626,651 and 626,610
 what changes is the numbering and one pass over the source, which is gone. The Node outputs of the manifest shrink where
 the scan finds an unused one-line variable (cue node: 16 unused budget-class range tables, 409,246 to 388,932 bytes).
 
-Generation time of `pego gen` (five runs each, medians, same machine and session), compared with that generator:
+Generation time of `zp gen` (five runs each, medians, same machine and session), compared with that generator:
 duckdb typed-only 2.71 s before, 1.90 s after; yaml with types, recognizer and budget controls 1.09 s before,
 0.61 s after.
 

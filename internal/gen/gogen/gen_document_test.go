@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 func TestGenerateDocumentNode(t *testing.T) {
@@ -40,7 +40,7 @@ func TestGenerateDocumentNode(t *testing.T) {
 		"batch/parser.go": string(ordinary),
 		"parser_test.go": `package fixture
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
   "context"
   "encoding/json"
   "fmt"
@@ -49,7 +49,7 @@ import (
 func TestGeneratedDocumentAgainstBatch(t *testing.T) {
   for _, unit := range []PositionUnit{CodePoints, Bytes} {
    count := 0
-   d, err := NewDocument("aa", func(o *pegort.X_parseOptions) { count++; o.X_unit = unit })
+   d, err := NewDocument("aa", func(o *zprt.X_parseOptions) { count++; o.X_unit = unit })
    if err != nil || count != 1 { t.Fatalf("new document: %v, option count %d", err, count) }
    for _, change := range []struct{ start, end int; text string }{{2, 2, "a"}, {1, 2, "b"}, {1, 2, "a"}} {
     node, err := d.Parse()

@@ -13,12 +13,12 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/compiletest"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/tsgen"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/compiletest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/tsgen"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // NodeTSArgs are the arguments that run a .ts script of a directory written by writeTSFiles.

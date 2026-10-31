@@ -10,8 +10,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/gen"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/gen"
 )
 
 // helperName matches the names of the generated helpers: eN are the methods of expressions and qN the
@@ -56,14 +56,14 @@ func TestRecognizerHelpersReferenced(t *testing.T) {
 		t.Skip("generates the duckdb grammar")
 	}
 	for _, g := range []struct{ name, path string }{
-		{"json", "json/json.pego"},
-		{"duckdb", "duckdb/duckdb.pego"},
+		{"json", "json/json.zp"},
+		{"duckdb", "duckdb/duckdb.zp"},
 	} {
 		src, err := os.ReadFile(g.path)
 		if err != nil {
 			t.Fatal(err)
 		}
-		gr, err := pego.ParseGrammar(string(src))
+		gr, err := zeroparse.ParseGrammar(string(src))
 		if err != nil {
 			t.Fatalf("%s: %v", g.path, err)
 		}

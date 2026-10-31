@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // TestGeneratedDepthBenchmarkWorkloads validates benchmarks without timing them.
-// PEGO_DEPTH_BENCH_DIR preserves the standalone workloads for serialized,
+// ZP_DEPTH_BENCH_DIR preserves the standalone workloads for serialized,
 // paired measurements; generation and compilation remain outside parse timing.
 func TestGeneratedDepthBenchmarkWorkloads(t *testing.T) {
 	t.Parallel()
@@ -24,7 +24,7 @@ func testGeneratedDepthBenchmarkWorkloads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone benchmark controls")
 	}
-	dir := os.Getenv("PEGO_DEPTH_BENCH_DIR")
+	dir := os.Getenv("ZP_DEPTH_BENCH_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}

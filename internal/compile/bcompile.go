@@ -4,8 +4,8 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
 )
 
 // BytecodeModule is Module.

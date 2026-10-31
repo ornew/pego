@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-const occurrenceURI = "file:///occurrences.pego"
+const occurrenceURI = "file:///occurrences.zp"
 
 var occurrenceBenchmarkResult any
 
@@ -108,7 +108,7 @@ func occurrenceResponseCorpus() []occurrenceResponseCase {
 	for _, method := range []string{"references", "documentHighlight", "prepareRename", "rename"} {
 		cases = append(cases, occurrenceResponseCase{method + "/missing-params", a, &incoming{Method: "textDocument/" + method}})
 		msg := occurrenceMessage(method, Position{}, true, "renamed")
-		msg.Params = json.RawMessage(strings.ReplaceAll(string(msg.Params), occurrenceURI, "file:///unknown.pego"))
+		msg.Params = json.RawMessage(strings.ReplaceAll(string(msg.Params), occurrenceURI, "file:///unknown.zp"))
 		cases = append(cases, occurrenceResponseCase{method + "/unknown-document", a, msg})
 	}
 

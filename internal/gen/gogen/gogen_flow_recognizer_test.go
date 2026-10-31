@@ -14,10 +14,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // TestGeneratedFlowRecognizerParity runs the generated recognizers printed from Flow IR against the
@@ -89,7 +89,7 @@ func shiftGuardFirstCharacters(code []byte) []byte {
 	})
 }
 
-// flowRecognizerMutants are the wrong recognizers of the negative control, by PEGO_FLOW_MUTANT value.
+// flowRecognizerMutants are the wrong recognizers of the negative control, by ZP_FLOW_MUTANT value.
 // A dropped guard is not among them: a guard only skips an alternative that cannot match, so dropping
 // one keeps the results and only the guard test in TestFlowRecognizerGuardsChoiceAlternatives sees it.
 var flowRecognizerMutants = map[string]func([]byte) []byte{
@@ -183,10 +183,10 @@ func dropCaptures(code []byte) []byte {
 	return setCapture.ReplaceAll(code, []byte("_ = $2"))
 }
 
-// TestGeneratedFlowRecognizerMutantChild runs the parity test with the mutant that PEGO_FLOW_MUTANT
+// TestGeneratedFlowRecognizerMutantChild runs the parity test with the mutant that ZP_FLOW_MUTANT
 // names. It runs only as a child of TestGeneratedFlowRecognizerNegativeControl.
 func TestGeneratedFlowRecognizerMutantChild(t *testing.T) {
-	name := os.Getenv("PEGO_FLOW_MUTANT")
+	name := os.Getenv("ZP_FLOW_MUTANT")
 	if name == "" {
 		t.Skip("run by TestGeneratedFlowRecognizerNegativeControl")
 	}
@@ -220,7 +220,7 @@ func TestGeneratedFlowRecognizerNegativeControl(t *testing.T) {
 	for name := range flowRecognizerMutants {
 		t.Run(name, func(t *testing.T) {
 			cmd := exec.Command(os.Args[0], "-test.run=^TestGeneratedFlowRecognizerMutantChild$", "-test.count=1")
-			cmd.Env = append(os.Environ(), "PEGO_FLOW_MUTANT="+name)
+			cmd.Env = append(os.Environ(), "ZP_FLOW_MUTANT="+name)
 			out, err := cmd.CombinedOutput()
 			if err == nil {
 				t.Fatalf("the %s mutant passed the parity test:\n%s", name, out)

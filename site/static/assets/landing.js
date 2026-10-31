@@ -1,6 +1,6 @@
 // The live example on the landing page: parses the input with the README's grammar as you type.
 
-import { PegoClient, siteRoot } from "./pego-client.js";
+import { ZPClient, siteRoot } from "./zp-client.js";
 import { encodeState } from "./state.js";
 
 const live = document.getElementById("live");
@@ -11,7 +11,7 @@ const open = document.getElementById("live-open");
 
 if (live && input && output) {
   const grammar = live.dataset.grammar;
-  const client = new PegoClient(siteRoot() + "playground/");
+  const client = new ZPClient(siteRoot() + "playground/");
   let timer = 0;
   let seq = 0;
   let linkVersion = 0;
@@ -54,7 +54,7 @@ if (live && input && output) {
       const hash = await encodeState({ g: grammar, i: text });
       if (version === linkVersion && input.value === text) open.href = siteRoot() + "playground/#" + hash;
     } catch (err) {
-      if (version === linkVersion) console.warn("pego: cannot update the playground link:", err);
+      if (version === linkVersion) console.warn("zp: cannot update the playground link:", err);
     }
   };
 

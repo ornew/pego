@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/bytecode"
 )
 
 // A module whose rule converts its value to a type that is not a named node type is rejected.

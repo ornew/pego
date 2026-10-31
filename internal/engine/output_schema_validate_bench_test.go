@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/schema"
 )
 
 // outputSchemaUnvalidated has schema.Output's fields and JSON tags but no
@@ -45,7 +45,7 @@ func outputSchemaValidationBenchmarkValue(typeCount int) schema.Output {
 		})
 	}
 	return schema.Output{
-		Format:                  "pego-output-schema",
+		Format:                  "zp-output-schema",
 		Version:                 2,
 		Start:                   "parseItem000",
 		PositionUnitIndependent: true,

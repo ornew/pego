@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func at(p grammar.Pos) string {

@@ -239,7 +239,7 @@ cond	236	"ch == 97"
 cond	237	"ch == 98"
 cond	238	"ch == 99 || ch == 67"
 cond	239	"ch == 99"
-grammar	lean,controlled	"../../examples/calculator/calc.pego"
+grammar	lean,controlled	"../../examples/calculator/calc.zp"
 guard	1	10	1	0	0	"\"+\""	191
 guard	1	11	1	0	0	"\"-\""	193
 guard	1	13	1	0	0	"\"*\""	190
@@ -257,7 +257,7 @@ scope	1	19
 scope	1	2	
 scope	1	3	
 scope	1	9	
-grammar	lean,controlled	"../../examples/calculator/calc_lr.pego"
+grammar	lean,controlled	"../../examples/calculator/calc_lr.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	2	7	1	0	0	"\"+\""	191
@@ -278,7 +278,7 @@ guard	9	5	1	1	0	"\"(\""	188
 scan	11	2
 scan	11	7
 scan	12	0
-grammar	lean	"../../examples/minilang/minilang.pego"
+grammar	lean	"../../examples/minilang/minilang.zp"
 guard	14	28	1	0	0	"\"==\""	209
 guard	14	29	1	0	0	"\"!=\""	181
 guard	14	30	1	0	0	"\"<=\""	208
@@ -340,7 +340,7 @@ scope	14	51
 scope	14	57	
 scope	14	6	
 scope	15	5	
-grammar	controlled	"../../examples/minilang/minilang.pego"
+grammar	controlled	"../../examples/minilang/minilang.zp"
 guard	14	28	1	0	0	"\"==\""	209
 guard	14	29	1	0	0	"\"!=\""	181
 guard	14	30	1	0	0	"\"<=\""	208
@@ -402,7 +402,7 @@ scope	14	51
 scope	14	57	
 scope	14	6	
 scope	15	5	
-grammar	lean,controlled	"../../examples/outline/outline.pego"
+grammar	lean,controlled	"../../examples/outline/outline.zp"
 guard	6	1	1	0	0	"\"\\n\""	145
 guard	6	2	0	0	0	""	48
 scan	5	1
@@ -15503,7 +15503,7 @@ guard	0	5	1	0	0	"\"x\""	169
 grammar	lean,controlled	"terminal constructor root"
 grammar	lean,controlled	"terminal constructor value error"
 grammar	lean,controlled	"terminal singleton union"
-grammar	lean,controlled	"testdata/typed/calclr.pego"
+grammar	lean,controlled	"testdata/typed/calclr.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	2	7	1	0	0	"\"+\""	191
@@ -15524,7 +15524,7 @@ guard	9	5	1	1	0	"\"(\""	188
 scan	11	2
 scan	11	7
 scan	12	0
-grammar	lean,controlled	"testdata/typed/direct_backtrack.pego"
+grammar	lean,controlled	"testdata/typed/direct_backtrack.zp"
 guard	1	2	0	0	0	""	48
 guard	1	43	0	0	0	""	48
 guard	1	46	1	0	0	"\">\""	210
@@ -15535,7 +15535,7 @@ guard	1	9	0	0	0	""	48
 scan	2	1
 scope	0	4	
 scope	1	32	
-grammar	lean,controlled	"testdata/typed/direct_errors.pego"
+grammar	lean,controlled	"testdata/typed/direct_errors.zp"
 guard	0	5	1	0	0	"\"<\""	208
 guard	0	9	1	0	0	"\"<\""	208
 guard	1	10	1	0	0	"\"w\""	168
@@ -15552,13 +15552,13 @@ scan	4	2
 scan	5	1
 scope	0	4	
 scope	1	25	
-grammar	lean,controlled	"testdata/typed/direct_lists.pego"
+grammar	lean,controlled	"testdata/typed/direct_lists.zp"
 scan	0	33
 scan	4	1
 scope	0	18	
 scope	0	3	
 scope	0	6	
-grammar	lean,controlled	"testdata/typed/direct_literals.pego"
+grammar	lean,controlled	"testdata/typed/direct_literals.zp"
 guard	0	11	1	0	0	"\"abcd\""	236
 guard	0	12	1	0	0	"\"abc\""	236
 guard	0	16	1	0	0	"\"abcde\""	236
@@ -15567,22 +15567,22 @@ guard	0	3	1	0	0	"\"é\""	179
 guard	0	4	1	0	0	"\"ab\""	236
 guard	0	7	1	0	0	"\"→→\""	226
 guard	0	8	1	0	0	"\"→\""	226
-grammar	lean,controlled	"testdata/typed/direct_names.pego"
-grammar	lean,controlled	"testdata/typed/element_scope_optional.pego"
+grammar	lean,controlled	"testdata/typed/direct_names.zp"
+grammar	lean,controlled	"testdata/typed/element_scope_optional.zp"
 scope	0	3	y
-grammar	lean,controlled	"testdata/typed/element_scope_plain.pego"
+grammar	lean,controlled	"testdata/typed/element_scope_plain.zp"
 scope	1	1	x
-grammar	lean,controlled	"testdata/typed/element_scope_recover.pego"
+grammar	lean,controlled	"testdata/typed/element_scope_recover.zp"
 scope	1	2	y
-grammar	lean,controlled	"testdata/typed/errlist.pego"
+grammar	lean,controlled	"testdata/typed/errlist.zp"
 scan	1	1
 scan	1	3
-grammar	lean,controlled	"testdata/typed/errlist2.pego"
+grammar	lean,controlled	"testdata/typed/errlist2.zp"
 scan	0	1
 scan	0	3
-grammar	lean,controlled	"testdata/typed/fields.pego"
+grammar	lean,controlled	"testdata/typed/fields.zp"
 scan	4	2
-grammar	lean,controlled	"testdata/typed/mix.pego"
+grammar	lean,controlled	"testdata/typed/mix.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	3	1	0	0	0	""	48
@@ -15596,7 +15596,7 @@ scope	0	11
 scope	0	4	
 scope	4	13	
 scope	5	4	
-grammar	lean,controlled	"testdata/typed/mixf.pego"
+grammar	lean,controlled	"testdata/typed/mixf.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	3	1	0	0	0	""	48
@@ -15610,7 +15610,7 @@ scope	0	11
 scope	0	4	
 scope	4	13	
 scope	5	4	
-grammar	lean,controlled	"testdata/typed/operators_rule1.pego"
+grammar	lean,controlled	"testdata/typed/operators_rule1.zp"
 guard	1	21	1	0	0	"\"+\""	191
 guard	1	22	1	0	0	"\"-\""	193
 guard	1	25	1	0	0	"\"*\""	190
@@ -15629,7 +15629,7 @@ scope	1	29
 scope	1	3	
 scope	1	34	
 scope	1	41	
-grammar	lean,controlled	"testdata/typed/operators_rule1f.pego"
+grammar	lean,controlled	"testdata/typed/operators_rule1f.zp"
 guard	1	21	1	0	0	"\"+\""	191
 guard	1	22	1	0	0	"\"-\""	193
 guard	1	25	1	0	0	"\"*\""	190
@@ -15648,39 +15648,39 @@ scope	1	29
 scope	1	3	
 scope	1	34	
 scope	1	41	
-grammar	lean,controlled	"testdata/typed/order.pego"
-grammar	lean,controlled	"testdata/typed/proj1.pego"
+grammar	lean,controlled	"testdata/typed/order.zp"
+grammar	lean,controlled	"testdata/typed/proj1.zp"
 scope	0	12	
 scope	0	3	
 scope	0	6	
-grammar	lean,controlled	"testdata/typed/proj2.pego"
+grammar	lean,controlled	"testdata/typed/proj2.zp"
 scope	0	4	
-grammar	lean,controlled	"testdata/typed/proj3.pego"
+grammar	lean,controlled	"testdata/typed/proj3.zp"
 scope	0	4	
-grammar	lean,controlled	"testdata/typed/proj4.pego"
+grammar	lean,controlled	"testdata/typed/proj4.zp"
 guard	0	5	1	0	0	"\"a\""	236
 guard	0	7	1	0	0	"\"b\""	237
 scope	0	4	
-grammar	lean,controlled	"testdata/typed/proj5.pego"
+grammar	lean,controlled	"testdata/typed/proj5.zp"
 scope	0	6	
-grammar	lean,controlled	"testdata/typed/proj6.pego"
+grammar	lean,controlled	"testdata/typed/proj6.zp"
 scope	0	11	
 scope	0	3	
-grammar	lean,controlled	"testdata/typed/proj7.pego"
+grammar	lean,controlled	"testdata/typed/proj7.zp"
 scope	0	11	
 scope	0	3	
-grammar	lean,controlled	"testdata/typed/spanname.pego"
-grammar	lean,controlled	"testdata/typed/splice_recursive_capture.pego"
-grammar	lean,controlled	"testdata/typed/splice_recursive_capture_action.pego"
-grammar	lean,controlled	"testdata/typed/splice_recursive_choice.pego"
+grammar	lean,controlled	"testdata/typed/spanname.zp"
+grammar	lean,controlled	"testdata/typed/splice_recursive_capture.zp"
+grammar	lean,controlled	"testdata/typed/splice_recursive_capture_action.zp"
+grammar	lean,controlled	"testdata/typed/splice_recursive_choice.zp"
 guard	1	1	1	0	0	"\"x\""	169
 guard	1	2	1	0	0	"\"(\""	188
-grammar	lean,controlled	"testdata/typed/splice_recursive_choice_in_seq.pego"
+grammar	lean,controlled	"testdata/typed/splice_recursive_choice_in_seq.zp"
 guard	1	3	1	1	0	"\"(\""	188
 guard	1	4	1	0	0	"\"x\""	169
-grammar	lean,controlled	"testdata/typed/splice_recursive_optional.pego"
-grammar	lean,controlled	"testdata/typed/splice_recursive_repeat.pego"
-grammar	lean,controlled	"testdata/typed/unif.pego"
+grammar	lean,controlled	"testdata/typed/splice_recursive_optional.zp"
+grammar	lean,controlled	"testdata/typed/splice_recursive_repeat.zp"
+grammar	lean,controlled	"testdata/typed/unif.zp"
 scan	1	1
 scope	0	3	
 grammar	lean,controlled	"text equality"

@@ -5,7 +5,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // commentBoundary is lexer-owned syntax trivia. The parser claims each side

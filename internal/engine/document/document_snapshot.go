@@ -11,10 +11,10 @@ import (
 	"unsafe"
 	"weak"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/limits"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/limits"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // Snapshot owns an immutable parse outcome for one document revision. Readers

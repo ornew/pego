@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/ornew/pego/parsers/golang"
+	"github.com/ornew/zeroparse/parsers/golang"
 )
 
 // benchFiles are large files of the standard library, read from GOROOT/src: a parser, an HTTP

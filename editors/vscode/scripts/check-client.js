@@ -10,11 +10,11 @@ const { within } = require('./extension-harness');
 
 const clients = [], channels = [], diagnostics = [], peers = [];
 const commands = {};
-let command = '/no/such/pego-lifecycle-check';
+let command = '/no/such/zp-lifecycle-check';
 const disposable = () => ({ dispose() {} });
 const host = {
   version: '1.106.0', LogLevel: { Info: 3 }, CodeActionKind: {},
-  env: { language: 'en', appName: 'PEGO lifecycle check' },
+  env: { language: 'en', appName: 'ZeroParse lifecycle check' },
   workspace: {
     workspaceFolders: [], textDocuments: [], notebookDocuments: [],
     getConfiguration: () => ({ get: (key, fallback) => key === 'server.path' ? command : fallback }),
@@ -90,7 +90,7 @@ Module._load = function (request, ...rest) {
   if (request === 'vscode-languageclient/node') return { ...api, LanguageClient: ProbeClient };
   return load.call(this, request, ...rest);
 };
-const extension = require(path.resolve(process.env.PEGO_EXTENSION || path.join(__dirname, '..', 'extension.js')));
+const extension = require(path.resolve(process.env.ZP_EXTENSION || path.join(__dirname, '..', 'extension.js')));
 Module._load = load;
 
 async function main() {
@@ -98,11 +98,11 @@ async function main() {
   // failed launch proves both cleaned-up clients permit a new attempt.
   await within(extension.activate({ subscriptions: [] }));
   command = '/initialize-rejected';
-  await within(commands['pego.restartServer']());
-  command = '/no/such/pego-lifecycle-check';
-  await within(commands['pego.restartServer']());
+  await within(commands['zp.restartServer']());
+  command = '/no/such/zp-lifecycle-check';
+  await within(commands['zp.restartServer']());
   command = '/closed-before-disposal';
-  await within(commands['pego.restartServer']());
+  await within(commands['zp.restartServer']());
   await within(extension.deactivate());
   assert.equal(clients.length, 4);
   for (const client of clients) {

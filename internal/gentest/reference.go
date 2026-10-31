@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/compiletest"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/compiletest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // ReferenceParse parses input with a program compiled for Reference: with positions in bytes if

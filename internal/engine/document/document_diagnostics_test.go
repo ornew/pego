@@ -3,7 +3,7 @@ package document
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 func TestDocumentDiagnosticContainers(t *testing.T) {

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 // A parser generated without expectations, and one generated with them that a parse does not ask
@@ -200,7 +200,7 @@ import (
 	avail "gentest/avail"
 	off "gentest/off"
 	offs "gentest/offs"
-	rt "github.com/ornew/pego/runtime"
+	rt "github.com/ornew/zeroparse/runtime"
 )
 
 func try(name string, f func() error) {

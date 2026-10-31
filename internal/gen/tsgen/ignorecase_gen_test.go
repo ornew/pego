@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // ignoreCaseLines is the expected output of a program that parses each input and prints "ok" with

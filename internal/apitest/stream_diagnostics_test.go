@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func TestPublicStreamDiagnosticCallbackOrderAndAbort(t *testing.T) {
@@ -16,12 +16,12 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`, "main")
 		t.Fatal(err)
 	}
 	const input = "abX!abY?ab"
-	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
+	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+		for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				var events []string
-				var copies []*pego.SyntaxError
-				options := []pego.ParseOption{pego.WithExpectations(), pego.WithBackend(backend), pego.WithUnit(unit), pego.WithDiagnosticCallback(func(e *pego.SyntaxError) error {
+				var copies []*zeroparse.SyntaxError
+				options := []zeroparse.ParseOption{zeroparse.WithExpectations(), zeroparse.WithBackend(backend), zeroparse.WithUnit(unit), zeroparse.WithDiagnosticCallback(func(e *zeroparse.SyntaxError) error {
 					events = append(events, "diagnostic")
 					copies = append(copies, e)
 					if len(e.Messages) != 1 || e.Messages[0] != "record" {
@@ -30,7 +30,7 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`, "main")
 					e.Messages[0] = "changed"
 					return nil
 				})}
-				err := p.ParseStream(strings.NewReader(input), func(*pego.Node) error {
+				err := p.ParseStream(strings.NewReader(input), func(*zeroparse.Node) error {
 					events = append(events, "element")
 					return nil
 				}, options...)
@@ -38,7 +38,7 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`, "main")
 				if !reflect.DeepEqual(events, want) {
 					t.Fatalf("delivery order: got %v want %v", events, want)
 				}
-				var recovered pego.SyntaxErrors
+				var recovered zeroparse.SyntaxErrors
 				if !errors.As(err, &recovered) || len(recovered) != 2 || len(copies) != 2 {
 					t.Fatalf("recovered: %v, copies=%d", err, len(copies))
 				}
@@ -50,11 +50,11 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`, "main")
 
 				stop := errors.New("diagnostic stop")
 				var stopped []string
-				abort := []pego.ParseOption{pego.WithExpectations(), pego.WithBackend(backend), pego.WithUnit(unit), pego.WithDiagnosticCallback(func(*pego.SyntaxError) error {
+				abort := []zeroparse.ParseOption{zeroparse.WithExpectations(), zeroparse.WithBackend(backend), zeroparse.WithUnit(unit), zeroparse.WithDiagnosticCallback(func(*zeroparse.SyntaxError) error {
 					stopped = append(stopped, "diagnostic")
 					return stop
 				})}
-				err = p.ParseStream(strings.NewReader(input), func(*pego.Node) error {
+				err = p.ParseStream(strings.NewReader(input), func(*zeroparse.Node) error {
 					stopped = append(stopped, "element")
 					return nil
 				}, abort...)
@@ -84,7 +84,7 @@ func TestPublicStreamDiagnosticCallbackIsStreamOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	callback := pego.WithDiagnosticCallback(func(*pego.SyntaxError) error { return nil })
+	callback := zeroparse.WithDiagnosticCallback(func(*zeroparse.SyntaxError) error { return nil })
 	if _, err := p.Parse("a", callback); err == nil {
 		t.Fatal("batch Parse accepted a stream diagnostic callback")
 	}
@@ -98,7 +98,7 @@ func TestPublicStreamDiagnosticCallbackIsStreamOnly(t *testing.T) {
 	if _, err := d.Parse(callback); err == nil {
 		t.Fatal("Document.Parse accepted a stream diagnostic callback")
 	}
-	if _, err := p.Parse("a", pego.WithDiagnosticCallback(nil)); err != nil {
+	if _, err := p.Parse("a", zeroparse.WithDiagnosticCallback(nil)); err != nil {
 		t.Fatalf("nil callback should be disabled: %v", err)
 	}
 }

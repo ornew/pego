@@ -3,8 +3,8 @@
 **Problem.** A CSV export is too big to read into memory. You want the total of one column and, if a record is bad, the
 place where it is, without loading the file.
 
-The CSV grammar of [parsers/csv](../../parsers/csv/csv.pego) marks its records with `#stream`, so `ParseStream` delivers
-them one at a time. Copy `csv.pego` next to this program, which sums the third column and reports the first bad record
+The CSV grammar of [parsers/csv](../../parsers/csv/csv.zp) marks its records with `#stream`, so `ParseStream` delivers
+them one at a time. Copy `csv.zp` next to this program, which sums the third column and reports the first bad record
 with its offset; with `-whole` it uses `Parse` instead, to compare. See [Process a file that does not fit in
 memory](big-files.md) for the same method on a log.
 
@@ -20,17 +20,17 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed csv.pego
+//go:embed csv.zp
 var grammar string
 
 func main() {
 	whole := flag.Bool("whole", false, "read all the input and call Parse instead of ParseStream")
 	flag.Parse()
 
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
@@ -39,12 +39,12 @@ func main() {
 	var rows int
 	var total float64
 	// sum adds up the third column of a record. The first record is the header.
-	sum := func(rec *pego.Node) error {
+	sum := func(rec *zeroparse.Node) error {
 		rows++
 		if rows == 1 {
 			return nil
 		}
-		fields := rec.Field("Fields").(*pego.Node)
+		fields := rec.Field("Fields").(*zeroparse.Node)
 		if fields.Len() != 3 {
 			return fmt.Errorf("record %d (offset %d): want 3 fields, got %d", rows, rec.Start(), fields.Len())
 		}
@@ -68,7 +68,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		for _, rec := range tree.Field("Records").(*pego.Node).Elems() {
+		for _, rec := range tree.Field("Records").(*zeroparse.Node).Elems() {
 			if err := sum(rec); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
@@ -131,13 +131,13 @@ says the quoted field never ended.
 - The first record is the header: `sum` skips it by counting. `ParseStream` does not return it separately.
 - The callback validates each record. Its error stops the stream and `ParseStream` returns it unchanged, so the program
   wraps it with the record's `Start()` offset.
-- A record that the grammar cannot read (here, a quoted field that never ends) is a `*pego.SyntaxError` with the line and
+- A record that the grammar cannot read (here, a quoted field that never ends) is a `*zeroparse.SyntaxError` with the line and
   column in the whole input, after the records before it were delivered.
 
 ## Variations and Limits
 
 - Line-oriented formats work the same way. The parts that matter are a record rule that cannot match the empty string at
-  the end of the input (`!$$`), an `eol` that also accepts `$$`, and `$$` after the repetition, as in `csv.pego`.
+  the end of the input (`!$$`), an `eol` that also accepts `$$`, and `$$` after the repetition, as in `csv.zp`.
 - Streaming trades a little time for memory: it takes about as long as `Parse` or somewhat longer, and its memory does not
   grow with the input.
 - To read a header and then records of another shape, see [Read a header and then records](header-and-records.md).

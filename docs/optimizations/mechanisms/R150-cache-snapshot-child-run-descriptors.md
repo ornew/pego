@@ -21,7 +21,7 @@ and shared-run graphs. Generated Go/TypeScript have no SnapshotNode path.
 ## Reference Control
 
 No cache-off same-source control is maintained.
-`pego_snapshot_child_chunks_reference` disables run sharing while retaining
+`zp_snapshot_child_chunks_reference` disables run sharing while retaining
 cached handles; it cannot attribute caching alone.
 
 ## Evidence and Implementation

@@ -8,7 +8,7 @@ import (
 	"unicode/utf8"
 )
 
-// Format converts g to PEGO source code.
+// Format converts g to ZeroParse source code.
 //
 // Comments and line breaks recorded in the AST (see LineBreak) are kept, so
 // formatting parsed source preserves its comments. Struct field types and
@@ -17,7 +17,7 @@ import (
 // blank line between definitions and one item per line in blocks.
 func Format(g *Grammar) string { return formatGrammar(g, nil) }
 
-// FormatType returns t in PEGO syntax.
+// FormatType returns t in ZeroParse syntax.
 func FormatType(t TypeExpr) string { return formatType(t, nil) }
 
 // FormatContext is Format with cooperative cancellation during AST traversal,

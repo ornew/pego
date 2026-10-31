@@ -15,8 +15,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego/internal/corpora/corporatest"
-	"github.com/ornew/pego/parsers/cue/internal/upstream"
+	"github.com/ornew/zeroparse/internal/corpora/corporatest"
+	"github.com/ornew/zeroparse/parsers/cue/internal/upstream"
 )
 
 // A refResult is the result of the reference implementation (cuelang.org/go/cue/parser) for one source.

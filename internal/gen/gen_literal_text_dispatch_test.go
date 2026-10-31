@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestLiteralTextPredicateDispatchGeneration(t *testing.T) {
@@ -57,12 +57,12 @@ func testLiteralTextPredicateDispatchGeneration(t *testing.T) {
 }
 
 // TestGeneratedLiteralDispatchWorkload preserves paired generated parsers for
-// separate runtime measurements when PEGO_LITERAL_DISPATCH_DIR is set.
+// separate runtime measurements when ZP_LITERAL_DISPATCH_DIR is set.
 func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 	t.Parallel()
-	dir := os.Getenv("PEGO_LITERAL_DISPATCH_DIR")
+	dir := os.Getenv("ZP_LITERAL_DISPATCH_DIR")
 	if dir == "" {
-		t.Skip("set PEGO_LITERAL_DISPATCH_DIR to write standalone workload fixtures")
+		t.Skip("set ZP_LITERAL_DISPATCH_DIR to write standalone workload fixtures")
 	}
 	workloads := []literalDispatchWorkload{
 		{name: "small", source: `rule main = w:[^!]+ #atomic {text($w) == "alpha" || "β" == text($w)} $$`, inputs: []literalDispatchInput{{Key: "hit-first", Value: "alpha"}, {Key: "hit-last-unicode", Value: "β"}, {Key: "miss", Value: "miss"}, {Key: "unicode-miss", Value: "éclair"}}},
@@ -111,7 +111,7 @@ func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 				}
 				fingerprint := sha256.Sum256(code)
 				api := "variadic-unit"
-				if strings.Contains(string(code), "func Parse(input string, opts ...pegort.ParseOption)") {
+				if strings.Contains(string(code), "func Parse(input string, opts ...zprt.ParseOption)") {
 					api = "functional-options"
 				}
 				if mode.types {

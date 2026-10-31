@@ -2,12 +2,12 @@ package tsgen_test
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/syntax"
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // startEntryWant is what the interpreter reports for each of startEntryNames, one line each.

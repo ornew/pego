@@ -23,7 +23,7 @@ optimization option.
 
 ## Reference Control
 
-Core build tag `pego_reference_sparse_memo` restores dense storage. Private
+Core build tag `zp_reference_sparse_memo` restores dense storage. Private
 generator option `disableSparseMemo` emits a dense TypeScript control. These
 are same-source representation comparisons; they do not disable deferred
 memoization. Generated Go has no dense control: its shared runtime always

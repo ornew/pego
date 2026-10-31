@@ -6,8 +6,8 @@ import (
 	"go/token"
 	"os"
 
-	"github.com/ornew/pego/parsers/golang"
-	"github.com/ornew/pego/parsers/golang/types"
+	"github.com/ornew/zeroparse/parsers/golang"
+	"github.com/ornew/zeroparse/parsers/golang/types"
 )
 
 const hello = `package main

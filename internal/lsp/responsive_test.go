@@ -63,7 +63,7 @@ func newResponsiveClient(t *testing.T, lint bool) *testClient {
 	c := newServer(t)
 	c.request("initialize", map[string]any{"capabilities": map[string]any{
 		"workspace":    map[string]any{"workspaceEdit": map[string]any{"documentChanges": true}},
-		"experimental": map[string]any{"pego": map[string]any{"responsiveAnalysis": true, "lintDiagnostics": lint, "showExplanation": true}},
+		"experimental": map[string]any{"zp": map[string]any{"responsiveAnalysis": true, "lintDiagnostics": lint, "showExplanation": true}},
 	}})
 	return c
 }
@@ -107,7 +107,7 @@ func TestResponsiveRequestCancellationProtocol(t *testing.T) {
 	t.Cleanup(func() { requestHook = nil })
 	c := newResponsiveClient(t, false)
 	defer c.exit()
-	uri := "file:///cancel.pego"
+	uri := "file:///cancel.zp"
 	c.open(uri, "@start\nrule main = \"a\"")
 	asyncRequest(c, 100, "textDocument/hover", at(uri, 1, 5))
 	awaitBarrier(t, started)
@@ -137,7 +137,7 @@ func TestResponsiveAnalysisCoalescingProtocol(t *testing.T) {
 	t.Cleanup(func() { analyzeHook = nil })
 	c := newResponsiveClient(t, false)
 	defer func() { releaseWorker(); c.exit() }()
-	uri := "file:///coalesce.pego"
+	uri := "file:///coalesce.zp"
 	c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 1, "text": "@start\nrule first = \"a\""}})
 	awaitBarrier(t, started)
 	c.notify("textDocument/didChange", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 2}, "contentChanges": []any{map[string]any{"text": "@start\nrule obsolete = \"b\""}}})
@@ -176,7 +176,7 @@ func TestResponsiveCloseDropsPendingAnalysisProtocol(t *testing.T) {
 	t.Cleanup(func() { analyzeHook = nil })
 	c := newResponsiveClient(t, false)
 	defer func() { releaseWorker(); c.exit() }()
-	uri := "file:///closed.pego"
+	uri := "file:///closed.zp"
 	c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 1, "text": "@start\nrule blocked = \"a\""}})
 	awaitBarrier(t, started)
 	c.notify("textDocument/didClose", docParams(uri))
@@ -186,7 +186,7 @@ func TestResponsiveCloseDropsPendingAnalysisProtocol(t *testing.T) {
 	}
 	c.requestError("textDocument/documentSymbol", docParams(uri))
 	releaseWorker()
-	other := "file:///other.pego"
+	other := "file:///other.zp"
 	c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": other, "version": 1, "text": "@start\nrule main = \"b\""}})
 	var published publishDiagnosticsParams
 	message := c.next()
@@ -219,7 +219,7 @@ func TestResponsiveCodeActionContentModifiedProtocol(t *testing.T) {
 	t.Cleanup(func() { analyzeHook = nil })
 	c := newResponsiveClient(t, true)
 	defer func() { releaseWorker(); c.exit() }()
-	uri := "file:///stale-actions.pego"
+	uri := "file:///stale-actions.zp"
 	source := "@start\nrule main = (\n  a:\"a\" b:\"b\"\n) => $a"
 	diagnostics := c.open(uri, source)
 	var target Diagnostic
@@ -253,13 +253,13 @@ func TestResponsiveFailedAnalysisDropsLintProtocol(t *testing.T) {
 	t.Cleanup(func() { analyzeHook = nil })
 	c := newResponsiveClient(t, true)
 	defer c.exit()
-	uri := "file:///failed-lint.pego"
+	uri := "file:///failed-lint.zp"
 	first := c.open(uri, "@start\nrule main = \"a\" / \"ab\"")
-	if len(first) == 0 || first[0].Source != "pego-lint" {
+	if len(first) == 0 || first[0].Source != "zp-lint" {
 		t.Fatalf("lint diagnostics=%+v", first)
 	}
 	current := change(c, uri, 2, map[string]any{"text": "rule BOOM = \"a\""})
-	if len(current) != 1 || current[0].Source != "pego" || !strings.Contains(current[0].Message, "boom") {
+	if len(current) != 1 || current[0].Source != "zp" || !strings.Contains(current[0].Message, "boom") {
 		t.Fatalf("stale lint after failure: %+v", current)
 	}
 	if err := c.requestError("textDocument/documentSymbol", docParams(uri)); err.Code != codeContentModified {
@@ -277,7 +277,7 @@ func TestResponsiveShutdownCancelsRequestProtocol(t *testing.T) {
 	}
 	t.Cleanup(func() { requestHook = nil })
 	c := newResponsiveClient(t, false)
-	uri := "file:///shutdown.pego"
+	uri := "file:///shutdown.zp"
 	c.open(uri, "@start\nrule main = \"a\"")
 	asyncRequest(c, 103, "textDocument/hover", at(uri, 1, 5))
 	awaitBarrier(t, started)
@@ -293,7 +293,7 @@ func TestResponsiveShutdownCancelsRequestProtocol(t *testing.T) {
 func TestResponsiveSaveRejectsOldFindingGenerationProtocol(t *testing.T) {
 	c := newResponsiveClient(t, true)
 	defer c.exit()
-	uri := "file:///save-generation.pego"
+	uri := "file:///save-generation.zp"
 	source := "@start\nrule main = (\n a:\"a\" b:\"b\"\n) => $a"
 	diagnostics := c.open(uri, source)
 	var target Diagnostic
@@ -335,14 +335,14 @@ func TestResponsiveRequestPrioritizesAnalysisProtocol(t *testing.T) {
 	c := newResponsiveClient(t, false)
 	defer func() { releaseWorker(); c.exit() }()
 	open := func(name string) {
-		c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": "file:///" + name + ".pego", "version": 1, "text": "@start\nrule " + name + " = \"a\""}})
+		c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": "file:///" + name + ".zp", "version": 1, "text": "@start\nrule " + name + " = \"a\""}})
 	}
 	open("blocked")
 	awaitBarrier(t, started)
 	open("first")
 	open("second")
 	open("requested")
-	asyncRequest(c, 101, "textDocument/documentSymbol", docParams("file:///requested.pego"))
+	asyncRequest(c, 101, "textDocument/documentSymbol", docParams("file:///requested.zp"))
 	// A reply to a later request proves the actor admitted the waiting request.
 	asyncRequest(c, 102, "sequence/unknown", nil)
 	assertResponseError(t, c.response("102"), codeMethodNotFound)

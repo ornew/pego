@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	. "github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/value"
+	. "github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func TestTraceLifecycleDocumentDetachment(t *testing.T) {

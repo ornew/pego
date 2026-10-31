@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // ruleVariablesDFS retains the previous per-root closure as an independent
@@ -253,7 +253,7 @@ func BenchmarkVariableDependencies(b *testing.B) {
 	}
 	cases = append(cases, struct{ name, src string }{"shared/128", variableGraph(128, false)}, struct{ name, src string }{"cyclic/128", variableGraph(128, true)})
 	cases = append(cases, struct{ name, src string }{"many-reads/chain-128", variableManyReads(128, false)}, struct{ name, src string }{"many-reads/cycle-128", variableManyReads(128, true)})
-	for _, path := range []string{"../../examples/calculator/calc.pego", "../../examples/minilang/minilang.pego", "../../examples/outline/outline.pego", "../../parsers/json/json.pego"} {
+	for _, path := range []string{"../../examples/calculator/calc.zp", "../../examples/minilang/minilang.zp", "../../examples/outline/outline.zp", "../../parsers/json/json.zp"} {
 		src, err := os.ReadFile(path)
 		if err != nil {
 			b.Fatal(err)

@@ -26,7 +26,7 @@ The adopted policy was compared with the legacy slab policy on Go 1.27.1 and an 
 The retained-output fixture exports direct and conversion variants, including the `slabs` default and `legacy` reference. Its heap probe clones every returned `Text` before collection and excludes the input owner from the measured retained result; this isolates discarded-sibling retention and does not show that an ordinary parse releases its source string:
 
 ```sh
-PEGO_TYPED_OUTPUT_RETENTION_DIR=/tmp/retention \
+ZP_TYPED_OUTPUT_RETENTION_DIR=/tmp/retention \
   go test ./internal/gen/gogen -run '^TestGeneratedTypedOutputRetentionFixture$' -count=1
 ```
 
@@ -45,7 +45,7 @@ done
 For ordinary generated typed workloads, export same-generator controls with the exporter that is in the tree up to commit `0a3ef83f^`; `ref` is the default and `legacy` is the generation-only allocation reference:
 
 ```sh
-PEGO_TYPED_OUTPUT_SWEEP_EXPORT_DIR=/tmp/ordinary \
+ZP_TYPED_OUTPUT_SWEEP_EXPORT_DIR=/tmp/ordinary \
   go test ./internal/engine -run '^TestExportOrdinaryTypedSweepBenchmarks$' -count=1
 ```
 

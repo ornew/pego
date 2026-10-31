@@ -31,7 +31,7 @@ func renderBenchmarkSource(fields int) string {
 func renderBenchmarkInputs(tb testing.TB) map[string]string {
 	tb.Helper()
 	sources := map[string]string{"fields512": renderBenchmarkSource(512)}
-	for name, path := range map[string]string{"json": "../../parsers/json/json.pego", "source-grammar": "../../pego.pego"} {
+	for name, path := range map[string]string{"json": "../../parsers/json/json.zp", "source-grammar": "../../zeroparse.zp"} {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			tb.Fatal(err)
@@ -42,7 +42,7 @@ func renderBenchmarkInputs(tb testing.TB) map[string]string {
 }
 
 func renderBenchmarkRequest(a *analysis, method string) *incoming {
-	p := docParams("file:///render.pego")
+	p := docParams("file:///render.zp")
 	if method != "textDocument/documentSymbol" {
 		off := 0
 		for _, d := range a.defs {
@@ -64,7 +64,7 @@ func renderBenchmarkRequest(a *analysis, method string) *incoming {
 }
 
 func renderBenchmarkServer(a *analysis, ctx context.Context, rich bool) *Server {
-	s := &Server{docs: map[string]*document{"file:///render.pego": {uri: "file:///render.pego", text: a.text, an: a}}, state: stateInitialized, requestContext: ctx}
+	s := &Server{docs: map[string]*document{"file:///render.zp": {uri: "file:///render.zp", text: a.text, an: a}}, state: stateInitialized, requestContext: ctx}
 	s.client.TextDocument.DocumentSymbol.HierarchicalDocumentSymbolSupport = rich
 	s.client.TextDocument.Completion.CompletionItem.SnippetSupport = rich
 	if rich {

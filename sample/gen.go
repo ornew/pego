@@ -5,7 +5,7 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // The generator walks the grammar AST and writes a candidate input, making a random decision at each
@@ -99,7 +99,7 @@ type gen struct {
 	triedB  bitset
 	trail   []int // targets in tent, in the order they were added
 
-	m          matcher
+	m         matcher
 	matchWork int // steps of the matcher in the current attempt
 
 	// checkCuts and predicateCuts count the ways that checks and predicates ruled out, over all

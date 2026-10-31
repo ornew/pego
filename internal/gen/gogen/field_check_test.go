@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // TestConstructedFieldChecksAreSelective checks that a constructed field is never checked when it

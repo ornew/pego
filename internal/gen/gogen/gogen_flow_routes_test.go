@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // routeInputs are the inputs of each route grammar, by file name without the extension.
@@ -28,7 +28,7 @@ var routeInputs = map[string][]string{
 
 // routeCases returns the route grammars with their inputs.
 func routeCases(t *testing.T) []gentest.Case {
-	paths, err := filepath.Glob(filepath.Join("testdata", "routes", "*.pego"))
+	paths, err := filepath.Glob(filepath.Join("testdata", "routes", "*.zp"))
 	if err != nil || len(paths) != len(routeInputs) {
 		t.Fatalf("route grammars: %d files, want %d: %v", len(paths), len(routeInputs), err)
 	}
@@ -38,7 +38,7 @@ func routeCases(t *testing.T) []gentest.Case {
 		if err != nil {
 			t.Fatal(err)
 		}
-		name := strings.TrimSuffix(filepath.Base(p), ".pego")
+		name := strings.TrimSuffix(filepath.Base(p), ".zp")
 		inputs, ok := routeInputs[name]
 		if !ok {
 			t.Fatalf("no inputs for route grammar %s", name)

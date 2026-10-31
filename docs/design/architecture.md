@@ -1,6 +1,6 @@
 # Architecture
 
-This page explains how PEGO turns a grammar into a parser, at the level of ideas: which stages exist, why they are
+This page explains how ZeroParse turns a grammar into a parser, at the level of ideas: which stages exist, why they are
 separate, and which rules hold across packages. It does not list files, fields or functions; the code is the source of
 truth for those, and the package comments say what each package owns. Read this page to learn how the parts fit before
 you work in `internal/compile/`, `internal/engine/`, `runtime/` or a generator. The contracts every stage must keep are
@@ -14,14 +14,14 @@ settled.
 
 ```mermaid
 flowchart TD
-  src[".pego text or grammar JSON"] --> ast["Grammar syntax tree"]
+  src[".zp text or grammar JSON"] --> ast["Grammar syntax tree"]
   ast --> chk["Checked grammar"]
   chk --> prog["Program: rules, flags, types"]
   prog --> run["Run: closures or VM"]
   prog --> ir["Core and Flow IR"]
   ir --> gen["Generated Go"]
   ir --> ts["Generated TypeScript"]
-  prog --> bc["Bytecode, .pegoc"]
+  prog --> bc["Bytecode, .zpc"]
   bc --> run
 ```
 
@@ -127,8 +127,8 @@ contract is [Observability](../../spec/runtime/observability.md).
 | Output schemas and structural queries | `schema/` (the types, their validation and `Compare`), `internal/schema/` (the export), `query/` (the queries) |
 | Core and Flow IR and their passes | `internal/ir/core/`, `internal/ir/flow/`; the Core builder in `internal/ir/core/build/` and the Flow lowering in `internal/ir/flow/lower/` |
 | Generated Go and TypeScript | The public entry points in `gen/`, the Go generator in `internal/gen/gogen/`, the TypeScript generator in `internal/gen/tsgen/` and the runtimes in `runtime/` and `internal/gen/tsgen/tsrt/` |
-| The public API | `pego.go`, `grammar/` |
-| Commands, linter, language server | `cmd/pego/`, `lint/`, `internal/lsp/` |
+| The public API | `zeroparse.go`, `grammar/` |
+| Commands, linter, language server | `cmd/zp/`, `lint/`, `internal/lsp/` |
 | Playground and site | `cmd/playground/`, `site/` |
 
 ## Related Topics

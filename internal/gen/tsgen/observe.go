@@ -3,8 +3,8 @@ package tsgen
 import (
 	"fmt"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
 )
 
 func (g *Generator) tracePlainCall(r *compile.Rule, name string) string {

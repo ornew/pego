@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // TestModuleCompilesCorpus checks that every test grammar compiles to bytecode and that all

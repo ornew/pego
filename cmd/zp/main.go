@@ -1,0 +1,1173 @@
+// Command zp is a command-line tool for working with ZeroParse grammars.
+//
+// Usage:
+//
+//	zp parse -g grammar.zp [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b] [-source-info] [-default-value] [-budget n] [-max-input n]
+//	zp test -f suite.json [-format text|json] [-backend closure,bytecode] [-equivalence] [-update] [-budget n] [-max-input n]
+//	zp fmt [-w] [-l] [-check] [-syntax] [grammar.zp ...]
+//	zp convert [-to zp|json] [-o output] grammar.zp|grammar.json
+//	zp gen -g grammar.zp -module path -o dir [-pkg name] [-runtime embed|import|only] [-s main] [-types] [-document] [-stream] [-recognize] [-observability] [-budget-controls] [-typed-only] [-nodoc] [-max-depth n] [-source-info] [-default-value]
+//	zp gen -lang ts -g grammar.zp -o dir [-runtime embed|import|only] [-runtime-module specifier] [-s main] [-types] [-recognize] [-observability]
+//	zp compile -g grammar.zp [-s main] [-mode parse|recognize|document] [-source-info] [-default-value] -o grammar.zpc
+//	zp trace -g grammar.zp [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json] [-budget n] [-max-input n]
+//	zp profile -g grammar.zp [-s main] [-i input] [-sort column] [-n rows] [-f text|json] [-budget n] [-max-input n]
+//	zp explain -g grammar.zp [-s main] [-i input] [-n calls] [-budget n] [-max-input n]
+//	zp lint -g grammar.zp [-s main] [-f text|json] [-disable checks] [-strict] [-list]
+//	zp sample -g grammar.zp [-s main] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L] [-budget B]
+//	            [-coverage] [-invalid] [-f lines|json]
+//	zp schema -g grammar.zp [-s main] [-all-rules] [-o schema.json]
+//	zp schema diff [-s main] [-all-rules] [-f text|json] before after
+//	zp edit-fuzz -g grammar.zp [-s main] [-backend names] [-unit names] [-seed N] [-corpus path] [-sequences n]
+//	               [-operations n] [-save-failures dir] [-minimize] [-max-attempts n] [-budget n] [-max-input n]
+//	zp edit-fuzz -g grammar.zp -replay sequence.json [-minimize] [-save-failures dir] [-budget n] [-max-input n]
+//	zp lsp
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/gen"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/syntax"
+)
+
+const usage = `usage: zp <command> [flags] [arguments]
+
+Commands:
+
+  parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-check]
+        [-unit codepoints|bytes] [-backend closure|bytecode|bytecode-iterative] [-source-info]
+        [-default-value] [-budget <n>] [-max-input <n>]
+      Parse the input with a grammar and print the syntax tree. Without -i,
+      the input is read from standard input. -source-info also prints the
+      rule of each node and the names of captures. -default-value drops
+      value actions and declared rule types (predicates still run) and
+      prints the default node tree. -budget and -max-input bound the parse:
+      see Limits below.
+
+  test -f <suite.json> [-format text|json] [-backend <names>] [-equivalence] [-update]
+       [-budget <n>] [-max-input <n>]
+      Run a versioned JSON fixture suite. Outcomes distinguish accepted,
+      recovered, and rejected parses; selected backend equivalence is reported
+      separately. -update refreshes node and location goldens for one backend.
+
+  fmt [-w] [-l] [-check] [-syntax] [<file.zp> ...]
+      Format ZeroParse source files, keeping comments. Without files, standard
+      input is formatted. -w rewrites the files in place; -l lists the
+      files whose formatting differs. -check lists them too and exits with
+      status 1 if there are any, or 2 if a file cannot be formatted.
+      -syntax prints a simplified syntax view and cannot be combined with
+      -w, -l or -check.
+
+  fix [-w] [-l] [<file.zp> ...]
+      Rewrite ZeroParse source written in earlier syntax to the current syntax,
+      changing only the rewritten tokens. Without files, standard input is
+      rewritten. -w rewrites the files in place; -l lists the files that
+      need rewriting.
+
+  convert [-to zp|json] [-o <file>] <grammar>
+      Convert a grammar between ZeroParse source and JSON. -to defaults to the
+      other format of the input.
+
+  gen -g <grammar> -module <import path> -o <dir> [-pkg <package>] [-runtime embed|import|only] [-s <rule>] [-types]
+        [-document] [-stream] [-recognize] [-observability] [-budget-controls] [-typed-only] [-max-depth <n>] [-nodoc] [-source-info] [-default-value]
+  gen -runtime only -o <dir>
+  gen -lang ts -g <grammar> -o <dir> [-runtime embed|import|only] [-runtime-module <specifier>] [-s <rule>] [-types]
+        [-recognize] [-observability] [-max-depth <n>] [-source-info] [-default-value]
+  gen -lang ts -runtime only -o <dir>
+      Generate a Go parser (or, with -lang ts, TypeScript modules) from a
+      grammar. A Go parser is a package: parser.go, api.go and, with
+      -runtime embed (the default), a copy of the runtime in internal/runtime,
+      all written below the directory -o (created if missing). -module is
+      the import path of that package; the package name is its last element
+      without a major version suffix, or -pkg. -runtime import makes the
+      parser import github.com/ornew/zeroparse/runtime instead, and needs only
+      -pkg or -module. -runtime only writes just internal/runtime, to refresh
+      a package generated with embed; it takes no grammar and no other
+      generation flags. A file in -o that lacks the "Code generated by zp"
+      header is never overwritten, and earlier generated files that the
+      new mode does not produce are removed. A TypeScript parser is the
+      files parser.ts, with -types types.ts, and, with -runtime embed (the
+      default), runtime.ts, a copy of the runtime that does not depend on
+      the grammar, all written to -o. -runtime import leaves runtime.ts out and
+      imports the runtime from the module -runtime-module (required), such as
+      ../shared/runtime.ts; -runtime only writes just runtime.ts, to share it
+      or to refresh the copy. With
+      -types, types for the grammar's types and ParseAST (parseAST in TypeScript),
+      which returns the result as typed values, are generated too.
+      -document adds a Go incremental Document; with -types it also provides
+      Document.ParseAST. Without -budget-controls the Document runs without
+      budget charges. It cannot be combined with -lang ts.
+      -stream adds Go ParseStream, which reads an io.Reader and passes each
+      committed element of the start rule's #stream repetition to a callback.
+      It cannot be combined with -types or -lang ts.
+      -observability emits opt-in rule tracing and profiling for Go batch
+      parsing and Documents, and TypeScript batch parsing, including typed
+      entry points.
+      -budget-controls generates the budget-controlled form of the parser, which
+      supports WithContext and WithLimits (signal, budget and maxInput in TypeScript);
+      without it those options are not exported, the
+      generated code does not spend budget, and a parse that passes them
+      fails. The parser has this one form only: a parse that sets no limit
+      runs the same code. Generate a second parser without the option to
+      have the plain form too.
+      -typed-only generates only the typed entry points (ParseAST and its
+      siblings), without Parse, ParseRule and Recognize. It needs -types and
+      cannot be combined with -recognize, -document, -stream or -lang ts.
+      With -recognize, Recognize (recognize in TypeScript) checks input without
+      building a tree.
+      -nodoc leaves out the package comment
+      of the Go code, for a package documented in another file. -max-depth
+      sets the generated default nested recursive rule-call limit (0 selects 100000).
+      -source-info makes the parser record the rule of each node and the
+      names of captures. -default-value drops value actions and declared
+      rule types, so the parser returns the default node tree; it cannot be
+      combined with -types.
+
+  compile -g <grammar> [-s <rule>] [-mode parse|recognize|document] [-source-info] [-default-value] -o <file.zpc>
+      Compile a grammar and save the bytecode of one mode. The result runs
+      on the bytecode backends as the <grammar> of parse, trace, profile
+      and explain, for the parses of its mode only: parse (the default)
+      serves parse and parse -stream; recognize serves parse -check;
+      document serves trace, profile and explain. The commands that need
+      the grammar itself (convert, gen, lint, sample, schema) take the
+      source. A compiled grammar given as <grammar> is saved again only in
+      its own mode. With -source-info, its parses record
+      the rule of each node and the names of captures. With -default-value,
+      value actions and declared rule types are dropped (predicates still
+      run), so its parses return the default node tree.
+
+  trace -g <grammar> [-s <rule>] [-i <input>] [-max-depth <n>] [-rule <name>]
+        [-failures] [-f text|json] [-unit u] [-backend b] [-budget <n>] [-max-input <n>]
+      Parse the input and print every rule call as an indented call tree
+      with positions, results and memo hits (-f json: one event per line).
+
+  profile -g <grammar> [-s <rule>] [-i <input>] [-sort <column>] [-n <rows>]
+        [-f text|json] [-unit u] [-backend b] [-budget <n>] [-max-input <n>]
+      Parse the input and print the cost of each rule, with hints on where
+      the grammar does more work than it needs to.
+
+  explain -g <grammar> [-s <rule>] [-i <input>] [-n <calls>] [-unit u] [-backend b]
+          [-budget <n>] [-max-input <n>]
+      Parse the input and, for a syntax error, print the rule calls that
+      recorded what it says was expected, each with the calls it was
+      nested in.
+
+  lint -g <grammar> [-s <rule>] [-f text|json] [-disable <checks>] [-strict]
+       [-list]
+      Report likely mistakes in a grammar: alternatives and expressions
+      that can never match or have no effect, unused captures and rules,
+      and shapes that slow down incremental parsing. Fails if an error is
+      found (with -strict, also a warning). -list lists the checks.
+
+  sample -g <grammar> [-s <rule>] [-n <count>] [-seed <n>] [-max-depth <d>]
+         [-max-repeat <r>] [-max-len <bytes>] [-budget <steps>] [-coverage] [-invalid]
+         [-f lines|json]
+      Generate distinct inputs that the grammar accepts, for tests and fuzz
+      corpora, each printed as a quoted string on its own line. -coverage
+      prefers rules and alternatives not exercised yet and reports what was
+      missed; -invalid generates near-miss inputs that the grammar rejects.
+
+  schema -g <grammar> [-s <rule>] [-all-rules] [-o <file>]
+  schema diff [-s <rule>] [-all-rules] [-f text|json] <before> <after>
+      Print the output schema of a grammar as JSON, without parsing an input.
+      By default the schema holds the start rule and the rules it calls;
+      -all-rules includes every rule and declared type. schema diff compares
+      two schemas and prints the added, removed and changed types and rules.
+      Each operand is a schema JSON file, as written by schema, or a grammar,
+      whose schema is exported with -s and -all-rules. The exit status is 0
+      whenever both operands are valid, whether or not they differ.
+
+  edit-fuzz -g <grammar.zp> [-s <rule>] [-backend <names>] [-unit <names>] [-seed <n>]
+            [-corpus <path>] [-sequences <n>] [-operations <n>] [-save-failures <dir>]
+            [-minimize] [-max-attempts <n>] [-budget <n>] [-max-input <n>]
+  edit-fuzz -g <grammar.zp> -replay <sequence.json> [-minimize] [-save-failures <dir>]
+            [-budget <n>] [-max-input <n>]
+      Apply generated edit, undo and redo sequences to incremental Documents
+      and compare each checkpoint with a fresh parse, on every backend and
+      unit unless limited. A failing sequence is saved as a JSON file that
+      -replay runs exactly; -minimize also saves a shortened sequence that
+      fails the same way. The limits apply to every Document and fresh parse; a
+      saved sequence does not record them, so pass them again to -replay.
+
+  lsp
+      Run a Language Server Protocol server for .zp files on standard
+      input and output, for editors: diagnostics, formatting, go to
+      definition, references, hover, rename and completion.
+
+Limits: parse, test, trace, profile, explain and edit-fuzz take -budget and
+-max-input. -budget bounds the cost of a parse in units; 0, the default,
+selects max(2^20, 1024 times the input length). -max-input bounds the length
+of the input in the position unit; 0, the default, sets no bound. Both also
+take the word unlimited, which disables the limit. A parse that reaches a limit
+prints the message of the limit error and exits with status 1, like any other
+failure.
+
+A <grammar> is ZeroParse source (.zp), a grammar in JSON (.json), or, for
+parse, trace, profile, explain and compile, a grammar compiled with zp
+compile (.zpc).
+
+Run "zp <command> -h" for the flags of a command.`
+
+func main() {
+	if err := run(os.Args[1:], os.Stdin, os.Stdout); err != nil {
+		fmt.Fprintln(os.Stderr, "zp:", err)
+		var c exitCoder
+		if errors.As(err, &c) {
+			os.Exit(c.ExitCode())
+		}
+		os.Exit(1)
+	}
+}
+
+// exitCoder is an error that selects the exit status of the command.
+type exitCoder interface {
+	error
+	ExitCode() int
+}
+
+// exitError is an error with an exit status other than 1.
+type exitError struct {
+	err  error
+	code int
+}
+
+func (e *exitError) Error() string { return e.err.Error() }
+func (e *exitError) Unwrap() error { return e.err }
+func (e *exitError) ExitCode() int { return e.code }
+
+func run(args []string, stdin io.Reader, stdout io.Writer) error {
+	if len(args) == 0 {
+		return fmt.Errorf("%s", usage)
+	}
+	switch args[0] {
+	case "parse":
+		return parse(args[1:], stdin, stdout)
+	case "test":
+		return testCmd(args[1:], stdout)
+	case "gen":
+		return genCmd(args[1:], stdout)
+	case "compile":
+		return compileCmd(args[1:])
+	case "fmt":
+		return fmtCmd(args[1:], stdin, stdout)
+	case "fix":
+		return fixCmd(args[1:], stdin, stdout)
+	case "convert":
+		return convertCmd(args[1:], stdout)
+	case "trace":
+		return traceCmd(args[1:], stdin, stdout)
+	case "profile":
+		return profileCmd(args[1:], stdin, stdout)
+	case "explain":
+		return explainCmd(args[1:], stdin, stdout)
+	case "sample":
+		return sampleCmd(args[1:], stdout)
+	case "lsp":
+		return lspCmd(args[1:], stdin, stdout)
+	case "lint":
+		return lintCmd(args[1:], stdout)
+	case "edit-fuzz":
+		return editFuzzCmd(args[1:], stdout)
+	case "schema":
+		return schemaCmd(args[1:], stdout)
+	}
+	return fmt.Errorf("%s", usage)
+}
+
+// parseFlags parses args with fs, allowing flags after positional
+// arguments, and returns the positional arguments.
+func parseFlags(fs *flag.FlagSet, args []string) ([]string, error) {
+	var pos []string
+	for {
+		if err := fs.Parse(args); err != nil {
+			return nil, err
+		}
+		args = fs.Args()
+		if len(args) == 0 {
+			return pos, nil
+		}
+		pos = append(pos, args[0])
+		args = args[1:]
+	}
+}
+
+func fmtCmd(args []string, stdin io.Reader, stdout io.Writer) error {
+	fs := flag.NewFlagSet("fmt", flag.ContinueOnError)
+	write := fs.Bool("w", false, "write the result to the file instead of standard output")
+	list := fs.Bool("l", false, "list the files whose formatting differs")
+	check := fs.Bool("check", false, "list the files whose formatting differs and exit with status 1 if there are any, or 2 if a file cannot be formatted")
+	syntaxOnly := fs.Bool("syntax", false, "print a simplified grammar syntax view (cannot combine with -w, -l or -check)")
+	files, err := parseFlags(fs, args)
+	if err != nil {
+		return err
+	}
+	if *syntaxOnly && (*write || *list || *check) {
+		return errors.New("fmt: -syntax cannot be combined with -w, -l or -check")
+	}
+	if *check && *write {
+		return errors.New("fmt: -check cannot be combined with -w")
+	}
+	// A check lists the files that differ, counting them.
+	var out io.Writer = stdout
+	differ := 0
+	if *check {
+		*list = true
+		out = &countingWriter{w: stdout, lines: &differ}
+	}
+	var errs []error
+	if len(files) == 0 {
+		if *write {
+			return errors.New("fmt: cannot use -w with standard input")
+		}
+		src, err := io.ReadAll(stdin)
+		if err == nil {
+			err = formatSourceMode("<standard input>", src, false, *list, *syntaxOnly, out)
+		}
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	for _, path := range files {
+		if err := formatFileMode(path, *write, *list, *syntaxOnly, out); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	err = errors.Join(errs...)
+	switch {
+	case !*check:
+		return err
+	case err != nil:
+		return &exitError{err, 2}
+	case differ > 0:
+		return fmt.Errorf("fmt: %s not formatted; run zp fmt -w", plural(differ, "file"))
+	}
+	return nil
+}
+
+// countingWriter counts the lines written through it.
+type countingWriter struct {
+	w     io.Writer
+	lines *int
+}
+
+func (c *countingWriter) Write(p []byte) (int, error) {
+	*c.lines += bytes.Count(p, []byte("\n"))
+	return c.w.Write(p)
+}
+
+func fixCmd(args []string, stdin io.Reader, stdout io.Writer) error {
+	fs := flag.NewFlagSet("fix", flag.ContinueOnError)
+	write := fs.Bool("w", false, "write the result to the file instead of standard output")
+	list := fs.Bool("l", false, "list the files that need rewriting")
+	files, err := parseFlags(fs, args)
+	if err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		if *write {
+			return errors.New("fix: cannot use -w with standard input")
+		}
+		src, err := io.ReadAll(stdin)
+		if err != nil {
+			return err
+		}
+		return fixSource("<standard input>", src, false, *list, stdout)
+	}
+	var errs []error
+	for _, path := range files {
+		if filepath.Ext(path) != ".zp" {
+			errs = append(errs, fmt.Errorf("%s: fix rewrites only ZeroParse source files (.zp)", path))
+			continue
+		}
+		src, err := os.ReadFile(path)
+		if err == nil {
+			err = fixSource(path, src, *write, *list, stdout)
+		}
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func fixSource(name string, src []byte, write, list bool, stdout io.Writer) error {
+	out, nodes, err := syntax.FixNodeTypes(string(src))
+	if err != nil {
+		return fileError(name, err)
+	}
+	out = narrowNodeTypes(out, nodes)
+	out = fixAnyTypes(out)
+	changed := out != string(src)
+	if list && changed {
+		if _, err := fmt.Fprintln(stdout, name); err != nil {
+			return err
+		}
+	}
+	if write {
+		if !changed {
+			return nil
+		}
+		return writeFormattedFile(name, []byte(out))
+	}
+	if list {
+		return nil
+	}
+	_, err = io.WriteString(stdout, out)
+	return err
+}
+
+// narrowNodeTypes infers the type argument of the types node[_] at offsets, which fix wrote for
+// node without one: node[string] where the grammar still type checks with it, so that only the
+// values that may be other nodes keep node[_].
+func narrowNodeTypes(src string, offsets []int) string {
+	if len(offsets) == 0 || !typeChecks(src) {
+		return src
+	}
+	// From the end, so that the earlier offsets stay valid.
+	for _, o := range slices.Backward(offsets) {
+		if next := src[:o] + "node[string]" + src[o+len("node[_]"):]; typeChecks(next) {
+			src = next
+		}
+	}
+	return src
+}
+
+// fixAnyTypes rewrites the retired type any to _, if the grammar compiles with _ everywhere. A
+// value of type _ must be narrowed with a cast before it is used as another type, so a grammar
+// that relied on any being accepted anywhere may need casts first: it is left as it is, and the
+// compiler reports where.
+func fixAnyTypes(src string) string {
+	offsets := syntax.AnyTypes(src)
+	if len(offsets) == 0 {
+		return src
+	}
+	// From the end, so that the earlier offsets stay valid.
+	next := src
+	for _, o := range slices.Backward(offsets) {
+		next = next[:o] + "_" + next[o+len("any"):]
+	}
+	if !typeChecks(next) {
+		return src
+	}
+	return next
+}
+
+// typeChecks reports whether src parses and compiles.
+func typeChecks(src string) bool {
+	g, err := zeroparse.ParseGrammar(src)
+	if err != nil {
+		return false
+	}
+	_, err = zeroparse.Compile(g, "")
+	return err == nil
+}
+
+func formatFile(path string, write, list bool, stdout io.Writer) error {
+	return formatFileMode(path, write, list, false, stdout)
+}
+
+func formatFileMode(path string, write, list, syntaxOnly bool, stdout io.Writer) error {
+	if filepath.Ext(path) != ".zp" {
+		return fmt.Errorf("%s: fmt formats only ZeroParse source files (.zp); use zp convert for JSON grammars; a compiled grammar holds no source", path)
+	}
+	src, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return formatSourceMode(path, src, write, list, syntaxOnly, stdout)
+}
+
+// formatSource formats the ZeroParse source src read from name. It rewrites
+// name if write is set, lists name if list is set and the result differs
+// from src, and otherwise writes the result to stdout.
+func formatSource(name string, src []byte, write, list bool, stdout io.Writer) error {
+	return formatSourceMode(name, src, write, list, false, stdout)
+}
+
+func formatSourceMode(name string, src []byte, write, list, syntaxOnly bool, stdout io.Writer) error {
+	if zeroparse.IsCompiled(src) {
+		return fmt.Errorf("%s: a compiled grammar is not ZeroParse source and holds none; format the grammar source it was compiled from", name)
+	}
+	if t := bytes.TrimSpace(src); len(t) > 0 && t[0] == '{' {
+		return fmt.Errorf("%s: JSON is not ZeroParse source; use zp convert to convert it", name)
+	}
+	g, err := zeroparse.ParseGrammar(string(src))
+	if err != nil {
+		return fileError(name, err)
+	}
+	var out string
+	if syntaxOnly {
+		out = grammar.FormatSyntax(g)
+	} else {
+		out = grammar.Format(g)
+	}
+	changed := out != string(src)
+	if list && changed {
+		if _, err := fmt.Fprintln(stdout, name); err != nil {
+			return err
+		}
+	}
+	if write {
+		if !changed {
+			return nil
+		}
+		return writeFormattedFile(name, []byte(out))
+	}
+	if list {
+		return nil
+	}
+	_, err = io.WriteString(stdout, out)
+	return err
+}
+
+// writeFormattedFile stages a complete replacement beside the symlink-resolved
+// target. Failed staging leaves the source intact; replacing a hard-linked name
+// leaves the other links pointing to the previous content.
+func writeFormattedFile(name string, data []byte) error {
+	path, err := filepath.EvalSymlinks(name)
+	if err != nil {
+		return err
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("%s: cannot replace a non-regular file", name)
+	}
+	// Preserve the permission check that an in-place write performs, even
+	// when the containing directory would allow replacing a read-only file.
+	target, err := os.OpenFile(path, os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+	if err := target.Close(); err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(filepath.Dir(path), ".zp-fmt-*")
+	if err != nil {
+		return err
+	}
+	temp := f.Name()
+	defer func() {
+		f.Close()
+		os.Remove(temp)
+	}()
+	if _, err := f.Write(data); err != nil {
+		return err
+	}
+	if err := f.Chmod(info.Mode().Perm()); err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return os.Rename(temp, path)
+}
+
+func convertCmd(args []string, stdout io.Writer) error {
+	fs := flag.NewFlagSet("convert", flag.ContinueOnError)
+	to := fs.String("to", "", "output format, zp or json (default: the other format of the input)")
+	output := fs.String("o", "", "output file (default: standard output)")
+	paths, err := parseFlags(fs, args)
+	if err != nil {
+		return err
+	}
+	if len(paths) != 1 {
+		return errors.New("convert: expected one grammar file")
+	}
+	path := paths[0]
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	target := *to
+	if target == "" {
+		switch {
+		case zeroparse.IsCompiled(data):
+			return compiledNeedsSource(path, "convert")
+		case filepath.Ext(path) == ".json":
+			target = "zp"
+		default:
+			target = "json"
+		}
+	}
+	if target != "zp" && target != "json" {
+		return fmt.Errorf("convert: unknown format %q (want zp or json)", target)
+	}
+	g, err := loadGrammar(path, "convert")
+	if err != nil {
+		return err
+	}
+	var out []byte
+	if target == "zp" {
+		out = []byte(grammar.Format(g))
+	} else if out, err = grammar.MarshalJSON(g); err != nil {
+		return err
+	}
+	if *output == "" {
+		_, err = stdout.Write(out)
+		return err
+	}
+	return os.WriteFile(*output, out, 0o644)
+}
+
+// fileError prefixes each line of err (one per error when there are several) with the name of
+// the file it is about. Lines with a position ("line:col: ...") are joined to the name with a
+// colon alone, like compiler messages.
+func fileError(name string, err error) error {
+	lines := strings.Split(err.Error(), "\n")
+	for i, l := range lines {
+		if l != "" && l[0] >= '0' && l[0] <= '9' {
+			lines[i] = name + ":" + l
+		} else {
+			lines[i] = name + ": " + l
+		}
+	}
+	return &wrappedError{msg: strings.Join(lines, "\n"), err: err}
+}
+
+// wrappedError is an error with a rewritten message that still unwraps to the original.
+type wrappedError struct {
+	msg string
+	err error
+}
+
+func (e *wrappedError) Error() string { return e.msg }
+func (e *wrappedError) Unwrap() error { return e.err }
+
+// compiledNeedsSource is the error of a command that needs the grammar source given the compiled
+// grammar at path.
+func compiledNeedsSource(path, command string) error {
+	return fmt.Errorf("%s: a compiled grammar holds only the bytecode of one mode; %s needs the grammar source (.zp or .json)", path, command)
+}
+
+// loadGrammar reads the grammar source at path for command, which needs the grammar itself and
+// so rejects a compiled grammar.
+func loadGrammar(path, command string) (*grammar.Grammar, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if zeroparse.IsCompiled(data) {
+		return nil, compiledNeedsSource(path, command)
+	}
+	var g *grammar.Grammar
+	if strings.HasSuffix(path, ".json") {
+		g, err = grammar.UnmarshalJSON(data)
+	} else {
+		g, err = zeroparse.ParseGrammar(string(data))
+	}
+	if err != nil {
+		return nil, fileError(path, err)
+	}
+	return g, nil
+}
+
+// loadSourceParser compiles the grammar source at path for command, starting at the rule start
+// (the grammar's default start rule if empty); see loadGrammar.
+func loadSourceParser(path, start, command string) (*zeroparse.Parser, error) {
+	g, err := loadGrammar(path, command)
+	if err != nil {
+		return nil, err
+	}
+	p, err := zeroparse.Compile(g, start)
+	if err != nil {
+		return nil, fileError(path, err)
+	}
+	return p, nil
+}
+
+func parse(args []string, stdin io.Reader, stdout io.Writer) error {
+	fs := flag.NewFlagSet("parse", flag.ContinueOnError)
+	grammarPath := fs.String("g", "", "grammar file (.zp, .json, or .zpc)")
+	start := fs.String("s", "", "start rule name (default: the one saved in a .zpc, otherwise the grammar's default start rule)")
+	input := fs.String("i", "", "input string (default: standard input)")
+	format := fs.String("f", "json", "output format: json or sexpr")
+	stream := fs.Bool("stream", false, "print each #stream element of the start rule on its own line as soon as it matches")
+	unitName := fs.String("unit", "codepoints", "unit of positions: codepoints or bytes")
+	check := fs.Bool("check", false, "only check that the input matches the grammar, without building a tree, and print ok if it does")
+	backendName := fs.String("backend", "", "execution backend: closure, bytecode, or bytecode-iterative (default: chosen for the grammar)")
+	sourceInfo := fs.Bool("source-info", false, "record the rule of each node and the names of captures, and print them")
+	defaultValue := fs.Bool("default-value", false, "drop value actions and declared rule types, and print the default node tree (predicates still run)")
+	var lim limitFlags
+	lim.register(fs)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *check && *stream {
+		return fmt.Errorf("-check and -stream cannot be used together")
+	}
+	if *grammarPath == "" {
+		return fmt.Errorf("-g is required")
+	}
+	p, err := loadParser(*grammarPath, *start, compileFlags{sourceInfo: *sourceInfo, defaultValue: *defaultValue})
+	if err != nil {
+		return err
+	}
+	if *format != "json" && *format != "sexpr" {
+		return fmt.Errorf("unknown format %q", *format)
+	}
+	var unit zeroparse.ParseOption
+	switch *unitName {
+	case "codepoints":
+		unit = zeroparse.WithUnit(zeroparse.CodePoints)
+	case "bytes":
+		unit = zeroparse.WithUnit(zeroparse.Bytes)
+	default:
+		return fmt.Errorf("unknown unit %q", *unitName)
+	}
+	var backend zeroparse.ParseOption
+	switch *backendName {
+	case "":
+		backend = zeroparse.WithBackend(zeroparse.DefaultBackend)
+	case "closure":
+		backend = zeroparse.WithBackend(zeroparse.Closure)
+	case "bytecode":
+		backend = zeroparse.WithBackend(zeroparse.Bytecode)
+	case "bytecode-iterative":
+		backend = zeroparse.WithBackend(zeroparse.BytecodeIterative)
+	default:
+		return fmt.Errorf("unknown backend %q", *backendName)
+	}
+	if *stream {
+		var r io.Reader = stdin
+		if isFlagSet(fs, "i") {
+			r = strings.NewReader(*input)
+		}
+		return p.ParseStream(r, func(n *zeroparse.Node) error {
+			if *format == "sexpr" {
+				_, err := fmt.Fprintln(stdout, n)
+				return err
+			}
+			return json.NewEncoder(stdout).Encode(n)
+		}, unit, backend, lim.option(), zeroparse.WithExpectations())
+	}
+	src := *input
+	if !isFlagSet(fs, "i") {
+		b, err := io.ReadAll(stdin)
+		if err != nil {
+			return err
+		}
+		src = string(b)
+	}
+	if *check {
+		if _, err := p.Parse(src, unit, backend, lim.option(), zeroparse.WithExpectations(), zeroparse.RecognizeOnly()); err != nil {
+			return err
+		}
+		fmt.Fprintln(stdout, "ok")
+		return nil
+	}
+	node, perr := p.Parse(src, unit, backend, lim.option(), zeroparse.WithExpectations())
+	if node == nil {
+		return perr
+	}
+	// Print the tree even if the parser recovered from errors, and then
+	// return the error.
+	switch *format {
+	case "sexpr":
+		_, err = fmt.Fprintln(stdout, node)
+	case "json":
+		enc := json.NewEncoder(stdout)
+		enc.SetIndent("", "  ")
+		err = enc.Encode(node)
+	default:
+		return fmt.Errorf("unknown format %q", *format)
+	}
+	if err != nil {
+		return err
+	}
+	return perr
+}
+
+// compileFlags are the flags that choose how a grammar is compiled.
+type compileFlags struct {
+	sourceInfo, defaultValue bool
+}
+
+// options returns the compile options of the flags.
+func (f compileFlags) options() []zeroparse.CompileOption {
+	var opts []zeroparse.CompileOption
+	if f.sourceInfo {
+		opts = append(opts, zeroparse.WithSourceInfo())
+	}
+	if f.defaultValue {
+		opts = append(opts, zeroparse.WithDefaultValue())
+	}
+	return opts
+}
+
+func isFlagSet(fs *flag.FlagSet, name string) bool {
+	set := false
+	fs.Visit(func(f *flag.Flag) { set = set || f.Name == name })
+	return set
+}
+
+func genCmd(args []string, stdout io.Writer) error {
+	fs := flag.NewFlagSet("gen", flag.ContinueOnError)
+	grammarPath := fs.String("g", "", "grammar file (.zp or .json)")
+	lang := fs.String("lang", "go", "language of the generated code: go or ts (TypeScript)")
+	pkg := fs.String("pkg", "", "package name of the generated code (Go; default: the last element of -module without a major version suffix)")
+	module := fs.String("module", "", "import path of the generated Go package")
+	runtimeMode := fs.String("runtime", "embed", "how generated code reaches the runtime: embed (a copy: internal/runtime in Go, runtime.ts in TypeScript), import (github.com/ornew/zeroparse/runtime in Go; the module of -runtime-module in TypeScript) or only (just the embedded copy)")
+	runtimeModule := fs.String("runtime-module", "", "module specifier a TypeScript parser imports its runtime from with -runtime import, such as ../shared/runtime.ts")
+	start := fs.String("s", "", "start rule of the generated Parse function (default: the grammar's default start rule)")
+	output := fs.String("o", "", "output directory")
+	types := fs.Bool("types", false, "also generate typed values and ParseAST (parseAST in TypeScript)")
+	document := fs.Bool("document", false, "also generate a Go incremental Document (typed ParseAST with -types; incompatible with -lang ts)")
+	stream := fs.Bool("stream", false, "also generate Go ParseStream and Iterate for the start rule's #stream repetition (and their typed forms with -types; incompatible with -lang ts)")
+	observability := fs.Bool("observability", false, "emit opt-in rule tracing and profiling for Go batch/Documents and TypeScript batch parsing, including typed entry points")
+	expectations := fs.Bool("expectations", false, "generate a parser that records what a syntax error expects (the expected list and @error messages); without it the error reports only the farthest failure position")
+	budgetControls := fs.Bool("budget-controls", false, "generate the budget-controlled form of the parser, which supports WithContext and WithLimits (signal, budget and maxInput in TypeScript)")
+	typedOnly := fs.Bool("typed-only", false, "generate only the typed entry points (ParseAST and siblings), without Parse, ParseRule and Recognize (needs -types)")
+	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
+	maxDepth := fs.Int("max-depth", 0, "generated default nested recursive rule-call limit (0 selects 100000)")
+	nodoc := fs.Bool("nodoc", false, "leave out the package comment (Go)")
+	sourceInfo := fs.Bool("source-info", false, "make the generated parser record the rule of each node and the names of captures")
+	defaultValue := fs.Bool("default-value", false, "make the generated parser drop value actions and declared rule types and return the default node tree (incompatible with -types)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	mode, err := parseGenRuntime(*runtimeMode)
+	if err != nil {
+		return err
+	}
+	switch *lang {
+	case "go":
+		if *output == "" {
+			return fmt.Errorf("-o (an output directory) is required")
+		}
+		if *runtimeModule != "" {
+			return fmt.Errorf("-runtime-module is only supported with -lang ts")
+		}
+		switch mode {
+		case runtimeOnly:
+			for _, name := range []string{"g", "s", "pkg", "module", "types", "document", "stream", "observability", "budget-controls", "typed-only", "recognize", "max-depth", "nodoc", "source-info", "default-value"} {
+				if isFlagSet(fs, name) {
+					return fmt.Errorf("-%s cannot be combined with -runtime only, which writes just the runtime", name)
+				}
+			}
+		case runtimeImport:
+			if *grammarPath == "" {
+				return fmt.Errorf("-g is required")
+			}
+			if *module == "" && *pkg == "" {
+				return fmt.Errorf("-pkg or -module is required")
+			}
+		default:
+			if *grammarPath == "" {
+				return fmt.Errorf("-g is required")
+			}
+			if *module == "" {
+				return fmt.Errorf("-module (the import path of the generated package) is required with -runtime embed")
+			}
+		}
+	case "ts":
+		if *pkg != "" || *module != "" || *nodoc || *document || *stream || *typedOnly {
+			return fmt.Errorf("-pkg, -module, -nodoc, -document, -stream and -typed-only are not supported with -lang ts")
+		}
+		if *output == "" {
+			return fmt.Errorf("-o (an output directory) is required")
+		}
+		switch mode {
+		case runtimeOnly:
+			for _, name := range []string{"g", "s", "types", "observability", "budget-controls", "recognize", "max-depth", "source-info", "default-value", "runtime-module"} {
+				if isFlagSet(fs, name) {
+					return fmt.Errorf("-%s cannot be combined with -runtime only, which writes just the runtime", name)
+				}
+			}
+		case runtimeImport:
+			if *grammarPath == "" {
+				return fmt.Errorf("-g is required")
+			}
+			if *runtimeModule == "" {
+				return fmt.Errorf("-runtime-module (the module specifier the parser imports the runtime from) is required with -runtime import")
+			}
+		default:
+			if *grammarPath == "" {
+				return fmt.Errorf("-g is required")
+			}
+			if *runtimeModule != "" {
+				return fmt.Errorf("-runtime-module can only be combined with -runtime import")
+			}
+		}
+	default:
+		return fmt.Errorf("unknown language %q (want go or ts)", *lang)
+	}
+	var generator gen.Generator
+	if *lang == "ts" {
+		generator = gen.TypeScript{
+			Runtime:        mode.generated(),
+			RuntimeModule:  *runtimeModule,
+			Types:          *types,
+			DefaultValue:   *defaultValue,
+			SourceInfo:     *sourceInfo,
+			Observability:  *observability,
+			BudgetControls: *budgetControls,
+			Expectations:   *expectations,
+			Recognize:      *recognize,
+			MaxDepth:       *maxDepth,
+		}
+	} else {
+		generator = gen.Go{
+			Module:         *module,
+			PackageName:    *pkg,
+			Runtime:        mode.generated(),
+			Types:          *types,
+			DefaultValue:   *defaultValue,
+			SourceInfo:     *sourceInfo,
+			Observability:  *observability,
+			BudgetControls: *budgetControls,
+			Expectations:   *expectations,
+			Recognize:      *recognize,
+			MaxDepth:       *maxDepth,
+			Document:       *document,
+			Stream:         *stream,
+			TypedOnly:      *typedOnly,
+			OmitPackageDoc: *nodoc,
+		}
+	}
+	if mode == runtimeOnly {
+		files, err := generator.GenerateRuntime()
+		if err != nil {
+			return err
+		}
+		return writeGenerated(*output, files, mode, *lang == "ts")
+	}
+	g, err := loadGrammar(*grammarPath, "gen")
+	if err != nil {
+		return err
+	}
+	files, err := generator.Generate(g, *start)
+	if err != nil {
+		return fileError(*grammarPath, err)
+	}
+	return writeGenerated(*output, files, mode, *lang == "ts")
+}
+
+// genRuntime is the value of zp gen -runtime: how the generated parser reaches the runtime
+// (embed or import), or only, which writes just the embedded copy of the runtime.
+type genRuntime int
+
+const (
+	runtimeEmbed genRuntime = iota
+	runtimeImport
+	runtimeOnly
+)
+
+func (m genRuntime) String() string { return [...]string{"embed", "import", "only"}[m] }
+
+// parseGenRuntime returns the -runtime value named s.
+func parseGenRuntime(s string) (genRuntime, error) {
+	for m := runtimeEmbed; m <= runtimeOnly; m++ {
+		if m.String() == s {
+			return m, nil
+		}
+	}
+	return 0, fmt.Errorf("unknown runtime mode %q: want embed, import or only", s)
+}
+
+// generated returns the runtime mode of the generator for m. runtimeOnly calls GenerateRuntime
+// instead of Generate, so its mode is not used.
+func (m genRuntime) generated() gen.RuntimeMode {
+	if m == runtimeImport {
+		return gen.RuntimeImport
+	}
+	return gen.RuntimeEmbed
+}
+
+// generatedHeader starts the files the generator writes, which it may remove when a later
+// generation no longer produces them.
+const generatedHeader = "// Code generated by zp."
+
+// ownedFiles returns the files below dir that a generation in mode owns: it writes them, and
+// removes those of an earlier generation that it did not write again. Only mode never touches
+// parser.go, api.go or types/types.go, which belong to the parser; the other modes own them and
+// internal/runtime. Other files of the directories are never touched.
+func ownedFiles(dir string, mode genRuntime, ts bool) []string {
+	var owned []string
+	if ts {
+		// A TypeScript parser is parser.ts and, with types, types.ts. The runtime is runtime.ts, which
+		// a generation owns unless it imports the runtime: that runtime is shared and belongs to
+		// whoever generated it with -runtime only.
+		if mode != runtimeOnly {
+			owned = append(owned, filepath.Join(dir, "parser.ts"), filepath.Join(dir, "types.ts"))
+		}
+		if mode != runtimeImport {
+			owned = append(owned, filepath.Join(dir, "runtime.ts"))
+		}
+		return owned
+	}
+	if mode != runtimeOnly {
+		owned = append(owned, filepath.Join(dir, "parser.go"), filepath.Join(dir, "api.go"), filepath.Join(dir, "types", "types.go"))
+	}
+	rt, _ := filepath.Glob(filepath.Join(dir, "internal", "runtime", "*.go"))
+	return append(owned, rt...)
+}
+
+// writeGenerated writes files below dir and removes the files of an earlier generation that the
+// mode owns (ownedFiles) and did not write again. Every check and read happens before the first
+// write: it refuses, leaving dir untouched, to replace or remove a file that was not generated by
+// zp, to write through a symbolic link at an owned path or directory, and to continue after a
+// file it cannot read.
+func writeGenerated(dir string, files []gen.File, mode genRuntime, ts bool) error {
+	generated := func(name string) (exists, ours bool, err error) {
+		data, err := os.ReadFile(name)
+		if errors.Is(err, os.ErrNotExist) {
+			return false, false, nil
+		}
+		if err != nil {
+			return false, false, err
+		}
+		return true, strings.HasPrefix(string(data), generatedHeader), nil
+	}
+	// noLink fails if name or a directory of it below dir is a symbolic link.
+	noLink := func(name string) error {
+		rel, err := filepath.Rel(dir, name)
+		if err != nil {
+			return err
+		}
+		cur := dir
+		for _, part := range strings.Split(rel, string(filepath.Separator)) {
+			cur = filepath.Join(cur, part)
+			info, err := os.Lstat(cur)
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			if info.Mode()&os.ModeSymlink != 0 {
+				return fmt.Errorf("%s is a symbolic link; zp does not write through symbolic links, replace it with a regular file or directory", cur)
+			}
+		}
+		return nil
+	}
+	keep := map[string]bool{}
+	for _, f := range files {
+		name := filepath.Join(dir, filepath.FromSlash(f.Path))
+		keep[name] = true
+		if err := noLink(name); err != nil {
+			return err
+		}
+		exists, ours, err := generated(name)
+		if err != nil {
+			return err
+		}
+		if exists && !ours {
+			return fmt.Errorf("%s exists and was not generated by zp (it lacks the %q header); move it away or choose another -o directory", name, generatedHeader)
+		}
+	}
+	var stale []string
+	for _, name := range ownedFiles(dir, mode, ts) {
+		if keep[name] {
+			continue
+		}
+		if err := noLink(name); err != nil {
+			return err
+		}
+		if exists, ours, err := generated(name); err != nil {
+			return err
+		} else if exists && ours {
+			stale = append(stale, name)
+		}
+	}
+	for _, f := range files {
+		name := filepath.Join(dir, filepath.FromSlash(f.Path))
+		if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(name, f.Content, 0o644); err != nil {
+			return err
+		}
+	}
+	for _, name := range stale {
+		if err := os.Remove(name); err != nil {
+			return err
+		}
+	}
+	// Directories that the removal emptied.
+	for _, sub := range []string{filepath.Join("internal", "runtime"), "internal", "types"} {
+		os.Remove(filepath.Join(dir, sub)) // fails, harmlessly, unless empty
+	}
+	return nil
+}
+
+// loadParser creates a parser from the grammar file at path, starting at
+// the rule start. A compiled grammar is loaded as is, without being
+// compiled again; if start is empty, it keeps the start rule saved in it,
+// and other grammars start at main.
+func loadParser(path, start string, flags compileFlags) (*zeroparse.Parser, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if zeroparse.IsCompiled(data) {
+		p, err := zeroparse.LoadParser(data)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", path, err)
+		}
+		if flags.sourceInfo && !p.SourceInfo() {
+			return nil, fmt.Errorf("%s: the compiled grammar has no source information; compile it with -source-info", path)
+		}
+		if flags.defaultValue && !p.DefaultValue() {
+			return nil, fmt.Errorf("%s: the compiled grammar does not produce default values; compile it with -default-value", path)
+		}
+		if start == "" {
+			return p, nil
+		}
+		return p.WithStart(start)
+	}
+	g, err := loadGrammar(path, "this command")
+	if err != nil {
+		return nil, err
+	}
+	p, err := zeroparse.Compile(g, start, flags.options()...)
+	if err != nil {
+		return nil, fileError(path, err)
+	}
+	return p, nil
+}
+
+func compileCmd(args []string) error {
+	fs := flag.NewFlagSet("compile", flag.ContinueOnError)
+	grammarPath := fs.String("g", "", "grammar file (.zp, .json, or a .zpc to save again in its own mode)")
+	start := fs.String("s", "", "start rule saved as the default (default: the one saved in a .zpc, otherwise the grammar's default start rule)")
+	output := fs.String("o", "", "output file (.zpc)")
+	modeName := fs.String("mode", "parse", "the parses the result serves: parse, recognize (parse -check) or document (Documents, trace, profile)")
+	sourceInfo := fs.Bool("source-info", false, "record the rule of each node and the names of captures in parse results")
+	defaultValue := fs.Bool("default-value", false, "drop value actions and declared rule types, so parses return the default node tree")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *grammarPath == "" || *output == "" {
+		return fmt.Errorf("-g and -o are required")
+	}
+	mode, err := zeroparse.ParseCompiledMode(*modeName)
+	if err != nil {
+		return fmt.Errorf("compile: %w", err)
+	}
+	p, err := loadParser(*grammarPath, *start, compileFlags{sourceInfo: *sourceInfo, defaultValue: *defaultValue})
+	if err != nil {
+		return err
+	}
+	if have, loaded := p.CompiledMode(); loaded && have != mode {
+		return fmt.Errorf("compile: %s: the compiled grammar is in %s mode and is saved again only in that mode: pass -mode %s, or compile the grammar source with -mode %s", *grammarPath, have, have, mode)
+	}
+	data, err := p.Marshal(mode)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(*output, data, 0o644)
+}

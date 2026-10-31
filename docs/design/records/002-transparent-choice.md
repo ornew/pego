@@ -8,7 +8,7 @@
 
 ## Abstract
 
-The current PEGO VM adheres to a strict "1 rule, 1 node" principle. This means a `ChoiceRule` (e.g., `rule r = a / b`) always produces a `ChoiceNode`. While this design ensures a predictable CST structure and simplifies the VM's core logic, it complicates AST construction. Grammar authors must write verbose actions to manually "unwrap" these intermediate `ChoiceNode`s to create a clean AST.
+The current ZeroParse VM adheres to a strict "1 rule, 1 node" principle. This means a `ChoiceRule` (e.g., `rule r = a / b`) always produces a `ChoiceNode`. While this design ensures a predictable CST structure and simplifies the VM's core logic, it complicates AST construction. Grammar authors must write verbose actions to manually "unwrap" these intermediate `ChoiceNode`s to create a clean AST.
 
 This document proposes a change to the default behavior of `ChoiceRule` to make it transparent. Instead of generating a `ChoiceNode`, a successful match in a `ChoiceRule` will leave the result of the matched alternative directly on the value stack. This change eliminates the intermediate `ChoiceNode` from the CST/AST, leading to cleaner grammar actions and more intuitive tree structures.
 
@@ -16,8 +16,8 @@ This document proposes a change to the default behavior of `ChoiceRule` to make 
 
 The primary goal is to eliminate intermediate `ChoiceNode`s from the final AST by default, without sacrificing the predictability of the core parsing logic.
 
-Consider the following PEGO grammar:
-```pego
+Consider the following ZeroParse grammar:
+```zp
 type A = { Children []Node }
 type B = {}
 type C = {}
@@ -105,4 +105,4 @@ This pattern can be applied by the compiler whenever a rule's action is simply t
 
 ## Conclusion
 
-By changing the default compilation strategy for `ChoiceRule` to be transparent, we eliminate intermediate `ChoiceNode`s from the AST. This simplifies grammar definitions and aligns the language more closely with the user's intent of building a clean AST. The challenge of variable numbers of children is elegantly handled by ensuring that consuming rules like `SeqRule` use a list-based collection strategy (`OpListStart`/`OpListEnd`). This approach requires no new opcodes and no new grammar syntax, relying instead on a smarter compilation of existing language features. It is a minimal, yet powerful, change that significantly improves the ergonomics of PEGO for AST construction.
+By changing the default compilation strategy for `ChoiceRule` to be transparent, we eliminate intermediate `ChoiceNode`s from the AST. This simplifies grammar definitions and aligns the language more closely with the user's intent of building a clean AST. The challenge of variable numbers of children is elegantly handled by ensuring that consuming rules like `SeqRule` use a list-based collection strategy (`OpListStart`/`OpListEnd`). This approach requires no new opcodes and no new grammar syntax, relying instead on a smarter compilation of existing language features. It is a minimal, yet powerful, change that significantly improves the ergonomics of ZeroParse for AST construction.

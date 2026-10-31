@@ -5,9 +5,9 @@ import (
 	"math"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/starttest"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/starttest"
 )
 
 // TestControls measures every control on every backend and checks its growth order. Controls
@@ -95,7 +95,7 @@ func TestControlClasses(t *testing.T) {
 	t.Parallel()
 	for _, c := range Controls() {
 		t.Run(c.Name, func(t *testing.T) {
-			g, err := pego.ParseGrammar(c.Source)
+			g, err := zeroparse.ParseGrammar(c.Source)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -6,7 +6,7 @@ the errors that make a grammar invalid.
 
 ## Structure
 
-A grammar file, normally written as a `.pego` file, consists of an optional
+A grammar file, normally written as a `.zp` file, consists of an optional
 package clause followed by a list of Declaration Statements in any order: Type
 Declaration Statements `type ...`, Variable Declaration Statements `var ...` and
 Rule Declaration Statements `rule ...`.
@@ -14,7 +14,7 @@ Type Declaration Statements use Type Expressions; Rule Definitions combine a
 Rule Expression with an optional Value Action containing an Action Expression.
 An Operators Rule is a specialized Rule Definition.
 
-```pego
+```zp
 package example
 type Number = node[string]
 @start
@@ -118,7 +118,7 @@ comment on a line when a token follows them on that line, those between the
 tokens of a rule expression and those inside the lists whose layout is kept
 apart, such as attribute arguments.
 
-The canonical `pego.pego` grammar and its source adapter assign the same spans
+The canonical `zeroparse.zp` grammar and its source adapter assign the same spans
 and owners as the hand-written frontend to every source-bearing node: the
 package clause, type and rule declarations, struct fields, operators lines and
 constructor field initializers, and the operands, member markers and closing
@@ -318,7 +318,7 @@ A trailing comma is not part of the normalized grammar: it is kept in the
 `ListConstructor`, `Call` and `Attribute`, which JSON omits, so a grammar decoded
 from JSON formats every list on one line.
 
-`pego.ParseGrammar` returns this source-preserving AST. Compilation removes
+`zeroparse.ParseGrammar` returns this source-preserving AST. Compilation removes
 source-only type and term groups from the executable grammar; consequently,
 `Parser.Grammar()` exposes the normalized executable form rather than those
 grouping nodes.
@@ -336,7 +336,7 @@ A Variable Declaration Statement `var ...` declares a parser variable: `var
 <name> [<type>] [= <value>]`. At least one of the type and the value is
 required.
 
-```pego
+```zp
 var depth int = 0
 var mode string
 var seen = false
@@ -400,7 +400,7 @@ separate the last attribute from `rule`. Comments may occur between the
 attributes and before `rule`. The arguments follow the attribute argument
 syntax of [Attributes](attributes.md).
 
-```pego
+```zp
 // The rule where parsing begins.
 @start // a comment may follow an attribute
 rule main = item*
@@ -437,7 +437,7 @@ of them, and the others are called only from Rule Expressions. One start rule
 is the **default start rule**, used when parsing names no rule: the only start
 rule, or the one marked `@start(default)`.
 
-```pego
+```zp
 @start(default)
 rule file = stmt*
 @start
@@ -476,30 +476,30 @@ then, if there are none, the type errors, and then, if there are none, the
 start rule errors. This file has three definition
 and reference errors:
 
-```pego
+```zp
 rule main = item $$
 rule item = k:"a" => $v
 rule other = unknown
 rule main = "b"
 ```
 
-Parsing with it (`pego parse -g bad.pego -i a`) reports:
+Parsing with it (`zp parse -g bad.zp -i a`) reports:
 
 ```text
-pego: bad.pego:4:1: rule main is already defined
-bad.pego:2:22: undefined capture $v
-bad.pego:3:14: undefined rule unknown
+zp: bad.zp:4:1: rule main is already defined
+bad.zp:2:22: undefined capture $v
+bad.zp:3:14: undefined rule unknown
 ```
 
 ## Grammar Representations
 
-Besides `.pego` source files, a grammar can be represented as JSON, which is
+Besides `.zp` source files, a grammar can be represented as JSON, which is
 the abstract syntax tree of the grammar (the public package `grammar`), and as
-a compiled grammar file (`.pegoc`), which holds the bytecode of one mode and
+a compiled grammar file (`.zpc`), which holds the bytecode of one mode and
 no tree (see [Compiled Grammars](../runtime/compiled-grammars.md) and
 [File Format](../bytecode/README.md#file-format)). Source and JSON describe the same
-grammar, and a compiled grammar runs it. The `pego convert` command converts
-between source and JSON, and `pego fmt` formats `.pego` source files, keeping
+grammar, and a compiled grammar runs it. The `zp convert` command converts
+between source and JSON, and `zp fmt` formats `.zp` source files, keeping
 comments.
 
 Direct grammar JSON can preserve normalized source positions and comment
@@ -619,7 +619,7 @@ cooperative in every case, and the AST MUST NOT be mutated while these functions
 
 ### Syntax Projection
 
-`grammar.FormatSyntax(g)` (command line: `pego fmt -syntax`) prints the recognition
+`grammar.FormatSyntax(g)` (command line: `zp fmt -syntax`) prints the recognition
 syntax of a grammar and leaves the AST unchanged. It omits Type Declaration
 Statements, result types, Value Actions, metadata attributes, captures and `#recover`
 wrappers; it removes groups whose parentheses are not required for precedence or

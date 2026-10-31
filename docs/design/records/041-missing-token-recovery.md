@@ -13,13 +13,13 @@ the caller enables insertion. Existing consuming `#recover(skip=...)` retains it
 The nonempty-literal syntax and Closure whole-input option below define the initial slice.
 The remaining backend and generated-type APIs in this record are proposals:
 
-```pego
+```zp
 rule main = name ";" #missing $$
 rule name = [a-z]+
 ```
 
 ```go
-node, err := parser.Parse("name", pego.WithMissingTokens(16))
+node, err := parser.Parse("name", zeroparse.WithMissingTokens(16))
 ```
 
 Here the missing semicolon is represented at the actual EOF position and accompanies a recovered diagnostic.

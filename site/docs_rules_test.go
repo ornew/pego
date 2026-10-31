@@ -39,7 +39,7 @@ var (
 	autolinkRe     = regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9+.-]*:[^<>\s]+)>`)
 	htmlHrefRe     = regexp.MustCompile(`(?i)\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>` + "`" + `]+))`)
 	fenceOpenRe    = regexp.MustCompile("^\\s*(`{3,}|~{3,})")
-	githubBlobRe   = regexp.MustCompile(`(?i)^https://github\.com/ornew/pego/(?:blob|tree)/[^/]+/(.*)$`)
+	githubBlobRe   = regexp.MustCompile(`(?i)^https://github\.com/ornew/zeroparse/(?:blob|tree)/[^/]+/(.*)$`)
 	siteURLRe      = regexp.MustCompile(`(?i)^https?://zeroparse\.dev(/[^?#]*)?`)
 	urlSchemeRe    = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 	opaqueSchemeRe = regexp.MustCompile(`(?i)^(?:mailto|tel|sms|data|javascript|urn):`)
@@ -431,13 +431,13 @@ func TestLinkAllowed(t *testing.T) {
 	for _, c := range []struct{ rel, dest, want string }{
 		{"spec/a.md", "../docs/guide/x.md#y", "docs/guide/x.md"},
 		{"docs/guide/a.md", "/spec/language/types.md", "spec/language/types.md"},
-		{"docs/guide/a.md", "https://github.com/ornew/pego/blob/main/docs/guide/editor-support.md", "docs/guide/editor-support.md"},
+		{"docs/guide/a.md", "https://github.com/ornew/zeroparse/blob/main/docs/guide/editor-support.md", "docs/guide/editor-support.md"},
 		{"docs/guide/a.md", "b%20c.md", "docs/guide/b c.md"},
 		{"docs/guide/a.md", "../tutorial/", "docs/tutorial"},
 		{"docs/guide/a.md", "../cookbook", "docs/cookbook"},
 		{"docs/guide/a.md", "https://zeroparse.dev/docs/tutorial/getting-started/", "docs/tutorial/getting-started"},
 		{"spec/a.md", "https://zeroparse.dev/", "README.md"},
-		{"spec/a.md", "<../examples/x y.pego>", "examples/x y.pego"},
+		{"spec/a.md", "<../examples/x y.zp>", "examples/x y.zp"},
 	} {
 		if got, ok := linkTarget(c.rel, c.dest); !ok || got != c.want {
 			t.Errorf("linkTarget(%q, %q) = %q, %v, want %q", c.rel, c.dest, got, ok, c.want)
@@ -456,7 +456,7 @@ func TestLinkAllowed(t *testing.T) {
 			t.Errorf("%q: want external and allowed", dest)
 		}
 	}
-	if _, ok := linkTarget("spec/a.md", "HTTPS://GITHUB.COM/ornew/pego/blob/main/pego.go"); !ok {
+	if _, ok := linkTarget("spec/a.md", "HTTPS://GITHUB.COM/ornew/zeroparse/blob/main/zeroparse.go"); !ok {
 		t.Error("an upper-case GitHub URL did not resolve to a repository path")
 	}
 }
@@ -475,8 +475,8 @@ func TestDirectoryAndSiteLinkKinds(t *testing.T) {
 		{"spec", kindSpec},
 		{"spec/types", kindSpec},
 		{"spec/language/syntax.md", kindSpec},
-		{"spec/language/testdata/x.pego", kindOther},
-		{"examples/x.pego", kindOther},
+		{"spec/language/testdata/x.zp", kindOther},
+		{"examples/x.zp", kindOther},
 		{"README.md", kindProject},
 		{"AGENTS.md", kindProject},
 		{"CONTRIBUTING.md", kindProject},
@@ -493,7 +493,7 @@ func TestDirectoryAndSiteLinkKinds(t *testing.T) {
 			t.Errorf("%s may link to a directory link of the tutorial", from)
 		}
 	}
-	rp, _ := linkTarget("spec/a.md", "https://github.com/ornew/pego/blob/main/pego.pego")
+	rp, _ := linkTarget("spec/a.md", "https://github.com/ornew/zeroparse/blob/main/zeroparse.zp")
 	if linkAllowed(kindSpec, docKind(rp)) {
 		t.Error("the specification may link to a source file on GitHub")
 	}

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/sample"
+	"github.com/ornew/zeroparse/sample"
 )
 
 // The generator works on the rules the parser runs, where an inline action is an anonymous rule, but

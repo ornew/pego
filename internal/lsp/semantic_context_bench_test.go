@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-const semanticURI = "file:///semantic.pego"
+const semanticURI = "file:///semantic.zp"
 
 var semanticBenchmarkResult any
 
@@ -42,7 +42,7 @@ type semanticSourceCase struct{ name, text string }
 func semanticRepresentativeSources(tb testing.TB) []semanticSourceCase {
 	tb.Helper()
 	var sources []semanticSourceCase
-	for _, input := range []struct{ name, path string }{{"json", "../../parsers/json/json.pego"}, {"source-grammar", "../../pego.pego"}} {
+	for _, input := range []struct{ name, path string }{{"json", "../../parsers/json/json.zp"}, {"source-grammar", "../../zeroparse.zp"}} {
 		data, err := os.ReadFile(input.path)
 		if err != nil {
 			tb.Fatal(err)
@@ -119,7 +119,7 @@ func TestSemanticResponseFingerprints(t *testing.T) {
 		if name == "missing-params" {
 			msg.Params = nil
 		} else {
-			msg.Params = json.RawMessage(strings.ReplaceAll(string(msg.Params), semanticURI, "file:///unknown.pego"))
+			msg.Params = json.RawMessage(strings.ReplaceAll(string(msg.Params), semanticURI, "file:///unknown.zp"))
 		}
 		value, err := semanticServer(a, nil).request(msg)
 		t.Logf("response %s %x", name, sha256.Sum256(occurrenceResponseJSON(t, value, err)))

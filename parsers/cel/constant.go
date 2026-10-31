@@ -1,6 +1,6 @@
 package cel
 
-import "github.com/ornew/pego/parsers/cel/types"
+import "github.com/ornew/zeroparse/parsers/cel/types"
 
 // Constant returns the Go value of an expression that is a literal, or a list or a map of literals, in parentheses
 // or not: an int64, uint64, float64, string, []byte, bool or nil (null), a []any for a list, and a map[any]any for a

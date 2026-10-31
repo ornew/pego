@@ -8,12 +8,12 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/parsers/typescript"
-	"github.com/ornew/pego/parsers/typescript/types"
+	"github.com/ornew/zeroparse/parsers/typescript"
+	"github.com/ornew/zeroparse/parsers/typescript/types"
 )
 
 // TestGolden checks the generated parser against the golden files of testdata, which the tests of
-// github.com/ornew/pego/parsers check every backend of the engine against. An input starting with NUL is
+// github.com/ornew/zeroparse/parsers check every backend of the engine against. An input starting with NUL is
 // parsed as a .tsx file (see ParseTSX).
 func TestGolden(t *testing.T) {
 	inputs, _ := filepath.Glob("testdata/*.txt")

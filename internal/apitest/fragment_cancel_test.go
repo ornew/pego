@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package apitest_test
 
@@ -7,7 +7,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func TestParsePrefixCancellation(t *testing.T) {
@@ -15,14 +15,14 @@ func TestParsePrefixCancellation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, b := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+	for _, b := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		r, err := p.ParsePrefix("main", "abctail", pego.WithBackend(b), pego.WithContext(ctx))
+		r, err := p.ParsePrefix("main", "abctail", zeroparse.WithBackend(b), zeroparse.WithContext(ctx))
 		if !errors.Is(err, context.Canceled) || r.Node != nil || r.Consumed != 0 || r.ConsumedBytes != 0 {
 			t.Fatalf("cancelled: %+v %v", r, err)
 		}
-		r, err = p.ParsePrefix("main", "abctail", pego.WithBackend(b))
+		r, err = p.ParsePrefix("main", "abctail", zeroparse.WithBackend(b))
 		if err != nil || r.ConsumedBytes != 3 {
 			t.Fatalf("retry: %+v %v", r, err)
 		}

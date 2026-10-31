@@ -28,9 +28,9 @@ func main() {
 			return string(handle(method, []byte(req)))
 		}))
 	}
-	js.Global().Set("pego", api)
+	js.Global().Set("zp", api)
 	// Tell a loader that is waiting for the API that it is ready.
-	if ready := js.Global().Get("pegoReady"); ready.Type() == js.TypeFunction {
+	if ready := js.Global().Get("zpReady"); ready.Type() == js.TypeFunction {
 		ready.Invoke()
 	}
 	select {}

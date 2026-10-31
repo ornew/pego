@@ -1,4 +1,4 @@
-module github.com/ornew/pego/site
+module github.com/ornew/zeroparse/site
 
 go 1.27.1
 

@@ -4,15 +4,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/bytecode"
 )
 
 // BenchmarkBytecodeLowering isolates construction of the module from an
 // already analyzed grammar; source parsing, AST checking and VM setup are out.
 func BenchmarkBytecodeLowering(b *testing.B) {
 	for _, c := range []struct{ name, path string }{
-		{"JSON", "../../parsers/json/json.pego"},
-		{"Minilang", "../../examples/minilang/minilang.pego"},
+		{"JSON", "../../parsers/json/json.zp"},
+		{"Minilang", "../../examples/minilang/minilang.zp"},
 	} {
 		b.Run(c.name, func(b *testing.B) {
 			source, err := os.ReadFile(c.path)

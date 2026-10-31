@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/schema"
 )
 
 var outputSchemaExportSink *schema.Output

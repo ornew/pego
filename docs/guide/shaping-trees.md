@@ -1,6 +1,6 @@
 # Shaping Trees
 
-A PEGO grammar does two jobs: it decides which input is valid, and it decides what **tree** you get back. This guide is
+A ZeroParse grammar does two jobs: it decides which input is valid, and it decides what **tree** you get back. This guide is
 about the tree that every grammar produces without any extra work and how to shape it with captures, atomic (`#atomic`), discard (`-`) and
 hidden rules (`_name`). [Declaring Types](types.md) describes the typed nodes of a grammar, and
 [Actions](actions.md) shows how to replace the tree with a typed AST built by [actions](../../spec/language/actions.md).
@@ -11,21 +11,21 @@ is on how and why to use each feature. For operator expressions (`foldl` chains
 versus Operators Rule Declaration Statements), see the companion guide [Operators Rule](operators-rule.md).
 
 Every grammar and output below was produced by running it. To follow along, put each grammar in the file named on its
-first line and run the command shown, using either the installed tool or `go run ./cmd/pego` from a checkout:
+first line and run the command shown, using either the installed tool or `go run ./cmd/zp` from a checkout:
 
 ```bash
-go install github.com/ornew/pego/cmd/pego@latest
+go install github.com/ornew/zeroparse/cmd/zp@latest
 ```
 
-`pego parse -g <grammar> -s <rule> -i '<input>' -f sexpr` parses the input with the start rule `<rule>` (default
+`zp parse -g <grammar> -s <rule> -i '<input>' -f sexpr` parses the input with the start rule `<rule>` (default
 `main`), which must match the whole input, and prints the tree.
 
 ## Reading a Tree
 
 Start with the smallest grammar that has some structure:
 
-```pego
-// assign.pego
+```zp
+// assign.zp
 @start
 rule main = ^^ assign $$
 rule assign = name ws "=" ws value ";"
@@ -36,7 +36,7 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g assign.pego -f sexpr -i 'ab = 12;'
+zp parse -g assign.zp -f sexpr -i 'ab = 12;'
 ```
 
 ```text
@@ -61,10 +61,10 @@ digits. `assign` is a sequence, so a tuple of its six valued elements; and `main
 `^^` and `$$` have no value and the sequence therefore has a single element.
 
 Source information adds the rule that produced each node and the names of the captures. It is off by default, because
-most programs do not need it; ask for it with `-source-info` (`pego.WithSourceInfo()` in Go):
+most programs do not need it; ask for it with `-source-info` (`zeroparse.WithSourceInfo()` in Go):
 
 ```bash
-pego parse -g assign.pego -f sexpr -source-info -i 'ab = 12;'
+zp parse -g assign.zp -f sexpr -source-info -i 'ab = 12;'
 ```
 
 ```text
@@ -76,15 +76,15 @@ a tuple that come from literals, like the `"="` above, are not.
 
 The default JSON format carries the same information and adds positions. Here is a rule with an optional element:
 
-```pego
-// optional.pego
+```zp
+// optional.zp
 @start
 rule main = name ("," name)?
 rule name = [a-z]+ #atomic
 ```
 
 ```bash
-pego parse -g optional.pego -i 'a'
+zp parse -g optional.zp -i 'a'
 ```
 
 ```text
@@ -134,8 +134,8 @@ Three consequences are worth knowing before you write any action.
 **One value per rule, and rule names.** A rule produces exactly one value. With source information, a node that a rule
 creates *in its own body* is labeled with the rule's name; a node that comes from another rule keeps that rule's label.
 
-```pego
-// cst.pego
+```zp
+// cst.zp
 @start(default)
 rule seq = "y" "z"
 @start
@@ -152,13 +152,13 @@ rule cap = k:"x" "y"
 ```
 
 ```bash
-pego parse -g cst.pego -s seq -f sexpr -source-info -i 'yz'
-pego parse -g cst.pego -s alt -f sexpr -source-info -i 'x'
-pego parse -g cst.pego -s alt -f sexpr -source-info -i 'yz'
-pego parse -g cst.pego -s same -f sexpr -source-info -i 'x'
-pego parse -g cst.pego -s rep -f sexpr -source-info -i 'xxx'
-pego parse -g cst.pego -s opt -f sexpr -source-info -i 'x'
-pego parse -g cst.pego -s cap -f sexpr -source-info -i 'xy'
+zp parse -g cst.zp -s seq -f sexpr -source-info -i 'yz'
+zp parse -g cst.zp -s alt -f sexpr -source-info -i 'x'
+zp parse -g cst.zp -s alt -f sexpr -source-info -i 'yz'
+zp parse -g cst.zp -s same -f sexpr -source-info -i 'x'
+zp parse -g cst.zp -s rep -f sexpr -source-info -i 'xxx'
+zp parse -g cst.zp -s opt -f sexpr -source-info -i 'x'
+zp parse -g cst.zp -s cap -f sexpr -source-info -i 'xy'
 ```
 
 ```text
@@ -190,8 +190,8 @@ start rule needs no `$$` for that. What it does need is to consume trailing whit
 tokens: a number is one node, not a list of digits. `-a` matches `a` and produces nothing. Use it for input the syntax
 needs but the tree does not:
 
-```pego
-// shape.pego
+```zp
+// shape.zp
 @start
 rule main = ^^ assign $$
 rule assign = name -ws -"=" -ws value -";"
@@ -202,7 +202,7 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g shape.pego -f sexpr -source-info -i 'ab = 12;'
+zp parse -g shape.zp -f sexpr -source-info -i 'ab = 12;'
 ```
 
 ```text
@@ -220,8 +220,8 @@ A capture `label:a` gives the value of `a` a name that actions and predicates ca
 a capture does not change the value of the rule; it only names an element of it, which source information shows as
 `label:` before the element. A capture removes nothing from the tuple.
 
-```pego
-// capture.pego
+```zp
+// capture.zp
 @start(default)
 rule pair = k:name -ws -"=" -ws v:value -";"
 rule name = [a-z]+ #atomic
@@ -235,9 +235,9 @@ rule list2 = name (-"," n:name)*
 ```
 
 ```bash
-pego parse -g capture.pego -s pair -f sexpr -source-info -i 'ab = 12;'
-pego parse -g capture.pego -s list -f sexpr -source-info -i 'a,b,c'
-pego parse -g capture.pego -s list2 -f sexpr -source-info -i 'a,b,c'
+zp parse -g capture.zp -s pair -f sexpr -source-info -i 'ab = 12;'
+zp parse -g capture.zp -s list -f sexpr -source-info -i 'a,b,c'
+zp parse -g capture.zp -s list2 -f sexpr -source-info -i 'a,b,c'
 ```
 
 ```text
@@ -266,8 +266,8 @@ visible rule makes a node, so a call of it nests its elements one level deeper. 
 no node of its own: its elements are spliced into the sequence that calls it, as if its expression were written there as
 a group.
 
-```pego
-// hidden.pego
+```zp
+// hidden.zp
 @start(default)
 rule shown = "(" items ")"
 rule items = [a-z] ("," [a-z])*
@@ -277,8 +277,8 @@ rule _items = [a-z] ("," [a-z])*
 ```
 
 ```bash
-pego parse -g hidden.pego -s shown -f sexpr -source-info -i '(a,b,c)'
-pego parse -g hidden.pego -s hidden -f sexpr -source-info -i '(a,b,c)'
+zp parse -g hidden.zp -s shown -f sexpr -source-info -i '(a,b,c)'
+zp parse -g hidden.zp -s hidden -f sexpr -source-info -i '(a,b,c)'
 ```
 
 ```text
@@ -297,7 +297,7 @@ describes the hidden rules that inline actions create.
 A start rule such as `main = ^^ expr $$` wraps the real result in a tuple. When you build an AST, return the value you
 want instead:
 
-```pego
+```zp
 @start
 rule main Expr = e:expr $$ => $e
 ```
@@ -306,16 +306,16 @@ This is the idiom of the calculator example.
 
 ## Using the Tree From Go
 
-`Parser.Parse` returns a `*pego.Node`, which is opaque: `Kind()` says whether it is a string node, a tuple, a list, an
+`Parser.Parse` returns a `*zeroparse.Node`, which is opaque: `Kind()` says whether it is a string node, a tuple, a list, an
 error value or a struct, and the methods that fit the kind read it: `Start()` and `End()`, `Text()`, `Len()`, `Elem(i)`
 and `Elems()`, `Field(name)` and `Fields()` for the fields of a struct, and `Value()`. `Rule()` and the capture names are
-there only if the parser was compiled with `pego.WithSourceInfo()`. Reading values is covered in
+there only if the parser was compiled with `zeroparse.WithSourceInfo()`. Reading values is covered in
 [Reading Trees](reading-trees.md), walking the tree and selecting nodes by position in [Walking
 Trees](walking-trees.md), and the node model is defined in [Nodes and Values](../../spec/runtime/nodes.md).
 
 ## Performance Guidelines
 
-PEGO builds values only where something can observe them. To reduce allocations, help the engine identify what your grammar does not need:
+ZeroParse builds values only where something can observe them. To reduce allocations, help the engine identify what your grammar does not need:
 
 1. **Discard trivia inside captured expressions** with `-x`: `rest:(-ws -"," -ws v:value)*`. The engine cannot drop it
    automatically, because a captured value exposes its whole subtree.
@@ -335,7 +335,7 @@ allocated, measured around a single `Parse` call with `runtime.MemStats`:
 
 These choices matter most when a grammar captures many repeated values. Measure your own input and inspect the resulting tree to ensure that discarding text does not remove information your application needs.
 
-If you only need to know whether the input is valid, use `pego parse -check` (`pego.RecognizeOnly()`): it builds no
+If you only need to know whether the input is valid, use `zp parse -check` (`zeroparse.RecognizeOnly()`): it builds no
 values and runs no actions.
 
 ## Troubleshooting

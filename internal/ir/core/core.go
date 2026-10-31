@@ -1,4 +1,4 @@
-// Package core is the Core IR of PEGO: typed parsing expressions whose observable effects are
+// Package core is the Core IR of ZeroParse: typed parsing expressions whose observable effects are
 // explicit, built once from a checked grammar (design 062). Optimizations are rewrites of Core IR
 // with stated preconditions, and each target lowers from it.
 //

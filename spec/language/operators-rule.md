@@ -9,7 +9,7 @@ An Operators Rule is written with the `#operators` pragma, which stands where an
 is valid only as the whole body of a rule: `rule e = #operators { ... }`. Anywhere else it is a syntax
 error. The word `operators` has no special meaning and is an ordinary identifier.
 
-```pego
+```zp
 type Num = node[string]
 type Ident = node[string]
 type Comma = { L Expr; R Expr }
@@ -140,7 +140,7 @@ level-restricted call must name an existing named level.
 An operator part can consist of several elements. The following declarations
 appear inside `level name { ... }` blocks:
 
-```pego
+```zp
 infix right "?" then:expr ":" // conditional    lhs ? then : rhs
 postfix "[" i:expr "]" // index          lhs[i]
 prefix "if" c:expr "then" t:expr "else" // if expression  if c then t else rhs
@@ -201,7 +201,7 @@ more tightly than the prefix. Level restriction is not a filter over every
 operator in the resulting tree. Calls written inside operator parts or operands
 also use their own level restrictions.
 
-```pego
+```zp
 // Function arguments do not parse the comma operator (only assignment and tighter).
 rule args = first:level(expr, assignment) rest:(-ws "," x:level(expr, assignment))*
 ```
@@ -253,7 +253,7 @@ inside one of its own operand or operator parts: in
 that inner call, so each parenthesized expression is wrapped by the action of
 its own call.
 
-```pego
+```zp
 type Expr = { Root _ }
 rule e Expr = #operators {
     skip " "*
@@ -350,7 +350,7 @@ applies to `N`, as an ordinary rule converts its value (see
   parse.
 - The converted node has no rule name, as for an ordinary rule.
 
-```pego
+```zp
 type Expr = node[_]
 rule expr Expr = #operators {
     operand num
@@ -385,7 +385,7 @@ operator is not wrapped: the number of levels does not make the tree deeper.
 The value of an `operand` item without an action appears unchanged; with source
 information, a node that it creates is labeled with the name of the rule.
 
-```pego
+```zp
 rule e = #operators {
     operand [0-9]+ #atomic
     level additive { infix left "+" }
@@ -394,7 +394,7 @@ rule e = #operators {
 ```
 
 With this rule, `1+2*3` produces the following tree (in the S-expression
-format of `pego parse -f sexpr -source-info`, where `@e` is the rule name):
+format of `zp parse -f sexpr -source-info`, where `@e` is the rule name):
 
 ```text
 (lhs:"1"@e op:"+" rhs:(lhs:"2"@e op:"*" rhs:"3"@e)@e)@e

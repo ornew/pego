@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/starttest"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/starttest"
 )
 
 func analysisChain(n int, leafFirst bool) string {
@@ -84,7 +84,7 @@ func TestAnalysisDependencyChains(t *testing.T) {
 	for _, n := range []int{128, 2048} {
 		for _, reverse := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%d/leaf-first=%t", n, reverse), func(t *testing.T) {
-				g, err := pego.ParseGrammar(analysisChain(n, reverse))
+				g, err := zeroparse.ParseGrammar(analysisChain(n, reverse))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -99,7 +99,7 @@ func TestAnalysisDependencyChains(t *testing.T) {
 					}
 				}
 				if n == 128 {
-					p, err := pego.Compile(starttest.MarkAll(g), "main")
+					p, err := zeroparse.Compile(starttest.MarkAll(g), "main")
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -143,7 +143,7 @@ rule expr = #operators {
 }`
 
 func TestAnalysisDependencyCyclesAndCoverage(t *testing.T) {
-	g, err := pego.ParseGrammar(analysisMixed)
+	g, err := zeroparse.ParseGrammar(analysisMixed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +174,7 @@ func BenchmarkSampleAnalysis(b *testing.B) {
 	for _, n := range []int{128, 512, 1024, 2048} {
 		for _, reverse := range []bool{false, true} {
 			b.Run(fmt.Sprintf("chain/%d/leaf-first=%t", n, reverse), func(b *testing.B) {
-				g, err := pego.ParseGrammar(analysisChain(n, reverse))
+				g, err := zeroparse.ParseGrammar(analysisChain(n, reverse))
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -188,7 +188,7 @@ func BenchmarkSampleAnalysis(b *testing.B) {
 	}
 	for name, src := range map[string]string{"mixed": analysisMixed, "small": `rule main = ("a" / "b")* $$`} {
 		b.Run(name, func(b *testing.B) {
-			g, err := pego.ParseGrammar(src)
+			g, err := zeroparse.ParseGrammar(src)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -201,15 +201,15 @@ func BenchmarkSampleAnalysis(b *testing.B) {
 	}
 	for _, name := range []string{"calculator", "minilang", "outline"} {
 		b.Run(name, func(b *testing.B) {
-			file := "../examples/" + name + "/" + name + ".pego"
+			file := "../examples/" + name + "/" + name + ".zp"
 			if name == "calculator" {
-				file = "../examples/calculator/calc.pego"
+				file = "../examples/calculator/calc.zp"
 			}
 			src, err := os.ReadFile(file)
 			if err != nil {
 				b.Fatal(err)
 			}
-			g, err := pego.ParseGrammar(string(src))
+			g, err := zeroparse.ParseGrammar(string(src))
 			if err != nil {
 				b.Fatal(err)
 			}

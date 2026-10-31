@@ -11,8 +11,8 @@ import (
 	"math"
 	"math/bits"
 
-	"github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/ops"
+	"github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/ops"
 )
 
 // Config sets up the components of a model.

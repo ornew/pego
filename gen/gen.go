@@ -1,5 +1,5 @@
-// Package gen generates the source code of parsers from PEGO grammars: Go packages and TypeScript
-// modules. A generated parser parses without the grammar and without the pego package; it needs
+// Package gen generates the source code of parsers from ZeroParse grammars: Go packages and TypeScript
+// modules. A generated parser parses without the grammar and without the zeroparse package; it needs
 // only the runtime, which it imports or carries a copy of (RuntimeMode).
 //
 // Go and TypeScript are configurations: a value holds the settings of one generation, and its
@@ -11,12 +11,12 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gen/tsgen"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gen/tsgen"
 )
 
 // Generator generates the source code of parsers in one language.
@@ -47,7 +47,7 @@ const (
 	// depends on nothing else: the package internal/runtime in Go, runtime.ts in TypeScript. It is
 	// the default. GenerateRuntime refreshes the copy without regenerating the parser.
 	RuntimeEmbed RuntimeMode = iota
-	// RuntimeImport imports the runtime: github.com/ornew/pego/runtime in Go, the module of
+	// RuntimeImport imports the runtime: github.com/ornew/zeroparse/runtime in Go, the module of
 	// TypeScript.RuntimeModule in TypeScript.
 	RuntimeImport
 )
@@ -90,14 +90,14 @@ type Go struct {
 	// start rule and ParseRuleAST for named rules. The types are declared in the package
 	// Module/types, so Module is required.
 	Types bool
-	// DefaultValue makes the generated parser produce default values, as pego.WithDefaultValue
+	// DefaultValue makes the generated parser produce default values, as zeroparse.WithDefaultValue
 	// does for a compiled parser. It cannot be combined with Types.
 	DefaultValue bool
-	// SourceInfo makes the generated parser record source information, as pego.WithSourceInfo
+	// SourceInfo makes the generated parser record source information, as zeroparse.WithSourceInfo
 	// does for a compiled parser.
 	SourceInfo bool
 	// Expectations makes the generated parser record what a syntax error expects: the expectations
-	// at the farthest failure and the messages of @error, as pego.WithExpectations does for a
+	// at the farthest failure and the messages of @error, as zeroparse.WithExpectations does for a
 	// compiled parser. Without it the parser keeps no table of expectations, and a syntax error
 	// reports the farthest failure position with an empty Expected list and no Messages.
 	Expectations bool
@@ -112,7 +112,7 @@ type Go struct {
 	// budget controls.
 	BudgetControls bool
 	// Recognize also generates a function Recognize, which checks the input against the start
-	// rule without building a tree, like a parse with pego.RecognizeOnly.
+	// rule without building a tree, like a parse with zeroparse.RecognizeOnly.
 	Recognize bool
 	// MaxDepth is the generated parser's default nested rule-call limit. Zero selects 100,000;
 	// negative values fail generation. Individual invocations may override it.
@@ -123,7 +123,7 @@ type Go struct {
 	Document bool
 	// Stream generates ParseStream, which reads the input from an io.Reader and passes each
 	// committed element of the start rule's #stream repetition to a callback, as
-	// pego.Parser.ParseStream does. The start rule must have a #stream repetition. With Types it
+	// zeroparse.Parser.ParseStream does. The start rule must have a #stream repetition. With Types it
 	// also generates ParseStreamAST and IterateAST, which pass the typed value of each element.
 	Stream bool
 	// TypedOnly generates only the typed entry points of a parser: ParseAST and its siblings, and
@@ -179,7 +179,7 @@ type TypeScript struct {
 	// RuntimeImport needs RuntimeModule.
 	Runtime RuntimeMode
 	// RuntimeModule is the module specifier from which a parser generated with RuntimeImport
-	// imports its runtime, such as "@scope/pego-runtime" or "../shared/runtime.ts". The runtime
+	// imports its runtime, such as "@scope/zp-runtime" or "../shared/runtime.ts". The runtime
 	// module is the runtime.ts of GenerateRuntime (or of any parser generated with RuntimeEmbed).
 	// It is an error with another mode.
 	RuntimeModule string
@@ -187,14 +187,14 @@ type TypeScript struct {
 	// parseASTWithOptions, which convert the completed Node result into plain objects and arrays.
 	// Declared aliases preserve the target value type.
 	Types bool
-	// DefaultValue makes the generated parser produce default values, as pego.WithDefaultValue
+	// DefaultValue makes the generated parser produce default values, as zeroparse.WithDefaultValue
 	// does for a compiled parser. It cannot be combined with Types.
 	DefaultValue bool
-	// SourceInfo makes the generated parser record source information, as pego.WithSourceInfo
+	// SourceInfo makes the generated parser record source information, as zeroparse.WithSourceInfo
 	// does for a compiled parser.
 	SourceInfo bool
 	// Expectations makes the generated parser record what a syntax error expects: the expectations
-	// at the farthest failure and the messages of @error, as pego.WithExpectations does for a
+	// at the farthest failure and the messages of @error, as zeroparse.WithExpectations does for a
 	// compiled parser. Without it the parser keeps no table of expectations, and a syntax error
 	// reports the farthest failure position with an empty expected list and no messages.
 	Expectations bool
@@ -208,7 +208,7 @@ type TypeScript struct {
 	// without budget controls.
 	BudgetControls bool
 	// Recognize also generates recognize, which checks the input against the start rule without
-	// building a tree, like a parse with pego.RecognizeOnly.
+	// building a tree, like a parse with zeroparse.RecognizeOnly.
 	Recognize bool
 	// MaxDepth is the generated parser's default nested rule-call limit. Zero selects 100,000;
 	// negative values and values that are not exact JavaScript integers fail generation.
@@ -217,7 +217,7 @@ type TypeScript struct {
 }
 
 // Generate generates the files of a TypeScript parser for g: its parse(input) parses from the
-// rule start (see Generator) and returns the same trees and errors as a pego.Parser. The files
+// rule start (see Generator) and returns the same trees and errors as a zeroparse.Parser. The files
 // are
 //
 //   - runtime.ts, the runtime, which does not depend on the grammar (with RuntimeEmbed),
@@ -273,7 +273,7 @@ func compileForGenerator(g *grammar.Grammar, opts compile.Options) (*compile.Pro
 
 // runtimeFiles holds a copy of the files of the runtime package, which Go.Generate copies into
 // packages generated with RuntimeEmbed and reads to qualify the names generated code uses from it.
-// The copy lives in this package rather than in package pego so that only programs that generate
+// The copy lives in this package rather than in package zeroparse so that only programs that generate
 // code carry it; TestRuntimeCopy keeps it equal to the runtime, and go generate refreshes it.
 //
 //go:generate go run copy_runtime.go

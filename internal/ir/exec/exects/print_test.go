@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	ir "github.com/ornew/pego/internal/ir/exec"
-	"github.com/ornew/pego/internal/ir/exec/printtest"
+	ir "github.com/ornew/zeroparse/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec/printtest"
 )
 
 var testTarget = &Target{

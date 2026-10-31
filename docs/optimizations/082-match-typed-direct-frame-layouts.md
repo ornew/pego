@@ -65,7 +65,7 @@ Generate the direct and same-generator reference workload fixtures and check
 parity:
 
 ```sh
-export PEGO_TYPED_FRAME_LAYOUT_DIR=/tmp/pego-typed-frame-layouts
+export ZP_TYPED_FRAME_LAYOUT_DIR=/tmp/zp-typed-frame-layouts
 go test ./internal/gen/gogen -run '^TestGeneratedTypedFrameLayoutWorkloads$' -count=1
 ```
 
@@ -74,8 +74,8 @@ Build the direct/general fixtures into separate binaries:
 ```sh
 for workload in lr operatorsRule; do
   for variant in direct general; do
-    fixture="$PEGO_TYPED_FRAME_LAYOUT_DIR/$workload/$variant"
-    (cd "$fixture" && go test -c -o "$PEGO_TYPED_FRAME_LAYOUT_DIR/$workload-$variant.test" .)
+    fixture="$ZP_TYPED_FRAME_LAYOUT_DIR/$workload/$variant"
+    (cd "$fixture" && go test -c -o "$ZP_TYPED_FRAME_LAYOUT_DIR/$workload-$variant.test" .)
   done
 done
 ```
@@ -84,17 +84,17 @@ Alternate five paired runs of `BenchmarkTypedLR` and `BenchmarkTypedOperatorsRul
 with `-test.run='^$' -test.benchtime=300ms -test.benchmem`, reversing
 direct/general order between pairs. The matching loop in
 [record 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md) can be reused
-with `PEGO_TYPED_FRAMED_CUT_DIR="$PEGO_TYPED_FRAME_LAYOUT_DIR"`. The inputs
+with `ZP_TYPED_FRAMED_CUT_DIR="$ZP_TYPED_FRAME_LAYOUT_DIR"`. The inputs
 use the same `lrInput(n)` and `operatorsRuleInput(n)` workloads: n=1/128 means two/129
 LR groups and one/128 Operators Rule postfix groups after the base atom.
 
-To compare generation separately, keep `PEGO_REFERENCE_FRAME_LAYOUTS` fixed
+To compare generation separately, keep `ZP_REFERENCE_FRAME_LAYOUTS` fixed
 before each timed run:
 
 ```sh
-PEGO_REFERENCE_FRAME_LAYOUTS=0 go test ./internal/gen/gogen -run '^$' \
+ZP_REFERENCE_FRAME_LAYOUTS=0 go test ./internal/gen/gogen -run '^$' \
   -bench '^BenchmarkTypedFrameLayoutGeneration$' -benchtime=300ms -benchmem
-PEGO_REFERENCE_FRAME_LAYOUTS=1 go test ./internal/gen/gogen -run '^$' \
+ZP_REFERENCE_FRAME_LAYOUTS=1 go test ./internal/gen/gogen -run '^$' \
   -bench '^BenchmarkTypedFrameLayoutGeneration$' -benchtime=300ms -benchmem
 ```
 

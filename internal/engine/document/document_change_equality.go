@@ -1,6 +1,6 @@
 package document
 
-import "github.com/ornew/pego/internal/engine/core"
+import "github.com/ornew/zeroparse/internal/engine/core"
 
 // equalChangeDiagnostics compares complete supported diagnostic values. Unknown
 // diagnostic types conservatively differ rather than running uncontrolled code.

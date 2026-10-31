@@ -15,7 +15,7 @@ import (
 // indivisible cancellation tail has returned.
 func TestResponsiveCancelledTailsKeepNewRequestsPending(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	const uri = "file:///queue.pego"
+	const uri = "file:///queue.zp"
 	const source = `rule main = "a"`
 	d := &document{uri: uri, version: 1, text: source, an: analyze(source)}
 	s := &Server{out: &conn{w: io.Discard}, docs: map[string]*document{uri: d}, state: stateInitialized}
@@ -103,8 +103,8 @@ func TestResponsivePendingRequestsResumeProtocol(t *testing.T) {
 			peer := newResourcePeer(t)
 			defer func() { unblock(); peer.abort(); requestHook = nil }()
 			c := peer.client
-			c.request("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"pego": map[string]any{"responsiveAnalysis": true}}}})
-			uri := "file:///queue.pego"
+			c.request("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"zp": map[string]any{"responsiveAnalysis": true}}}})
+			uri := "file:///queue.zp"
 			c.open(uri, `rule main = "a"`)
 			for id := 100; id < 104; id++ {
 				asyncRequest(c, id, "textDocument/hover", at(uri, 0, 5))
@@ -155,8 +155,8 @@ func TestResponsivePendingInvalidationProtocol(t *testing.T) {
 	peer := newResourcePeer(t)
 	defer func() { unblock(); peer.abort(); requestHook = nil }()
 	c := peer.client
-	c.request("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"pego": map[string]any{"responsiveAnalysis": true}}}})
-	uri := "file:///invalidate-pending.pego"
+	c.request("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"zp": map[string]any{"responsiveAnalysis": true}}}})
+	uri := "file:///invalidate-pending.zp"
 	c.open(uri, `rule main = "a"`)
 	for id := 100; id < 104; id++ {
 		asyncRequest(c, id, "textDocument/hover", at(uri, 0, 5))

@@ -1,22 +1,22 @@
 # Development
 
-This document describes the repository layout and architecture, how to run tests, and the implementation status of language features. The living backlog is maintained in [Issue #1](https://github.com/ornew/pego/issues/1).
+This document describes the repository layout and architecture, how to run tests, and the implementation status of language features. The living backlog is maintained in [Issue #1](https://github.com/ornew/zeroparse/issues/1).
 
 ## Directory Layout
 
 | Path | Contents |
 |:--|:--|
-| `pego.go` | Public API of package `pego` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, and others), which joins the engine to the output schema (`Parser.OutputSchema`) |
+| `zeroparse.go` | Public API of package `zeroparse` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, and others), which joins the engine to the output schema (`Parser.OutputSchema`) |
 | `gen/` | Public package of code generation (`gen.Go`, `gen.TypeScript`, `gen.Generator`), which joins the engine to the generators of `internal/gen/`. It embeds the copy of the runtime that generated Go packages carry (`gen/_runtime`, refreshed by `go generate ./gen` and checked against `runtime/` by a test) |
-| `grammar/` | Grammar AST, structural validation (`Validate`), JSON conversion (`MarshalJSON`, `UnmarshalJSON`, strict `DecodeJSON`) and formatting as PEGO source (`Format`, which preserves comments). Public package. |
+| `grammar/` | Grammar AST, structural validation (`Validate`), JSON conversion (`MarshalJSON`, `UnmarshalJSON`, strict `DecodeJSON`) and formatting as ZeroParse source (`Format`, which preserves comments). Public package. |
 | `internal/grammaranalysis/` | Conservative success and cut proofs shared by the compiler and linter |
-| `lint/` | Grammar linter (`lint.Config`) behind `pego lint` and the language server: shared static analysis (`analysis.go`) and checks (`checks.go`). Public package. |
-| `internal/lsp/` | Language Server Protocol server for `.pego` files (`pego lsp`): JSON-RPC over standard input and output, document sync, diagnostics, formatting, navigation, hover, rename, completion, semantic tokens |
-| `editors/vscode/` | VS Code extension (Node.js, not part of the Go module): language configuration, TextMate grammar (`syntaxes/pego.tmLanguage.json`) and a client that starts `pego lsp` |
+| `lint/` | Grammar linter (`lint.Config`) behind `zp lint` and the language server: shared static analysis (`analysis.go`) and checks (`checks.go`). Public package. |
+| `internal/lsp/` | Language Server Protocol server for `.zp` files (`zp lsp`): JSON-RPC over standard input and output, document sync, diagnostics, formatting, navigation, hover, rename, completion, semantic tokens |
+| `editors/vscode/` | VS Code extension (Node.js, not part of the Go module): language configuration, TextMate grammar (`syntaxes/zp.tmLanguage.json`) and a client that starts `zp lsp` |
 | `sample/` | Generation of inputs that a grammar accepts, coverage reports, near-miss invalid inputs and a fuzzing helper (`Generate`, `New`, `Seed`). Public package. |
-| `editfuzz/` | Random edit sequences checked against fresh parses, their minimization, saved sequences and their replay (`Fuzz`, `Minimize`, `Replay`, `Load`, `Save`); the library behind `pego edit-fuzz`. Public package. |
-| `pego.pego` | Typed source grammar and recoverable syntax tree; the generated source-parser integration is [proposed](design/records/054-generated-grammar-source-parser.md). |
-| `internal/syntax/` | Lexer and parser for PEGO source code (source → `grammar.Grammar`) |
+| `editfuzz/` | Random edit sequences checked against fresh parses, their minimization, saved sequences and their replay (`Fuzz`, `Minimize`, `Replay`, `Load`, `Save`); the library behind `zp edit-fuzz`. Public package. |
+| `zeroparse.zp` | Typed source grammar and recoverable syntax tree; the generated source-parser integration is [proposed](design/records/054-generated-grammar-source-parser.md). |
+| `internal/syntax/` | Lexer and parser for ZeroParse source code (source → `grammar.Grammar`) |
 | `internal/compile/` | Compiler and static analysis: type checking, call and dependency analysis, the walk of rule bodies that decides their static facts, and the bytecode compiler |
 | `internal/engine/` | Parser runtime: `Compile`, compiled grammars, streams and budget controls, built on `internal/engine/core/`, the closure backend of `internal/engine/closure/`, the bytecode VMs of `internal/engine/vm/` and the Document of `internal/engine/document/`. It does not import the generators or the output schema: package `gen` joins the generators to it, and the root package the schema export |
 | `internal/engine/core/` | The part of the parser runtime that every backend shares: the parser state, input, memo table, expectations, values, built-ins of actions, budget controls, tracing and stream state, and the parse options, results and errors that `internal/engine` re-exports. Its package documentation states what a backend provides and what it may use |
@@ -27,15 +27,15 @@ This document describes the repository layout and architecture, how to run tests
 | `query/` | Structural queries: patterns that match values of parse results, checked against an output schema when they compile (`Compile`, `Prepare`, `Query.Matches`). Public package |
 | `internal/schema/` | The export of a checked program's output schema as a `schema.Output` |
 | `internal/value/` | `Node`, the value that parsing produces: kinds, fields, JSON form, traversal and the representation that the engine packages share |
-| `internal/apitest/` | The behavior tests of package `pego`, from outside it: they call its public API, with internal packages only to build values, to mark start rules and to count how often options apply; the root package keeps its source and its documentation examples |
+| `internal/apitest/` | The behavior tests of package `zeroparse`, from outside it: they call its public API, with internal packages only to build values, to mark start rules and to count how often options apply; the root package keeps its source and its documentation examples |
 | `internal/limits/` | Budget limits of a parse invocation, the error of an exhausted limit and overflow-safe budget arithmetic, shared by the parser, the Document and package `query` |
 | `internal/bytecode/` | The bytecode instruction set and module, its disassembly, the encoding of modules in compiled grammars and the validation of loaded modules |
 | `internal/gen/` | What the Go and TypeScript generators share: generation options, the runtime mode of generated Go parsers, generated files, and the generator state both print with (the program and rule being printed, the expectation table, shared names, the Flow IR state of recognizer rules and the action value resolver) |
-| `runtime/` | Runtime package of generated Go parsers, imported by them or copied into them (`github.com/ornew/pego/runtime`) |
+| `runtime/` | Runtime package of generated Go parsers, imported by them or copied into them (`github.com/ornew/zeroparse/runtime`) |
 | `internal/gen/gogen/` | Go generator: prints the parser, its types package and the runtime copy from the compiled program and Flow IR, and leaves out what the entry points cannot reach |
 | `internal/gen/tsgen/` | TypeScript generator: prints the parser, its types and its runtime files from the compiled program and Flow IR |
 | `internal/gen/tsgen/tsrt/` | Source of `runtime.ts`, the runtime that generated TypeScript parsers import (joined from `runtime.ts`, `budget.ts`, `trace.ts` and `profile.ts`) |
-| `cmd/pego/` | Command-line tool |
+| `cmd/zp/` | Command-line tool |
 | `examples/` | Small example grammars that show the features, with golden tests |
 | `parsers/` | Ready-made parsers for common languages, each a Go module of its own (`parsers/<language>/`, with the grammar, the generated parser and conformance tests); `generate.go` and `parsers_test.go` (main module) generate them and check them on every backend ([README](../parsers/README.md)) |
 | `cmd/playground/` | WebAssembly API used by the web playground (package `main`; `GOOS=js GOARCH=wasm`) |
@@ -46,7 +46,7 @@ This document describes the repository layout and architecture, how to run tests
 | `docs/tutorial/` | The ordered tutorial series ([index](tutorial/README.md)) |
 | `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
 | `docs/cookbook/` | Recipes: complete, runnable solutions to concrete tasks ([index](cookbook/README.md)) |
-| `docs/why-pego.md`, `docs/strategy.md` | Project positioning: [who PEGO is for and how it compares](why-pego.md), and the [project strategy](strategy.md) with its tracks and targets |
+| `docs/why-zeroparse.md`, `docs/strategy.md` | Project positioning: [who ZeroParse is for and how it compares](why-zeroparse.md), and the [project strategy](strategy.md) with its tracks and targets |
 | `docs/documentation-style.md` | How the documentation is organized and written: page kinds, link directions, titles, voice and examples |
 | `docs/design/` | How the system is built today: [architecture](design/architecture.md) and [Core and Flow IR](design/intermediate-representations.md) |
 | `docs/design/records/` | Design records; [template](design/records/000-template.md) for new proposals |
@@ -55,10 +55,10 @@ This document describes the repository layout and architecture, how to run tests
 ## Architecture
 
 ```text
-.pego ──syntax.Parse──▶ grammar.Grammar ──engine.Compile──▶ engine.Program ──Parse──▶ Node
+.zp ──syntax.Parse──▶ grammar.Grammar ──engine.Compile──▶ engine.Program ──Parse──▶ Node
                          ▲      │                              │      ▲
-              JSON ──────┘      └── grammar.Format ──▶ .pego   │      └── LoadProgram ── .pegoc
-                                                               └── MarshalBinary ──▶ .pegoc
+              JSON ──────┘      └── grammar.Format ──▶ .zp   │      └── LoadProgram ── .zpc
+                                                               └── MarshalBinary ──▶ .zpc
 ```
 
 | Component | Main files | Responsibility |
@@ -141,14 +141,14 @@ The tests that build generated parsers (in `internal/gen/gogen`, `internal/gen/t
 
 Each test records its form by name and its subtests inherit it, so tests of either form can run in parallel. A test that builds a fixture without any of these fails the run when it finishes, because it would check one form only. `go test ./...` therefore covers both forms and needs no setting.
 
-`PEGO_TEST_ORDINARY` restricts a run to one form: `0` runs everything that builds fixtures with budget controls, and `1` runs it without, skipping the tests that pass a control. Use it to reproduce a failure of one form; it does not widen coverage.
+`ZP_TEST_ORDINARY` restricts a run to one form: `0` runs everything that builds fixtures with budget controls, and `1` runs it without, skipping the tests that pass a control. Use it to reproduce a failure of one form; it does not widen coverage.
 
 The top-level tests of `internal/engine` call `t.Parallel()`. A test stays sequential when it measures heap or time in the test process, changes a process-wide setting such as `debug.SetMaxStack` or `core.MinRecorded`, or shares mutable fixtures with other tests (the generators cached by `coreGenerations`); Go runs every sequential test before it releases the parallel ones, so these run alone. A test that observes or changes the Go generator passes `gogen.Hooks` to the generation, directly or for itself and its subtests with `gentest.SetGenHooks`, instead of setting package state.
 
-Engine tests write grammars in PEGO source and compare results using the S-expression form of nodes (`Node.String`).
+Engine tests write grammars in ZeroParse source and compare results using the S-expression form of nodes (`Node.String`).
 The `check` helper also verifies that the result is the same with memoization disabled, with every backend (closure, recursive bytecode, iterative bytecode), with both position units, in recognition-only mode, and with tracing on.
 
-The behavior of package `pego` is tested from outside it by `internal/apitest`; the root package holds only its documentation examples. Measure its coverage with `go test -coverpkg=github.com/ornew/pego ./internal/apitest`.
+The behavior of package `zeroparse` is tested from outside it by `internal/apitest`; the root package holds only its documentation examples. Measure its coverage with `go test -coverpkg=github.com/ornew/zeroparse ./internal/apitest`.
 
 `internal/gen/gogen/gogen_pool_lifecycle_test.go` checks generated Node and typed parser cleanup after oversized
 inputs, retained results, and error/retry reuse in both position units.
@@ -159,11 +159,11 @@ TypeScript is printed from the same Flow IR as Go (`internal/gen/tsgen/flow.go`,
 
 `lint` tests every check with positive and negative cases, lints every example grammar against a hand-checked list of findings, and `TestSoundness` checks the certain findings against the engine on random grammars, exhaustively over short inputs (`-soundness=N` for a longer run).
 
-`internal/lsp` tests talk to the server in process over pipes (lifecycle, malformed messages, incremental edits with non-ASCII and astral characters and `\r\n`, every request) and analyze every example grammar. In `editors/vscode`, `npm install && npm run check` compiles the TextMate grammar's regular expressions with Oniguruma and checks the scopes of a sample, and tokenizes the example and ready-made parser grammars; `npm run check-server -- <path to pego>` talks to the server with the VS Code client's JSON-RPC library.
+`internal/lsp` tests talk to the server in process over pipes (lifecycle, malformed messages, incremental edits with non-ASCII and astral characters and `\r\n`, every request) and analyze every example grammar. In `editors/vscode`, `npm install && npm run check` compiles the TextMate grammar's regular expressions with Oniguruma and checks the scopes of a sample, and tokenizes the example and ready-made parser grammars; `npm run check-server -- <path to zp>` talks to the server with the VS Code client's JSON-RPC library.
 
 `sample` tests generate inputs for every example grammar and every grammar of the shared test corpus (`internal/engine/sample_test.go`, with the corpus of `internal/gentest`) and parse them on every backend.
 
-`go generate ./spec/language` renders the simple grammar view from `pego.pego` and `spec/language/syntax.md.tmpl`; edit the template rather than the generated page. `spec/language/source_grammar_test.go` verifies the simplified display against the canonical source grammar, checks concrete trees and recovery across backends, and builds a generated typed Go consumer. `spec/language/syntax_test.go` runs the grammar of [Grammar Syntax](../spec/language/syntax.md) on every `.pego` file and every `pego` code block of the repository and requires it to agree with the parser of `internal/syntax`.
+`go generate ./spec/language` renders the simple grammar view from `zeroparse.zp` and `spec/language/syntax.md.tmpl`; edit the template rather than the generated page. `spec/language/source_grammar_test.go` verifies the simplified display against the canonical source grammar, checks concrete trees and recovery across backends, and builds a generated typed Go consumer. `spec/language/syntax_test.go` runs the grammar of [Grammar Syntax](../spec/language/syntax.md) on every `.zp` file and every `zp` code block of the repository and requires it to agree with the parser of `internal/syntax`.
 
 `cd site && go test ./...` builds the site and checks its pages and links; `go test ./cmd/playground` runs the WebAssembly smoke test when Node is installed.
 Production site builds retain the published current WASM/runtime pair alongside the new pair, using a bounded
@@ -187,7 +187,7 @@ distinguishes equivalent small-tree work from wide-tree display reduction; real 
 The same-source budget-control reference build compiles and tests the engine packages without core budget-control
 instrumentation. After changing test files of `internal/engine` or `internal/apitest`, check that both builds compile
 with `go vet ./internal/engine/... ./internal/apitest` and
-`go vet -tags pego_budget_controls_reference ./internal/engine/... ./internal/apitest`; test files that use helpers
+`go vet -tags zp_budget_controls_reference ./internal/engine/... ./internal/apitest`; test files that use helpers
 defined in untagged files keep both builds compiling.
 
 GitHub Actions runs the root module and `parsers/test.sh` (including `go vet` for every parser module), site tests, and
@@ -199,7 +199,7 @@ The TypeScript differential harness uses the upstream
 [`microsoft/TypeScript` v5.9.3 `tests/cases`](https://github.com/microsoft/TypeScript/tree/v5.9.3/tests/cases) corpus.
 Required-tool checks fail before tests if a required runtime or the TypeScript corpus is absent. Go tests run with
 `-v` so optional skips are visible in the retained 14-day logs. Python uses its installed standard library and recorded
-reference data; the live comparisons on a CPython checkout (`PEGO_CPYTHON_SRC`) and the DuckDB `REFERENCE_FILE` corpus
+reference data; the live comparisons on a CPython checkout (`ZP_CPYTHON_SRC`) and the DuckDB `REFERENCE_FILE` corpus
 are not supplied. DuckDB checks use recorded reference results, not a live DuckDB oracle. These jobs do not claim
 browser-engine or deployed-site validation.
 
@@ -223,7 +223,7 @@ Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/
 The conformance suites and reference data of the ready-made parsers use text from other projects (cel-spec, JSONTestSuite,
 yaml-test-suite, CPython, DuckDB and others). It is not in the repository: [`internal/corpora/manifest.json`](../internal/corpora/manifest.json)
 pins each source (archive URL at a fixed revision, license, the files kept, and the SHA-256 digest of those files), and
-`go run ./hack/corpora fetch` downloads what is missing into `$PEGO_CORPORA` (default: `pego/corpora` in the user cache
+`go run ./hack/corpora fetch` downloads what is missing into `$ZP_CORPORA` (default: `zp/corpora` in the user cache
 directory) and checks the digests. Other subcommands: `list`, `verify`, `dir NAME`, and `pin NAME`, which prints the digest
 for a new manifest entry. The digest is over the extracted files (the lines of `sha256sum`, sorted by path), because
 GitHub does not promise identical archive bytes for a commit. `fetch` also checks the files that are already in the
@@ -270,19 +270,19 @@ Reference data kept in a parser's `testdata` refers to the upstream text by file
 | Done | | Built-in functions (`foldl`, `len`, `text`, and others) |
 | Done | | Struct constructors (`Type{Field: value}`), and typed node-list constructors (`[]Type{...}`) |
 | Done | Advanced | Left recursion |
-| Done | | Parsing PEGO source (`.pego`) |
+| Done | | Parsing ZeroParse source (`.zp`) |
 | Done | | Operators Rule declarations |
 | Done | | Stream parsing (`#stream`) |
 | Done | | Mutable incremental parsing (`Document`); snapshots/change notifications are proposed |
-| Done | | Code generation (Go, `pego gen`) |
-| Done | | Typed values in generated parsers (`pego gen -types`) |
-| Done | | Saving and loading compiled grammars (`.pegoc`) |
-| Done | | Code generation (TypeScript, `pego gen -lang ts`) |
-| Done | | Input generation and fuzzing (`pego sample`, package `sample`) |
-| Done | | Grammar linting (`pego lint`, package `lint`) |
-| Done | | Editor support (`pego lsp`, VS Code extension with a TextMate grammar) |
-| Done | | Tracing, profiling and error explanation (`WithTrace`, `WithProfile`, `pego trace/profile/explain`) |
+| Done | | Code generation (Go, `zp gen`) |
+| Done | | Typed values in generated parsers (`zp gen -types`) |
+| Done | | Saving and loading compiled grammars (`.zpc`) |
+| Done | | Code generation (TypeScript, `zp gen -lang ts`) |
+| Done | | Input generation and fuzzing (`zp sample`, package `sample`) |
+| Done | | Grammar linting (`zp lint`, package `lint`) |
+| Done | | Editor support (`zp lsp`, VS Code extension with a TextMate grammar) |
+| Done | | Tracing, profiling and error explanation (`WithTrace`, `WithProfile`, `zp trace/profile/explain`) |
 
 ## Roadmap
 
-[Issue #1](https://github.com/ornew/pego/issues/1)
+[Issue #1](https://github.com/ornew/zeroparse/issues/1)

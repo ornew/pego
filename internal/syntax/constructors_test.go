@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
-// A positional constructor of one argument is the source form pego fix rewrites; parseLegacy
+// A positional constructor of one argument is the source form zp fix rewrites; parseLegacy
 // reads it as the text struct constructor it means.
 func TestTypedConstructorsParseAndFormat(t *testing.T) {
 	const src = `type Foo = { Name string; Children []Foo }

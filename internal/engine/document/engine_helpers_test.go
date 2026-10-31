@@ -10,14 +10,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/compile"
-	. "github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/starttest"
-	"github.com/ornew/pego/internal/syntax"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/compile"
+	. "github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/starttest"
+	"github.com/ornew/zeroparse/internal/syntax"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // The tests in this file's package parse with the engine's programs. These helpers are the
@@ -137,14 +137,14 @@ func resultJSON(n *value.Node, err error) string {
 	return string(data)
 }
 
-// parseTest parses PEGO source for a test whose subject is not start rules: unless the source
+// parseTest parses ZeroParse source for a test whose subject is not start rules: unless the source
 // has declaration attributes, every rule becomes a start rule, the first one the default.
 func parseTest(src string) (*grammar.Grammar, error) {
 	g, err := syntax.Parse(src)
 	return starttest.MarkAll(g), err
 }
 
-// mustCompile compiles PEGO source with source information, so that results show rule names and
+// mustCompile compiles ZeroParse source with source information, so that results show rule names and
 // capture labels.
 func mustCompile(t *testing.T, src string, opts ...compile.Options) *Program {
 	t.Helper()
@@ -272,7 +272,7 @@ func snapshotVariants(t *testing.T, run func(*testing.T, core.ParseOptions)) {
 	}
 }
 
-// compileBare compiles PEGO source with the options as given: without source information unless
+// compileBare compiles ZeroParse source with the options as given: without source information unless
 // they request it.
 func compileBare(t *testing.T, src string, opts ...compile.Options) *Program {
 	t.Helper()

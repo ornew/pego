@@ -10,10 +10,10 @@ app.conf:2:8: expected a number or a string
 ```
 
 Two things make this: a grammar whose errors have readable messages (`@error`), and a few lines of Go that print the
-position of the `*pego.SyntaxError`.
+position of the `*zeroparse.SyntaxError`.
 
-```pego
-// settings.pego
+```zp
+// settings.zp
 @start
 rule main = -ws setting* $$
 
@@ -43,15 +43,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed settings.pego
+//go:embed settings.zp
 var grammar string
 
 // report formats a syntax error with the line it is on and a caret under the column.
 func report(file, src string, err error) string {
-	var se *pego.SyntaxError
+	var se *zeroparse.SyntaxError
 	if !errors.As(err, &se) {
 		return file + ": " + err.Error()
 	}
@@ -76,7 +76,7 @@ func report(file, src string, err error) string {
 }
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -121,7 +121,7 @@ app.conf:1:11: expected ';'
 
 ## How It Works
 
-- **`*pego.SyntaxError` has the position.** `Line` and `Col` are 1-based. `Message()` is the text without the
+- **`*zeroparse.SyntaxError` has the position.** `Line` and `Col` are 1-based. `Message()` is the text without the
   position, and `Error()` is `line:col: message`. Other errors, such as a failed action, are not syntax errors and have
   no position, which is why `report` falls back to `err.Error()`.
 - **`@error` makes the message.** Without it the message would be `syntax error: expected "=", ...`: the list of every
@@ -135,7 +135,7 @@ app.conf:1:11: expected ';'
 - **Whitespace is quiet.** `ws` consumes spaces inside a lookahead, which records no failures. With `[ \t\r\n]*` every
   list of expected tokens would contain a space, a tab and a line break.
 - **Columns count code points** by default, so a caret under non-ASCII text lines up with the characters, not the
-  bytes, but not with their display width (a wide character or a combining mark). With `pego.WithUnit(pego.Bytes)`,
+  bytes, but not with their display width (a wide character or a combining mark). With `zeroparse.WithUnit(zeroparse.Bytes)`,
   `Col` counts bytes instead. A tab is one column, so `report` copies the tabs of the source line into the caret line.
 - **The end of the input.** An error after the last line break has a line number one past the last line, so `report`
   shows an empty line instead of indexing past the end.
@@ -148,6 +148,6 @@ app.conf:1:11: expected ';'
 - **Where the message points.** A missing `;` at the end of a line is reported at the first token that did not fit, which
   can be on the next line, because the rule for white space reads past line ends. [Error
   Messages](../guide/error-messages.md) explains this and how to place labels.
-- **Find out why a grammar reports what it does** with `pego explain -g settings.pego < app.conf`; see
+- **Find out why a grammar reports what it does** with `zp explain -g settings.zp < app.conf`; see
   [Debugging and profiling](../guide/debugging.md).
-- **Editors**: [`pego lsp`](../guide/editor-support.md) shows the same errors as you type.
+- **Editors**: [`zp lsp`](../guide/editor-support.md) shows the same errors as you type.

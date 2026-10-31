@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { fatalError, friendlyError } from "../static/assets/pego-client.js";
+import { fatalError, friendlyError } from "../static/assets/zp-client.js";
 import { describeResult } from "../static/playground/status.js";
 
 const base = { start: "main", micros: 10 };

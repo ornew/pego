@@ -1,11 +1,11 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package main
 
 import (
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func TestCompiledCorpusBudgetParity(t *testing.T) {
@@ -15,20 +15,20 @@ func TestCompiledCorpusBudgetParity(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			p, err := pego.CompileSource(source, "main")
+			p, err := zeroparse.CompileSource(source, "main")
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
+			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
 				var want string
-				for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+				for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
 					for _, active := range []bool{false, true} {
-						opts := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit)}
+						opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend), zeroparse.WithUnit(unit)}
 						if active {
 							// The largest finite budget: ^uint64(0) is Unlimited, which runs without a control.
-							opts = append(opts, pego.WithLimits(pego.Limits{Budget: ^uint64(0) - 1}))
+							opts = append(opts, zeroparse.WithLimits(zeroparse.Limits{Budget: ^uint64(0) - 1}))
 						} else {
-							opts = append(opts, pego.WithLimits(pego.Limits{Budget: pego.Unlimited}))
+							opts = append(opts, zeroparse.WithLimits(zeroparse.Limits{Budget: zeroparse.Unlimited}))
 						}
 						n, err := p.Parse(input, opts...)
 						if err != nil {
@@ -43,7 +43,7 @@ func TestCompiledCorpusBudgetParity(t *testing.T) {
 						} else if got != want {
 							t.Fatalf("backend=%v unit=%v active=%v: result differs", backend, unit, active)
 						}
-						n, err = p.Parse(input, append(opts, pego.RecognizeOnly())...)
+						n, err = p.Parse(input, append(opts, zeroparse.RecognizeOnly())...)
 						if n != nil || err != nil {
 							t.Fatalf("backend=%v unit=%v active=%v: recognition node=%v error=%v", backend, unit, active, n, err)
 						}

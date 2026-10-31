@@ -24,7 +24,7 @@ The API is implemented. `ParseStats.Reused` retains its combined meaning: it cou
 
 ## Motivation
 
-`Document` incrementally reuses memo results and repetition runs. Memo entries can retire into an internal free list while their slabs remain allocated, and the document retains repetition records and VM scratch between parses. Before this API, callers had no public reset or cache-size view, and `Stats.Reused` combined memo hits with repetition resumption. See [`Document`](../../../internal/engine/document/document.go), [`memoTable`](../../../internal/engine/core/memo.go), [`resume.go`](../../../internal/engine/core/resume.go), and the public [`Document` API](../../../pego.go).
+`Document` incrementally reuses memo results and repetition runs. Memo entries can retire into an internal free list while their slabs remain allocated, and the document retains repetition records and VM scratch between parses. Before this API, callers had no public reset or cache-size view, and `Stats.Reused` combined memo hits with repetition resumption. See [`Document`](../../../internal/engine/document/document.go), [`memoTable`](../../../internal/engine/core/memo.go), [`resume.go`](../../../internal/engine/core/resume.go), and the public [`Document` API](../../../zeroparse.go).
 
 The implemented API provides observability and an explicit lifecycle control. It does not impose an automatic memory cap or claim that reset improves parse speed.
 

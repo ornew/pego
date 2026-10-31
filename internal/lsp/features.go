@@ -7,8 +7,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // --- Formatting ---
@@ -32,7 +32,7 @@ func (s *Server) formatting(params json.RawMessage) (any, *rpcError) {
 	return edits, nil
 }
 
-// formatEdits returns the edits that format the document like pego fmt: none if it does not
+// formatEdits returns the edits that format the document like zp fmt: none if it does not
 // parse, because the formatter would drop the definitions with errors. The document keeps its line
 // ends: the formatted lines end like its first line ("\n", "\r\n" or "\r").
 func formatEdits(a *analysis) []TextEdit {
@@ -254,7 +254,7 @@ func (a *analysis) fieldSymbolsControlled(d *definition, st *grammar.TypeDef, co
 		}
 		limit := d.end // the closing brace ends the definition
 		if k+1 < len(st.Fields()) {
-			limit = a.idx.pegoOffset(st.Fields()[k+1].Diagnostic())
+			limit = a.idx.zpOffset(st.Fields()[k+1].Diagnostic())
 		}
 		last := i
 		for j := i + 1; j < len(a.toks) && a.toks[j].end < limit; j++ {
@@ -336,7 +336,7 @@ func (a *analysis) hoverAtControlled(off int, control *renderControl) (text stri
 	return code(b.signature) + "\n" + b.doc, t.start, t.end, true
 }
 
-func code(s string) string { return "```pego\n" + s + "\n```" }
+func code(s string) string { return "```zp\n" + s + "\n```" }
 
 func (a *analysis) ruleHoverControlled(d *definition, control *renderControl) string {
 	control.poll()

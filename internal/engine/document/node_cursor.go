@@ -3,8 +3,8 @@ package document
 import (
 	"fmt"
 
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // Cursor filters edge-oriented node visits using spans in Unit. Unit must match
@@ -17,10 +17,10 @@ type Cursor struct {
 
 func (c Cursor) validate(start, end int32) error {
 	if c.Unit != core.CodePoints && c.Unit != core.Bytes {
-		return fmt.Errorf("pego: invalid cursor unit %d", c.Unit)
+		return fmt.Errorf("zp: invalid cursor unit %d", c.Unit)
 	}
 	if start < 0 || end < start {
-		return fmt.Errorf("pego: invalid cursor range [%d,%d)", start, end)
+		return fmt.Errorf("zp: invalid cursor range [%d,%d)", start, end)
 	}
 	return nil
 }
@@ -54,7 +54,7 @@ func (c Cursor) Range(start, end int32, visit func(value.WalkVisit) (value.WalkA
 
 func (c Cursor) filter(visit func(value.WalkVisit) (value.WalkAction, error), matches func(*value.Node) bool) error {
 	if visit == nil {
-		return fmt.Errorf("pego: nil cursor callback")
+		return fmt.Errorf("zp: nil cursor callback")
 	}
 	return value.Walk(c.Root, func(v value.WalkVisit) (value.WalkAction, error) {
 		if v.Node != nil && matches(v.Node) {

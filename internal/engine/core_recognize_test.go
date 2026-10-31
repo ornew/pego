@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
-	irbuild "github.com/ornew/pego/internal/ir/core/build"
-	"github.com/ornew/pego/internal/ir/core"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/core"
+	irbuild "github.com/ornew/zeroparse/internal/ir/core/build"
 )
 
 // coreRecognizeCase builds the Core IR of the recognizer of the parser generated with Recognize,

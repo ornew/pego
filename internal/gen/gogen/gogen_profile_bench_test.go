@@ -8,16 +8,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // Export standalone controls; keep generated fixtures and results outside Git.
 func TestExportGeneratedGoProfileBenchmarks(t *testing.T) {
 	t.Parallel()
-	dir := os.Getenv("PEGO_PROFILE_BENCH_DIR")
+	dir := os.Getenv("ZP_PROFILE_BENCH_DIR")
 	if dir == "" {
-		t.Skip("set PEGO_PROFILE_BENCH_DIR to export profile benchmarks")
+		t.Skip("set ZP_PROFILE_BENCH_DIR to export profile benchmarks")
 	}
 	write := func(name string, data []byte) {
 		t.Helper()
@@ -32,9 +32,9 @@ func TestExportGeneratedGoProfileBenchmarks(t *testing.T) {
 	write("go.mod", []byte(gentest.GoMod("profilebench")))
 	sizes := map[string]int{}
 	for _, f := range []struct{ name, path, input string }{
-		{"json", "parsers/json/json.pego", "[" + strings.TrimSuffix(strings.Repeat(`{"name":"éclair","n":123,"ok":true},`, 64), ",") + "]"},
-		{"xml", "parsers/xml/xml.pego", "<root>" + strings.Repeat(`<item name="éclair">123</item>`, 64) + "</root>"},
-		{"calc", "examples/calculator/calc.pego", strings.TrimSuffix(strings.Repeat("1+2*3+", 32), "+")},
+		{"json", "parsers/json/json.zp", "[" + strings.TrimSuffix(strings.Repeat(`{"name":"éclair","n":123,"ok":true},`, 64), ",") + "]"},
+		{"xml", "parsers/xml/xml.zp", "<root>" + strings.Repeat(`<item name="éclair">123</item>`, 64) + "</root>"},
+		{"calc", "examples/calculator/calc.zp", strings.TrimSuffix(strings.Repeat("1+2*3+", 32), "+")},
 	} {
 		src, err := os.ReadFile(filepath.Join("../../..", f.path))
 		if err != nil {
@@ -68,7 +68,7 @@ func TestExportGeneratedGoProfileBenchmarks(t *testing.T) {
 				if observed {
 					driver += generatedGoProfileTraceBenchmark
 				}
-				if observed && os.Getenv("PEGO_PROFILE_BASE") == "" {
+				if observed && os.Getenv("ZP_PROFILE_BASE") == "" {
 					driver += generatedGoProfileEnabledBenchmark
 					if typed {
 						driver += generatedGoProfileTypedEnabledBenchmark

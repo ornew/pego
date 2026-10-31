@@ -43,7 +43,7 @@ type WalkVisit struct {
 type CycleError struct{ Path []WalkEdge }
 
 func (e *CycleError) Error() string {
-	return fmt.Sprintf("pego: tree cycle at depth %d", len(e.Path)-1)
+	return fmt.Sprintf("zp: tree cycle at depth %d", len(e.Path)-1)
 }
 
 type walkTask struct {
@@ -59,7 +59,7 @@ type walkTask struct {
 // The graph must not be mutated concurrently. Walk does not mutate or retain it.
 func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 	if visit == nil {
-		return fmt.Errorf("pego: nil walk callback")
+		return fmt.Errorf("zp: nil walk callback")
 	}
 	var value any = root
 	if root == nil {
@@ -104,7 +104,7 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 			continue
 		case WalkContinue:
 		default:
-			return fmt.Errorf("pego: invalid walk action %d", action)
+			return fmt.Errorf("zp: invalid walk action %d", action)
 		}
 		if identity == nil {
 			continue

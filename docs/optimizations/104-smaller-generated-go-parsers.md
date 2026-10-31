@@ -108,7 +108,7 @@ entry point, a Document, a stream, left recursion and recovery both ways and
 compares what the entry points return for inputs that include invalid UTF-8, byte
 positions, error positions and a depth limit; a parser of a mutated grammar shows
 that the comparison can fail. The engine tests can also run with their fixtures
-generated without budget controls (`PEGO_TEST_ORDINARY=1`); the tests that pass a
+generated without budget controls (`ZP_TEST_ORDINARY=1`); the tests that pass a
 control skip.
 
 In functions the compiler considers very large, calls to the inlinable helpers
@@ -117,7 +117,7 @@ above include those parsers and show no loss, since the code that no longer
 spells the forms out is smaller to fetch.
 
 The generated budget-control tests keep their coverage because the test fixtures
-generate with the flag unless `PEGO_TEST_ORDINARY=1` is set.
+generate with the flag unless `ZP_TEST_ORDINARY=1` is set.
 
 ## Decision and Limits
 

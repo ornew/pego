@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 func TestCaptureAccessAcrossBackends(t *testing.T) {
@@ -35,7 +35,7 @@ func TestCaptureAccessAcrossBackends(t *testing.T) {
 	}
 }
 
-// A value of a terminal type was a string node, with the members of a node. pego fix rewrites the
+// A value of a terminal type was a string node, with the members of a node. zp fix rewrites the
 // terminal type to a named string node, which keeps those members.
 func TestNodeMembersOfTerminalTypes(t *testing.T) {
 	t.Parallel()

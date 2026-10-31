@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 func TestGrowingVariable(t *testing.T) {
@@ -63,17 +63,17 @@ func TestSuperLinear(t *testing.T) {
 }
 
 // TestExampleClassifications pins the classes of the example grammars from their default start
-// rules, which pego lint -classify shows.
+// rules, which zp lint -classify shows.
 func TestExampleClassifications(t *testing.T) {
 	for _, tc := range []struct {
 		file   string
 		class  engine.ComplexityClass
 		degree int
 	}{
-		{"calculator/calc.pego", engine.ClassLinear, 0},
-		{"calculator/calc_lr.pego", engine.ClassLinear, 0},
-		{"minilang/minilang.pego", engine.ClassUnknown, 0},
-		{"outline/outline.pego", engine.ClassPoly, 3},
+		{"calculator/calc.zp", engine.ClassLinear, 0},
+		{"calculator/calc_lr.zp", engine.ClassLinear, 0},
+		{"minilang/minilang.zp", engine.ClassUnknown, 0},
+		{"outline/outline.zp", engine.ClassPoly, 3},
 	} {
 		t.Run(tc.file, func(t *testing.T) {
 			src, err := os.ReadFile("../examples/" + tc.file)

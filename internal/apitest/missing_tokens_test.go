@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package apitest_test
 
@@ -9,9 +9,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/gen"
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/gen"
+	"github.com/ornew/zeroparse/internal/engine"
 )
 
 func TestMissingTokensPublicOptions(t *testing.T) {
@@ -19,32 +19,32 @@ func TestMissingTokensPublicOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, options := range [][]pego.ParseOption{nil, {pego.WithMissingTokens(0)}, {pego.WithMissingTokens(2), pego.WithMissingTokens(0)}} {
+	for _, options := range [][]zeroparse.ParseOption{nil, {zeroparse.WithMissingTokens(0)}, {zeroparse.WithMissingTokens(2), zeroparse.WithMissingTokens(0)}} {
 		if n, err := p.Parse("", options...); n != nil || err == nil {
 			t.Fatal("disabled insertion accepted input", n, err)
 		}
 	}
 	calls := 0
-	base := pego.WithMissingTokens(2)
-	counted := pego.ParseOption(func(o *engine.ParseOptions) { calls++; base(o) })
+	base := zeroparse.WithMissingTokens(2)
+	counted := zeroparse.ParseOption(func(o *engine.ParseOptions) { calls++; base(o) })
 	if _, err := p.Parse(";", counted); err != nil || calls != 1 {
 		t.Fatal("options did not resolve exactly once", calls, err)
 	}
-	n, err := p.Parse("", pego.WithMissingTokens(-1), pego.WithMissingTokens(2))
-	var recovered pego.SyntaxErrors
+	n, err := p.Parse("", zeroparse.WithMissingTokens(-1), zeroparse.WithMissingTokens(2))
+	var recovered zeroparse.SyntaxErrors
 	if n == nil || !errors.As(err, &recovered) || len(recovered) != 1 {
 		t.Fatal(n, err)
 	}
-	if _, err := p.Parse(";", pego.WithMissingTokens(2), pego.WithMissingTokens(-1)); err == nil || !strings.Contains(err.Error(), "nonnegative") {
+	if _, err := p.Parse(";", zeroparse.WithMissingTokens(2), zeroparse.WithMissingTokens(-1)); err == nil || !strings.Contains(err.Error(), "nonnegative") {
 		t.Fatal(err)
 	}
-	if _, err := p.Parse(";", pego.WithMissingTokens(-1)); err == nil {
+	if _, err := p.Parse(";", zeroparse.WithMissingTokens(-1)); err == nil {
 		t.Fatal("invalid limit accepted")
 	}
-	if n, err := p.Parse("", pego.RecognizeOnly(), pego.WithMissingTokens(2)); n != nil || !errors.As(err, &recovered) {
+	if n, err := p.Parse("", zeroparse.RecognizeOnly(), zeroparse.WithMissingTokens(2)); n != nil || !errors.As(err, &recovered) {
 		t.Fatal("recognition", n, err)
 	}
-	if n, err := p.Parse(";", pego.WithMissingTokens(2)); n == nil || err != nil {
+	if n, err := p.Parse(";", zeroparse.WithMissingTokens(2)); n == nil || err != nil {
 		t.Fatal("ordinary match", n, err)
 	}
 }
@@ -60,8 +60,8 @@ func TestMissingTokensConcurrentReentrantAndRetry(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 4; j++ {
-				n, err := p.Parse("", pego.WithMissingTokens(1))
-				var recovered pego.SyntaxErrors
+				n, err := p.Parse("", zeroparse.WithMissingTokens(1))
+				var recovered zeroparse.SyntaxErrors
 				if n == nil || !errors.As(err, &recovered) || len(recovered) != 1 {
 					t.Error(n, err)
 					return
@@ -71,27 +71,27 @@ func TestMissingTokensConcurrentReentrantAndRetry(t *testing.T) {
 	}
 	wg.Wait()
 	entered := false
-	_, err = p.Parse("", pego.WithMissingTokens(1), pego.WithTrace(func(pego.TraceEvent) {
+	_, err = p.Parse("", zeroparse.WithMissingTokens(1), zeroparse.WithTrace(func(zeroparse.TraceEvent) {
 		if entered {
 			return
 		}
 		entered = true
-		n, err := p.Parse("", pego.WithMissingTokens(1))
-		var recovered pego.SyntaxErrors
+		n, err := p.Parse("", zeroparse.WithMissingTokens(1))
+		var recovered zeroparse.SyntaxErrors
 		if n == nil || !errors.As(err, &recovered) {
 			t.Error("reentrant invocation shared a ledger", err)
 		}
 	}))
-	var recovered pego.SyntaxErrors
+	var recovered zeroparse.SyntaxErrors
 	if !entered || !errors.As(err, &recovered) {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := p.Parse("", pego.WithMissingTokens(1), pego.WithContext(ctx)); !errors.Is(err, context.Canceled) {
+	if _, err := p.Parse("", zeroparse.WithMissingTokens(1), zeroparse.WithContext(ctx)); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
-	if n, err := p.Parse("", pego.WithMissingTokens(1)); n == nil || !errors.As(err, &recovered) {
+	if n, err := p.Parse("", zeroparse.WithMissingTokens(1)); n == nil || !errors.As(err, &recovered) {
 		t.Fatal("cancelled invocation poisoned retry", n, err)
 	}
 }
@@ -108,24 +108,24 @@ func TestMissingTokensUnsupportedPublicPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []pego.Backend{pego.Bytecode, pego.BytecodeIterative} {
+	for _, backend := range []zeroparse.Backend{zeroparse.Bytecode, zeroparse.BytecodeIterative} {
 		for _, limit := range []int{0, 2} {
-			if n, err := p.Parse(";", pego.WithBackend(backend), pego.WithMissingTokens(limit)); n != nil || err == nil || !strings.Contains(err.Error(), "not supported") {
+			if n, err := p.Parse(";", zeroparse.WithBackend(backend), zeroparse.WithMissingTokens(limit)); n != nil || err == nil || !strings.Contains(err.Error(), "not supported") {
 				t.Fatal(n, err)
 			}
 		}
 	}
 	r := &missingUnusableReader{}
-	if err := p.ParseStream(r, func(*pego.Node) error { t.Fatal("unsupported stream emitted"); return nil }, pego.WithMissingTokens(2)); err == nil {
+	if err := p.ParseStream(r, func(*zeroparse.Node) error { t.Fatal("unsupported stream emitted"); return nil }, zeroparse.WithMissingTokens(2)); err == nil {
 		t.Fatal("stream accepted insertion")
 	}
-	if it, err := p.Iterate(r, pego.WithMissingTokens(2)); it != nil || err == nil {
+	if it, err := p.Iterate(r, zeroparse.WithMissingTokens(2)); it != nil || err == nil {
 		t.Fatal(it, err)
 	}
 	if r.calls != 0 {
 		t.Fatal("rejected stream touched reader")
 	}
-	if d, err := p.NewDocument(";", pego.WithMissingTokens(2)); d != nil || err == nil {
+	if d, err := p.NewDocument(";", zeroparse.WithMissingTokens(2)); d != nil || err == nil {
 		t.Fatal(d, err)
 	}
 	if _, err := p.MarshalBinary(); err == nil {
@@ -141,14 +141,14 @@ func TestMissingTokensUnsupportedPublicPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := strict.Parse(";", pego.WithBackend(pego.Bytecode), pego.WithMissingTokens(1)); err == nil {
+	if _, err := strict.Parse(";", zeroparse.WithBackend(zeroparse.Bytecode), zeroparse.WithMissingTokens(1)); err == nil {
 		t.Fatal("unsupported VM enabled mode accepted")
 	}
 	d, err := strict.NewDocument(";")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n, err := d.Parse(pego.WithMissingTokens(1)); n != nil || err == nil {
+	if n, err := d.Parse(zeroparse.WithMissingTokens(1)); n != nil || err == nil {
 		t.Fatal("existing Document enabled insertion", n, err)
 	}
 }

@@ -4,18 +4,18 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ornew/pego/parsers/json"
-	"github.com/ornew/pego/parsers/json/types"
+	"github.com/ornew/zeroparse/parsers/json"
+	"github.com/ornew/zeroparse/parsers/json/types"
 )
 
 func ExampleDecode() {
-	v, err := json.Decode(`{"name": "pego", "tags": ["peg", "pratt"], "stars": 42}`)
+	v, err := json.Decode(`{"name": "zp", "tags": ["peg", "pratt"], "stars": 42}`)
 	if err != nil {
 		panic(err)
 	}
 	m := v.(map[string]any)
 	fmt.Println(m["name"], m["tags"], m["stars"])
-	// Output: pego [peg pratt] 42
+	// Output: zp [peg pratt] 42
 }
 
 func ExampleParseAST() {

@@ -26,7 +26,7 @@ Source inspection at `6fac14632cbf933d91fee7f8e5df9e82fb134c56` establishes the
 existing boundary:
 
 - [`ParseOptions`](../../../internal/engine/core/input.go) carries unit, backend,
-  recognition, depth, and tracing; [`public APIs`](../../../pego.go) use functional
+  recognition, depth, and tracing; [`public APIs`](../../../zeroparse.go) use functional
   ParseOption arguments. Document stores its construction settings; Parse has
   no per-call arguments today.
 - [`run`/`recoverParse`](../../../internal/engine/program_parse.go) distinguish completed
@@ -492,7 +492,7 @@ exact main ranged as follows:
 | Generated Go typed parse (8 profiles) | 1.192–1.402× |
 
 The exact-parent comparison captures total implementation cost, including state
-layout. The same-source `pego_budget_controls_reference` disables core
+layout. The same-source `zp_budget_controls_reference` disables core
 instrumentation checks but retains core state layout. It does not isolate
 generated-Go instrumentation: the generated sources are identical across those
 variants and retain `budgetControlsEnabled=true`. The generated-Go results above

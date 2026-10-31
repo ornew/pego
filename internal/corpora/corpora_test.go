@@ -38,7 +38,7 @@ func serve(t *testing.T, body []byte) string {
 }
 
 func TestFetch(t *testing.T) {
-	t.Setenv("PEGO_CORPORA", t.TempDir())
+	t.Setenv("ZP_CORPORA", t.TempDir())
 	url := serve(t, tarGz(t, map[string]string{"a/one.txt": "1\n", "a/two.go": "2\n", "b/three.txt": "3\n", "top.md": "t\n"}))
 	s := Source{Name: "demo", URL: url, Include: []string{"a/", "*.md"}}
 	sum, n, err := Pin(s)
@@ -74,7 +74,7 @@ func TestFetch(t *testing.T) {
 
 // A cached entry is trusted only after its files match the pinned digest: fetch replaces a corrupted or extended one.
 func TestFetchRepairsCorruptedEntry(t *testing.T) {
-	t.Setenv("PEGO_CORPORA", t.TempDir())
+	t.Setenv("ZP_CORPORA", t.TempDir())
 	s := Source{Name: "demo", URL: serve(t, tarGz(t, map[string]string{"a/one.txt": "1\n"})), Include: []string{"a/"}}
 	sum, _, err := Pin(s)
 	if err != nil {
@@ -114,7 +114,7 @@ func TestFetchRepairsCorruptedEntry(t *testing.T) {
 }
 
 func TestFetchRejectsWrongDigest(t *testing.T) {
-	t.Setenv("PEGO_CORPORA", t.TempDir())
+	t.Setenv("ZP_CORPORA", t.TempDir())
 	s := Source{Name: "demo", URL: serve(t, tarGz(t, map[string]string{"a/one.txt": "1\n"})), Include: []string{"a/"}, SHA256: strings.Repeat("0", 64)}
 	if _, err := Fetch(s); err == nil || !strings.Contains(err.Error(), "digest") {
 		t.Fatalf("Fetch: %v", err)
@@ -122,14 +122,14 @@ func TestFetchRejectsWrongDigest(t *testing.T) {
 	if _, ok := Dir(s); ok {
 		t.Fatal("a failed fetch left data in the cache")
 	}
-	entries, _ := os.ReadDir(filepath.Join(os.Getenv("PEGO_CORPORA"), "demo"))
+	entries, _ := os.ReadDir(filepath.Join(os.Getenv("ZP_CORPORA"), "demo"))
 	if len(entries) != 0 {
 		t.Fatalf("a failed fetch left %d entries", len(entries))
 	}
 }
 
 func TestFetchZip(t *testing.T) {
-	t.Setenv("PEGO_CORPORA", t.TempDir())
+	t.Setenv("ZP_CORPORA", t.TempDir())
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 	w, _ := zw.Create("mod@v1/p/x_test.go")

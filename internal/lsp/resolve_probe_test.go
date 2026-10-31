@@ -7,18 +7,18 @@ import (
 	"time"
 )
 
-// TestCodeActionResolveProbe (PEGO_LSP_RESOLVE_PROBE=1) times the code action requests that cover
-// one fixable finding of a large grammar (with a rule added at the end that nothing uses) (PEGO_LSP_EDITOR_GRAMMAR selects parsers/<name>/<name>.pego,
-// duckdb by default, PEGO_LSP_RESOLVE_CHECK the check of the finding): listed with their edits, listed for a client that resolves, and resolved.
+// TestCodeActionResolveProbe (ZP_LSP_RESOLVE_PROBE=1) times the code action requests that cover
+// one fixable finding of a large grammar (with a rule added at the end that nothing uses) (ZP_LSP_EDITOR_GRAMMAR selects parsers/<name>/<name>.zp,
+// duckdb by default, ZP_LSP_RESOLVE_CHECK the check of the finding): listed with their edits, listed for a client that resolves, and resolved.
 func TestCodeActionResolveProbe(t *testing.T) {
-	if os.Getenv("PEGO_LSP_RESOLVE_PROBE") != "1" {
-		t.Skip("set PEGO_LSP_RESOLVE_PROBE=1")
+	if os.Getenv("ZP_LSP_RESOLVE_PROBE") != "1" {
+		t.Skip("set ZP_LSP_RESOLVE_PROBE=1")
 	}
-	name := os.Getenv("PEGO_LSP_EDITOR_GRAMMAR")
+	name := os.Getenv("ZP_LSP_EDITOR_GRAMMAR")
 	if name == "" {
 		name = "duckdb"
 	}
-	data, err := os.ReadFile("../../parsers/" + name + "/" + name + ".pego")
+	data, err := os.ReadFile("../../parsers/" + name + "/" + name + ".zp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,22 +39,22 @@ func TestCodeActionResolveProbe(t *testing.T) {
 		c := newServer(t)
 		capabilities := map[string]any{
 			"workspace":    map[string]any{"workspaceEdit": map[string]any{"documentChanges": true}},
-			"experimental": map[string]any{"pego": map[string]any{"lintDiagnostics": true, "showExplanation": true}},
+			"experimental": map[string]any{"zp": map[string]any{"lintDiagnostics": true, "showExplanation": true}},
 		}
 		if resolve {
 			capabilities["textDocument"] = map[string]any{"codeAction": map[string]any{
 				"dataSupport": true, "resolveSupport": map[string]any{"properties": []string{"edit"}}}}
 		}
 		c.request("initialize", map[string]any{"capabilities": capabilities})
-		const uri = "file:///probe.pego"
+		const uri = "file:///probe.zp"
 		diagnostics := c.open(uri, string(data))
-		check := os.Getenv("PEGO_LSP_RESOLVE_CHECK")
+		check := os.Getenv("ZP_LSP_RESOLVE_CHECK")
 		if check == "" {
 			check = "unreachable-rule"
 		}
 		var target *Diagnostic
 		for i, d := range diagnostics {
-			if d.Source == "pego-lint" && d.Code == check {
+			if d.Source == "zp-lint" && d.Code == check {
 				target = &diagnostics[i]
 				break
 			}

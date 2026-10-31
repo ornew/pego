@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 func main() {

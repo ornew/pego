@@ -3,7 +3,7 @@ package document
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func TestDocumentChangesDirectoryEqualityHasBoundedScratch(t *testing.T) {

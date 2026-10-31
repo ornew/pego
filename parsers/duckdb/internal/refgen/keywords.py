@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Writes the keyword part of duckdb.pego: one rule per keyword the grammar uses, and the tries that tell whether a
+"""Writes the keyword part of duckdb.zp: one rule per keyword the grammar uses, and the tries that tell whether a
 word is a keyword that a given kind of name may not be.
 
-Usage: keywords.py duckdb.pego [--check]
+Usage: keywords.py duckdb.zp [--check]
 
 The lists in keywords/*.list are DuckDB's (third_party/libpg_query/grammar/keywords, tag v1.5.6). The grammar
 refers to a keyword by its upper-case spelling (SELECT, GROUP, ORDER); this script defines every such rule between

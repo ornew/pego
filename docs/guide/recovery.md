@@ -15,22 +15,22 @@ Contents:
 - [Recipes](#recipes): a missing closing bracket, skipping to the next statement or line, recovering inside a list
 - [Troubleshooting](#troubleshooting)
 
-The examples use the `pego` command; build it once with `go build -o pego ./cmd/pego` (or run `go run ./cmd/pego`
-instead of `pego`). Each command is followed by its output with standard output and standard error shown together, as
-a terminal shows them. `pego` prints errors on standard error with the prefix `pego: ` and exits with status 1 when
+The examples use the `zp` command; build it once with `go build -o zp ./cmd/zp` (or run `go run ./cmd/zp`
+instead of `zp`). Each command is followed by its output with standard output and standard error shown together, as
+a terminal shows them. `zp` prints errors on standard error with the prefix `zp: ` and exits with status 1 when
 the input has a syntax error, even if it recovered from all of them (the tree is then printed first, on standard
 output).
 
-A grammar block whose first line is `// name.pego` is a complete file: save it under that name. A block whose first
-line is `// name.pego (changed rules)` replaces the rules of the same names in that file, and the examples after it use
+A grammar block whose first line is `// name.zp` is a complete file: save it under that name. A block whose first
+line is `// name.zp (changed rules)` replaces the rules of the same names in that file, and the examples after it use
 the edited file. Every command and its output below were run as shown, in this order.
 
-The grammar is the finished `toy.pego` of [Writing Readable Messages](error-messages.md#writing-readable-messages): a
+The grammar is the finished `toy.zp` of [Writing Readable Messages](error-messages.md#writing-readable-messages): a
 small statement language with `let x = 1 + 2;`, `print x;` and `{ ... }` blocks whose errors carry `@error` labels. Save
 it under that name:
 
-```pego
-// toy.pego
+```zp
+// toy.zp
 package toy
 
 type Let = { Name node[string]; Value Expr }
@@ -79,19 +79,19 @@ repetition cannot loop forever on empty skips).
 Recover at the statement level: when a statement does not parse, skip to the end of its line or to the next
 `;`, whichever comes first, but never past a brace.
 
-```pego
-// toy.pego (changed rules)
+```zp
+// toy.zp (changed rules)
 // If a statement does not parse, skip to the next ";" (but never past a brace) and carry on.
 rule stmt Stmt = s:(let / print / block) #recover(skip=[^;{}\n]+ ";"?) => $s
 ```
 
 ```bash
-pego parse -g toy.pego -f sexpr -i $'let a = 1;\nlet = 2;\nprint (a +);\nprint a\nlet b = a + 1;\n{ print 1 let c = ; print 2; }\nprint b;\n'
+zp parse -g toy.zp -f sexpr -i $'let a = 1;\nlet = 2;\nprint (a +);\nprint a\nlet b = a + 1;\n{ print 1 let c = ; print 2; }\nprint b;\n'
 ```
 
 ```text
 Program{Body: [Let{Name: "a", Value: "1"} error("2:5: expected a name") error("3:11: expected an expression") error("5:1: expected ';'") Let{Name: "b", Value: Sum{Left: "a", Right: "1"}} Block{Body: [error("6:11: expected ';'") Print{Value: "2"}]} Print{Value: "b"}]}
-pego: 2:5: expected a name
+zp: 2:5: expected a name
 3:11: expected an expression
 5:1: expected ';'
 6:11: expected ';'
@@ -103,7 +103,7 @@ values in the `Body` list. `error` is a built-in type that only recovery produce
 default output format, an error value looks like this:
 
 ```bash
-pego parse -g toy.pego -i $'let = 2;\nprint 1;\n'
+zp parse -g toy.zp -i $'let = 2;\nprint 1;\n'
 ```
 
 ```text
@@ -133,7 +133,7 @@ pego parse -g toy.pego -i $'let = 2;\nprint 1;\n'
     ]
   }
 }
-pego: 1:5: expected a name
+zp: 1:5: expected a name
 ```
 
 `start`/`end` delimit the skipped text, and `error` is the recorded message, with its position, as a string.
@@ -151,8 +151,8 @@ Details worth knowing:
   `@error(...) #recover(...)`: the label is applied first, so the recovered error carries the label. With the order
   reversed, `@error` wraps a `#recover` that almost never fails, so the label is never used:
 
-```pego
-// order.pego
+```zp
+// order.zp
 @start(default)
 rule good = stmt @error(message="bad statement") #recover(skip=[^;]* ";")* $$
 @start
@@ -161,21 +161,21 @@ rule stmt = "a" ";"
 ```
 
 ```bash
-pego parse -g order.pego -s good -f sexpr -i 'a;b;a;'
+zp parse -g order.zp -s good -f sexpr -i 'a;b;a;'
 ```
 
 ```text
 ([("a" ";") error("1:3: bad statement") ("a" ";")])
-pego: 1:3: bad statement
+zp: 1:3: bad statement
 ```
 
 ```bash
-pego parse -g order.pego -s bad -f sexpr -i 'a;b;a;'
+zp parse -g order.zp -s bad -f sexpr -i 'a;b;a;'
 ```
 
 ```text
 ([("a" ";") error("1:3: syntax error: expected \"a\"") ("a" ";")])
-pego: 1:3: syntax error: expected "a"
+zp: 1:3: syntax error: expected "a"
 ```
 
 ## What Happens to the Errors
@@ -192,11 +192,11 @@ This matters most for unclosed constructs. The statements recovered inside a blo
 failed, so a single missing `}` at the end of the file replaces all the earlier reports with one:
 
 ```bash
-pego parse -g toy.pego -i $'{ let = 1;\nprint 2;\n'
+zp parse -g toy.zp -i $'{ let = 1;\nprint 2;\n'
 ```
 
 ```text
-pego: 3:1: expected '}'
+zp: 3:1: expected '}'
 ```
 
 Here `let = 1;` had been recovered inside the block, but the block as a whole failed at the end of the input (see the
@@ -206,11 +206,11 @@ Here `let = 1;` had been recovered inside the block, but the block as a whole fa
 list of expected items also contains the class that `skip` tried to match:
 
 ```bash
-pego parse -g toy.pego -i $'print 1;\n}\n'
+zp parse -g toy.zp -i $'print 1;\n}\n'
 ```
 
 ```text
-pego: 2:1: syntax error: expected end of input, "let", "print", "{", [^;{}\n]
+zp: 2:1: syntax error: expected end of input, "let", "print", "{", [^;{}\n]
 ```
 
 The stray `}` stops every recovery in this grammar, because `skip` refuses to eat braces. That is the right trade-off
@@ -219,8 +219,8 @@ them.
 
 ## Using the Errors From Go
 
-The following program parses three inputs with the finished `toy.pego` and handles each outcome. Run it in the directory
-that contains `toy.pego` (the module that contains it must depend on `github.com/ornew/pego`).
+The following program parses three inputs with the finished `toy.zp` and handles each outcome. Run it in the directory
+that contains `toy.zp` (the module that contains it must depend on `github.com/ornew/zeroparse`).
 
 ```go
 // main.go
@@ -231,24 +231,24 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // errorNodes collects the error values of a tree.
-func errorNodes(n *pego.Node, out *[]*pego.Node) {
+func errorNodes(n *zeroparse.Node, out *[]*zeroparse.Node) {
 	if n == nil {
 		return
 	}
 	switch n.Kind() {
-	case pego.KindError:
+	case zeroparse.KindError:
 		*out = append(*out, n)
-	case pego.KindStruct:
+	case zeroparse.KindStruct:
 		for _, v := range n.Fields() {
-			if child, ok := v.(*pego.Node); ok {
+			if child, ok := v.(*zeroparse.Node); ok {
 				errorNodes(child, out)
 			}
 		}
-	case pego.KindTuple, pego.KindList, pego.KindTupleValue, pego.KindListValue:
+	case zeroparse.KindTuple, zeroparse.KindList, zeroparse.KindTupleValue, zeroparse.KindListValue:
 		for _, child := range n.Elems() {
 			errorNodes(child, out)
 		}
@@ -256,12 +256,12 @@ func errorNodes(n *pego.Node, out *[]*pego.Node) {
 }
 
 func main() {
-	src, err := os.ReadFile("toy.pego")
+	src, err := os.ReadFile("toy.zp")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	p, err := pego.CompileSource(string(src), "main")
+	p, err := zeroparse.CompileSource(string(src), "main")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -273,10 +273,10 @@ func main() {
 		"print 1;\n}\n",
 	} {
 		fmt.Printf("--- %q\n", input)
-		node, err := p.Parse(input, pego.WithExpectations())
+		node, err := p.Parse(input, zeroparse.WithExpectations())
 
-		var recovered pego.SyntaxErrors
-		var failed *pego.SyntaxError
+		var recovered zeroparse.SyntaxErrors
+		var failed *zeroparse.SyntaxError
 		switch {
 		case err == nil:
 			fmt.Println("ok:", node)
@@ -286,7 +286,7 @@ func main() {
 			for _, e := range recovered {
 				fmt.Printf("  line %d, column %d (offset %d): %s\n", e.Line, e.Col, e.Pos, e.Message())
 			}
-			var nodes []*pego.Node
+			var nodes []*zeroparse.Node
 			errorNodes(node, &nodes)
 			for _, n := range nodes {
 				fmt.Printf("  error value [%d,%d): %s\n", n.Start(), n.End(), n.Text())
@@ -320,10 +320,10 @@ failed: 2:1: syntax error: expected end of input, "let", "print", "{", [^;{}\n] 
 
 A recovery inside a repetition is attempted every time an element fails to parse, including the normal end of the
 repetition. When the closing bracket of the enclosing construct can be matched by `skip`, recovery swallows it. This is
-what the `toy.pego` statement rule does if `{}` is not excluded from the skip:
+what the `toy.zp` statement rule does if `{}` is not excluded from the skip:
 
-```pego
-// toy_greedy.pego
+```zp
+// toy_greedy.zp
 package toy
 
 type Let = { Name node[string]; Value Expr }
@@ -349,26 +349,26 @@ rule ws = (&[ \t\r\n] .)*
 ```
 
 ```bash
-pego parse -g toy_greedy.pego -f sexpr -i $'{ print 1; }\nprint 2;\n'
+zp parse -g toy_greedy.zp -f sexpr -i $'{ print 1; }\nprint 2;\n'
 ```
 
 ```text
 Program{Body: [error("3:1: expected '}'") error("1:12: syntax error: expected \"let\", \"print\", \"{\"") Print{Value: "2"}]}
-pego: 3:1: expected '}'
+zp: 3:1: expected '}'
 1:12: syntax error: expected "let", "print", "{"
 ```
 
 The valid input `{ print 1; }` is reported as erroneous. At the `}`, the `stmt` rule inside the block fails (a `}` is
 not a statement), and `skip` consumes the `}` as the "rest of a broken line". The block runs on to the end of the input
 without finding its closing brace, and the outer statement recoveries then produce the two errors shown. The fix is the
-one `toy.pego` uses: `skip` must not be able to start at, or run over, the token that ends the enclosing repetition. The
+one `toy.zp` uses: `skip` must not be able to start at, or run over, the token that ends the enclosing repetition. The
 same applies to `)`, `]`, `end` and so on. In general, `skip` should describe "the rest of this element" and be unable
 to match at the delimiter that closes the list the element is in.
 
 ## Inserting a Missing Literal
 
 Use `#missing` on a nonempty literal when an editor needs a tree even though that
-token is absent. In a Closure whole-input parse, `pego.WithMissingTokens(n)`
+token is absent. In a Closure whole-input parse, `zeroparse.WithMissingTokens(n)`
 enables up to `n` insertion attempts for that call. Without the option, the
 literal remains strict. For example, `rule main = "name" ";" #missing $$`
 parses `name` with a zero-width `missing` value at EOF and returns a recovered
@@ -378,7 +378,7 @@ diagnostic, and its `Text()` returns the diagnostic message. A literal with
 the value is a `missing`, a kind of `error`, and not a string node.
 
 The limit counts abandoned attempts too. Exhaustion returns
-`*pego.MissingTokenLimitError` with no tree. VM backends, generated parsers,
+`*zeroparse.MissingTokenLimitError` with no tree. VM backends, generated parsers,
 Document, streams and compiled grammar serialization do not support this
 initial feature. The budget includes abandoned attempts and left-recursion seed
 replay, so a limit of 16 does not guarantee acceptance of a tree with 16 missing
@@ -391,9 +391,9 @@ specification](../../spec/language/pragmas.md#missing) defines the full contract
 
 A missing `)`, `]` or `}` fails at the position where the closer was expected, which is where the parser could not
 continue. Label the closer, not the group, so that errors inside the group keep their own messages. This is how
-`toy.pego` does it:
+`toy.zp` does it:
 
-```pego
+```zp
 rule group Expr = "(" ws e:expr ws ")" @error(message="expected ')'") => $e
 ```
 
@@ -401,34 +401,34 @@ rule group Expr = "(" ws e:expr ws ")" @error(message="expected ')'") => $e
 one message.) With the statement-level recovery of the `stmt` rule above, a missing `)` costs one statement and nothing else:
 
 ```bash
-pego parse -g toy.pego -f sexpr -i $'let x = (1 + 2;\nprint x;\n'
+zp parse -g toy.zp -f sexpr -i $'let x = (1 + 2;\nprint x;\n'
 ```
 
 ```text
 Program{Body: [error("1:15: expected ')'") Print{Value: "x"}]}
-pego: 1:15: expected ')'
+zp: 1:15: expected ')'
 ```
 
 The same holds inside a block: the broken statement becomes an `error` value, and the statements after it, up to the
 block's own `}`, are parsed normally.
 
 ```bash
-pego parse -g toy.pego -f sexpr -i $'{ print (1; let y = 2;\n  print 3;\n}\n'
+zp parse -g toy.zp -f sexpr -i $'{ print (1; let y = 2;\n  print 3;\n}\n'
 ```
 
 ```text
 Program{Body: [Block{Body: [error("1:11: expected ')'") Let{Name: "y", Value: "2"} Print{Value: "3"}]}]}
-pego: 1:11: expected ')'
+zp: 1:11: expected ')'
 ```
 
 A missing closer for a construct that spans several statements is different, because there is nothing left to skip:
 
 ```bash
-pego parse -g toy.pego -f sexpr -i $'{ print 1;\nprint 2;\n'
+zp parse -g toy.zp -f sexpr -i $'{ print 1;\nprint 2;\n'
 ```
 
 ```text
-pego: 3:1: expected '}'
+zp: 3:1: expected '}'
 ```
 
 - The error is at the end of the input, where the `}` was expected. It cannot point at the *opening* brace: errors are
@@ -442,7 +442,7 @@ pego: 3:1: expected '}'
 
 This is the `stmt` rule from the start of this guide. The pattern is always the same:
 
-```pego
+```zp
 rule stmt = s:(let / print / block) #recover(skip=[^;{}\n]+ ";"?) => $s
 ```
 
@@ -458,8 +458,8 @@ lines after it**; otherwise the body of a broken header would be parsed as state
 reads the indentation variable (see the [context-sensitive guide](context-sensitive.md#indentation-blocks)). This
 grammar has assignments and `if` blocks:
 
-```pego
-// blocks.pego
+```zp
+// blocks.zp
 package blocks
 
 type Assign = { Name node[string]; Value node[string] }
@@ -492,24 +492,24 @@ rule blank = [ \t]* "\n"
 ```
 
 ```bash
-pego parse -g blocks.pego -f sexpr -i $'if x:\n    y = 1\n    z = = 2\n        w = 3\n    v = 4\nu = 5\n'
+zp parse -g blocks.zp -f sexpr -i $'if x:\n    y = 1\n    z = = 2\n        w = 3\n    v = 4\nu = 5\n'
 ```
 
 ```text
 [If{Body: [Assign{Name: "y", Value: "1"} error("3:9: syntax error: expected [0-9]") Assign{Name: "v", Value: "4"}], Test: "x"} Assign{Name: "u", Value: "5"}]
-pego: 3:9: syntax error: expected [0-9]
+zp: 3:9: syntax error: expected [0-9]
 ```
 
 The broken line and its more indented continuation became one `error` value; `v = 4` and `u = 5` were parsed normally,
 each in its own block. A broken header takes its body with it:
 
 ```bash
-pego parse -g blocks.pego -f sexpr -i $'if x\n    y = 1\nu = 5\n'
+zp parse -g blocks.zp -f sexpr -i $'if x\n    y = 1\nu = 5\n'
 ```
 
 ```text
 [error("1:5: syntax error: expected \":\", [a-z]") Assign{Name: "u", Value: "5"}]
-pego: 1:5: syntax error: expected ":", [a-z]
+zp: 1:5: syntax error: expected ":", [a-z]
 ```
 
 The indentation check is outside the `#recover`: a line that is not at the indentation of the block fails `stmt` before
@@ -520,8 +520,8 @@ the recovery starts, which ends the block instead of being skipped.
 Recovery does not have to be at the statement level. In a bracketed, comma-separated list, recover element by element
 and let `skip` stop in front of the separator and the closing bracket, so that neither is consumed:
 
-```pego
-// list.pego
+```zp
+// list.zp
 package nums
 
 type Item ~ node[string] | error
@@ -541,12 +541,12 @@ rule ws = (&[ \t\n] .)*
 ```
 
 ```bash
-pego parse -g list.pego -f sexpr -i '[1, x, 3, y z]'
+zp parse -g list.zp -f sexpr -i '[1, x, 3, y z]'
 ```
 
 ```text
 Numbers{Items: ["1" error("1:5: expected a number") "3" error("1:11: expected a number")]}
-pego: 1:5: expected a number
+zp: 1:5: expected a number
 1:11: expected a number
 ```
 
@@ -554,19 +554,19 @@ The stop set (`,`, `]` and the line end) keeps `skip` from consuming the separat
 `[1, x, 3]` it eats only the `x`, and the `,` and `]` stay for the list rule. Two limits of recovery are visible:
 
 ```bash
-pego parse -g list.pego -i '[1, , 3]'
+zp parse -g list.zp -i '[1, , 3]'
 ```
 
 ```text
-pego: 1:5: expected a number
+zp: 1:5: expected a number
 ```
 
 ```bash
-pego parse -g list.pego -i '[1, 2'
+zp parse -g list.zp -i '[1, 2'
 ```
 
 ```text
-pego: 1:6: expected ',' or ']'
+zp: 1:6: expected ',' or ']'
 ```
 
 - A *missing* element (`[1, , 3]`) cannot be recovered: `skip` cannot match at the `,`, there is nothing to skip, and
@@ -580,7 +580,7 @@ pego: 1:6: expected ',' or ']'
 |:--|:--|:--|
 | `#recover` has no effect | `skip` fails at the start of the expression or matches nothing; the expression is not where the failure occurs; or the parse failed in the end so all recovered errors were dropped | Test `skip` on the broken text alone; check that the error is not outside the `#recover`; check for an unclosed construct |
 | Valid input fails after adding `#recover` | `skip` can match the closing token of the enclosing construct | Exclude the closers from `skip` |
-| `err != nil`, yet a tree is wanted | The parse recovered; the error is a `pego.SyntaxErrors` | Check for `SyntaxErrors` with `errors.As` before returning |
+| `err != nil`, yet a tree is wanted | The parse recovered; the error is a `zeroparse.SyntaxErrors` | Check for `SyntaxErrors` with `errors.As` before returning |
 
 ## Related Topics
 

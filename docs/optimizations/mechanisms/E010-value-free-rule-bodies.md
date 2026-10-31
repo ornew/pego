@@ -11,7 +11,7 @@ positional body values (`$n`).
 Streaming bodies keep their general route. Captures still build the values their
 actions need.
 
-```pego
+```zp
 type B = { B node[string] }
 rule ws = [ ]+
 rule b = [a-z]

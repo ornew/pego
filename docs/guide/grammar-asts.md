@@ -1,7 +1,7 @@
 # Building Grammars as ASTs and JSON
 
 Use package `grammar` when a tool builds a grammar in Go or loads its JSON
-representation. `pego.Compile` checks it and returns a parser; Go and
+representation. `zeroparse.Compile` checks it and returns a parser; Go and
 TypeScript generation use the same compiler.
 
 ## Validate a Hand-Built Grammar
@@ -20,7 +20,7 @@ if errors.As(err, &problem) {
 }
 ```
 
-Import `errors`, `fmt` and `github.com/ornew/pego/grammar` for this snippet.
+Import `errors`, `fmt` and `github.com/ornew/zeroparse/grammar` for this snippet.
 `Path` uses JSON field names and zero-based indexes. `Pos` is the closest known
 diagnostic position. Source-parsed grammars carry source spans and comment
 ownership in `SourceInfo`; hand-built nodes may leave those fields zero-valued.
@@ -98,7 +98,7 @@ to print the full grammar.
 The command-line form writes to standard output:
 
 ```bash
-pego fmt -syntax grammar.pego
+zp fmt -syntax grammar.zp
 ```
 
 `-syntax` cannot be combined with `-w`, `-l` or `-check`. Comments on retained forms
@@ -221,7 +221,7 @@ Shared AST subtrees remain shared within the clone, and AST pointer cycles are
 preserved for `grammar.Validate` to report. Arbitrary application objects or
 cyclic attribute maps and slices are outside the clone contract.
 
-`pego.ParseGrammar` returns the source AST with its source metadata. By
+`zeroparse.ParseGrammar` returns the source AST with its source metadata. By
 contrast, `Parser.Grammar()` exposes the normalized grammar retained by the
 compiled parser. Normalization can lower groups and pragmas, so that grammar is
 not a complete record of source documentation ownership. It may be the same AST
@@ -253,7 +253,7 @@ this increment's coverage, so this is not a lossless formatter guarantee for
 every grammar form.
 
 Direct grammar JSON includes normalized source metadata. A compiled grammar
-(`.pegoc`) holds bytecode only, with no tree, source positions or comments.
+(`.zpc`) holds bytecode only, with no tree, source positions or comments.
 
 Source-only syntax has dedicated AST nodes. An explicit Rule Expression grouping is `Group{Expr}`; formatting and JSON preserve the group, while compilation normalizes it away before matching. The source-aware AST retains the group body, closing-delimiter comments and layout. Parenthesized type and action expressions likewise use source-only `TypeGroup{Type}` and `TermGroup{Term}` nodes; `TypeGroup` implements `TypeExpr`, while the `TermGroup.Term` field has type `Term` and `TermGroup` implements `Term`. These groups preserve their delimiters and enclosed comments in source formatting. Their `OpenBreak`, `BodyBreak`, `CloseBreak` and `OneLine` fields retain raw line placement; `TupleLit`, `Call`, `New` and `ListConstructor` keep the comments at their delimiters in `OpenBreak`, `BodyBreak` and `CloseBreak`. A tuple, call, constructor, list constructor, tuple type, type application, attribute or lambda writes one element per line when it has a trailing comma (`TrailingComma`) or a comment that needs its own line, and is otherwise written on one line; the comma of a one-element tuple does not count. Compilation and generators lower the wrappers transparently before execution. JSON retains normalized source positions and ownership but omits formatter layout and exact raw comment tokens. A braced action sequence is `Block{Statements}`. A single-statement Predicate Action remains in `Predicate.Term`; a nonempty multi-statement block is represented by `Block{Statements}` and executes its statements in order, like adjacent Predicate Actions. Empty predicate blocks and braced Value Actions can be parsed, formatted and serialized, but semantic checking rejects them as unsupported.
 
@@ -265,7 +265,7 @@ AST. An `InlineAction` node is formatted and serialized as written; compilation
 lowers it to a hidden rule called at its position. The grammar of a parser
 (`Parser.Grammar`) and the formatter keep the inline action as written.
 
-After loading, use `pego.Compile(g, "main")` to perform semantic checking.
+After loading, use `zeroparse.Compile(g, "main")` to perform semantic checking.
 Compile and the generators also run structural validation themselves. A
 compiled file holds no AST; its trust and bytecode validation rules are in
 [compiled grammars](compiled-grammars.md).

@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/gen"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/gen"
 )
 
 var update = flag.Bool("update", false, "update golden files")
 
-// generation is a pego gen command of generate.go.
+// generation is a zp gen command of generate.go.
 type generation struct {
 	grammar, module, out string
 	hasTypes             bool
@@ -39,7 +39,7 @@ func generationsIn(t *testing.T, dir string) []generation {
 	var gens []generation
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
-		args, ok := strings.CutPrefix(sc.Text(), "//go:generate go run ../cmd/pego gen ")
+		args, ok := strings.CutPrefix(sc.Text(), "//go:generate go run ../cmd/zp gen ")
 		if !ok {
 			continue
 		}
@@ -93,7 +93,7 @@ func generationsIn(t *testing.T, dir string) []generation {
 	return gens
 }
 
-// TestGeneratedParsersAreUpToDate checks that every file of a generated package is what pego gen
+// TestGeneratedParsersAreUpToDate checks that every file of a generated package is what zp gen
 // generates from its grammar (run go generate ./parsers after changing a grammar or the generator).
 func TestGeneratedParsersAreUpToDate(t *testing.T) {
 	for _, g := range generations(t) {
@@ -101,7 +101,7 @@ func TestGeneratedParsersAreUpToDate(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		gr, err := pego.ParseGrammar(string(src))
+		gr, err := zeroparse.ParseGrammar(string(src))
 		if err != nil {
 			t.Fatalf("%s:%v", g.grammar, err)
 		}
@@ -130,15 +130,15 @@ func TestGeneratedParsersAreUpToDate(t *testing.T) {
 func TestBackends(t *testing.T) {
 	backends := []struct {
 		name string
-		b    pego.Backend
-	}{{"closure", pego.Closure}, {"bytecode", pego.Bytecode}, {"iterative", pego.BytecodeIterative}}
+		b    zeroparse.Backend
+	}{{"closure", zeroparse.Closure}, {"bytecode", zeroparse.Bytecode}, {"iterative", zeroparse.BytecodeIterative}}
 	for _, g := range generations(t) {
 		t.Run(filepath.Dir(g.grammar), func(t *testing.T) {
 			src, err := os.ReadFile(g.grammar)
 			if err != nil {
 				t.Fatal(err)
 			}
-			p, err := pego.CompileSource(string(src), "main")
+			p, err := zeroparse.CompileSource(string(src), "main")
 			if err != nil {
 				t.Fatalf("%s:%v", g.grammar, err)
 			}
@@ -155,9 +155,9 @@ func TestBackends(t *testing.T) {
 				for i, b := range backends {
 					// Print the tree and the errors, including those recovered with #recover.
 					var got string
-					opts := []pego.ParseOption{pego.WithBackend(b.b)}
+					opts := []zeroparse.ParseOption{zeroparse.WithBackend(b.b)}
 					if g.config.Expectations {
-						opts = append(opts, pego.WithExpectations())
+						opts = append(opts, zeroparse.WithExpectations())
 					}
 					n, err := p.Parse(string(data), opts...)
 					if n != nil {

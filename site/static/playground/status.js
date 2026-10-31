@@ -1,4 +1,4 @@
-// describeResult turns a parse response of pego.wasm into what the playground shows: the status
+// describeResult turns a parse response of zp.wasm into what the playground shows: the status
 // line ({kind, text}: kind is ok, warn or error; text is plain text) and the message of the tree
 // panel when there is no tree. It has no dependencies, so that it can be tested in Node.
 

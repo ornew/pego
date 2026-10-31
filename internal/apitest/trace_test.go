@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func TestWithTrace(t *testing.T) {
@@ -18,8 +18,8 @@ rule value = [0-9]+ #atomic`, "main")
 	}
 	var calls []string
 	var exits int
-	_, err = p.Parse("a=1;b=x", pego.WithExpectations(), pego.WithTrace(func(e pego.TraceEvent) {
-		if e.Kind == pego.TraceEnter {
+	_, err = p.Parse("a=1;b=x", zeroparse.WithExpectations(), zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
+		if e.Kind == zeroparse.TraceEnter {
 			line, col := e.LineCol(e.Pos)
 			calls = append(calls, fmt.Sprintf("%s%s@%d:%d", strings.Repeat(" ", e.Depth-1), e.Rule, line, col))
 			return
@@ -27,8 +27,8 @@ rule value = [0-9]+ #atomic`, "main")
 		if !e.Matched && e.Rule == "value" {
 			calls = append(calls, "value failed: "+e.Failure().Error())
 		}
-	}), pego.WithTrace(func(e pego.TraceEvent) {
-		if e.Kind == pego.TraceExit {
+	}), zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
+		if e.Kind == zeroparse.TraceExit {
 			exits++
 		}
 	}))
@@ -57,11 +57,11 @@ rule num = [0-9]+ #atomic " "?`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	var prof pego.Profile
-	if _, err := p.Parse("ab 12 cd", pego.WithProfile(&prof)); err != nil {
+	var prof zeroparse.Profile
+	if _, err := p.Parse("ab 12 cd", zeroparse.WithProfile(&prof)); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := p.Parse("1 x", pego.WithProfile(&prof), pego.WithBackend(pego.BytecodeIterative)); err != nil {
+	if _, err := p.Parse("1 x", zeroparse.WithProfile(&prof), zeroparse.WithBackend(zeroparse.BytecodeIterative)); err != nil {
 		t.Fatal(err)
 	}
 	counts := map[string]string{}
@@ -87,12 +87,12 @@ func TestNilTraceOptions(t *testing.T) {
 		t.Fatal(err)
 	}
 	calls := 0
-	count := pego.WithTrace(func(pego.TraceEvent) { calls++ })
-	for _, opts := range [][]pego.ParseOption{
-		{pego.WithTrace(nil)},
-		{pego.WithProfile(nil)},
-		{count, pego.WithTrace(nil), pego.WithProfile(nil)},
-		{pego.WithProfile(nil), count},
+	count := zeroparse.WithTrace(func(zeroparse.TraceEvent) { calls++ })
+	for _, opts := range [][]zeroparse.ParseOption{
+		{zeroparse.WithTrace(nil)},
+		{zeroparse.WithProfile(nil)},
+		{count, zeroparse.WithTrace(nil), zeroparse.WithProfile(nil)},
+		{zeroparse.WithProfile(nil), count},
 	} {
 		if n, err := p.Parse("abc", opts...); err != nil || n == nil {
 			t.Errorf("got %v, %v", n, err)

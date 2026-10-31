@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // jsonRoundTripForms hold comments in the places where a declaration, a field or

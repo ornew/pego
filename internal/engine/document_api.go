@@ -1,6 +1,6 @@
 package engine
 
-import "github.com/ornew/pego/internal/engine/document"
+import "github.com/ornew/zeroparse/internal/engine/document"
 
 // The Document, its snapshots and change notifications are declared in the document package. The
 // engine re-exports them under the same names for the root package.

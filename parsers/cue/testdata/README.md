@@ -25,5 +25,5 @@ single literals and their values only.
   float literals of the corpus and of 30,000 generated inputs of each family: whether the decoding fails, and the
   value (`literal_test.go`).
 
-The `*.txt` files and their `*.golden` files are inputs of this module's tests and the trees the engine of PEGO
+The `*.txt` files and their `*.golden` files are inputs of this module's tests and the trees the engine of ZeroParse
 gives for them; see `parsers/parsers_test.go`.

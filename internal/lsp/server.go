@@ -1,10 +1,10 @@
-// Package lsp implements a Language Server Protocol server for PEGO grammar files (.pego).
+// Package lsp implements a Language Server Protocol server for ZeroParse grammar files (.zp).
 //
-// The server speaks LSP 3.17 over a byte stream (standard input and output for pego lsp). It keeps
+// The server speaks LSP 3.17 over a byte stream (standard input and output for zp lsp). It keeps
 // the open documents in memory, analyzes a document again after every change, and publishes its
 // syntax, compile and type errors as diagnostics. It answers formatting, go to definition, find
 // references, document highlights, document symbols, hover, rename, completion and semantic token
-// requests. Each document is analyzed on its own: a .pego file is a whole grammar. The design is
+// requests. Each document is analyzed on its own: a .zp file is a whole grammar. The design is
 // in docs/design/records/017-language-server.md.
 package lsp
 
@@ -43,11 +43,11 @@ type clientCapabilities struct {
 		} `json:"workspaceEdit"`
 	} `json:"workspace"`
 	Experimental struct {
-		Pego struct {
+		ZP struct {
 			LintDiagnostics    bool `json:"lintDiagnostics"`
 			ShowExplanation    bool `json:"showExplanation"`
 			ResponsiveAnalysis bool `json:"responsiveAnalysis"`
-		} `json:"pego"`
+		} `json:"zp"`
 	} `json:"experimental"`
 	TextDocument struct {
 		Hover struct {
@@ -157,7 +157,7 @@ func (s *Server) run() error {
 		if err := s.handle(&msg); err != nil {
 			return err
 		}
-		if s.state == stateInitialized && (s.client.Experimental.Pego.ResponsiveAnalysis || s.client.Experimental.Pego.LintDiagnostics) {
+		if s.state == stateInitialized && (s.client.Experimental.ZP.ResponsiveAnalysis || s.client.Experimental.ZP.LintDiagnostics) {
 			return s.runResponsive()
 		}
 	}
@@ -270,7 +270,7 @@ func (s *Server) publish(d *document) {
 
 func (s *Server) publishReady(d *document) {
 	diags := append([]Diagnostic(nil), d.analysis().diags...)
-	if s.client.Experimental.Pego.LintDiagnostics {
+	if s.client.Experimental.ZP.LintDiagnostics {
 		diags = append(diags, d.lintDiagnostics()...)
 	}
 	s.publishDiagnostics(d.uri, d.version, diags)
@@ -322,8 +322,8 @@ func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
 	if s.client.TextDocument.Rename.PrepareSupport {
 		rename = map[string]any{"prepareProvider": true}
 	}
-	var codeActions any = s.client.Experimental.Pego.LintDiagnostics
-	if s.client.Experimental.Pego.LintDiagnostics && s.client.resolvesEdits() {
+	var codeActions any = s.client.Experimental.ZP.LintDiagnostics
+	if s.client.Experimental.ZP.LintDiagnostics && s.client.resolvesEdits() {
 		codeActions = map[string]any{"resolveProvider": true}
 	}
 	return map[string]any{
@@ -348,7 +348,7 @@ func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
 				"full":   true,
 			},
 		},
-		"serverInfo": map[string]any{"name": "pego", "version": s.version},
+		"serverInfo": map[string]any{"name": "zp", "version": s.version},
 	}, nil
 }
 

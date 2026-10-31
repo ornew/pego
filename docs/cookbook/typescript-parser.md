@@ -8,8 +8,8 @@ Generate a TypeScript module from the grammar. It has no dependencies, returns t
 engine, and with `-types` it returns typed values. The grammar recovers from errors, so one run reports every
 syntax problem, and the tool adds its own checks on top of the values that were read.
 
-```pego
-// settings.pego
+```zp
+// settings.zp
 type Setting = { Key node[string]; Value node[string] }
 type Item ~ Setting | error
 type File = { Settings []Item }
@@ -30,10 +30,10 @@ rule num = [0-9]+ #atomic
 rule ws = (&[ \t\r\n] .)*
 ```
 
-Generate the module next to the tool. The `pego` command comes from `go install github.com/ornew/pego/cmd/pego@latest`:
+Generate the module next to the tool. The `zp` command comes from `go install github.com/ornew/zeroparse/cmd/zp@latest`:
 
 ```bash
-pego gen -lang ts -types -g settings.pego -o settings
+zp gen -lang ts -types -g settings.zp -o settings
 ```
 
 The tool reads the text, reports the syntax errors, and checks the limits of the settings that were read:

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestNodeTypesAcrossBackends(t *testing.T) {

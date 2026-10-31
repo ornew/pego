@@ -6,7 +6,7 @@
 
 ## Summary
 
-Generate Go source code for a parser that depends only on the standard library, from a grammar (`pego gen`, `gen.Go.Generate`).
+Generate Go source code for a parser that depends only on the standard library, from a grammar (`zp gen`, `gen.Go.Generate`).
 
 ## Design
 
@@ -14,7 +14,7 @@ Generate Go source code for a parser that depends only on the standard library, 
 
 | Part | Contents |
 |:--|:--|
-| Runtime | Parser state, memoization, left recursion, the Operators Rule loop, attributes and the built-in functions of actions. The runtime is the package `github.com/ornew/pego/runtime`, which generated code imports as `rt`, or a copy of its files in the generated package's `internal/runtime` directory (the default, so that the generated package depends only on the standard library). Everything the generated code reaches in the runtime has an exported name (`p.Pos`, `p.Peek`, `NewGrammar`); these hooks are for generated parsers and not a stable API. |
+| Runtime | Parser state, memoization, left recursion, the Operators Rule loop, attributes and the built-in functions of actions. The runtime is the package `github.com/ornew/zeroparse/runtime`, which generated code imports as `rt`, or a copy of its files in the generated package's `internal/runtime` directory (the default, so that the generated package depends only on the standard library). Everything the generated code reaches in the runtime has an exported name (`p.Pos`, `p.Peek`, `NewGrammar`); these hooks are for generated parsers and not a stable API. |
 | Rule table | For each rule: whether it is memoized, whether it is a left-recursion leader, its capture names and so on (the results of the engine's static analysis) |
 | Parser expressions | General fallback: one function per expression, taking the parser as its first parameter (`func e18(p *Parser) (*Node, bool)`). Supported direct Node rules inline their expressions into a shared raw body used by call wrappers and rule-table entries. |
 | Actions and predicates | Go expressions (returning `any`). Lambdas become Go function literals. |

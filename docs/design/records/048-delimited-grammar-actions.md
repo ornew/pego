@@ -11,7 +11,7 @@ exactly as a call of a hidden rule whose body is the expression and whose
 whole-rule action is the term, written at that position. The compiler lowers it
 that way, so every backend runs it with the semantics of a rule.
 
-```pego
+```zp
 type Number = { Text node[string] }
 type Word = { Text node[string] }
 type Expr ~ Number | Word
@@ -97,7 +97,7 @@ own and may recur.
   text of a failed action name the inline action by the rule that holds it
   (`the inline action in rule r`, at the position of the action). Inside a type
   in a message the inline action stands for the type of its result
-  (`node[(int, int)]`), and `pego sample -coverage` reports its rule as `the
+  (`node[(int, int)]`), and `zp sample -coverage` reports its rule as `the
   inline action in rule r` (`inline action n in rule r` when `r` holds several)
   and its alternatives as written.
 

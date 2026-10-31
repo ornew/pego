@@ -6,10 +6,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/ir/core"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/ir/core"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // Value-free terminal expressions in lean typed Go parsers.

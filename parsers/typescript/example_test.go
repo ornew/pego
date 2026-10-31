@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego/parsers/typescript"
-	"github.com/ornew/pego/parsers/typescript/types"
+	"github.com/ornew/zeroparse/parsers/typescript"
+	"github.com/ornew/zeroparse/parsers/typescript/types"
 )
 
 func ExampleParseAST() {

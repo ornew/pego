@@ -13,27 +13,27 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/starttest"
-	"github.com/ornew/pego/sample"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/starttest"
+	"github.com/ornew/zeroparse/sample"
 )
 
 // exampleParsers compiles every grammar in examples/.
-func exampleParsers(t *testing.T) map[string]*pego.Parser {
+func exampleParsers(t *testing.T) map[string]*zeroparse.Parser {
 	t.Helper()
-	paths, err := filepath.Glob("../examples/*/*.pego")
-	more, err2 := filepath.Glob("../parsers/*/*.pego")
+	paths, err := filepath.Glob("../examples/*/*.zp")
+	more, err2 := filepath.Glob("../parsers/*/*.zp")
 	paths = append(paths, more...)
 	if err != nil || err2 != nil || len(paths) == 0 {
 		t.Fatalf("no example grammars: %v", err)
 	}
-	ps := map[string]*pego.Parser{}
+	ps := map[string]*zeroparse.Parser{}
 	for _, path := range paths {
 		src, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatal(err)
 		}
-		p, err := pego.CompileSource(string(src), "main")
+		p, err := zeroparse.CompileSource(string(src), "main")
 		if err != nil {
 			t.Fatalf("%s: %v", path, err)
 		}
@@ -44,15 +44,15 @@ func exampleParsers(t *testing.T) map[string]*pego.Parser {
 
 // compileMarked compiles src with every rule a start rule, for tests whose grammars do not
 // annotate their start rules.
-func compileMarked(src string) (*pego.Parser, error) {
-	g, err := pego.ParseGrammar(src)
+func compileMarked(src string) (*zeroparse.Parser, error) {
+	g, err := zeroparse.ParseGrammar(src)
 	if err != nil {
 		return nil, err
 	}
-	return pego.Compile(starttest.MarkAll(g), "main")
+	return zeroparse.Compile(starttest.MarkAll(g), "main")
 }
 
-func compile(t *testing.T, src string) *pego.Parser {
+func compile(t *testing.T, src string) *zeroparse.Parser {
 	t.Helper()
 	p, err := compileMarked(src)
 	if err != nil {
@@ -62,11 +62,11 @@ func compile(t *testing.T, src string) *pego.Parser {
 }
 
 // checkParse checks that every input parses without errors on every backend.
-func checkParse(t *testing.T, p *pego.Parser, inputs []string) {
+func checkParse(t *testing.T, p *zeroparse.Parser, inputs []string) {
 	t.Helper()
 	for _, in := range inputs {
-		for _, b := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-			if _, err := p.Parse(in, pego.WithBackend(b)); err != nil {
+		for _, b := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+			if _, err := p.Parse(in, zeroparse.WithBackend(b)); err != nil {
 				t.Errorf("backend %v: generated input %q does not parse: %v", b, in, err)
 			}
 		}
@@ -121,7 +121,7 @@ func TestExamplesCoverage(t *testing.T) {
 // TestJSONAgreesWithEncodingJSON is a differential test: the JSON grammar of parsers/json and
 // encoding/json must accept the same inputs.
 func TestJSONAgreesWithEncodingJSON(t *testing.T) {
-	p := exampleParsers(t)[filepath.Join("..", "parsers", "json", "json.pego")]
+	p := exampleParsers(t)[filepath.Join("..", "parsers", "json", "json.zp")]
 	g, err := sample.New(p, sample.WithSeed(1), sample.WithCoverage())
 	if err != nil {
 		t.Fatal(err)
@@ -148,7 +148,7 @@ func TestJSONAgreesWithEncodingJSON(t *testing.T) {
 
 func TestDeterminism(t *testing.T) {
 	ps := exampleParsers(t)
-	p := ps[filepath.Join("..", "parsers", "json", "json.pego")]
+	p := ps[filepath.Join("..", "parsers", "json", "json.zp")]
 	gen := func(seed uint64) ([]string, []sample.Invalid) {
 		g, err := sample.New(p, sample.WithSeed(seed), sample.WithCoverage())
 		if err != nil {
@@ -461,12 +461,12 @@ func TestNoInput(t *testing.T) {
 		t.Error("expected an error for a start rule that can never match")
 	}
 	// A parser loaded from a compiled grammar, which holds no grammar AST, in each mode.
-	for _, mode := range []pego.CompiledMode{pego.CompiledParse, pego.CompiledRecognize, pego.CompiledDocument} {
+	for _, mode := range []zeroparse.CompiledMode{zeroparse.CompiledParse, zeroparse.CompiledRecognize, zeroparse.CompiledDocument} {
 		data, err := compile(t, `rule main = "a"`).Marshal(mode)
 		if err != nil {
 			t.Fatal(err)
 		}
-		q, err := pego.LoadParser(data)
+		q, err := zeroparse.LoadParser(data)
 		if err != nil {
 			t.Fatal(err)
 		}

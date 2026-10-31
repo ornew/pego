@@ -25,7 +25,7 @@ func TestNamesAcrossComments(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c := newInitialized(t)
 			defer c.exit()
-			uri := "file:///comment-names.pego"
+			uri := "file:///comment-names.zp"
 			src := commentedNamesSource(tc.typeGap, tc.defGap, tc.newGap, "Box", "helper")
 			for _, d := range c.open(uri, src) {
 				if !strings.Contains(d.Message, "comment") {
@@ -120,7 +120,7 @@ func TestCommentNameAtEOF(t *testing.T) {
 	c := newInitialized(t)
 	defer c.exit()
 	for i, tail := range []string{"rule # missing", "type # missing\n# another", `rule b { "b" => # missing`} {
-		uri := fmt.Sprintf("file:///comment-eof-%d.pego", i)
+		uri := fmt.Sprintf("file:///comment-eof-%d.zp", i)
 		src := "rule good = \"a\"\n" + tail
 		if d := c.open(uri, src); len(d) == 0 {
 			t.Fatal("incomplete source has no diagnostics")

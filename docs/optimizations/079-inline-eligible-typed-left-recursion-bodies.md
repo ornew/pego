@@ -54,18 +54,18 @@ To generate the same-generator routes and check that they return identical
 values and errors:
 
 ```sh
-export PEGO_TYPED_LR_DIR=/tmp/pego-typed-lr
+export ZP_TYPED_LR_DIR=/tmp/zp-typed-lr
 go test ./internal/gen/gogen -run '^TestGeneratedTypedLR(Workload|ActionWorkload)$' -count=1
 ```
 
 Build the `direct` and `general` fixtures into separate benchmark binaries.
-The calculator fixtures are under `$PEGO_TYPED_LR_DIR/{direct,general}`;
+The calculator fixtures are under `$ZP_TYPED_LR_DIR/{direct,general}`;
 the action/capture fixtures are under
-`$PEGO_TYPED_LR_DIR/actions/{direct,general}`:
+`$ZP_TYPED_LR_DIR/actions/{direct,general}`:
 
 ```sh
 for workload in calculator actions; do
-  fixture=$PEGO_TYPED_LR_DIR
+  fixture=$ZP_TYPED_LR_DIR
   if [ "$workload" = actions ]; then fixture="$fixture/actions"; fi
   for variant in direct general; do
     (cd "$fixture/$variant" && go test -c -o "$fixture/$variant.test" .)
@@ -83,7 +83,7 @@ for pair in 1 2 3 4 5; do
     first=direct; second=general
   fi
   for workload in calculator actions; do
-    fixture=$PEGO_TYPED_LR_DIR
+    fixture=$ZP_TYPED_LR_DIR
     if [ "$workload" = actions ]; then fixture="$fixture/actions"; fi
     for variant in "$first" "$second"; do
       "$fixture/$variant.test" -test.run='^$' \

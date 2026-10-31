@@ -14,7 +14,7 @@ Attributes remain postfix annotations on expressions. Declaration-prefix
 attributes such as `@error("expected a token")` before a `rule` declaration
 are not part of the selected syntax.
 
-```pego
+```zp
 rule token Token = part:part name @error("expected a token") => build($part)
 ```
 

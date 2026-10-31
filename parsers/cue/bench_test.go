@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/corpora"
-	"github.com/ornew/pego/internal/corpora/corporatest"
+	"github.com/ornew/zeroparse/internal/corpora"
+	"github.com/ornew/zeroparse/internal/corpora/corporatest"
 )
 
 // benchInput is CUE of about 256 KB: the sources of the corpus (the fetched cue repository) that have no package

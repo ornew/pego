@@ -1,14 +1,14 @@
-package pego_test
+package zeroparse_test
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func ExampleWithTrace() {
-	p, err := pego.CompileSource(`@start
+	p, err := zeroparse.CompileSource(`@start
 rule main = pair (";" pair)* $$
 rule pair = key "=" value
 rule key = [a-z]+ #atomic
@@ -16,11 +16,11 @@ rule value = [0-9]+ #atomic`, "main")
 	if err != nil {
 		panic(err)
 	}
-	_, err = p.Parse("a=1;b=x", pego.WithExpectations(), pego.WithTrace(func(e pego.TraceEvent) {
+	_, err = p.Parse("a=1;b=x", zeroparse.WithExpectations(), zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
 		indent := strings.Repeat("  ", e.Depth-1)
 		line, col := e.LineCol(e.Pos)
 		switch {
-		case e.Kind == pego.TraceEnter:
+		case e.Kind == zeroparse.TraceEnter:
 			fmt.Printf("%s%s at %d:%d\n", indent, e.Rule, line, col)
 		case e.Matched:
 			fmt.Printf("%s%s matched %q\n", indent, e.Rule, e.Text())
@@ -48,7 +48,7 @@ rule value = [0-9]+ #atomic`, "main")
 }
 
 func ExampleWithProfile() {
-	p, err := pego.CompileSource(`@start
+	p, err := zeroparse.CompileSource(`@start
 rule main = (stmt ";")* $$
 rule stmt = name "=" num / name "+=" num
 rule name = [a-z]+ #atomic
@@ -56,9 +56,9 @@ rule num = [0-9]+ #atomic`, "main")
 	if err != nil {
 		panic(err)
 	}
-	var prof pego.Profile
+	var prof zeroparse.Profile
 	for _, input := range []string{"a=1;b+=2;", "c+=3;"} {
-		if _, err := p.Parse(input, pego.WithProfile(&prof)); err != nil {
+		if _, err := p.Parse(input, zeroparse.WithProfile(&prof)); err != nil {
 			panic(err)
 		}
 	}

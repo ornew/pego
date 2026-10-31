@@ -5,14 +5,14 @@ the same text gives. Incremental reuse is where a grammar with state (a variable
 wrong in ways that a few hand-written edits never reach. You want a test that applies thousands of edits, undos and
 redos, a regression test for each failure it finds, and a place to write down a case you thought of yourself.
 
-The `editfuzz` package does what `pego edit-fuzz` does, inside `go test`. It applies random sequences of edits to a
+The `editfuzz` package does what `zp edit-fuzz` does, inside `go test`. It applies random sequences of edits to a
 `Document`, and at each checkpoint compares its result with a fresh parse of `doc.Text()`: the values with their spans,
 and the errors with their positions and messages. The grammar here is the indentation grammar of
 [Parse indentation-based input](indentation.md), which keeps the current depth in a variable. That is the kind of
 grammar where a reused result can disagree with a fresh one.
 
-```pego
-// nested.pego
+```zp
+// nested.zp
 type Entry = {
     Key      node[string]
     Value    *node[string]
@@ -73,11 +73,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/editfuzz"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/editfuzz"
 )
 
-//go:embed nested.pego
+//go:embed nested.zp
 var grammar []byte
 
 // corpus reads the real files that the fuzzer starts its edits from.
@@ -103,12 +103,12 @@ func TestEditsMatchFreshParses(t *testing.T) {
 	texts := corpus(t)
 	backends := []struct {
 		name    string
-		backend pego.Backend
-	}{{"closure", pego.Closure}, {"bytecode", pego.Bytecode}, {"bytecode-iterative", pego.BytecodeIterative}}
+		backend zeroparse.Backend
+	}{{"closure", zeroparse.Closure}, {"bytecode", zeroparse.Bytecode}, {"bytecode-iterative", zeroparse.BytecodeIterative}}
 	units := []struct {
 		name string
-		unit pego.PositionUnit
-	}{{"codepoints", pego.CodePoints}, {"bytes", pego.Bytes}}
+		unit zeroparse.PositionUnit
+	}{{"codepoints", zeroparse.CodePoints}, {"bytes", zeroparse.Bytes}}
 	for _, b := range backends {
 		for _, u := range units {
 			t.Run(b.name+"/"+u.name, func(t *testing.T) {
@@ -148,7 +148,7 @@ func TestDedent(t *testing.T) {
 	seq := &editfuzz.Sequence{
 		GrammarSHA256: editfuzz.GrammarHash(grammar),
 		Start:         "main",
-		Backend:       pego.Closure,
+		Backend:       zeroparse.Closure,
 		Initial:       []byte("a:\n  b: 1\n  c: 2\nd: 3\n"),
 		Operations: []editfuzz.Operation{
 			{Kind: editfuzz.Edit, Start: 3, End: 5, Text: nil}, // "  b: 1" loses its indentation
@@ -215,7 +215,7 @@ from run to run.
 
 ## Variations and Limits
 
-- Start with `pego edit-fuzz -g nested.pego -corpus testdata/corpus` on the command line; it runs the same checks, and
+- Start with `zp edit-fuzz -g nested.zp -corpus testdata/corpus` on the command line; it runs the same checks, and
   `-replay` runs a saved sequence. See [Fuzzing edits](../guide/sampling-and-fuzzing.md#fuzzing-edits).
 - A grammar that is only edited in one unit needs only that unit; the bytes unit finds the edits that split a multibyte
   character, so test it for input that is not ASCII.

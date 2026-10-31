@@ -1,4 +1,4 @@
-# PEGO Tutorial
+# ZeroParse Tutorial
 
 A series of lessons that builds one project, a parser for a small configuration language, from a first grammar to a
 shipped, tested and debugged parser. Each lesson ends with a working result and starts from the files of the lessons
@@ -10,7 +10,7 @@ solves single tasks.
 
 | | Lesson | You will learn |
 |--:|:--|:--|
-| 1 | [Getting Started With PEGO](getting-started.md) | Installing `pego`, writing a first grammar, parsing from the command line and from Go |
+| 1 | [Getting Started With ZeroParse](getting-started.md) | Installing `zp`, writing a first grammar, parsing from the command line and from Go |
 | 2 | [Parsing Structured Input](structured-input.md) | Rules, ordered choice, repetition and lookahead, for a configuration file format |
 | 3 | [Building Typed Trees](typed-trees.md) | Naming and shaping the tree, struct, join and text types, reading it in Go |
 | 4 | [Parsing Expressions](expressions.md) | Operators and precedence with the Operators Rule, building a calculator |
@@ -23,5 +23,5 @@ solves single tasks.
 
 ## Requirements
 
-Go 1.27.1 or later. The lessons use the `pego` command, which [Getting Started With
-PEGO](getting-started.md#install) shows how to install.
+Go 1.27.1 or later. The lessons use the `zp` command, which [Getting Started With
+ZeroParse](getting-started.md#install) shows how to install.

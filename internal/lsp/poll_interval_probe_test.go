@@ -123,17 +123,17 @@ func shortestLongest(work func(context.Context)) (pollInterval, int) {
 // TestPollIntervalProbe reports the longest interval between cancellation checks in responsive
 // analysis, with lint, and in each analysed request, for the grammars in the repository.
 func TestPollIntervalProbe(t *testing.T) {
-	if os.Getenv("PEGO_LSP_POLL_PROBE") != "1" {
+	if os.Getenv("ZP_LSP_POLL_PROBE") != "1" {
 		t.Skip("manual cancellation poll-interval probe")
 	}
 	if requestHook != nil || analyzeHook != nil {
 		t.Fatal("poll-interval probe requires inactive hooks")
 	}
-	files, err := filepath.Glob("../../parsers/*/*.pego")
+	files, err := filepath.Glob("../../parsers/*/*.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	files = append(files, "../../pego.pego")
+	files = append(files, "../../zeroparse.zp")
 	// Single large tokens: work proportional to one token runs between per-token checks.
 	const large = 256 << 10
 	sources := map[string]string{
@@ -154,12 +154,12 @@ func TestPollIntervalProbe(t *testing.T) {
 		names = append(names, name)
 	}
 	sort.Strings(names)
-	const uri = "file:///probe.pego"
+	const uri = "file:///probe.zp"
 	snapshot := func(text string) analysisSnapshot {
 		return analysisSnapshot{URI: uri, Text: text, Version: 1, Generation: 1}
 	}
 	for _, name := range names {
-		if only := os.Getenv("PEGO_LSP_POLL_ONLY"); only != "" && name != only {
+		if only := os.Getenv("ZP_LSP_POLL_ONLY"); only != "" && name != only {
 			continue
 		}
 		text := sources[name]
@@ -177,12 +177,12 @@ func TestPollIntervalProbe(t *testing.T) {
 			}
 		})
 		t.Logf("%s bytes=%d analysis polls=%d longest=%v %s -> %s", name, len(text), polls, longest.d, longest.from, longest.to)
-		if os.Getenv("PEGO_LSP_POLL_SITES") == "1" {
+		if os.Getenv("ZP_LSP_POLL_SITES") == "1" {
 			// A gap that recurs in every run is structural; scheduling and garbage collection
 			// stretch different gaps in different runs. List the gaps between functions whose
 			// largest gap in each of the runs stays above the threshold, with the smallest of
 			// those largest gaps.
-			if d, err := strconv.Atoi(os.Getenv("PEGO_LSP_POLL_DEPTH")); err == nil {
+			if d, err := strconv.Atoi(os.Getenv("ZP_LSP_POLL_DEPTH")); err == nil {
 				pollDepth = d
 			}
 			const runs = 15
@@ -239,7 +239,7 @@ func pollProbeRequests(text string) map[string]any {
 	offset := locations[len(locations)/2][0]
 	idx := newTextIndex(text)
 	position := idx.position(offset)
-	document := map[string]any{"uri": "file:///probe.pego"}
+	document := map[string]any{"uri": "file:///probe.zp"}
 	at := map[string]any{"textDocument": document, "position": position}
 	end := idx.position(len(text))
 	return map[string]any{

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
 )
 
 // GenOptions configures code generation.
@@ -53,7 +53,7 @@ type GenOptions struct {
 	// (the default), imported from this module, or generated alone.
 	Runtime RuntimeMode
 	// RuntimeModule is the specifier from which TypeScript parsers import the runtime with RuntimeImport,
-	// such as "@scope/pego-runtime" or "../shared/runtime.ts".
+	// such as "@scope/zp-runtime" or "../shared/runtime.ts".
 	RuntimeModule string
 	// MaxDepth is the generated default limit on nested recursive rule calls. Zero selects 100,000.
 	MaxDepth int

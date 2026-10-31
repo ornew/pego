@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	. "github.com/ornew/pego/internal/ir/exec"
+	. "github.com/ornew/zeroparse/internal/ir/exec"
 )
 
 // storesFunc returns a function of the test module with the locals names, all ints, and the body.

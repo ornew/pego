@@ -5,13 +5,13 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/ir/core"
-	irbuild "github.com/ornew/pego/internal/ir/core/build"
-	"github.com/ornew/pego/internal/ir/flow"
-	flowlower "github.com/ornew/pego/internal/ir/flow/lower"
-	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/ir/core"
+	irbuild "github.com/ornew/zeroparse/internal/ir/core/build"
+	"github.com/ornew/zeroparse/internal/ir/flow"
+	flowlower "github.com/ornew/zeroparse/internal/ir/flow/lower"
+	"github.com/ornew/zeroparse/internal/limits"
 )
 
 // Generator is the state that the Go and TypeScript generators share: the program and rule being

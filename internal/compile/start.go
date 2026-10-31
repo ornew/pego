@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
 )
 
 // resolveStarts reads the declaration attributes of rules and returns the

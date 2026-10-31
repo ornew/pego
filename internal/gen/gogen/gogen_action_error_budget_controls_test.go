@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestGeneratedGoActionErrorBudget(t *testing.T) {
@@ -71,7 +71,7 @@ func TestGeneratedGoActionErrorBudget(t *testing.T) {
 
 const generatedGoActionErrorConsumer = `package PACKAGE
 
-import pegort "github.com/ornew/pego/runtime"
+import zprt "github.com/ornew/zeroparse/runtime"
 import("context";"errors";"reflect";"strings";"testing")
 const wantError=WANT_ERROR
 const recognize=CHECK_RECOGNIZE
@@ -89,41 +89,41 @@ func TestPublicActionErrorAccounting(t *testing.T){
   retry,retryErr:=actionCall(mode);if (retryErr==nil)!=(e==nil) || retryErr!=nil && retryErr.Error()!=e.Error() || !reflect.DeepEqual(retry,n){t.Fatal("action error retry changed output",retryErr)}
  }
 }
-func catchActionText(f func())(text string,err error){defer func(){if x:=recover();x!=nil{switch x:=x.(type){case pegort.X_evalError:text=x.X_msg;case pegort.X_fatal:err=x.X_err;default:panic(x)}}}();f();return}
+func catchActionText(f func())(text string,err error){defer func(){if x:=recover();x!=nil{switch x:=x.(type){case zprt.X_evalError:text=x.X_msg;case zprt.X_fatal:err=x.X_err;default:panic(x)}}}();f();return}
 func TestActionTextFragmentsAndFlatPrefix(t *testing.T){
  for _,parts:=range [][]string{{""},{"","",""},{"a","","λ\xff"},{strings.Repeat("n",8192)}}{
-  want:=strings.Join(parts,"");steps:=uint64(len(want)+2*len(parts));p:=&pegort.Parser{Control:pegort.X_newBudgetControl(nil,Limits{Budget:steps})}
+  want:=strings.Join(parts,"");steps:=uint64(len(want)+2*len(parts));p:=&zprt.Parser{Control:zprt.X_newBudgetControl(nil,Limits{Budget:steps})}
   retained:=p.X_actionErrorText(parts...);if retained!=want || p.Control.X_budgetUsed()!=steps{t.Fatal("fragment text/counters")}
-  p.Control=pegort.X_newBudgetControl(nil,Limits{Budget:steps-1});var partial string
+  p.Control=zprt.X_newBudgetControl(nil,Limits{Budget:steps-1});var partial string
   _,e:=catchActionText(func(){partial=p.X_actionErrorText(parts...)});if !errors.Is(e,ErrLimit) || partial!=""{t.Fatal("one-short message",e)}
-  p.Control=pegort.X_newBudgetControl(nil,Limits{Budget:100});if p.X_actionErrorText("retry")!="retry" || retained!=want{t.Fatal("retained message changed")}
+  p.Control=zprt.X_newBudgetControl(nil,Limits{Budget:100});if p.X_actionErrorText("retry")!="retry" || retained!=want{t.Fatal("retained message changed")}
  }
  where:=strings.Repeat("rule",512);message:="division by zero";want:="action in "+where+": "+message
- p:=&pegort.Parser{Control:pegort.X_newBudgetControl(nil,Limits{Budget:uint64(len(want)+8)})};e:=p.X_wrapEvalError(where,message)
+ p:=&zprt.Parser{Control:zprt.X_newBudgetControl(nil,Limits{Budget:uint64(len(want)+8)})};e:=p.X_wrapEvalError(where,message)
  if e.Error()!=want || errors.Unwrap(e)!=nil || p.Control.X_budgetUsed()!=uint64(len(want)+8){t.Fatal("flat wrapper contract",e)}
- p.Control=pegort.X_newBudgetControl(nil,Limits{Budget:uint64(len(want)+7)});_,e=catchActionText(func(){p.X_wrapEvalError(where,message)});if !errors.Is(e,ErrLimit){t.Fatal("one-short wrapper",e)}
+ p.Control=zprt.X_newBudgetControl(nil,Limits{Budget:uint64(len(want)+7)});_,e=catchActionText(func(){p.X_wrapEvalError(where,message)});if !errors.Is(e,ErrLimit){t.Fatal("one-short wrapper",e)}
 }
 func TestActionHelperErrorsAndShortCircuit(t *testing.T){
- long:=strings.Repeat("Kind",2048);n:=&Node{RawKind:pegort.KindOf(long,"")};tn:=&pegort.TSeq{Typ:"tuple",Kids:make([]any,2048)}
+ long:=strings.Repeat("Kind",2048);n:=&Node{RawKind:zprt.KindOf(long,"")};tn:=&zprt.TSeq{Typ:"tuple",Kids:make([]any,2048)}
  for _,typed:=range []bool{false,true}{
-  p:=&pegort.Parser{};tp:=&pegort.TParser{Parser:p};called:=0
+  p:=&zprt.Parser{};tp:=&zprt.TParser{Parser:p};called:=0
   cases:=[]func(){
-   func(){if typed{(&pegort.TActCtx{P:tp}).Unary("-",tn)}else{(&pegort.ActCtx{P:p}).Unary("-",n)}},
-   func(){if typed{(&pegort.TActCtx{P:tp}).Binary("+",tn,1)}else{(&pegort.ActCtx{P:p}).Binary("+",n,1)}},
-   func(){right:=func()any{called++;return true};if typed{(&pegort.TActCtx{P:tp}).And(tn,right)}else{(&pegort.ActCtx{P:p}).And(n,right)}},
-   func(){right:=func()any{called++;return false};if typed{(&pegort.TActCtx{P:tp}).Or(tn,right)}else{(&pegort.ActCtx{P:p}).Or(n,right)}},
-   func(){if typed{(&pegort.TActCtx{P:tp}).ListItems(long,1)}else{(&pegort.ActCtx{P:p}).ListItems(long,1)}},
-   func(){fn:=func(...any)any{return nil};if typed{(&pegort.TActCtx{P:tp}).X_asNode(long,fn)}else{(&pegort.ActCtx{P:p}).X_asNode(long,fn)}},
+   func(){if typed{(&zprt.TActCtx{P:tp}).Unary("-",tn)}else{(&zprt.ActCtx{P:p}).Unary("-",n)}},
+   func(){if typed{(&zprt.TActCtx{P:tp}).Binary("+",tn,1)}else{(&zprt.ActCtx{P:p}).Binary("+",n,1)}},
+   func(){right:=func()any{called++;return true};if typed{(&zprt.TActCtx{P:tp}).And(tn,right)}else{(&zprt.ActCtx{P:p}).And(n,right)}},
+   func(){right:=func()any{called++;return false};if typed{(&zprt.TActCtx{P:tp}).Or(tn,right)}else{(&zprt.ActCtx{P:p}).Or(n,right)}},
+   func(){if typed{(&zprt.TActCtx{P:tp}).ListItems(long,1)}else{(&zprt.ActCtx{P:p}).ListItems(long,1)}},
+   func(){fn:=func(...any)any{return nil};if typed{(&zprt.TActCtx{P:tp}).X_asNode(long,fn)}else{(&zprt.ActCtx{P:p}).X_asNode(long,fn)}},
   }
   for _,run:=range cases{
    p.Control=nil;ordinary,e:=catchActionText(run);if e!=nil || ordinary==""{t.Fatal("ordinary helper error",e)}
-   p.Control=pegort.X_newBudgetControl(nil,Limits{Budget:1<<50});active,e:=catchActionText(run);if e!=nil || active!=ordinary{t.Fatal("active helper error changed",e)}
-   p.Control=pegort.X_newBudgetControl(nil,Limits{Budget:256});partial,e:=catchActionText(run);if partial!="" || !errors.Is(e,ErrLimit){t.Fatal("helper error unbounded",e)}
+   p.Control=zprt.X_newBudgetControl(nil,Limits{Budget:1<<50});active,e:=catchActionText(run);if e!=nil || active!=ordinary{t.Fatal("active helper error changed",e)}
+   p.Control=zprt.X_newBudgetControl(nil,Limits{Budget:256});partial,e:=catchActionText(run);if partial!="" || !errors.Is(e,ErrLimit){t.Fatal("helper error unbounded",e)}
   }
   if called!=0{t.Fatal("invalid boolean operand evaluated RHS")}
-  p.Control=pegort.X_newBudgetControl(nil,Limits{Budget:1<<50});called=0
+  p.Control=zprt.X_newBudgetControl(nil,Limits{Budget:1<<50});called=0
   right:=func()any{called++;return true};var and,or any
-  if typed{c:=&pegort.TActCtx{P:tp};and=c.And(false,right);or=c.Or(true,right)}else{c:=&pegort.ActCtx{P:p};and=c.And(false,right);or=c.Or(true,right)}
+  if typed{c:=&zprt.TActCtx{P:tp};and=c.And(false,right);or=c.Or(true,right)}else{c:=&zprt.ActCtx{P:p};and=c.And(false,right);or=c.Or(true,right)}
   if and!=false || or!=true || called!=0{t.Fatal("valid short circuit changed")}
  }
 }

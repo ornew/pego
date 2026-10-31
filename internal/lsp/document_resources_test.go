@@ -30,11 +30,11 @@ func runDocumentResourceCase(t *testing.T, n int, responsive, measure bool) docu
 	}
 	source := f08BenchmarkGrammar()
 	result := documentResourceResult{Documents: n, SourceBytes: len(source), Responsive: responsive}
-	uri := func(i int) string { return fmt.Sprintf("file:///resource%04d.pego", i) }
+	uri := func(i int) string { return fmt.Sprintf("file:///resource%04d.zp", i) }
 	peer := newResourcePeer(t)
 	defer peer.abort()
 	c := peer.client
-	c.request("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"pego": map[string]any{"responsiveAnalysis": responsive}}}})
+	c.request("initialize", map[string]any{"capabilities": map[string]any{"experimental": map[string]any{"zp": map[string]any{"responsiveAnalysis": responsive}}}})
 	if measure {
 		result.Idle = requestResourceSample()
 	}
@@ -144,14 +144,14 @@ func TestDocumentResources(t *testing.T) {
 
 // TestDocumentResourceProbe is run in fresh processes, one per configuration.
 func TestDocumentResourceProbe(t *testing.T) {
-	if os.Getenv("PEGO_LSP_DOCUMENT_PROBE") != "1" {
+	if os.Getenv("ZP_LSP_DOCUMENT_PROBE") != "1" {
 		t.Skip("manual fresh-process resource probe")
 	}
-	n, err := strconv.Atoi(os.Getenv("PEGO_LSP_DOCUMENT_COUNT"))
+	n, err := strconv.Atoi(os.Getenv("ZP_LSP_DOCUMENT_COUNT"))
 	if err != nil || n < 1 || n > 1024 {
-		t.Fatal("PEGO_LSP_DOCUMENT_COUNT must be 1 to 1024")
+		t.Fatal("ZP_LSP_DOCUMENT_COUNT must be 1 to 1024")
 	}
-	result := runDocumentResourceCase(t, n, os.Getenv("PEGO_LSP_RESPONSIVE") == "1", true)
+	result := runDocumentResourceCase(t, n, os.Getenv("ZP_LSP_RESPONSIVE") == "1", true)
 	raw, err := json.Marshal(result)
 	if err != nil {
 		t.Fatal(err)

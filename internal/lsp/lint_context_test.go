@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego/lint"
+	"github.com/ornew/zeroparse/lint"
 )
 
 type lspLintPollContext struct {
@@ -65,7 +65,7 @@ func TestCancelledLintMappingReturnsNoDiagnostics(t *testing.T) {
 	for i := range a.lintCache {
 		a.lintCache[i] = lint.Finding{Check: lint.CheckUnreachableRule, Pos: a.g.Rules()[0].Diagnostic(), Message: fmt.Sprint(i), Severity: lint.Warning}
 	}
-	d := &document{uri: "file:///lint-cancel.pego", text: a.text, an: a, version: 1, generation: 1}
+	d := &document{uri: "file:///lint-cancel.zp", text: a.text, an: a, version: 1, generation: 1}
 	// Finding-cache check, index zero, then index 256: some diagnostics were
 	// constructed internally before cancellation, but none may escape.
 	diagnostics, err := d.lintDiagnosticsContext(lspLintContext(t, 3))
@@ -78,7 +78,7 @@ func TestCancelledLintMappingReturnsNoDiagnostics(t *testing.T) {
 }
 
 func TestResponsiveLintMappingCancellationProtocol(t *testing.T) {
-	const uri = "file:///lint-mapping.pego"
+	const uri = "file:///lint-mapping.zp"
 	started := make(chan struct{})
 	cancelled := make(chan struct{})
 	release := make(chan struct{})

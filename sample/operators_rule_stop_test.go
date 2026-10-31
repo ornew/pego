@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // Pending scopes can outlive later choices and caller continuations. Their immutable state remains
@@ -18,7 +18,7 @@ func TestOperatorsRuleStopCheckOwnershipAndCacheBound(t *testing.T) {
 		fmt.Fprintf(&src, "level { infix none \"<%d>\" }; ", i)
 	}
 	src.WriteByte('}')
-	ast, err := pego.ParseGrammar(src.String())
+	ast, err := zeroparse.ParseGrammar(src.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestOperatorsRuleStopCheckOwnershipAndCacheBound(t *testing.T) {
 }
 
 func TestOperatorsRulePendingNestedScopes(t *testing.T) {
-	ast, err := pego.ParseGrammar(`rule main = e $$
+	ast, err := zeroparse.ParseGrammar(`rule main = e $$
 rule e = #operators {
     operand "a"
     level { infix none "<" }
@@ -85,7 +85,7 @@ rule e = #operators {
 }
 
 func TestOperatorsRuleScopeBudgetBudget(t *testing.T) {
-	ast, err := pego.ParseGrammar(`rule main = e $$
+	ast, err := zeroparse.ParseGrammar(`rule main = e $$
 rule e = #operators {
     operand "a"
     level { postfix "!" }

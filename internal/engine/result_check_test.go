@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/limits"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/limits"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // resultCheckGrammarLegacy is resultCheckGrammar with a terminal type Int, in the retired syntax that
@@ -269,7 +269,7 @@ func TestOperatorResultChecks(t *testing.T) {
 
 // terminalOperatorsRuleGrammar has an Operators Rule of a terminal type without an action, which
 // converted its value to the terminal like any such rule. A text struct has no such conversion, so
-// pego fix asks for an action instead of rewriting it.
+// zp fix asks for an action instead of rewriting it.
 const terminalOperatorsRuleGrammar = `type Int terminal
 type S = { F Int }
 rule main = v:e => S{F: $v}
@@ -289,7 +289,7 @@ rule e Num = #operators {
     level { infix left "+" }
 }
 `} {
-		if _, err := syntax.Fix(src); err == nil || !strings.Contains(err.Error(), "is an operators rule; give it an action before running pego fix") {
+		if _, err := syntax.Fix(src); err == nil || !strings.Contains(err.Error(), "is an operators rule; give it an action before running zp fix") {
 			t.Errorf("Fix: %v\n%s", err, src)
 		}
 	}

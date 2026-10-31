@@ -1,4 +1,4 @@
-//go:build pego_snapshot_sharing_reference
+//go:build zp_snapshot_sharing_reference
 
 package document
 

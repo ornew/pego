@@ -1,16 +1,16 @@
-// Command playground is the WebAssembly half of the PEGO web playground.
+// Command playground is the WebAssembly half of the ZeroParse web playground.
 //
-// Built with GOOS=js GOARCH=wasm, it installs a global object pego whose methods take a request
+// Built with GOOS=js GOARCH=wasm, it installs a global object zp whose methods take a request
 // encoded as JSON and return a response encoded as JSON:
 //
-//	pego.compile(req)  -> grammar info and diagnostics          (req: {grammar})
-//	pego.parse(req)    -> tree as JSON and S-expression, errors (req: parseRequest)
-//	pego.format(req)   -> formatted grammar                     (req: {grammar})
-//	pego.generate(req) -> generated Go or TypeScript code       (req: generateRequest)
-//	pego.version(req)  -> versions of Go and of this module
+//	zp.compile(req)  -> grammar info and diagnostics          (req: {grammar})
+//	zp.parse(req)    -> tree as JSON and S-expression, errors (req: parseRequest)
+//	zp.format(req)   -> formatted grammar                     (req: {grammar})
+//	zp.generate(req) -> generated Go or TypeScript code       (req: generateRequest)
+//	zp.version(req)  -> versions of Go and of this module
 //
 // Requests and responses are plain JSON so that the API is easy to call from a Web Worker and from
-// Node, and so that it can be tested natively. Everything is implemented with the public pego and
+// Node, and so that it can be tested natively. Everything is implemented with the public zp and
 // grammar packages only; see site/ for the page that uses it.
 package main
 
@@ -28,9 +28,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/gen"
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/gen"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // diagnostic is an error in a grammar. Line and Col are 1-based (Col counts code points) and are 0
@@ -79,12 +79,12 @@ type parseRequest struct {
 	Backend   string `json:"backend"`   // closure, bytecode, bytecode-iterative, or empty for the default
 	Recognize bool   `json:"recognize"` // check the input without building a tree
 	// SourceInfo adds the rule of each node and the names of captures to the tree, as
-	// pego parse -source-info does.
+	// zp parse -source-info does.
 	SourceInfo bool `json:"sourceInfo,omitempty"`
 	// DefaultValue drops value actions and declared rule types, so the tree is the default node
-	// tree, as pego parse -default-value does. Predicates still run.
+	// tree, as zp parse -default-value does. Predicates still run.
 	DefaultValue bool `json:"defaultValue,omitempty"`
-	// MaxDepth limits the nesting of recursive rule calls (pego.WithMaxDepth); 0 selects the
+	// MaxDepth limits the nesting of recursive rule calls (zeroparse.WithMaxDepth); 0 selects the
 	// playground's limit, maxDepth, for the backends that nest rule calls on the stack.
 	MaxDepth int `json:"maxDepth,omitempty"`
 	// Runs is the number of times the parse is timed (Micros is then the median); 0 or 1 parses once.
@@ -92,8 +92,8 @@ type parseRequest struct {
 	Runs int `json:"runs,omitempty"`
 }
 
-// syntaxError mirrors pego.SyntaxError. Pos is in the unit of the parse; Message is the description
-// without the position, as printed by the pego command.
+// syntaxError mirrors zeroparse.SyntaxError. Pos is in the unit of the parse; Message is the description
+// without the position, as printed by the zp command.
 type syntaxError struct {
 	Pos      int      `json:"pos"`
 	Line     int      `json:"line"`
@@ -108,7 +108,7 @@ type parseResult struct {
 	Start   string        `json:"start,omitempty"` // the start rule used; empty if the requested one is not defined
 	// Matched reports that the input matched, possibly after recovering from errors.
 	Matched bool `json:"matched"`
-	// JSON is the tree exactly as pego parse prints it, and SExpr as pego parse -f sexpr prints it
+	// JSON is the tree exactly as zp parse prints it, and SExpr as zp parse -f sexpr prints it
 	// (without the final newline). Both are empty in recognition mode and when the input does not match.
 	JSON  string `json:"json,omitempty"`
 	SExpr string `json:"sexpr,omitempty"`
@@ -228,7 +228,7 @@ func errorResponse(err error) []byte {
 // of the engine apply, and trees are limited by encoding/json, which refuses to nest more than 10,000
 // levels (two per node level). main_js.go lowers both for WebAssembly.
 var (
-	maxDepth     = 0    // nesting of recursive rule calls (pego.WithMaxDepth); 0 is the engine's default
+	maxDepth     = 0    // nesting of recursive rule calls (zeroparse.WithMaxDepth); 0 is the engine's default
 	maxTreeDepth = 4000 // nesting of nodes in a tree that is encoded and displayed
 )
 
@@ -238,32 +238,32 @@ type compiled struct {
 	src    string
 	g      *grammar.Grammar
 	info   compileResult
-	parser *pego.Parser // nil if the grammar has errors
+	parser *zeroparse.Parser // nil if the grammar has errors
 	// variants are the parsers compiled with options, compiled when first requested.
-	variants map[compileVariant]*pego.Parser
+	variants map[compileVariant]*zeroparse.Parser
 }
 
 // compileVariant is the set of compile options a parse request can ask for.
 type compileVariant struct{ sourceInfo, defaultValue bool }
 
 // variantParser returns the parser of c compiled with the options of v.
-func (c *compiled) variantParser(v compileVariant) (*pego.Parser, error) {
+func (c *compiled) variantParser(v compileVariant) (*zeroparse.Parser, error) {
 	if p := c.variants[v]; p != nil {
 		return p, nil
 	}
-	var opts []pego.CompileOption
+	var opts []zeroparse.CompileOption
 	if v.sourceInfo {
-		opts = append(opts, pego.WithSourceInfo())
+		opts = append(opts, zeroparse.WithSourceInfo())
 	}
 	if v.defaultValue {
-		opts = append(opts, pego.WithDefaultValue())
+		opts = append(opts, zeroparse.WithDefaultValue())
 	}
-	p, err := pego.Compile(c.g, c.info.Start, opts...)
+	p, err := zeroparse.Compile(c.g, c.info.Start, opts...)
 	if err != nil {
 		return nil, err
 	}
 	if c.variants == nil {
-		c.variants = map[compileVariant]*pego.Parser{}
+		c.variants = map[compileVariant]*zeroparse.Parser{}
 	}
 	c.variants[v] = p
 	return p, nil
@@ -277,7 +277,7 @@ func compileSource(src string) *compiled {
 	}
 	c := &compiled{src: src}
 	c.info.Rules, c.info.Types, c.info.Diagnostics = []ruleInfo{}, []typeInfo{}, []diagnostic{}
-	g, err := pego.ParseGrammar(src)
+	g, err := zeroparse.ParseGrammar(src)
 	if err != nil {
 		c.info.Diagnostics = diagnostics(err)
 		last = c
@@ -296,7 +296,7 @@ func compileSource(src string) *compiled {
 	for _, t := range g.Types() {
 		c.info.Types = append(c.info.Types, describeType(t))
 	}
-	p, err := pego.Compile(g, "")
+	p, err := zeroparse.Compile(g, "")
 	if err != nil {
 		c.info.Diagnostics = diagnostics(err)
 	} else {
@@ -345,7 +345,7 @@ func describeType(t grammar.TypeDecl) typeInfo {
 // posPrefix matches the position that grammar and compile errors start with.
 var posPrefix = regexp.MustCompile(`^(\d+):(\d+): `)
 
-// diagnostics splits a grammar or compile error into one diagnostic per line. The pego package reports
+// diagnostics splits a grammar or compile error into one diagnostic per line. The zeroparse package reports
 // several errors as lines of the form "line:col: message" (or "message" without a position).
 func diagnostics(err error) []diagnostic {
 	var ds []diagnostic
@@ -371,11 +371,11 @@ func parse(req parseRequest) parseResult {
 		return res
 	}
 	// The playground shows what a syntax error expected.
-	opts := []pego.ParseOption{pego.WithExpectations()}
+	opts := []zeroparse.ParseOption{zeroparse.WithExpectations()}
 	switch req.Unit {
 	case "", "codepoints":
 	case "bytes":
-		opts = append(opts, pego.WithUnit(pego.Bytes))
+		opts = append(opts, zeroparse.WithUnit(zeroparse.Bytes))
 	default:
 		res.Error = fmt.Sprintf("unknown unit %q", req.Unit)
 		return res
@@ -383,23 +383,23 @@ func parse(req parseRequest) parseResult {
 	switch req.Backend {
 	case "":
 	case "closure":
-		opts = append(opts, pego.WithBackend(pego.Closure))
+		opts = append(opts, zeroparse.WithBackend(zeroparse.Closure))
 	case "bytecode":
-		opts = append(opts, pego.WithBackend(pego.Bytecode))
+		opts = append(opts, zeroparse.WithBackend(zeroparse.Bytecode))
 	case "bytecode-iterative":
-		opts = append(opts, pego.WithBackend(pego.BytecodeIterative))
+		opts = append(opts, zeroparse.WithBackend(zeroparse.BytecodeIterative))
 	default:
 		res.Error = fmt.Sprintf("unknown backend %q", req.Backend)
 		return res
 	}
 	if req.Recognize {
-		opts = append(opts, pego.RecognizeOnly())
+		opts = append(opts, zeroparse.RecognizeOnly())
 	}
 	// The iterative backend keeps rule calls on its own stack, so only the others need maxDepth.
 	if d := req.MaxDepth; d > 0 {
-		opts = append(opts, pego.WithMaxDepth(d))
+		opts = append(opts, zeroparse.WithMaxDepth(d))
 	} else if maxDepth > 0 && req.Backend != "bytecode-iterative" {
-		opts = append(opts, pego.WithMaxDepth(maxDepth))
+		opts = append(opts, zeroparse.WithMaxDepth(maxDepth))
 	}
 	p := c.parser
 	if req.SourceInfo || req.DefaultValue {
@@ -443,7 +443,7 @@ func parse(req parseRequest) parseResult {
 		node = nil
 	}
 	if node != nil {
-		// Encode exactly like pego parse: an indented json.Encoder, without the final newline.
+		// Encode exactly like zp parse: an indented json.Encoder, without the final newline.
 		var b bytes.Buffer
 		enc := json.NewEncoder(&b)
 		enc.SetIndent("", "  ")
@@ -455,8 +455,8 @@ func parse(req parseRequest) parseResult {
 		res.SExpr = node.String()
 	}
 	if err != nil {
-		var list pego.SyntaxErrors
-		var one *pego.SyntaxError
+		var list zeroparse.SyntaxErrors
+		var one *zeroparse.SyntaxError
 		switch {
 		case errors.As(err, &list):
 			for _, e := range list {
@@ -486,11 +486,11 @@ func isFailure(err error) bool {
 	if err == nil {
 		return false
 	}
-	var list pego.SyntaxErrors
+	var list zeroparse.SyntaxErrors
 	return !errors.As(err, &list)
 }
 
-func convertError(e *pego.SyntaxError) syntaxError {
+func convertError(e *zeroparse.SyntaxError) syntaxError {
 	return syntaxError{
 		Pos: e.Pos, Line: e.Line, Col: e.Col,
 		Expected: e.Expected, Messages: e.Messages, Message: e.Message(),
@@ -499,9 +499,9 @@ func convertError(e *pego.SyntaxError) syntaxError {
 
 // measureTree returns the number of nodes of the tree n and how deeply they are nested (1 for a
 // single node). It does not recurse, so that it works on trees of any depth.
-func measureTree(n *pego.Node) (count, depth int) {
+func measureTree(n *zeroparse.Node) (count, depth int) {
 	type item struct {
-		n     *pego.Node
+		n     *zeroparse.Node
 		depth int
 	}
 	stack := []item{{n, 1}}
@@ -516,7 +516,7 @@ func measureTree(n *pego.Node) (count, depth int) {
 			}
 		}
 		for _, v := range it.n.Fields() {
-			if c, ok := v.(*pego.Node); ok && c != nil {
+			if c, ok := v.(*zeroparse.Node); ok && c != nil {
 				stack = append(stack, item{c, it.depth + 1})
 			}
 		}
@@ -526,7 +526,7 @@ func measureTree(n *pego.Node) (count, depth int) {
 
 func format(src string) formatResult {
 	res := formatResult{Diagnostics: []diagnostic{}}
-	g, err := pego.ParseGrammar(src)
+	g, err := zeroparse.ParseGrammar(src)
 	if err != nil {
 		res.Diagnostics = diagnostics(err)
 		return res

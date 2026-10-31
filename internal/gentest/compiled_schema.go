@@ -11,7 +11,7 @@ import (
 // grammars of the parsers directory, which are the examples of the generated parsers.
 func CorpusWithParsers(t *testing.T) []Case {
 	cases := GenCorpus(t)
-	paths, err := filepath.Glob(path(t, "../../parsers/*/*.pego"))
+	paths, err := filepath.Glob(path(t, "../../parsers/*/*.zp"))
 	if err != nil {
 		t.Fatal(err)
 	}

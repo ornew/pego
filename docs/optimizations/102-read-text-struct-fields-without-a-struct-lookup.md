@@ -73,7 +73,7 @@ recognition, incremental and stream case (XML `generated_ast` bytes +1.7%).
 
 Incremental Document edits and fresh parses are 0.983–1.029, streaming 1.007–1.017.
 Preparing from source takes 7–8% longer for JSON and minilang, whose rewritten
-grammars have more actions to check and compile; loading `.pegoc` files is
+grammars have more actions to check and compile; loading `.zpc` files is
 0.94–1.08 with no consistent direction.
 
 **This change, on XML.** Median time, `d4fd8c0` → candidate:

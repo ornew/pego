@@ -1,7 +1,7 @@
 {
-  "title": "PEGO",
+  "title": "ZeroParse",
   "lang": "en",
-  "repository": "https://github.com/ornew/pego",
+  "repository": "https://github.com/ornew/zeroparse",
   "branch": "main",
   "siteURL": "https://zeroparse.dev",
   "include": [
@@ -430,7 +430,7 @@
           "title": "Go API Reference",
           "match": [
             "reference/README.md",
-            "reference/pego/README.md",
+            "reference/zp/README.md",
             "reference/grammar/README.md",
             "reference/runtime/README.md",
             "reference/gen/README.md",
@@ -442,7 +442,7 @@
           ],
           "first": [
             "reference/README.md",
-            "reference/pego/README.md",
+            "reference/zp/README.md",
             "reference/grammar/README.md",
             "reference/runtime/README.md",
             "reference/gen/README.md",
@@ -475,7 +475,7 @@
         "docs/optimizations/mechanisms/*.md"
       ],
       "first": [
-        "docs/why-pego.md",
+        "docs/why-zeroparse.md",
         "docs/strategy.md",
         "examples/README.md",
         "docs/development.md",
@@ -545,7 +545,7 @@
       "source": "docs/design/records/README.md",
       "directory": "docs/design/records",
       "title": "Design Records",
-      "introduction": "Each record explains a decision in the design of PEGO and the alternatives that were considered.",
+      "introduction": "Each record explains a decision in the design of ZeroParse and the alternatives that were considered.",
       "includeTemplate": true,
       "tableClass": "design-index",
       "columns": [
@@ -566,7 +566,7 @@
   ],
   "pagerOrder": [
     "docs/design/records/README.md",
-    "docs/why-pego.md",
+    "docs/why-zeroparse.md",
     "docs/strategy.md",
     "examples/README.md",
     "docs/development.md",

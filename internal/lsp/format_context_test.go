@@ -57,7 +57,7 @@ func TestFormatEditsContextCancellationReturnsNoEdits(t *testing.T) {
 			t.Fatalf("check %d: partial edits %+v / %v", at, got, err)
 		}
 	}
-	uri := "file:///cancel-format.pego"
+	uri := "file:///cancel-format.zp"
 	s := &Server{requestContext: formatContext(t, 3), docs: map[string]*document{uri: {uri: uri, an: a}}}
 	params, _ := json.Marshal(docParams(uri))
 	got, err := s.formatting(params)

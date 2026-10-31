@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/engine"
 )
 
 func TestParsePrefixCursor(t *testing.T) {
@@ -22,15 +22,15 @@ rule fatal = v1:"a" => A{N: 1 / (len($v1) - 1)}`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, b := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
+	for _, b := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+		for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
 			for _, recognize := range []bool{false, true} {
-				opts := []pego.ParseOption{pego.WithBackend(b), pego.WithUnit(unit)}
+				opts := []zeroparse.ParseOption{zeroparse.WithBackend(b), zeroparse.WithUnit(unit)}
 				if recognize {
-					opts = append(opts, pego.RecognizeOnly())
+					opts = append(opts, zeroparse.RecognizeOnly())
 				}
 				want := 3
-				if unit == pego.Bytes {
+				if unit == zeroparse.Bytes {
 					want = 7
 				}
 				r, err := p.ParsePrefix("inner", "é😀!tail", opts...)
@@ -71,7 +71,7 @@ rule fatal = v1:"a" => A{N: 1 / (len($v1) - 1)}`, "main")
 					t.Fatalf("failure before protected suffix: %+v %v", r, err)
 				}
 				r, err = p.ParsePrefix("recovered", "x;tail", opts...)
-				var recovered pego.SyntaxErrors
+				var recovered zeroparse.SyntaxErrors
 				if !errors.As(err, &recovered) || r.Consumed != 2 || r.ConsumedBytes != 2 {
 					t.Fatalf("recovered: %+v %v", r, err)
 				}
@@ -82,7 +82,7 @@ rule fatal = v1:"a" => A{N: 1 / (len($v1) - 1)}`, "main")
 					t.Fatal(refErr)
 				}
 				node, refErr := reference.Parse("x;", opts...)
-				var referenceErrors pego.SyntaxErrors
+				var referenceErrors zeroparse.SyntaxErrors
 				if !errors.As(refErr, &referenceErrors) || len(referenceErrors) != len(recovered) {
 					t.Fatalf("whole-input recovery reference: %v", refErr)
 				}

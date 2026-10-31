@@ -28,7 +28,7 @@ export function benchmarkLiteralMatchers() {
 }
 benchmarkLiteralMatchers();
 `;
-const dir = mkdtempSync(join(tmpdir(), "pego-ts-literal-"));
+const dir = mkdtempSync(join(tmpdir(), "zp-ts-literal-"));
 try {
   const path = join(dir, "matcher.ts");
   writeFileSync(path, source + helper);

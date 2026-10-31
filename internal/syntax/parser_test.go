@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestParseExpr(t *testing.T) {
@@ -163,8 +163,8 @@ func TestParseErrors(t *testing.T) {
 		{`foo`, `1:1: expected '@', 'rule', 'type' or 'var', found 'foo'`},
 		{"rule a = (b\nrule c = d", `2:8: expected ')', found '='`},
 		{`type A = { X }`, `1:14: expected identifier, found '}'`},
-		{`type A struct { X }`, `1:8: a struct type is defined as type A = {...}; run pego fix to rewrite type A struct`},
-		{`type A = B`, `1:8: expected '{' or 'node[' after '='; write type A ~ <type> for an alias (pego fix rewrites type A = <type>)`},
+		{`type A struct { X }`, `1:8: a struct type is defined as type A = {...}; run zp fix to rewrite type A struct`},
+		{`type A = B`, `1:8: expected '{' or 'node[' after '='; write type A ~ <type> for an alias (zp fix rewrites type A = <type>)`},
 		{`type A B`, `1:8: expected '=' or '~', found 'B'`},
 		{`type A = node[string, int]`, `a node type takes one type argument: type A = node[T]`},
 		{`type A = node`, `1:8: expected '{' or 'node[' after '='`},
@@ -270,7 +270,7 @@ func TestParseRejectsTerminalType(t *testing.T) {
 	if !ok || len(list) != 1 {
 		t.Fatalf("got %v, want exactly one error", err)
 	}
-	const want = "a terminal type is the struct type T = { Text string }; run pego fix to rewrite type T terminal"
+	const want = "a terminal type is the struct type T = { Text string }; run zp fix to rewrite type T terminal"
 	if list[0].Msg != want || list[0].Pos != (grammar.Pos{Line: 1, Col: 8}) {
 		t.Errorf("got %v, want 1:8: %s", err, want)
 	}
@@ -285,7 +285,7 @@ func TestParseRejectsTerminalType(t *testing.T) {
 }
 
 // A positional constructor parses to New.Args; the checker accepts it only for a node type, and
-// the legacy reader still marks it for pego fix.
+// the legacy reader still marks it for zp fix.
 func TestParsePositionalConstructor(t *testing.T) {
 	const src = "type T = { Text string }\nrule r T = \"x\" => T{\"x\"}"
 	g, err := Parse(src)
@@ -351,7 +351,7 @@ func TestParseRejectsRetiredTypeNames(t *testing.T) {
 				if !ok || len(list) != 1 {
 					t.Fatalf("got %v, want exactly one error", err)
 				}
-				want := fmt.Sprintf("%s is not a type; write %s (pego fix rewrites it)", name, replacement)
+				want := fmt.Sprintf("%s is not a type; write %s (zp fix rewrites it)", name, replacement)
 				col := strings.Index(src, name) + 1
 				if list[0].Msg != want || list[0].Pos != (grammar.Pos{Line: 1, Col: col}) {
 					t.Errorf("got %v, want 1:%d: %s", err, col, want)
@@ -364,7 +364,7 @@ func TestParseRejectsRetiredTypeNames(t *testing.T) {
 	}
 }
 
-// node without a type argument is an error that pego fix rewrites to node[_].
+// node without a type argument is an error that zp fix rewrites to node[_].
 func TestParseRejectsBareNode(t *testing.T) {
 	for _, src := range []string{
 		"type R = { F node }",
@@ -375,7 +375,7 @@ func TestParseRejectsBareNode(t *testing.T) {
 	} {
 		_, err := Parse(src)
 		list, ok := err.(ErrorList)
-		if !ok || len(list) != 1 || list[0].Msg != bareNode+" (pego fix rewrites it)" {
+		if !ok || len(list) != 1 || list[0].Msg != bareNode+" (zp fix rewrites it)" {
 			t.Errorf("Parse(%q): got %v, want one error %q", src, err, bareNode)
 		}
 		fixed, err := Fix(src)

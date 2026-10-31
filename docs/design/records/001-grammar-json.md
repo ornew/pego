@@ -6,17 +6,17 @@
 
 ## Summary
 
-This document proposes a design for marshalling and unmarshalling the `Grammar` object to and from JSON. The key principle is to create a JSON representation that faithfully mirrors the structure and order of a PEGO source file, making it a suitable foundation for two-way conversion.
+This document proposes a design for marshalling and unmarshalling the `Grammar` object to and from JSON. The key principle is to create a JSON representation that faithfully mirrors the structure and order of a ZeroParse source file, making it a suitable foundation for two-way conversion.
 
 ## Motivation
 
-The ultimate goal is to achieve self-hosting, where the PEGO parser can parse its own grammar files (`.pego`). Before we can parse the PEGO syntax itself, we need a way to represent the grammar structure in a data interchange format. JSON is a universally understood and easy-to-generate format that serves this purpose well.
+The ultimate goal is to achieve self-hosting, where the ZeroParse parser can parse its own grammar files (`.zp`). Before we can parse the ZeroParse syntax itself, we need a way to represent the grammar structure in a data interchange format. JSON is a universally understood and easy-to-generate format that serves this purpose well.
 
 By enabling `Grammar` <-> JSON conversion, we can:
-1.  Define grammars in JSON, allowing us to bootstrap the parsing process without a fully functional PEGO parser.
-2.  Create tools that can read, analyze, or generate PEGO grammars.
+1.  Define grammars in JSON, allowing us to bootstrap the parsing process without a fully functional ZeroParse parser.
+2.  Create tools that can read, analyze, or generate ZeroParse grammars.
 3.  Simplify testing by creating grammar fixtures in a human-readable JSON format.
-4.  Establish a foundation for two-way conversion between PEGO source and its JSON representation by preserving definition order and structure.
+4.  Establish a foundation for two-way conversion between ZeroParse source and its JSON representation by preserving definition order and structure.
 
 ## Goals
 
@@ -29,7 +29,7 @@ By enabling `Grammar` <-> JSON conversion, we can:
 
 ## Non-Goals
 
-- This design does not cover the implementation of the PEGO parser itself.
+- This design does not cover the implementation of the ZeroParse parser itself.
 - Performance of the marshalling/unmarshalling process is not a primary concern at this stage.
 
 ## Design Details
@@ -118,7 +118,7 @@ The example omits the optional `source` objects.
 
 1.  **Type registry**: Every concrete AST type is registered by name (`grammar/json.go`).
 2.  **Reflection-based codec**: `MarshalJSON` and `UnmarshalJSON` walk the structures with reflection, adding or resolving `@type` for interface-typed values. New AST types only need to be registered.
-3.  **Two-way conversion**: `grammar.Format` prints a grammar as PEGO source, so JSON and PEGO source can be converted in both directions (`pego convert`; `pego fmt` formats `.pego` source).
+3.  **Two-way conversion**: `grammar.Format` prints a grammar as ZeroParse source, so JSON and ZeroParse source can be converted in both directions (`zp convert`; `zp fmt` formats `.zp` source).
 4.  **Testing**: A round-trip test covers every AST type (`grammar/json_test.go`).
 
 ## Conclusion

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/schema"
 )
 
 const missingSchemaGrammar = `type P = { M missing; E error; O *missing; L []missing }

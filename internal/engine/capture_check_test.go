@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
 )
 
 // A name captured several times in one match has the join of the types of its captures: the
@@ -97,7 +97,7 @@ rule main = ` + strings.Repeat(`x:a x:b? `, n) + `$$`
 }
 
 func BenchmarkCaptureChecking(b *testing.B) {
-	for _, path := range []string{"../../examples/calculator/calc.pego", "../../examples/minilang/minilang.pego", "../../parsers/json/json.pego"} {
+	for _, path := range []string{"../../examples/calculator/calc.zp", "../../examples/minilang/minilang.zp", "../../parsers/json/json.zp"} {
 		b.Run("control/"+path[strings.LastIndex(path, "/")+1:], func(b *testing.B) {
 			src, err := os.ReadFile(path)
 			if err != nil {

@@ -1,4 +1,4 @@
-// Package grammar defines the abstract syntax tree (AST) of PEGO grammars.
+// Package grammar defines the abstract syntax tree (AST) of ZeroParse grammars.
 //
 // A grammar file (File) is a package clause and a list of declarations (Decl):
 // type definitions (TypeDef), type aliases (TypeAlias), variable definitions

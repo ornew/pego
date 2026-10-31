@@ -1,12 +1,12 @@
 # Website Maintenance
 
-This page is for contributors who build, test or publish PEGO's website. For using the browser playground and its WebAssembly API, see the [playground guide](guide/playground.md).
+This page is for contributors who build, test or publish ZeroParse's website. For using the browser playground and its WebAssembly API, see the [playground guide](guide/playground.md).
 
 ## Building and Previewing the Site
 
 The site uses the pinned Nanosite standard `sitegen.BuildWith` pipeline. Its
 configuration in `site/config.json` owns publication, defaults, front matter,
-record indexes, navigation, pager ordering, and search. The PEGO driver adds
+record indexes, navigation, pager ordering, and search. The ZeroParse driver adds
 the landing page, API reference, Playground and theme adapter through extension
 hooks; it also owns deployment-specific asset-retention flags. The installed
 Nanosite skill documents the standard configuration fields.
@@ -31,7 +31,7 @@ and validation are handled by Nanosite. The project-specific flags are:
 | `-previous-site` | Empty locally; `https://zeroparse.dev` in Workers Builds of `main` | Import the published current WASM/runtime pair to retain it for one deploy; requires `-wasm` |
 | `-deploy-url` | Empty | Record this immutable deploy root for the next build's asset downloads |
 | `-serve` | | After building, serve the output at this address |
-| `-github`, `-ref` | `https://github.com/ornew/pego`, `main` | Where links to source files point |
+| `-github`, `-ref` | `https://github.com/ornew/zeroparse`, `main` | Where links to source files point |
 
 The output is plain static files. Any static server works, as long as it serves the files over HTTP (the playground
 cannot run from `file://` URLs, because browsers do not load WebAssembly or workers from them):
@@ -46,10 +46,10 @@ The build output (`site/dist`) is not committed.
 
 | URL | Source |
 |:--|:--|
-| `/` | The landing page, assembled from [`README.md`](../README.md): the tagline and introduction, a live example with the README's grammar, the feature list under "Why PEGO" as cards, and the following sections |
+| `/` | The landing page, assembled from [`README.md`](../README.md): the tagline and introduction, a live example with the README's grammar, the feature list under "Why ZeroParse" as cards, and the following sections |
 | `/docs/tutorial/`, `/docs/guide/`, `/spec/`, `/docs/design/`, `/docs/design/records/`, `/docs/…`, `/examples/` | The Markdown files of the repository, rendered at build time. Links between Markdown files (relative, relative to the repository root like `/spec/language/types.md`, or percent-encoded) become links between pages; links to other files of the repository go to GitHub. The design records get a generated index |
-| `/reference/` | The API reference of every public package of the module (`pego`, `grammar`, `runtime`, `gen`, `lint`, `schema`, `query`, `sample` and `editfuzz`), generated from the Go source with `go/doc`, and the reference of the `pego` command, generated from what the command prints: its usage message and `pego <command> -h` for every command it lists. Types that are aliases of internal types (such as `Node`) show the definition and methods of the internal type. A site test fails when an importable package outside `internal/` that exports a name is missing from the API reference |
-| `/playground/` | The playground: `app.js`, `worker.js`, content-hashed `wasm/pego-<hash>.wasm` and `runtime/wasm_exec-<hash>.js`, plus `assets.json` pairing current/previous Go and optional TinyGo generations; every page records the current Go WASM in `<html data-wasm>` and dual builds also record `data-tinygo-wasm`. The stable `wasm_exec.js` supports pre-manifest workers |
+| `/reference/` | The API reference of every public package of the module (`zeroparse`, `grammar`, `runtime`, `gen`, `lint`, `schema`, `query`, `sample` and `editfuzz`), generated from the Go source with `go/doc`, and the reference of the `zp` command, generated from what the command prints: its usage message and `zp <command> -h` for every command it lists. Types that are aliases of internal types (such as `Node`) show the definition and methods of the internal type. A site test fails when an importable package outside `internal/` that exports a name is missing from the API reference |
+| `/playground/` | The playground: `app.js`, `worker.js`, content-hashed `wasm/zp-<hash>.wasm` and `runtime/wasm_exec-<hash>.js`, plus `assets.json` pairing current/previous Go and optional TinyGo generations; every page records the current Go WASM in `<html data-wasm>` and dual builds also record `data-tinygo-wasm`. The stable `wasm_exec.js` supports pre-manifest workers |
 | `/search-index.json` | The text of every page, for the search box in the header (press `/`) |
 
 Nothing is copied by hand, so the site cannot drift from the repository: rebuilding it picks up every change.
@@ -70,7 +70,7 @@ regular site builds use `go` mode. `site/install-playground-toolchains.sh`
 provides the pinned, no-root Linux x86_64 setup for a build environment: TinyGo 0.43.0 and
 Binaryen 131 are downloaded from their official releases, SHA-256 verified,
 stored as archives under `PLAYGROUND_TOOLCHAIN_CACHE_DIR` (default
-`$TMPDIR/pego-toolchain-cache`), and extracted into a temporary directory for
+`$TMPDIR/zp-toolchain-cache`), and extracted into a temporary directory for
 that build. Archive persistence depends on the build environment keeping that
 path between builds; otherwise the script downloads them again. It rejects other operating systems and architectures
 and fails on any missing tool, unexpected version, or checksum mismatch. In a
@@ -151,7 +151,7 @@ The build writes two control files into `site/dist`; Workers reads them and does
   paths where no page exists.
 - `_headers` is [`site/static/_headers`](../site/static/_headers). It sets a strict `Content-Security-Policy`: the
   pages load scripts, styles and data only from the site itself, and need no inline scripts or styles;
-  `'wasm-unsafe-eval'` allows compiling `pego.wasm`, and styles may be inline only because Mermaid sets them while it
+  `'wasm-unsafe-eval'` allows compiling `zp.wasm`, and styles may be inline only because Mermaid sets them while it
   renders a diagram. It also sets `X-Content-Type-Options` and `Referrer-Policy`. The WebAssembly binaries
   (`application/wasm`) and their hashed runtime scripts are cached for a year (`immutable`); the other files are
   revalidated on each visit, which is Workers' default.
@@ -169,7 +169,7 @@ vendored file and its name, and update the version in `assets/mermaid.js`.
 
 | Test | What it checks |
 |:--|:--|
-| `go test ./cmd/playground` | The API natively (it has no build tags), and `TestWasmSmoke`: it builds `pego.wasm` and the `pego` command, and runs [`cmd/playground/testdata/smoke.mjs`](../cmd/playground/testdata/smoke.mjs) in Node, which compares every example of [`cmd/playground/examples.txt`](../cmd/playground/examples.txt) with the command: JSON, S-expression, errors, `-check`, every backend, byte positions, `pego fmt` and `pego gen -types`. It is skipped when `node` is not installed and in `-short` mode |
+| `go test ./cmd/playground` | The API natively (it has no build tags), and `TestWasmSmoke`: it builds `zp.wasm` and the `zp` command, and runs [`cmd/playground/testdata/smoke.mjs`](../cmd/playground/testdata/smoke.mjs) in Node, which compares every example of [`cmd/playground/examples.txt`](../cmd/playground/examples.txt) with the command: JSON, S-expression, errors, `-check`, every backend, byte positions, `zp fmt` and `zp gen -types`. It is skipped when `node` is not installed and in `-short` mode |
 | `cd site && go test ./...` | Builds the whole site and checks that every Markdown file of `docs/` and `spec/` became a page, that the generated pages and the search index are complete, that no page needs inline scripts or styles, and that every internal link and anchor resolves. It also enforces the documentation rules of the
 [style sheet](documentation-style.md): the directions in which pages may link (`TestDocumentLinkDirections`) and the
 capitalization of headings (`TestHeadingTitleCase`), and the tags and prompts of code blocks (`TestCodeFenceLanguages`,
@@ -193,7 +193,7 @@ decoding excludes compression/encoding, browser DOM, worker and WebAssembly cost
 
 ## Changing the Site
 
-- **The grammar reference** in `spec/language/syntax.md` is generated with `go generate ./spec/language` from `pego.pego` and `spec/language/syntax.md.tmpl`; it publishes the simplified syntax view and links to the canonical full grammar in `pego.pego` on GitHub.
+- **The grammar reference** in `spec/language/syntax.md` is generated with `go generate ./spec/language` from `zeroparse.zp` and `spec/language/syntax.md.tmpl`; it publishes the simplified syntax view and links to the canonical full grammar in `zeroparse.zp` on GitHub.
 - **A new document** in `docs/guide/`, `docs/tutorial/`, `spec/`, `docs/design/`, `docs/design/records/` or `docs/` appears in its section
   automatically through the include rules in [`site/config.json`](../site/config.json).
   Add a section match there for a new documentation directory; unmatched pages otherwise appear under Other.

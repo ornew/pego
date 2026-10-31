@@ -34,7 +34,7 @@ letters of its characters in either case. A literal written with the suffix
 `i`, such as `"select"i`, is case-insensitive without the pragma (see
 [String Literals](lexical.md#string-literals)).
 
-```pego
+```zp
 rule keyword = ("select" / "from") #ignorecase
 rule select = "select"i
 ```
@@ -56,7 +56,7 @@ folds only `"a"`.
 An [Operators Rule](operators-rule.md) is the whole body of its rule, so the
 pragma follows its closing brace on the same line:
 
-```pego
+```zp
 rule expr = #operators {
     skip " "*
     operand "one" / [0-9]
@@ -75,7 +75,7 @@ On failure, `#recover(skip=e)` records the syntax error and starts matching
 consumes input, the expression produces an error value covering the skipped
 input and parsing continues.
 
-```pego
+```zp
 // If a statement fails, skip through its next semicolon.
 rule stmt = s:(let / assign / call) #recover(skip=[^;]+ ";") => $s
 ```
@@ -131,7 +131,7 @@ expression. The Go and command-line results are defined in
 stream parse. Each matched element is handed to the caller as soon as it
 matches.
 
-```pego
+```zp
 // Receive a log one record at a time.
 @start
 rule main = ^^ header records:record* #stream $$
@@ -185,7 +185,7 @@ allows that literal to insert its entire expected string when the ordinary
 match fails. Omission or zero disables insertion. A negative effective limit
 is a configuration error; parse options resolve once in order, last value wins.
 
-```pego
+```zp
 @start
 rule main = name ";" #missing $$
 rule name = [a-z]+ #atomic

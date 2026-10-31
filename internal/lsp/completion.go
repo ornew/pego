@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // Completion works on tokens rather than on the grammar: the definition being written usually

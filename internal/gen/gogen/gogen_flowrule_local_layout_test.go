@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestGeneratedTypedLocalLayouts(t *testing.T) {
@@ -52,7 +52,7 @@ func TestGeneratedTypedLocalLayoutControls(t *testing.T) {
 }
 
 func testGeneratedTypedLocalLayoutControls(t *testing.T) {
-	for _, path := range []string{"../../../examples/calculator/calc.pego", "../../../parsers/typescript/typescript.pego"} {
+	for _, path := range []string{"../../../examples/calculator/calc.zp", "../../../parsers/typescript/typescript.zp"} {
 		src, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatal(err)

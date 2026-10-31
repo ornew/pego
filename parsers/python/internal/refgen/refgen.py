@@ -1,5 +1,5 @@
 # Reference results from CPython 3.14: the program that the tests of parsers/python run (as
-# python3.14 -I -c "$(cat refgen.py)" ARGS, with the interpreter named by PEGO_PYTHON) and that
+# python3.14 -I -c "$(cat refgen.py)" ARGS, with the interpreter named by ZP_PYTHON) and that
 # generates the recorded reference data in testdata (see the README of the module).
 #
 # It reads paths of files (or, with -s, JSON strings of source text) from standard input, one per

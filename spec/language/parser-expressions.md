@@ -28,7 +28,7 @@ holds for every expression:
 
 ## Values and the Concrete Syntax Tree
 
-PEGO produces a predictable and consistent concrete syntax tree (CST). When a
+ZeroParse produces a predictable and consistent concrete syntax tree (CST). When a
 Rule Expression succeeds it produces a value, normally a [node](../runtime/nodes.md): a
 value together with the range of input that it covers. A rule without an action
 produces the value of its body.
@@ -142,7 +142,7 @@ comparison uses the same sequence in both position units. This does not rewrite 
 or change string constants in actions. Matched text retains the input spelling according
 to the selected position unit.
 
-```pego
+```zp
 rule a = "abc"
 ```
 
@@ -151,7 +151,7 @@ rule a = "abc"
 A `[...]` character class matches a single code point that is one of the listed
 characters or lies in one of the listed ranges, and produces a string node.
 
-```pego
+```zp
 rule a = [0-9] // a decimal digit
 rule b = [0-9a-zA-Z] // a digit or an ASCII letter
 rule c = [0-9abc] // a digit, 'a', 'b' or 'c'
@@ -161,7 +161,7 @@ rule d = [\-()?] // '-', '(', '?' or ')'
 A negated character class `[^...]` matches a single code point that is **not**
 one of the listed characters or ranges. It fails at the end of the input.
 
-```pego
+```zp
 rule string = "\"" [^"\\]* #atomic "\"" // characters other than " and \
 ```
 
@@ -185,7 +185,7 @@ Inside `[...]`:
 `.` matches any single code point, including a line feed, and produces a
 string node. It fails at the end of the input.
 
-```pego
+```zp
 rule comment = "//" (!"\n" .)* #atomic
 ```
 
@@ -196,7 +196,7 @@ whole body is `_` produces the unit `()`, and an alternative `_` of a choice
 contributes `nil`. It is useful as a placeholder for a rule whose
 body is not yet written, or to make an empty alternative explicit.
 
-```pego
+```zp
 rule stub = _
 rule a_or_empty = "a" / _ // usually written "a"?
 ```
@@ -206,7 +206,7 @@ rule a_or_empty = "a" / _ // usually written "a"?
 `_|_` always fails without consuming input. Combined with the
 [`@error`](attributes.md#error) attribute, it reports a descriptive error.
 
-```pego
+```zp
 rule hello = "hello" / _|_ @error("expect 'hello'")
 ```
 
@@ -221,7 +221,7 @@ An anchor matches a position without consuming input and has no value.
 | `^` | at the beginning of the input or immediately after a line feed |
 | `$` | at the end of the input or immediately before a line feed or a carriage return |
 
-```pego
+```zp
 rule a = "hello." $$
 ```
 
@@ -232,7 +232,7 @@ rule a = "hello." $$
 A sequence `a b` matches `a` and then `b` at the position where `a` ended. It fails
 if any element fails.
 
-```pego
+```zp
 rule a = "a" "b"
 ```
 
@@ -243,7 +243,7 @@ first one that succeeds. Later alternatives are tried only if the earlier ones
 fail; a successful alternative is never revisited, even if the expressions after
 the choice fail.
 
-```pego
+```zp
 rule a = "a" / "b"
 ```
 
@@ -252,7 +252,7 @@ rule a = "a" / "b"
 Parentheses `(a)` group an expression to override [precedence](#precedence). A group
 has the value of the enclosed expression.
 
-```pego
+```zp
 rule a = "a" ("b" "c")
 ```
 
@@ -303,7 +303,7 @@ Lookahead tests the input that follows without consuming it, and has no value.
 - `!a` (negative lookahead) succeeds if `a` does not match at the current
   position.
 
-```pego
+```zp
 // An identifier that does not begin with "if".
 rule ident = !"if" [a-z]+
 ```
@@ -320,7 +320,7 @@ expected items of a [syntax error](../runtime/parsing.md#syntax-errors).
 `a #atomic` matches `a` and produces a single string node holding the matched text,
 without building the internal structure of `a`.
 
-```pego
+```zp
 // [0-9]+ alone produces a list of single-digit string nodes; #atomic makes it one string node "123".
 rule number = [0-9]+ #atomic
 ```
@@ -331,7 +331,7 @@ rule number = [0-9]+ #atomic
 and it has no value. Use it for input that the syntax requires but the tree does
 not need, such as whitespace between words.
 
-```pego
+```zp
 rule s = " "+
 rule sentence = word (-s word)+
 ```
@@ -345,7 +345,7 @@ A cut `#cut` commits to the current alternative: once parsing passes a cut, the
 enclosing choice does not backtrack into its other alternatives. Use it to
 avoid pointless backtracking where the grammar makes the choice unambiguous.
 
-```pego
+```zp
 // Matches "ab" but not "ac": after "a", the cut commits to the first
 // alternative, so the second alternative is never tried.
 rule a = "a" #cut "b" / "a" #cut "c"
@@ -364,7 +364,7 @@ A capture `label:a` records the value of `a` under the name `label` so that
 [actions](actions.md) and [predicates](predicates.md) can refer to it as
 `$label`. The label and the `:` MUST be adjacent.
 
-```pego
+```zp
 rule full_name = first:word " " last:word => Name{First: $first, Last: $last}
 ```
 
@@ -381,7 +381,7 @@ iteration of a repetition (`*`, `+`, `#repeat(...)`).
   lookahead has no value. Its value is kept beside the tuple of its scope and
   stays readable by actions and predicates.
 
-```pego
+```zp
 // Each element of $rest is a tuple in which op and r name the two elements.
 rule expr = l:term rest:(op:("+" / "-") r:term)*
 ```
@@ -431,7 +431,7 @@ must be adjacent; `name(binding)` is not a level call. See
 A rule MAY be directly or indirectly left-recursive: it may call itself at the
 position where it started, before consuming any input.
 
-```pego
+```zp
 rule expr = expr "+" term / term
 ```
 
@@ -482,7 +482,7 @@ every binding in `e` counts; a negative lookahead `!e` undoes its bindings, so
 only those before a call inside `e` count. A binding in a called rule ends with
 that call, so it never counts.
 
-```pego
+```zp
 var k int
 rule main = r $$
 rule r = {k := k + 1} r "x" / {k < 10} "x"
@@ -500,13 +500,13 @@ Because growing tries the alternatives in order, **the recursive alternative
 MUST come before the base case**: if the base case comes first, it matches again
 with the same length, nothing grows, and the input after it is left over.
 
-```pego
+```zp
 @start
 rule main = a $$
 rule a = a "x" / "y"
 ```
 
-For the input `yxx`, `pego parse -f sexpr -source-info` prints the left-associative tree
+For the input `yxx`, `zp parse -f sexpr -source-info` prints the left-associative tree
 
 ```text
 ((("y"@a "x")@a "x")@a)@main

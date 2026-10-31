@@ -19,7 +19,7 @@ sharing is a different input path.
 
 ## Reference Control
 
-Build tag `pego_reference_stream_text` selects copying. Both same-source
+Build tag `zp_reference_stream_text` selects copying. Both same-source
 variants retain the input cache fields, so parent comparisons also include their
 layout cost.
 

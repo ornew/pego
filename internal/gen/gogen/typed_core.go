@@ -3,9 +3,9 @@ package gogen
 import (
 	"fmt"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/ir/core"
-	irbuild "github.com/ornew/pego/internal/ir/core/build"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/ir/core"
+	irbuild "github.com/ornew/zeroparse/internal/ir/core/build"
 )
 
 // TypedCore builds the Core IR of the typed Go rules and runs the passes of the typed Go backend:

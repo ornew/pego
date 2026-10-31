@@ -4,10 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/starttest"
-	"github.com/ornew/pego/sample"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/starttest"
+	"github.com/ornew/zeroparse/sample"
 )
 
 // TestSampleCorpus generates inputs for every grammar of the test corpus with package sample and checks
@@ -17,11 +17,11 @@ func TestSampleCorpus(t *testing.T) {
 	t.Parallel()
 	for _, c := range gentest.GenCorpus(t) {
 		t.Run(c.Name, func(t *testing.T) {
-			ast, err := pego.ParseGrammar(c.Src)
+			ast, err := zeroparse.ParseGrammar(c.Src)
 			if err != nil {
 				t.Fatal(err)
 			}
-			p, err := pego.Compile(starttest.MarkAll(ast), "main")
+			p, err := zeroparse.Compile(starttest.MarkAll(ast), "main")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -44,8 +44,8 @@ func TestSampleCorpus(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, in := range inputs {
-				for _, b := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-					if _, err := p.Parse(in, pego.WithBackend(b)); err != nil {
+				for _, b := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+					if _, err := p.Parse(in, zeroparse.WithBackend(b)); err != nil {
 						t.Errorf("backend %v: generated input %q does not parse: %v", b, in, err)
 					}
 				}

@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	. "github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/engine/document"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/compile"
+	. "github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/engine/document"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // memberDocumentDiffers parses each input of the case with a Document on every backend: twice

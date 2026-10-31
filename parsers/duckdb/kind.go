@@ -1,6 +1,6 @@
 package duckdb
 
-import "github.com/ornew/pego/parsers/duckdb/types"
+import "github.com/ornew/zeroparse/parsers/duckdb/types"
 
 // Kind returns the type DuckDB gives the statement (the name of its StatementType: SELECT, INSERT, CREATE, ...).
 //

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ornew/pego/parsers/python"
-	"github.com/ornew/pego/parsers/python/types"
+	"github.com/ornew/zeroparse/parsers/python"
+	"github.com/ornew/zeroparse/parsers/python/types"
 )
 
 func ExampleParseModule() {

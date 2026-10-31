@@ -42,13 +42,13 @@ The statements in a Predicate Action block execute in source order. Each
 statement has the behavior it would have as its own single-statement Predicate
 Action at that position:
 
-```pego
+```zp
 rule item = { a; b; c }
 ```
 
 is equivalent to:
 
-```pego
+```zp
 rule item = { a } { b } { c }
 ```
 

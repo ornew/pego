@@ -10,12 +10,12 @@ import (
 	"testing"
 	"weak"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine/closure"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/limits"
-	"github.com/ornew/pego/internal/starttest"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine/closure"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/limits"
+	"github.com/ornew/zeroparse/internal/starttest"
 )
 
 func contextClassRanges() []grammar.CharRange {

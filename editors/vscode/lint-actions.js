@@ -12,7 +12,7 @@ function createLintActions(vscode, enabled, isCurrentClient, resolveRequest) {
   const active = () => enabled && isCurrentClient();
   const findingData = (diagnostic) => {
     const data = diagnostic.data;
-    return diagnostic.source === 'pego-lint' && data && typeof data.uri === 'string' &&
+    return diagnostic.source === 'zp-lint' && data && typeof data.uri === 'string' &&
       Number.isInteger(data.version) && Number.isSafeInteger(data.generation) && data.generation > 0 &&
       typeof data.key === 'string' ? data : undefined;
   };
@@ -106,8 +106,8 @@ function createLintActions(vscode, enabled, isCurrentClient, resolveRequest) {
     fillClientCapabilities(capabilities) {
       if (!enabled) return;
       capabilities.experimental = capabilities.experimental || {};
-      capabilities.experimental.pego = {
-        ...capabilities.experimental.pego,
+      capabilities.experimental.zp = {
+        ...capabilities.experimental.zp,
         lintDiagnostics: true, responsiveAnalysis: true, showExplanation: true,
       };
     },
@@ -119,7 +119,7 @@ function createLintActions(vscode, enabled, isCurrentClient, resolveRequest) {
     // Resolving happens in applyResolved, where the edit is checked; the editor's own resolve
     // of an action of this extension would only compute the edit twice.
     resolveCodeAction(item, token, next) {
-      const lazy = item && item.command && item.command.command === 'pego.applyLintAction';
+      const lazy = item && item.command && item.command.command === 'zp.applyLintAction';
       return lazy ? item : next(item, token);
     },
     handleDiagnostics(uri, diagnostics, next) {
@@ -138,7 +138,7 @@ function createLintActions(vscode, enabled, isCurrentClient, resolveRequest) {
         // Lint actions exist only behind the experimental setting; never let
         // one through unguarded, in particular a version-less edit.
         const passed = await next(document, range, context, token);
-        return Array.isArray(passed) ? passed.filter((a) => !(a.diagnostics || []).some((d) => d.source === 'pego-lint')) : passed;
+        return Array.isArray(passed) ? passed.filter((a) => !(a.diagnostics || []).some((d) => d.source === 'zp-lint')) : passed;
       }
       const version = document.version, uri = uriText(document.uri);
       const actions = await next(document, range, context, token);
@@ -146,8 +146,8 @@ function createLintActions(vscode, enabled, isCurrentClient, resolveRequest) {
           documentFor(uri) !== document || document.version !== version) return [];
       return (actions || []).flatMap((action) => {
         const diagnostics = action.diagnostics || [];
-        const findings = diagnostics.filter((d) => d.source === 'pego-lint');
-        if (findings.length === 0) return action.command?.command === 'pego.showExplanation' ? [] : [action];
+        const findings = diagnostics.filter((d) => d.source === 'zp-lint');
+        if (findings.length === 0) return action.command?.command === 'zp.showExplanation' ? [] : [action];
         const data = findings.map(findingData);
         if (data.some((d) => !d || d.uri !== uri || d.version !== version || !findingCurrent(d))) return [];
         const guard = { uri, version, generation: data[0].generation, session };
@@ -158,9 +158,9 @@ function createLintActions(vscode, enabled, isCurrentClient, resolveRequest) {
           // and applied in one guarded step (see applyResolved).
           const spec = lazyAction(action.data, data[0], uri, findings, action.title);
           if (!spec) return [];
-          action.command = { title: action.title, command: 'pego.applyLintAction', arguments: [spec, guard] };
+          action.command = { title: action.title, command: 'zp.applyLintAction', arguments: [spec, guard] };
         } else if (action.command) {
-          if (action.command.command !== 'pego.showExplanation' || action.edit ||
+          if (action.command.command !== 'zp.showExplanation' || action.edit ||
               !Array.isArray(action.command.arguments) || action.command.arguments.length !== 3) return [];
           action.command = { ...action.command, arguments: [...(action.command.arguments || []), guard] };
         } else if (action.edit) {
@@ -173,10 +173,10 @@ function createLintActions(vscode, enabled, isCurrentClient, resolveRequest) {
           if (!target && !fix) return [];
           action.edit = undefined;
           action.command = target ? {
-            title: action.title, command: 'pego.applyLintSuppression',
+            title: action.title, command: 'zp.applyLintSuppression',
             arguments: [target.line, target.text, guard],
           } : {
-            title: action.title, command: 'pego.applyLintFix',
+            title: action.title, command: 'zp.applyLintFix',
             arguments: [fix.check, fix.range, fix.text, guard],
           };
         } else {
@@ -192,7 +192,7 @@ function createLintActions(vscode, enabled, isCurrentClient, resolveRequest) {
     async showExplanation(check, message, explanation, guard) {
       if (!guardCurrent(guard) || typeof check !== 'string' || !/^[a-z][a-z0-9-]{0,99}$/.test(check) ||
           typeof message !== 'string' || typeof explanation !== 'string') return false;
-      await vscode.window.showInformationMessage(`PEGO ${check}: ${message}\n${explanation}`);
+      await vscode.window.showInformationMessage(`ZeroParse ${check}: ${message}\n${explanation}`);
       return true;
     },
     // Applies a suppression only to the analyzed document version. VS Code's

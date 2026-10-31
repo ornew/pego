@@ -1,6 +1,6 @@
 package sample
 
-import "github.com/ornew/pego"
+import "github.com/ornew/zeroparse"
 
 // F is the part of *testing.F that Seed uses. (Taking an interface keeps the testing package out of
 // programs that import sample without seeding fuzz tests.)
@@ -21,7 +21,7 @@ type F interface {
 //			p.Parse(in) // must not panic
 //		})
 //	}
-func Seed(f F, p *pego.Parser, n int, opts ...Option) []string {
+func Seed(f F, p *zeroparse.Parser, n int, opts ...Option) []string {
 	f.Helper()
 	inputs, err := Generate(p, n, opts...)
 	if err != nil {

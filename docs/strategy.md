@@ -1,8 +1,8 @@
 # Project Strategy
 
-This page covers what PEGO aims to be, where it earns its first proof, what must become true on the way, and how
+This page covers what ZeroParse aims to be, where it earns its first proof, what must become true on the way, and how
 progress is measured. It is written for contributors who are choosing what to work on and judging the result; the
-summary for readers is [Why PEGO](why-pego.md). Facts about PEGO refer to this repository. Benchmark figures come from
+summary for readers is [Why ZeroParse](why-zeroparse.md). Facts about ZeroParse refer to this repository. Benchmark figures come from
 [Benchmark Results](benchmarks.md) (commit `13b3d186`, Go 1.27.1, Apple M3 Max, darwin/arm64, median of three runs,
 positions in code points). Comparisons checked on 2026-10-29.
 
@@ -11,7 +11,7 @@ positions in code points). Comparisons checked on 2026-10-29.
 **Mission.** Make a grammar the only parser code a program needs, whatever language the program is written in and
 whatever it parses for, as fast as the fastest tools for its platform.
 
-**Identity.** PEGO aims to be one grammar for every target, engine and use: a grammar compiler and parsing platform
+**Identity.** ZeroParse aims to be one grammar for every target, engine and use: a grammar compiler and parsing platform
 that turns one grammar into parsers for any target language, engine and optimization profile, and for every use
 (batch trees, typed values, incremental documents, streaming, recognition and, as a goal, editors). The aim is the
 best measured speed in each, against the fastest tools for each platform, with every loss published. The breadth is
@@ -24,46 +24,46 @@ of the aim is stated with its status today:
 | Any target language | Two: generated Go and generated TypeScript | More target languages ([Targets and engines](#wedge-and-sequencing) track) |
 | Any engine | Three engine backends in Go (closure, recursive VM, iterative VM); a bytecode with a published specification, implemented only by the Go VMs and unstable until it is declared stable and versioned, which the first tagged release does not do | A stable, versioned bytecode, then another implementation of it |
 | Selectable optimization profiles | One fixed set of optimizations | Generation profiles for speed, memory and size ([design record 063](design/records/063-configurable-optimization-pass-pipeline.md), accepted, not implemented) |
-| Every use | Batch trees, typed values, recognition, recovery, `Document` and streaming, with per-target gaps ([What One Grammar Gives You](why-pego.md#what-one-grammar-gives-you)); a language server for `.pego` sources | Editor-grade tooling for the languages users define ([Editor-Grade Parsing](#editor-grade-parsing)) |
+| Every use | Batch trees, typed values, recognition, recovery, `Document` and streaming, with per-target gaps ([What One Grammar Gives You](why-zeroparse.md#what-one-grammar-gives-you)); a language server for `.zp` sources | Editor-grade tooling for the languages users define ([Editor-Grade Parsing](#editor-grade-parsing)) |
 | The best measured speed in each | Generated Go is slower than Go's hand-written standard-library parsers on every comparable workload (1.1–5.4× for typed values, 1.6–6.8× for trees); no cross-tool benchmark yet | The targets of [Performance Leadership](#performance-leadership), first for the targets and uses that exist, then for each new one |
 | Safe by default | A nesting cap only | Budget limits on by default, in generated parsers too; optional input-length and memory caps ([Predictable Cost and Safety](#predictable-cost-and-safety)) |
 
-**Positioning.** The reason to choose PEGO is breadth under one contract. One PEG-based grammar yields typed values,
+**Positioning.** The reason to choose ZeroParse is breadth under one contract. One PEG-based grammar yields typed values,
 recognition, incremental documents and bounded streams, in every target that supports them. Every backend returns the
-same results for the features it shares, and the tests check this. PEGO needs no cgo.
+same results for the features it shares, and the tests check this. ZeroParse needs no cgo.
 
-- **Today.** That breadth is the claim. PEGO has no editor ecosystem, no grammar library and no speed lead.
+- **Today.** That breadth is the claim. ZeroParse has no editor ecosystem, no grammar library and no speed lead.
 - **Ambition.** Speed, memory and size are a pillar. The goal is to match and then beat hand-written parsers in every
   target and use while returning typed values, and to show it in a public cross-tool benchmark
   ([Performance Leadership](#performance-leadership)).
-- **Not claimed.** PEGO is not safe by default for untrusted input yet, and it is not editor-grade yet. Both are goals
+- **Not claimed.** ZeroParse is not safe by default for untrusted input yet, and it is not editor-grade yet. Both are goals
   with stated gaps ([Predictable Cost and Safety](#predictable-cost-and-safety),
   [Editor-Grade Parsing](#editor-grade-parsing)).
 
 **First proof.** The identity covers every target and use, but proof is earned in order. The first users to win are
 Go teams that own a DSL, configuration, query or policy language and want typed values, declared error recovery and
 incremental reparsing from one grammar, with no cgo ([Order of Proof](#order-of-proof)). This orders the work; it does
-not narrow what PEGO is for.
+not narrow what ZeroParse is for.
 
 **Non-goals.**
 
-- Competing with tree-sitter's grammar corpus or editor integrations in the near term. PEGO grammars do not target
+- Competing with tree-sitter's grammar corpus or editor integrations in the near term. ZeroParse grammars do not target
   tree-sitter query compatibility.
-- General context-free parsing. PEGO has no ambiguous grammars, GLR or parse forests; ordered choice is the model.
+- General context-free parsing. ZeroParse has no ambiguous grammars, GLR or parse forests; ordered choice is the model.
 - A linear-time promise for every grammar. The project states costs and bounds cost instead (see
   [Predictable Cost and Safety](#predictable-cost-and-safety)).
 - A semantic framework. Name resolution, scoping and type checking of the user's language stay in user code. The
   editor work stops at syntax-level server plumbing.
 - Grammar-constrained decoding for language models (GBNF and similar). It checks token prefixes at sampling speed
   inside an inference loop, a different product with its own incumbents.
-- Compatibility before the first release. Grammar syntax, the Go API, `.pegoc`, JSON forms and bytecode change freely
+- Compatibility before the first release. Grammar syntax, the Go API, `.zpc`, JSON forms and bytecode change freely
   until then.
 - Deferred by policy: go-gettable ready-made parser modules and 32-bit Go. Further target languages and a second VM
   implementation are goals of the Targets and engines track, after the release.
 
 ## Market Map
 
-| Segment | What they need | Incumbents | Switching cost | PEGO today |
+| Segment | What they need | Incumbents | Switching cost | ZeroParse today |
 |:--|:--|:--|:--|:--|
 | Go teams that own a DSL, configuration, query or policy language | Typed values, good errors, bounded cost, plain `go build` | Hand-written parsers, goyacc, pigeon, pointlander/peg, participle, ANTLR Go runtime; embedding CEL (cel-go) or Expr where an expression language fits | Low to medium: a grammar rewrite per language | Partial fit: typed generated Go, declared recovery, a default depth cap, stdlib only. Budget limits must be generated in and enabled (1.30–1.47× slower on generated Go); no memory or input-size cap; no grammar classifier |
 | Go developer tools for a custom language (linters, formatters, servers) | Incremental trees that tolerate errors, in pure Go | tree-sitter through cgo, gotreesitter, gpeg, hand-written | Medium: tree-sitter grammars and queries are reusable assets | Partial: engine `Document` and declared recovery ship. A `Document` has no `#missing`, so an unclosed construct with no `#recover` path yields no tree. There is no language server for user grammars and no UTF-16 position map |
@@ -75,7 +75,7 @@ not narrow what PEGO is for.
 
 ## Incumbents
 
-Each entry gives the incumbent's moat, how PEGO differs, what PEGO can replace, where PEGO loses today, and the likely
+Each entry gives the incumbent's moat, how ZeroParse differs, what ZeroParse can replace, where ZeroParse loses today, and the likely
 counter-move.
 
 ### `tree-sitter` and `gotreesitter`
@@ -93,16 +93,16 @@ Checked against tree-sitter 0.27.1 and gotreesitter 0.56.0.
     default with thresholds derived from the input, and an edited incremental parse stops where a fresh parse would.
     A per-parse memory budget and a process-heap ceiling are also on by default; a timeout and a cancellation flag
     are available.
-- **Difference.** PEGO is PEG-based and builds typed values from the grammar. tree-sitter is LR(1) with bounded GLR,
+- **Difference.** ZeroParse is PEG-based and builds typed values from the grammar. tree-sitter is LR(1) with bounded GLR,
   and its nodes are dynamic. tree-sitter documents no worst-case bound; its GLR version count is capped by design, and
-  an open report shows that the cap can drop a correct branch (issue 6057). PEGO specifies classes of growth. Both
-  PEGO and gotreesitter count cost deterministically, but gotreesitter's limits and memory budget are on by default,
-  while PEGO's limits are opt-in today and it has no memory limit.
+  an open report shows that the cap can drop a correct branch (issue 6057). ZeroParse specifies classes of growth. Both
+  ZeroParse and gotreesitter count cost deterministically, but gotreesitter's limits and memory budget are on by default,
+  while ZeroParse's limits are opt-in today and it has no memory limit.
 - **Can replace.** A tree-sitter grammar written only to parse one language a Go team owns, where typed values and
   generated TypeScript matter more than queries and an editor corpus.
 - **Loses today.** It loses on the corpus, queries, highlighting and editor distribution. It also loses on a tree for
   every input with no recovery annotations, changed ranges, UTF-16 positions, and budget limits and a memory budget on
-  by default. All of these are available in pure Go through gotreesitter, so cgo alone is not an argument for PEGO.
+  by default. All of these are available in pure Go through gotreesitter, so cgo alone is not an argument for ZeroParse.
   No speed comparison exists.
 - **Counter-move.** gotreesitter's v1 design plan requires incremental results to equal fresh parses; meeting it would
   remove the remaining difference in the incremental contract. Other tree-sitter issues are examples, not a pattern:
@@ -116,9 +116,9 @@ Checked against ANTLR 4.13.2 and the Go runtime 4.13.1.
 - **Moat.** The grammars-v4 library, ten runtime targets including Go, JavaScript and TypeScript, IDE plugins, books
   and long familiarity. Recovery is automatic and needs no grammar annotations (single-token insertion and deletion,
   then resynchronization). Direct left recursion with precedence by alternative order is supported.
-- **Difference.** PEGO is incremental and streams, its value actions do not depend on the target, and it needs no Java
-  toolchain. ALL(*) is O(n⁴) in theory (Parr, Harwell and Fisher, Theorem 6.3), and PEGO states no polynomial bound
-  either. PEGO's difference is its stated cost model and its budget limits, not a better bound.
+- **Difference.** ZeroParse is incremental and streams, its value actions do not depend on the target, and it needs no Java
+  toolchain. ALL(*) is O(n⁴) in theory (Parr, Harwell and Fisher, Theorem 6.3), and ZeroParse states no polynomial bound
+  either. ZeroParse's difference is its stated cost model and its budget limits, not a better bound.
 - **Can replace.** ANTLR in Go services where the Java build step or the lack of incremental parsing hurts. Two user
   reports describe Go-target speed and memory problems (issues 1901 and 3279, from 2017 and 2021), but they predate
   the 4.13 Go runtime module and are not evidence about it.
@@ -134,11 +134,11 @@ Checked against `@lezer/lr` 1.4.11.
 - **Moat.** It is CodeMirror 6's parser system. `@lezer/lr` had about 18.5 million npm downloads in the week ending
   2026-10-27. Parsing is step-wise (`PartialParse.advance()` with `stopAt`), mixed-language parsing is built in, and
   trees are compact.
-- **Difference.** Lezer trees are untyped by design, and the runtime is JavaScript only. PEGO's TypeScript output is
+- **Difference.** Lezer trees are untyped by design, and the runtime is JavaScript only. ZeroParse's TypeScript output is
   typed but has no `Document`.
 - **Can replace.** Little today. A CodeMirror integration would need TypeScript `Document`s and a tree adapter.
 - **Loses today.** Everything editor-facing in the browser.
-- **Counter-move.** None expected while PEGO does not compete inside CodeMirror. Development moved off GitHub in April
+- **Counter-move.** None expected while ZeroParse does not compete inside CodeMirror. Development moved off GitHub in April
   2026; npm releases continue.
 
 ### Langium and Chevrotain
@@ -147,11 +147,11 @@ Checked against Langium 4.4.0 and Chevrotain 13.2.0.
 
 - **Moat.** One grammar yields a typed TypeScript AST, scoping, validation and a full language server. Recovery inserts
   and deletes tokens automatically, and parsing can run in a worker with cancellation (opt-in, Node).
-- **Difference.** Langium reparses changed documents in full and is TypeScript only. PEGO is Go-first, incremental
-  within a document, and streams. PEGO has no semantic layer and no language server for user grammars.
+- **Difference.** Langium reparses changed documents in full and is TypeScript only. ZeroParse is Go-first, incremental
+  within a document, and streams. ZeroParse has no semantic layer and no language server for user grammars.
 - **Can replace.** Langium only where a Go backend must share the parser.
 - **Loses today.** The whole IDE story.
-- **Counter-move.** Tree-level incremental parsing in Chevrotain or Langium would remove PEGO's incremental difference
+- **Counter-move.** Tree-level incremental parsing in Chevrotain or Langium would remove ZeroParse's incremental difference
   in TypeScript. It was requested in Chevrotain issue 843, which is closed; no incremental API is documented.
 
 ### Go Parser Generators
@@ -173,11 +173,11 @@ commit `d601f967`.
     runs any grammar incrementally and reuses results where patterns are marked for memoization. It builds untyped
     captures, has no left recursion, uses hand-written recovery patterns and has no depth or budget limits. Its equality
     test against a fresh parse is disabled at the checked commit.
-  - PEGO has typed output, left recursion that is not experimental, the Operators Rule, `#recover`, streaming, limits,
+  - ZeroParse has typed output, left recursion that is not experimental, the Operators Rule, `#recover`, streaming, limits,
     and a fresh-parse equality contract that it states and tests.
 - **Can replace.** pigeon and pointlander/peg grammars, which have similar PEG semantics. participle where recovery
   is needed. goyacc grammars for languages that suit ordered choice.
-- **Loses today.** participle's zero-step setup. gpeg's edit cost on very large documents, since PEGO's edit
+- **Loses today.** participle's zero-step setup. gpeg's edit cost on very large documents, since ZeroParse's edit
   application grows with document size, and its published scaling study. There is no measured speed comparison with
   any of them.
 - **Counter-move.** gpeg's latest commits (2026-08-19) rewrote its VM; typed captures or limits there would make it
@@ -191,7 +191,7 @@ Checked against cel-go 0.30.0 and Expr 1.17.8.
   no grammar. CEL states that evaluation is linear in the expression and input sizes when macros are disabled. Expr
   states that its programs always terminate and are side-effect free. Both type-check expressions against the host's
   types.
-- **Difference.** PEGO defines a syntax; it does not evaluate it. It fits when the syntax is the team's own (search
+- **Difference.** ZeroParse defines a syntax; it does not evaluate it. It fits when the syntax is the team's own (search
   syntax, configuration, a domain notation), or when an existing expression language does not fit the users.
 - **Can replace.** Nothing, when CEL or Expr fits; this is the first incumbent to concede.
 - **Counter-move.** None needed; they already cover their part of the segment.
@@ -199,16 +199,16 @@ Checked against cel-go 0.30.0 and Expr 1.17.8.
 ### Hand-Written Parsers and the Go Standard Library
 
 - **Moat.** Speed and control. The Go compiler left yacc in Go 1.6, and `go/parser`, `encoding/json` and
-  `encoding/csv` are hand-written. On PEGO's own workloads they are faster than generated Go: 1.1–5.4× for typed
+  `encoding/csv` are hand-written. On ZeroParse's own workloads they are faster than generated Go: 1.1–5.4× for typed
   values, 1.6–6.8× for trees, 8.05× for recognition and 11.5× for streaming (engine, not generated Go). The JSON
   baseline is `encoding/json` `Unmarshal` into `any`, as built by Go 1.27.1; a `jsontext` baseline is not measured. Language models now make a small hand-written
   recursive-descent parser cheap to produce.
-- **Difference.** From a grammar, PEGO returns positions and rule names or typed values, recovers, reparses
+- **Difference.** From a grammar, ZeroParse returns positions and rule names or typed values, recovers, reparses
   incrementally and limits cost. A hand-written parser gets each of these by hand, and differential, fuzzed
   equality checks do not come with it.
 - **Can replace.** New hand-written parsers for languages a team owns, where maintenance cost dominates speed.
 - **Loses today.** Raw throughput on every comparable workload, and familiarity.
-- **Counter-move.** None; this is the default that PEGO must beat, first on cost and then on speed (see
+- **Counter-move.** None; this is the default that ZeroParse must beat, first on cost and then on speed (see
   [Performance Leadership](#performance-leadership)).
 
 ### Other PEG Tools
@@ -232,7 +232,7 @@ Checked against grmtools 0.15.0 and Menhir 20260209.
 
 - **Moat.** Quantified error recovery: CPCT+ repairs 98.37% of 200,000 invalid Java files within a 0.5 s timeout.
   Menhir adds per-state error messages with checked coverage.
-- **Difference.** PEGO's recovery is declared per construct (`#recover`) and unmeasured.
+- **Difference.** ZeroParse's recovery is declared per construct (`#recover`) and unmeasured.
 - **Loses today.** Any claim about recovery quality.
 - **Counter-move.** Not applicable; the lesson is to measure recovery the same way.
 
@@ -242,17 +242,17 @@ Checked against the Roslyn and rust-analyzer design notes.
 
 - **Moat.** A decade of tuning for one language, lossless trees that exist for every input, and semantic analysis
   built on them.
-- **Difference.** They are not grammar-driven. Roslyn's team states the property that PEGO states and tests:
+- **Difference.** They are not grammar-driven. Roslyn's team states the property that ZeroParse states and tests:
   "incremental reparsing produces the same tree as normal parsing". It also explains how ambient context breaks it.
 - **Lesson.** rust-analyzer's notes say that its incremental reparse needs no extra state, and that in practice
   "incremental reparsing doesn't actually matter much for IDE use-cases, parsing from scratch seems to be fast
-  enough". Full-fidelity trees that always exist matter more to editors than reuse. PEGO's `Document` costs 5.6×
+  enough". Full-fidelity trees that always exist matter more to editors than reuse. ZeroParse's `Document` costs 5.6×
   the memory of the tree alone. It must earn that cost with measured latency wins on realistic edit traces, and the
-  equality check in `pego edit-fuzz` must stay in the default test path.
+  equality check in `zp edit-fuzz` must stay in the default test path.
 
 ### Competitor Strengths
 
-What the incumbents do better today, and what PEGO's documents must not obscure:
+What the incumbents do better today, and what ZeroParse's documents must not obscure:
 
 - tree-sitter: a tree for every input (ERROR and MISSING nodes); changed ranges; persistent trees with structural
   sharing; included ranges for embedded languages; `tree-sitter fuzz`
@@ -274,9 +274,9 @@ What the incumbents do better today, and what PEGO's documents must not obscure:
 
 ## Order of Proof
 
-PEGO aims to serve the parsing need of every segment of the market map in the long term. The non-goals above still
+ZeroParse aims to serve the parsing need of every segment of the market map in the long term. The non-goals above still
 apply: a grammar corpus to rival tree-sitter's, general context-free parsing and the semantic layer of a language stay
-out of scope. The ranking below decides where PEGO earns proof first, so that one segment's adoption makes the case
+out of scope. The ranking below decides where ZeroParse earns proof first, so that one segment's adoption makes the case
 for the next; it orders the work, it does not limit the scope.
 
 ### Scoring Criteria
@@ -288,8 +288,8 @@ judgements until the size proxies are measured.
 |:--|:--|:--|
 | Need | A documented pain that costs users time, safety or a toolchain | Nice to have |
 | Gap | Incumbents do not cover the need in the segment's language | A mature incumbent covers it |
-| Readiness | PEGO ships what the segment needs today | Most of it is planned |
-| Reach | Users find PEGO where they already are (Go modules, Go documentation) | They choose from an editor or platform ecosystem |
+| Readiness | ZeroParse ships what the segment needs today | Most of it is planned |
+| Reach | Users find ZeroParse where they already are (Go modules, Go documentation) | They choose from an editor or platform ecosystem |
 | Size | Many teams have the need (proxies: importers of goyacc, pigeon and participle; Go repositories with `.y` or `.peg` files) | Few teams |
 
 ### Ranking
@@ -329,20 +329,20 @@ they are not gates, and the release does not wait for them.
 **Release (the first milestone, a checklist).** A version that segment 1 can depend on:
 
 - a tagged v0.x release with a compatibility policy that names the stable surfaces (grammar syntax, the generated Go
-  API) and the unstable ones (`.pegoc`, bytecode, JSON forms);
+  API) and the unstable ones (`.zpc`, bytecode, JSON forms);
 - the Go version that generated code needs, documented: Go 1.27.1, the same as the module, with the effect of
   `go get -tool` on a consumer module ([Go Versions](releasing.md#go-versions));
-- budget limits on by default: `pego gen` generates parsers with budget controls by default (what `-budget-controls` turns
+- budget limits on by default: `zp gen` generates parsers with budget controls by default (what `-budget-controls` turns
   on today), one fixed budget proportional to the input length (c·n with a large constant), and a lint warning for
   grammars outside the specification's sufficient conditions for linear cost; at whatever overhead the limits have
-  then, plus a budget limit flag in `pego parse` and [SECURITY.md](../SECURITY.md) updated to these defaults; published
+  then, plus a budget limit flag in `zp parse` and [SECURITY.md](../SECURITY.md) updated to these defaults; published
   performance figures are measured with the limits on; reducing the overhead follows in the Performance track, and the
   release does not wait for the complexity classifier;
 - one budget in place of two counters;
 - readable long expected lists;
 - typed entry points under their final names;
 - README and site claims that match this document's limits (tagline, untrusted input, tested runtimes);
-- the **wedge benchmark**: the same DSL-sized grammars (a calculator, a filter language, JSON) in PEGO, pigeon,
+- the **wedge benchmark**: the same DSL-sized grammars (a calculator, a filter language, JSON) in ZeroParse, pigeon,
   participle and the ANTLR Go runtime. It reports time on short and long inputs, allocations, generated code size,
   binary-size delta and budget limit overhead, with every loss published. This is the first credibility work and the
   cheapest one;
@@ -377,12 +377,12 @@ backend's limits. A `Document` gives what a fresh parse gives.
 - **Mechanism today.**
   - Differential tests across the three engine backends, both position units, memoization on and off, recognition,
     and generated Go and TypeScript.
-  - `pego edit-fuzz` for `Document`s.
+  - `zp edit-fuzz` for `Document`s.
   - Ten ready-made parsers checked against reference implementations: all of `GOROOT/src` against `go/parser`,
     CPython's `ast.dump` on the standard library and 61,540 snippets, all 402 yaml-test-suite cases, and 2,527 CEL
     conformance tests.
 - **Goal.** Feature parity is listed per backend, never approximated, and each gap in
-  [What One Grammar Gives You](why-pego.md#what-one-grammar-gives-you) either closes or stays documented. Today only
+  [What One Grammar Gives You](why-zeroparse.md#what-one-grammar-gives-you) either closes or stays documented. Today only
   the Go and TypeScript generators use the Core IR. Moving the closure and bytecode backends onto it is an accepted
   design ([design record 062](design/records/062-backend-independent-optimization-ir.md)) that is not implemented. Once it lands,
   one optimization serves every backend.
@@ -516,7 +516,7 @@ can rerun and dispute. The wedge benchmark comes first and covers pigeon, partic
   - tree-sitter through its official Go binding, gotreesitter and gpeg.
   - The ANTLR Go runtime, pigeon and participle.
   - Upstream grammars are used where they exist, and grammar sources and versions are pinned. cgo-based tools live in
-    a separate module, so PEGO itself stays cgo-free.
+    a separate module, so ZeroParse itself stays cgo-free.
 - **Machines.** Apple M3 Max and a stated Linux x86-64 machine. The report states the CPU, OS, Go version,
   `GOMAXPROCS`, load and sample count.
 - **Harness.** It lives in the repository and runs with one command. Results are generated, never edited by hand, and
@@ -525,7 +525,7 @@ can rerun and dispute. The wedge benchmark comes first and covers pigeon, partic
 
 ### Predictable Cost and Safety
 
-PEGO does not promise linear time. It states what a parse costs and bounds the cost. It is not yet safe by default
+ZeroParse does not promise linear time. It states what a parse costs and bounds the cost. It is not yet safe by default
 for untrusted input; the goals below make it so.
 
 - **Today.**
@@ -540,14 +540,14 @@ for untrusted input; the goals below make it so.
   - Cancellation follows the caller's clock, and a blocked reader or callback cannot be interrupted.
   - There is no memory or input-size limit. Budget limits do not bound memory, and the specification has a grammar with
     a linear number of evaluations and exponential value size.
-  - `pego parse` has no budget limit flag. [SECURITY.md](../SECURITY.md) states what a parse bounds today and what the
+  - `zp parse` has no budget limit flag. [SECURITY.md](../SECURITY.md) states what a parse bounds today and what the
     caller must bound.
 - **Goal: budget limits on by default.** Every parse gets a budget proportional to the input length (c·n). At the
   release, c is one fixed, large constant, calibrated on the repository grammars and ready-made parsers so that
   ordinary grammars stay well below it, and a lint warns about grammars outside the specification's sufficient
   conditions for linear cost. An unlimited parse has to be requested explicitly. The complexity classifier of the
   research track can later refine c per grammar; the release does not wait for it. Generated parsers are included:
-  from the first release, `pego gen` generates them with budget controls by default, as `-budget-controls` does today,
+  from the first release, `zp gen` generates them with budget controls by default, as `-budget-controls` does today,
   and published performance figures are measured with the limits on. The default ships at the overhead the limits
   have then; the overhead target follows separately.
 - **Goal: one place for production limits.** Optional caps on input length and on estimated memory (memo entries and
@@ -556,9 +556,9 @@ for untrusted input; the goals below make it so.
   - A lint for self-growing variables.
   - A regression suite that asserts step ratios at n, 2n, 4n and 8n.
   - One budget.
-  - A budget limit flag in `pego parse`.
+  - A budget limit flag in `zp parse`.
 - **Research track.** A sound classifier labels each start rule as linear, linear given an environment bound,
-  unknown, polynomial of degree k or exponential, with a witness, through `pego lint -classify`
+  unknown, polynomial of degree k or exponential, with a witness, through `zp lint -classify`
   ([design record 064](design/records/064-grammar-complexity.md)). Making it precise on the ready-made parsers is
   not on the critical path to release.
 
@@ -577,13 +577,13 @@ for untrusted input; the goals below make it so.
   - An incremental `Document` for any grammar, with a stated and fuzz-tested fresh-parse contract. Reuse depends on
     rule structure.
   - `#recover` on every backend.
-  - A language server and VS Code extension for `.pego` sources.
+  - A language server and VS Code extension for `.zp` sources.
 - **Not editor-grade yet.**
   - A `Document` returns a tree only if the grammar's `#recover` rules handle each error. `#missing` is unavailable in
     a `Document`.
   - Edit application grows with document size, and memory is 5.6× the tree.
   - There is no changed-range API, no language server or highlighting for user grammars, and no UTF-16 position map.
-  - PEGO is therefore not recommended for reparsing on every keystroke without these qualifiers.
+  - ZeroParse is therefore not recommended for reparsing on every keystroke without these qualifiers.
 - **Goal: editor-grade error tolerance.** A tree for every buffer state in a `Document`, through `#missing` in
   `Document`s and on every backend, or through recovery that needs fewer annotations. Further goals: a language
   server for a user grammar, a public position map including UTF-16, an action-free concrete-tree mode, measured
@@ -594,8 +594,8 @@ for untrusted input; the goals below make it so.
 | Goal | Measure | Today | Milestone or track |
 |:--|:--|:--|:--|
 | Users can depend on a version | Tagged v0.x release; compatibility policy naming stable and unstable surfaces | No tag | Release |
-| Generated code states its requirements | Minimum Go version documented; `go get -tool` effect on consumers stated | Documented in [Releasing](releasing.md#go-versions): Go 1.27.1 for PEGO and generated code; `go get -tool` raises a consumer's `go` line to 1.27.1 | Release |
-| Untrusted input is bounded by default | Default budget (one fixed c·n budget, and a lint warning for grammars outside the sufficient conditions for linear cost); budget controls generated by default; `SECURITY.md`; budget limit flag in `pego parse` | Limits opt-in, and in generated parsers only with `-budget-controls`; `SECURITY.md` states today's policy; no flag | Release |
+| Generated code states its requirements | Minimum Go version documented; `go get -tool` effect on consumers stated | Documented in [Releasing](releasing.md#go-versions): Go 1.27.1 for ZeroParse and generated code; `go get -tool` raises a consumer's `go` line to 1.27.1 | Release |
+| Untrusted input is bounded by default | Default budget (one fixed c·n budget, and a lint warning for grammars outside the sufficient conditions for linear cost); budget controls generated by default; `SECURITY.md`; budget limit flag in `zp parse` | Limits opt-in, and in generated parsers only with `-budget-controls`; `SECURITY.md` states today's policy; no flag | Release |
 | Limits are simple | One budget across Go API, engine, generated Go and TypeScript | Two counters | Release |
 | Errors are readable | Long expected lists capped or grouped, with a test on a large grammar | Full lists | Release |
 | Public claims match measurements | README and site claims match this document's limits (tagline, untrusted input, tested runtimes) and [Benchmark Results](benchmarks.md) | The README's figures, tagline, runtime list and untrusted-input statement match; site pages not audited | Release |
@@ -604,7 +604,7 @@ for untrusted input; the goals below make it so.
 | Recovery is measured | Repair rate and time on a corpus of invalid inputs, two languages first | Unmeasured | Credibility track |
 | Performance improves | The targets of [Performance Leadership](#performance-leadership), tracked per report | See baseline | Performance track |
 | Cost is classified | Classifier labels every grammar in `examples/` and `parsers/` | Specification only; classifier proposed | Safety track (research) |
-| A user grammar gets editor support | Language server for one ready-made language, setup documented for VS Code and Neovim | `.pego` only | Editor track |
+| A user grammar gets editor support | Language server for one ready-made language, setup documented for VS Code and Neovim | `.zp` only | Editor track |
 | TypeScript reaches parity | UTF-16 positions, then `Document` and streaming in generated TypeScript | None of these | TypeScript parity track |
 | Every change is checked automatically | Automated checks run on each change | Paused; local validation only | Ongoing |
 | The test suite runs often | Root suite time measured and published | Not measured | Ongoing |
@@ -616,11 +616,11 @@ Each risk has a trigger that forces a decision, not only a signal to watch.
 
 | Risk | Likelihood / impact | Trigger | Decision or mitigation |
 |:--|:--|:--|:--|
-| Language models make hand-written parsers cheap, and they know ANTLR, tree-sitter and pigeon grammars but not `.pego` | High / high | The share of PEGO-generated parsers among new public Go parser modules does not rise for two consecutive quarters after the launch | Argue with verified properties (fresh-parse equality, limits, differential tests) that generated hand-written code lacks; publish `llms.txt`, a compact grammar reference and worked conversions |
+| Language models make hand-written parsers cheap, and they know ANTLR, tree-sitter and pigeon grammars but not `.zp` | High / high | The share of ZeroParse-generated parsers among new public Go parser modules does not rise for two consecutive quarters after the launch | Argue with verified properties (fresh-parse equality, limits, differential tests) that generated hand-written code lacks; publish `llms.txt`, a compact grammar reference and worked conversions |
 | A cgo-free tree-sitter path matures: gotreesitter reaches v1 with incremental equality, or tree-sitter runs under a pure-Go WebAssembly runtime such as wazero | Medium / high | gotreesitter v1, or a general wazero-based tree-sitter module | Demote segment 2; redirect the Editor track to language servers for typed DSLs; compete on typed values, generated TypeScript and limits |
-| Visibility: PEGO loses on awareness, not on design (3 stars and no release after three years; gotreesitter reached 581 stars in eight months) | High / high | Fewer than 10 external importers six months after the launch | Launch plan with channels (Go forums, newsletters, a talk); playground share links in every guide; reconsider segment 1 messaging |
+| Visibility: ZeroParse loses on awareness, not on design (3 stars and no release after three years; gotreesitter reached 581 stars in eight months) | High / high | Fewer than 10 external importers six months after the launch | Launch plan with channels (Go forums, newsletters, a talk); playground share links in every guide; reconsider segment 1 messaging |
 | The Go 1.27.1 floor narrows adoption; `go get -tool` raises a consumer module's `go` line to 1.27.1 | Medium / medium | Requests for older Go versions; consumers pinning old toolchains | Reconsider the floor if requests for older Go versions arrive; document `go run` as an alternative to the tool route |
-| Format churn after the release (Core IR for every backend, profiles, possible default changes) | Medium / medium | A format or API change needed after the tag | Release as v0.x; name stable surfaces (grammar syntax, generated Go API) and unstable ones (`.pegoc`, bytecode, JSON forms); the formatter and `pego fix` rewrite old syntax |
+| Format churn after the release (Core IR for every backend, profiles, possible default changes) | Medium / medium | A format or API change needed after the tag | Release as v0.x; name stable surfaces (grammar syntax, generated Go API) and unstable ones (`.zpc`, bytecode, JSON forms); the formatter and `zp fix` rewrite old syntax |
 | A safety incident: an exponential grammar or an unbounded input hangs or exhausts memory in a user's service | Medium / high | One public report of a hang or out-of-memory | Before release: limits on by default, generated parsers included; `SECURITY.md`; guides that require limits for untrusted input. After an incident: revisit the default budget and the priority of the input-length and memory caps |
 | Bus factor: one maintainer holds the work and the knowledge | High / high | Any pause in maintenance longer than a month | Design records and specifications carry the reasoning; a scripted release process; a contributor guide and good-first-issue labels; reduce the surface (consider freezing one of the two Go bytecode VMs; a second implementation of the bytecode belongs to the Targets and engines track, in another language, after the release) |
 | Research pull: research-heavy goals (classifier, profiles, a second VM) compete with the release | Medium / medium | A research item is in progress while a Release item is open | The classifier stays a research track; one major item in progress per track |
@@ -633,8 +633,8 @@ Each risk has a trigger that forces a decision, not only a signal to watch.
 
 ## Metrics
 
-**North star.** The number of external public modules that import PEGO or a PEGO-generated parser (pkg.go.dev
-importers plus a GitHub code search for the generated-file header). It counts teams that shipped a PEGO parser, which
+**North star.** The number of external public modules that import ZeroParse or a ZeroParse-generated parser (pkg.go.dev
+importers plus a GitHub code search for the generated-file header). It counts teams that shipped a ZeroParse parser, which
 is the wedge's success.
 
 Thresholds count from the launch date and are revisited once measured.
@@ -647,7 +647,7 @@ Thresholds count from the launch date and are revisited once measured.
 | Stars and inbound links, as visibility proxies | GitHub | Tracked, no threshold | Funnel: awareness |
 | Wedge benchmark rows won and lost | Wedge benchmark | Published; losses fall over time | Credibility |
 | Performance ratios of [Performance Leadership](#performance-leadership) | `go run ./bench/report` and the cross-tool harness | The targets | Performance track |
-| Equality failures found by `pego edit-fuzz` and differential tests | Test runs | Zero open at each release | Correctness |
+| Equality failures found by `zp edit-fuzz` and differential tests | Test runs | Zero open at each release | Correctness |
 | Recovery repair rate and time | Recovery evaluation | Published for two languages | Credibility, Editor |
 | Root test-suite time | Local runs, then automated checks | Measured; no growth between releases | Bus factor |
 
@@ -657,7 +657,7 @@ server, the Editor track moves to maintenance.
 
 ## Sources
 
-PEGO facts are from this repository. Performance figures are from [Benchmark Results](benchmarks.md),
+ZeroParse facts are from this repository. Performance figures are from [Benchmark Results](benchmarks.md),
 [Performance](performance.md), [Incremental Parsing Performance](guide/incremental-performance.md) and
 [Streaming](guide/streaming.md). Comparisons checked on 2026-10-29 against the versions named above:
 

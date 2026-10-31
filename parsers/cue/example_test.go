@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ornew/pego/parsers/cue"
-	"github.com/ornew/pego/parsers/cue/types"
+	"github.com/ornew/zeroparse/parsers/cue"
+	"github.com/ornew/zeroparse/parsers/cue/types"
 )
 
 func ExampleParseFile() {

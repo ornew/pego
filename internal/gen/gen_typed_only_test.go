@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestGeneratedTypedOnly(t *testing.T) {
@@ -32,7 +32,7 @@ func TestGeneratedTypedOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, absent := range []string{"func Parse(", "func ParseRule(", "func Recognize(", "recRules", "pegoRecGrammar", "RunParse("} {
+	for _, absent := range []string{"func Parse(", "func ParseRule(", "func Recognize(", "recRules", "zpRecGrammar", "RunParse("} {
 		if strings.Contains(only, absent) {
 			t.Errorf("a typed-only parser has %q", absent)
 		}

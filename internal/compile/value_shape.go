@@ -1,9 +1,9 @@
 package compile
 
 import (
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // The static shapes of values in the value model. Every backend builds the values of an

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // GNode is a node of the value model: the range of input a rule or a valued subexpression
@@ -73,7 +73,7 @@ func (n *GNode) Elem(i int) any {
 	case List:
 		return v.At(i)
 	}
-	panic("pego: Elem of a node whose value is neither a tuple nor a list")
+	panic("zp: Elem of a node whose value is neither a tuple nor a list")
 }
 
 // Rule returns the name of the rule that produced the node, or "" without source information.

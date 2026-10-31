@@ -1,6 +1,6 @@
 # 48. A Typed Runtime for ParseAST
 
-- `ParseAST` (`pego gen -types`) converted the tree of `Parse`, about 6% slower than `Parse`. For grammars whose
+- `ParseAST` (`zp gen -types`) converted the tree of `Parse`, about 6% slower than `Parse`. For grammars whose
   results have Go types of their own, it now runs a typed runtime that builds those values directly
   (design record 012). Steps that mattered, on JSON (262 KB):
   - the runtime alone, with values as `any`: 9.8 ms, 22.4 k allocations (variadic struct constructors);

@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
-// PEGO_TYPED_CHUNK_DIR retains both generated paths for paired allocation
+// ZP_TYPED_CHUNK_DIR retains both generated paths for paired allocation
 // measurements. Normal test runs remove the fixtures automatically.
 func TestGeneratedTypedChunkOwnership(t *testing.T) {
 	t.Parallel()
@@ -40,7 +40,7 @@ rule token Token = t:("é") #atomic => Token{Text: text($t)}`)
 				if err != nil {
 					t.Fatal(err)
 				}
-				dir := os.Getenv("PEGO_TYPED_CHUNK_DIR")
+				dir := os.Getenv("ZP_TYPED_CHUNK_DIR")
 				if dir == "" {
 					dir = t.TempDir()
 				} else {

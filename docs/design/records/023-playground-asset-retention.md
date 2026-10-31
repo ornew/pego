@@ -48,12 +48,12 @@ flags override the defaults, including an empty `-previous-site` for a deliberat
 
 `playground/assets.json` has `version: 1`, optional `source`, `current`, and optional `previous`. Each pair records:
 
-- `wasm`: `wasm/pego-<16 hex characters>.wasm`, with the full `wasmSHA256`;
+- `wasm`: `wasm/zp-<16 hex characters>.wasm`, with the full `wasmSHA256`;
 - `runtime`: `runtime/wasm_exec-<16 hex characters>.js`, with the full `runtimeSHA256`.
 
 The worker requests the revalidated manifest when starting a content-hashed parser, finds the exact requested WASM
 URL in either pair, and imports its matching runtime. An expired parser or unavailable manifest fails initialization;
-an expired-generation message asks the user to reload. The explicit unhashed `pego.wasm` convention continues to use
+an expired-generation message asks the user to reload. The explicit unhashed `zp.wasm` convention continues to use
 `wasm_exec.js` for standalone callers.
 
 Pre-manifest workers import the stable `wasm_exec.js` path. When importing a previous pair, the builder serves that

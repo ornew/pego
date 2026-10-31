@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // format parses src and formats it.
@@ -174,7 +174,7 @@ func TestFormatMinusBoundaries(t *testing.T) {
 var formattedGrammarSink string
 
 func BenchmarkFormatGrammar(b *testing.B) {
-	for _, name := range []string{"../../examples/minilang/minilang.pego", "../../parsers/yaml/yaml.pego"} {
+	for _, name := range []string{"../../examples/minilang/minilang.zp", "../../parsers/yaml/yaml.zp"} {
 		b.Run(filepath.Base(name), func(b *testing.B) {
 			data, err := os.ReadFile(name)
 			if err != nil {
@@ -433,7 +433,7 @@ func TestFormatExamples(t *testing.T) {
 	var paths []string
 	for _, root := range []string{"../../examples", "../../parsers"} {
 		err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-			if err == nil && !d.IsDir() && strings.HasSuffix(path, ".pego") {
+			if err == nil && !d.IsDir() && strings.HasSuffix(path, ".zp") {
 				paths = append(paths, path)
 			}
 			return err

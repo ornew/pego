@@ -1,0 +1,867 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "ZeroParse",
+  "scopeName": "source.zp",
+  "fileTypes": [
+    "zp"
+  ],
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#package"
+    },
+    {
+      "include": "#type-definition"
+    },
+    {
+      "include": "#var-definition"
+    },
+    {
+      "include": "#rule-definition"
+    },
+    {
+      "include": "#body"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "patterns": [
+        {
+          "begin": "/\\*",
+          "end": "\\*/",
+          "name": "comment.block.zp",
+          "patterns": [
+            {
+              "include": "#comment-block"
+            }
+          ]
+        },
+        {
+          "match": "//.*$",
+          "name": "comment.line.double-slash.zp"
+        }
+      ]
+    },
+    "package": {
+      "match": "(?:^|(?<=;))[ \\t]*(package)[ \\t]+([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": {
+          "name": "keyword.other.package.zp"
+        },
+        "2": {
+          "name": "entity.name.namespace.zp"
+        }
+      }
+    },
+    "type-definition": {
+      "patterns": [
+        {
+          "comment": "type Name = { Field Type; ... }",
+          "begin": "(?:^|(?<=;))[ \\t]*(type)[ \\t]+([A-Za-z_][A-Za-z0-9_]*)[ \\t]*(=)[ \\t]*(\\{)",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.zp"
+            },
+            "2": {
+              "name": "entity.name.type.zp"
+            },
+            "3": {
+              "name": "keyword.operator.assignment.zp"
+            },
+            "4": {
+              "name": "punctuation.definition.block.begin.zp"
+            }
+          },
+          "end": "\\}",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.block.end.zp"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "include": "#field"
+            },
+            {
+              "include": "#type-expression"
+            },
+            {
+              "match": ",",
+              "name": "punctuation.separator.comma.zp"
+            }
+          ]
+        },
+        {
+          "comment": "type Name ~ Type, an alias; only its own parenthesized type permits continuation.",
+          "begin": "(?:^|(?<=;))[ \\t]*(type)[ \\t]+([A-Za-z_][A-Za-z0-9_]*)[ \\t]*(~)",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.zp"
+            },
+            "2": {
+              "name": "entity.name.type.zp"
+            },
+            "3": {
+              "name": "keyword.operator.alias.zp"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#type-expression"
+            }
+          ],
+          "end": "(?=;)|$"
+        },
+        {
+          "comment": "A type definition being written",
+          "match": "(?:^|(?<=;))[ \\t]*(type)\\b(?:[ \\t]+([A-Za-z_][A-Za-z0-9_]*))?",
+          "captures": {
+            "1": {
+              "name": "storage.type.zp"
+            },
+            "2": {
+              "name": "entity.name.type.zp"
+            }
+          }
+        }
+      ]
+    },
+    "field": {
+      "comment": "The name of a struct field: the first identifier on a line, or after {, ; or ,",
+      "match": "(?:^|(?<=[{,;]))\\s*([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": {
+          "name": "variable.other.property.zp"
+        }
+      }
+    },
+    "type-expression": {
+      "patterns": [
+        {
+          "include": "#type-parenthesized"
+        },
+        {
+          "include": "#type-arguments"
+        },
+        {
+          "include": "#type-struct"
+        },
+        {
+          "include": "#comment"
+        },
+        {
+          "comment": "the bottom and top types",
+          "match": "_\\|_|\\b_(?![A-Za-z0-9_])",
+          "name": "support.type.builtin.zp"
+        },
+        {
+          "match": "\\b(int|string|bool|node|error|missing)\\b",
+          "name": "support.type.builtin.zp"
+        },
+        {
+          "match": "[A-Za-z_][A-Za-z0-9_]*",
+          "name": "entity.name.type.zp"
+        },
+        {
+          "match": "\\[\\]|\\*",
+          "name": "keyword.operator.type.zp"
+        },
+        {
+          "match": "\\|",
+          "name": "keyword.operator.join.zp"
+        },
+        {
+          "match": "&",
+          "name": "keyword.operator.meet.zp"
+        },
+        {
+          "match": "[()]",
+          "name": "punctuation.parenthesis.zp"
+        },
+        {
+          "match": ",",
+          "name": "punctuation.separator.comma.zp"
+        }
+      ]
+    },
+    "var-definition": {
+      "patterns": [
+        {
+          "comment": "var name Type = value; the type and the value are optional",
+          "begin": "(?:^|(?<=;))[ \\t]*(var)[ \\t]+([A-Za-z_][A-Za-z0-9_]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.zp"
+            },
+            "2": {
+              "name": "variable.other.zp"
+            }
+          },
+          "end": "(=)|(?=;)|$",
+          "endCaptures": {
+            "1": {
+              "name": "keyword.operator.assignment.zp"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#type-expression"
+            }
+          ]
+        },
+        {
+          "comment": "A variable declaration being written",
+          "match": "(?:^|(?<=;))[ \\t]*(var)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.zp"
+            }
+          }
+        }
+      ]
+    },
+    "rule-definition": {
+      "patterns": [
+        {
+          "comment": "rule name Type =, with an optional type",
+          "begin": "(?:^|(?<=;))[ \\t]*(rule)[ \\t]+([A-Za-z_][A-Za-z0-9_]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.function.zp"
+            },
+            "2": {
+              "name": "entity.name.function.zp"
+            }
+          },
+          "end": "(=)|(?=;)|$",
+          "endCaptures": {
+            "1": {
+              "name": "keyword.operator.assignment.zp"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#type-expression"
+            }
+          ]
+        },
+        {
+          "match": "(?:^|(?<=;))[ \\t]*(rule)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.function.zp"
+            }
+          }
+        }
+      ]
+    },
+    "body": {
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "include": "#char-class"
+        },
+        {
+          "include": "#operators-rule"
+        },
+        {
+          "include": "#value-action"
+        },
+        {
+          "include": "#level-call"
+        },
+        {
+          "include": "#peg-group"
+        },
+        {
+          "include": "#predicate"
+        },
+        {
+          "include": "#attribute"
+        },
+        {
+          "include": "#constructor"
+        },
+        {
+          "include": "#builtin-function"
+        },
+        {
+          "include": "#capture-label"
+        },
+        {
+          "include": "#capture-reference"
+        },
+        {
+          "include": "#member"
+        },
+        {
+          "include": "#number"
+        },
+        {
+          "include": "#operator"
+        }
+      ]
+    },
+    "string": {
+      "begin": "\"",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.zp"
+        }
+      },
+      "end": "(\")|$",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.end.zp"
+        }
+      },
+      "name": "string.quoted.double.zp",
+      "patterns": [
+        {
+          "include": "#escape"
+        }
+      ]
+    },
+    "escape": {
+      "patterns": [
+        {
+          "match": "\\\\(?:u\\{[0-9A-Fa-f]+\\}|u[0-9A-Fa-f]{4}|[ntrfvab0]|[^A-Za-z0-9])",
+          "name": "constant.character.escape.zp"
+        },
+        {
+          "match": "\\\\.",
+          "name": "invalid.illegal.escape.zp"
+        }
+      ]
+    },
+    "char-class": {
+      "comment": "[a-z_], [^a-z]",
+      "begin": "(\\[(?!\\]))(\\^)?",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.character-class.begin.zp"
+        },
+        "2": {
+          "name": "keyword.operator.negation.zp"
+        }
+      },
+      "end": "(\\])|$",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.character-class.end.zp"
+        }
+      },
+      "name": "string.regexp.character-class.zp",
+      "patterns": [
+        {
+          "include": "#escape"
+        },
+        {
+          "match": "(?<!\\[|\\[\\^)-(?!\\])",
+          "name": "keyword.operator.range.zp"
+        }
+      ]
+    },
+    "attribute": {
+      "patterns": [
+        {
+          "comment": "#cut, the cut pragma",
+          "match": "#cut(?![A-Za-z0-9_])",
+          "name": "keyword.control.cut.zp"
+        },
+        {
+          "comment": "@attribute(args) or #pragma(args)",
+          "begin": "([@#])([A-Za-z_][A-Za-z0-9_]*)(\\()",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.attribute.zp"
+            },
+            "2": {
+              "name": "entity.other.attribute-name.zp"
+            },
+            "3": {
+              "name": "punctuation.parenthesis.begin.zp"
+            }
+          },
+          "end": "\\)",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.parenthesis.end.zp"
+            }
+          },
+          "patterns": [
+            {
+              "match": "([A-Za-z_][A-Za-z0-9_]*)\\s*(=)(?!=)",
+              "captures": {
+                "1": {
+                  "name": "variable.parameter.attribute.zp"
+                },
+                "2": {
+                  "name": "keyword.operator.assignment.zp"
+                }
+              }
+            },
+            {
+              "include": "#parenthesized"
+            },
+            {
+              "include": "#body"
+            }
+          ]
+        },
+        {
+          "match": "([@#])([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.attribute.zp"
+            },
+            "2": {
+              "name": "entity.other.attribute-name.zp"
+            }
+          },
+          "comment": ""
+        }
+      ]
+    },
+    "parenthesized": {
+      "comment": "A group inside attribute arguments, so that its ) does not end them",
+      "begin": "\\(",
+      "end": "\\)",
+      "patterns": [
+        {
+          "include": "#parenthesized"
+        },
+        {
+          "include": "#body"
+        }
+      ]
+    },
+    "keyword": {
+      "patterns": [
+        {
+          "match": "\\b(true|false|nil)\\b",
+          "name": "constant.language.zp"
+        }
+      ]
+    },
+    "builtin-function": {
+      "match": "\\b(len|text|foldl|foldr|map|list|concat)(?=\\()",
+      "name": "support.function.builtin.zp"
+    },
+    "capture-label": {
+      "comment": "label:expr and constructor fields Type{Field: value}",
+      "match": "([A-Za-z_][A-Za-z0-9_]*)(:)(?![=])",
+      "captures": {
+        "1": {
+          "name": "variable.other.capture.zp"
+        },
+        "2": {
+          "name": "punctuation.separator.capture.zp"
+        }
+      }
+    },
+    "capture-reference": {
+      "patterns": [
+        {
+          "match": "\\$[A-Za-z_][A-Za-z0-9_]*",
+          "name": "variable.parameter.capture.zp"
+        },
+        {
+          "match": "\\$[0-9]+",
+          "name": "invalid.deprecated.positional-capture.zp"
+        }
+      ]
+    },
+    "member": {
+      "match": "(\\.)([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": {
+          "name": "punctuation.accessor.zp"
+        },
+        "2": {
+          "name": "variable.other.property.zp"
+        }
+      }
+    },
+    "number": {
+      "match": "\\b[0-9]+\\b",
+      "name": "constant.numeric.integer.zp"
+    },
+    "operator": {
+      "patterns": [
+        {
+          "match": "\\.\\.\\.",
+          "name": "constant.language.default-action.zp"
+        },
+        {
+          "match": "=>",
+          "name": "keyword.operator.arrow.zp"
+        },
+        {
+          "match": ":=",
+          "name": "keyword.operator.assignment.zp"
+        },
+        {
+          "match": "_\\|_",
+          "name": "constant.language.bottom.zp"
+        },
+        {
+          "match": "\\^\\^|\\$\\$|\\^|\\$",
+          "name": "keyword.operator.anchor.zp"
+        },
+        {
+          "match": "(?<![A-Za-z0-9_])_(?![A-Za-z0-9_])",
+          "name": "constant.language.top.zp"
+        },
+        {
+          "match": "==|!=|<=|>=|&&|\\|\\||<|>|%",
+          "name": "keyword.operator.zp"
+        },
+        {
+          "match": "[*+?]",
+          "name": "keyword.operator.quantifier.zp"
+        },
+        {
+          "match": "/",
+          "name": "keyword.operator.choice.zp"
+        },
+        {
+          "match": "[&!]",
+          "name": "keyword.operator.lookahead.zp"
+        },
+        {
+          "match": "-",
+          "name": "keyword.operator.discard.zp"
+        },
+        {
+          "match": "\\.",
+          "name": "constant.language.any.zp"
+        },
+        {
+          "match": "=",
+          "name": "keyword.operator.assignment.zp"
+        },
+        {
+          "match": "[{}()\\[\\],;]",
+          "name": "punctuation.zp"
+        }
+      ]
+    },
+    "comment-block": {
+      "begin": "/\\*",
+      "end": "\\*/",
+      "name": "comment.block.zp",
+      "patterns": [
+        {
+          "include": "#comment-block"
+        }
+      ]
+    },
+    "constructor": {
+      "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=\\s*\\{)",
+      "name": "entity.name.type.zp"
+    },
+    "predicate": {
+      "begin": "\\{",
+      "end": "\\}",
+      "name": "meta.predicate-action.zp",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.predicate.begin.zp"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.predicate.end.zp"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#value"
+        }
+      ]
+    },
+    "type-struct": {
+      "comment": "an unnamed struct type: { A T; B U }",
+      "begin": "\\{",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.block.begin.zp"
+        }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.block.end.zp"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#field"
+        },
+        {
+          "include": "#type-expression"
+        }
+      ]
+    },
+    "type-arguments": {
+      "comment": "T[U, ...]: the bracket follows the name directly",
+      "begin": "(?<=[A-Za-z0-9_])\\[(?!\\])",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.bracket.zp"
+        }
+      },
+      "end": "\\]",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.bracket.zp"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#type-expression"
+        }
+      ]
+    },
+    "type-parenthesized": {
+      "begin": "\\(",
+      "end": "\\)",
+      "patterns": [
+        {
+          "include": "#type-expression"
+        }
+      ]
+    },
+    "value": {
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "include": "#value-constructor"
+        },
+        {
+          "include": "#value-cast"
+        },
+        {
+          "include": "#value-parenthesized"
+        },
+        {
+          "include": "#keyword"
+        },
+        {
+          "include": "#builtin-function"
+        },
+        {
+          "include": "#capture-reference"
+        },
+        {
+          "include": "#member"
+        },
+        {
+          "include": "#number"
+        },
+        {
+          "include": "#operator"
+        }
+      ]
+    },
+    "value-cast": {
+      "comment": "x.(T), a cast to a type",
+      "begin": "(\\.)[ \\t]*(\\()",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.accessor.zp"
+        }
+      },
+      "end": "\\)",
+      "patterns": [
+        {
+          "include": "#type-expression"
+        }
+      ]
+    },
+    "value-parenthesized": {
+      "begin": "\\(",
+      "end": "\\)",
+      "patterns": [
+        {
+          "include": "#value"
+        }
+      ]
+    },
+    "value-constructor": {
+      "begin": "\\b([A-Za-z_][A-Za-z0-9_]*)[ \\t]*(\\{)",
+      "beginCaptures": {
+        "1": {
+          "name": "entity.name.type.zp"
+        },
+        "2": {
+          "name": "punctuation.definition.block.begin.zp"
+        }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.block.end.zp"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#value-field"
+        },
+        {
+          "include": "#value"
+        }
+      ]
+    },
+    "value-field": {
+      "match": "\\b([A-Za-z_][A-Za-z0-9_]*)[ \\t]*(:)(?!=)",
+      "captures": {
+        "1": {
+          "name": "variable.other.property.zp"
+        },
+        "2": {
+          "name": "punctuation.separator.key-value.zp"
+        }
+      }
+    },
+    "value-action": {
+      "begin": "(=>)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.operator.arrow.zp"
+        }
+      },
+      "end": "(?=[;})])|$",
+      "name": "meta.value-action.zp",
+      "patterns": [
+        {
+          "include": "#value-action-block"
+        },
+        {
+          "include": "#value"
+        }
+      ]
+    },
+    "value-action-block": {
+      "begin": "\\{",
+      "end": "\\}",
+      "name": "meta.value-action-block.zp",
+      "patterns": [
+        {
+          "include": "#value"
+        }
+      ]
+    },
+    "peg-group": {
+      "begin": "\\(",
+      "end": "\\)",
+      "patterns": [
+        {
+          "include": "#body"
+        }
+      ]
+    },
+    "operators-rule": {
+      "begin": "(?<==)[ \\t]*(#operators)[ \\t]*(\\{)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.operators-rule.zp"
+        },
+        "2": {
+          "name": "punctuation.definition.block.begin.zp"
+        }
+      },
+      "end": "\\}",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#level-declaration"
+        },
+        {
+          "include": "#operators-header"
+        },
+        {
+          "include": "#body"
+        }
+      ]
+    },
+    "level-declaration": {
+      "begin": "(?:^|(?<=[;{]))[ \\t]*(level)\\b(?:[ \\t]+([A-Za-z_][A-Za-z0-9_]*))?[ \\t]*(\\{)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.operators-rule.zp"
+        },
+        "2": {
+          "name": "entity.name.level.zp"
+        },
+        "3": {
+          "name": "punctuation.definition.block.begin.zp"
+        }
+      },
+      "end": "\\}",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#operators-header"
+        },
+        {
+          "include": "#body"
+        }
+      ]
+    },
+    "operators-header": {
+      "patterns": [
+        {
+          "match": "(?:^|(?<=[;{]))[ \\t]*(infix)[ \\t]+(left|right|none)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.control.operators-rule.zp"
+            },
+            "2": {
+              "name": "keyword.other.associativity.zp"
+            }
+          }
+        },
+        {
+          "match": "(?:^|(?<=[;{]))[ \\t]*(skip|operand|level|prefix|postfix|infix)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.control.operators-rule.zp"
+            }
+          }
+        }
+      ]
+    },
+    "level-call": {
+      "match": "\\b(level)(?=\\()",
+      "captures": {
+        "1": {
+          "name": "keyword.control.operators-rule.zp"
+        }
+      }
+    }
+  }
+}

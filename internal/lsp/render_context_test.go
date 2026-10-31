@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 func renderFixture(fields int) string {
@@ -26,7 +26,7 @@ func renderFixture(fields int) string {
 	return source.String()
 }
 func renderServer(a *analysis, ctx context.Context, hierarchical, markdown, snippets bool) *Server {
-	s := &Server{docs: map[string]*document{"file:///render.pego": {uri: "file:///render.pego", text: a.text, an: a}}, state: stateInitialized, requestContext: ctx}
+	s := &Server{docs: map[string]*document{"file:///render.zp": {uri: "file:///render.zp", text: a.text, an: a}}, state: stateInitialized, requestContext: ctx}
 	s.client.TextDocument.DocumentSymbol.HierarchicalDocumentSymbolSupport = hierarchical
 	s.client.TextDocument.Completion.CompletionItem.SnippetSupport = snippets
 	if markdown {
@@ -36,7 +36,7 @@ func renderServer(a *analysis, ctx context.Context, hierarchical, markdown, snip
 	return s
 }
 func renderParams(a *analysis, method string) json.RawMessage {
-	p := docParams("file:///render.pego")
+	p := docParams("file:///render.zp")
 	if method != "textDocument/documentSymbol" {
 		off := strings.Index(a.text, "main =")
 		if method == "textDocument/completion" {
@@ -144,7 +144,7 @@ func TestRenderDocumentationAndIdentifierParity(t *testing.T) {
 			t.Fatalf("identifier %q: %v", s, got)
 		}
 	}
-	texts := []string{"", "a\n", "```pego\nrule a = \"*`*\"\n```\n__doc__ and _em_ [link](target)", strings.Repeat("`word` and __bold__\n", 512), "\xff\u2003"}
+	texts := []string{"", "a\n", "```zp\nrule a = \"*`*\"\n```\n__doc__ and _em_ [link](target)", strings.Repeat("`word` and __bold__\n", 512), "\xff\u2003"}
 	for _, s := range texts {
 		c := &renderControl{ctx: formatContext(t, 0)}
 		if got := plainDocumentationControlled(s, c); got != plainDocumentation(s) {

@@ -1,4 +1,4 @@
-# 017. A Language Server for PEGO Grammars
+# 017. A Language Server for ZeroParse Grammars
 
 - **Status**: Implemented
 - **Author**: @ornew
@@ -6,8 +6,8 @@
 
 ## Summary
 
-`pego lsp` runs a [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) (LSP) server for
-`.pego` files over standard input and output.
+`zp lsp` runs a [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) (LSP) server for
+`.zp` files over standard input and output.
 Any editor with an LSP client gets the errors of a grammar as it is typed, formatting, navigation between rules and
 types, hover with inferred rule types, rename and completion.
 
@@ -42,7 +42,7 @@ The lifecycle follows the specification:
 | after `shutdown` | `InvalidRequest` | dropped, except `exit` |
 
 `exit` stops the server.
-`Serve` returns nil if `shutdown` came first and `ErrExitWithoutShutdown` otherwise, and `pego lsp` exits with status 0
+`Serve` returns nil if `shutdown` came first and `ErrExitWithoutShutdown` otherwise, and `zp lsp` exits with status 0
 or 1 accordingly, as the specification asks.
 A body that is not JSON gets a `ParseError` response with a null id and the server goes on; a header without
 `Content-Length` cannot be resynchronized, so the server stops with an error.
@@ -63,7 +63,7 @@ Three kinds of positions meet in the server:
 | Kind | Lines end at | Columns count |
 |:--|:--|:--|
 | LSP `Position` | `\n`, `\r\n` or `\r` | UTF-16 code units, from 0 |
-| PEGO `grammar.Pos` (lexer, parser, compiler) | `\n`, `\r\n` or `\r` | code points, from 1 (the `\r` of `\r\n` is a column) |
+| ZeroParse `grammar.Pos` (lexer, parser, compiler) | `\n`, `\r\n` or `\r` | code points, from 1 (the `\r` of `\r\n` is a column) |
 | byte offsets into the document text | | bytes |
 
 Every conversion goes through byte offsets (`internal/lsp/text.go`): a `textIndex` holds the offsets at which lines
@@ -122,11 +122,11 @@ Diagnostics are published after `didOpen`, every `didChange` and `didSave`, with
 
 | Request | Behavior |
 |:--|:--|
-| `textDocument/formatting` | `grammar.Format`, like `pego fmt`. A file with syntax errors is not formatted (no edits): the formatter would drop the definitions with errors. The edit replaces only the part between the common prefix and suffix of the old and the new text, so the editor keeps the cursor and folds. A file whose first line ends with `\r\n` keeps `\r\n` line ends. Formatting options (tab size) are ignored: the layout is canonical |
+| `textDocument/formatting` | `grammar.Format`, like `zp fmt`. A file with syntax errors is not formatted (no edits): the formatter would drop the definitions with errors. The edit replaces only the part between the common prefix and suffix of the old and the new text, so the editor keeps the cursor and folds. A file whose first line ends with `\r\n` keeps `\r\n` line ends. Formatting options (tab size) are ignored: the layout is canonical |
 | `definition` | The name in the definition of the rule or type under the cursor. With duplicate definitions, the first |
 | `references`, `documentHighlight` | Every occurrence of the name, in the definition (a write highlight) and in references (read highlights) |
 | `documentSymbol` | Rules (with their type) and types (struct, terminal or alias), with the fields of structs as children |
-| `hover` | For a rule, `rule name [Type] = expression` with the type declared or inferred, and its documentation comment: the comment lines directly above the definition, or the comment at the end of a one-line definition. For a type, its definition as `pego fmt` prints it. Built-in types, functions, fields and attributes are described |
+| `hover` | For a rule, `rule name [Type] = expression` with the type declared or inferred, and its documentation comment: the comment lines directly above the definition, or the comment at the end of a one-line definition. For a type, its definition as `zp fmt` prints it. Built-in types, functions, fields and attributes are described |
 | `prepareRename`, `rename` | Renames a rule or type defined in the file, everywhere it occurs. Refused, with a message, while the file has syntax errors (occurrences in the definitions the parser dropped would be missed), for built-in and undefined names, and for a new name that is not an identifier, is a keyword, is already defined or used (renaming to the name of an undefined rule would make its references refer to the renamed one), or (for a type) is reserved or does not start with an uppercase letter |
 | `completion` | See below |
 | `semanticTokens/full` | Tells rule names, type names (built-in ones as `defaultLibrary`), capture labels, predicate variables, fields, built-in functions, attributes, keywords, strings, numbers, character classes and comments apart. Punctuation is left to the TextMate grammar |
@@ -151,15 +151,15 @@ yet.
 
 ### Editor Integration
 
-The server is generic: an editor needs only to start `pego lsp` for `.pego` files.
-`editors/vscode/` adds what VS Code needs: a language definition for `.pego` files (line comments, brackets,
-auto-closing pairs, indentation after an opening bracket), a TextMate grammar (`syntaxes/pego.tmLanguage.json`), and
-a client (`extension.js`) that starts `pego lsp` with `vscode-languageclient`.
+The server is generic: an editor needs only to start `zp lsp` for `.zp` files.
+`editors/vscode/` adds what VS Code needs: a language definition for `.zp` files (line comments, brackets,
+auto-closing pairs, indentation after an opening bracket), a TextMate grammar (`syntaxes/zp.tmLanguage.json`), and
+a client (`extension.js`) that starts `zp lsp` with `vscode-languageclient`.
 The client is plain JavaScript, so the extension has no compile step; its settings select the command
-(`pego.server.path`), turn the server off (`pego.server.enabled`) and log the protocol (`pego.trace.server`).
-`pego.server.path` names a program to run, so the extension declares it a restricted configuration for untrusted
+(`zp.server.path`), turn the server off (`zp.server.enabled`) and log the protocol (`zp.trace.server`).
+`zp.server.path` names a program to run, so the extension declares it a restricted configuration for untrusted
 workspaces: in Restricted Mode, VS Code ignores a value that a workspace sets.
-A client whose server fails to start is disposed of, and **PEGO: Restart Language Server** tries again.
+A client whose server fails to start is disposed of, and **ZeroParse: Restart Language Server** tries again.
 Lifecycle transitions are serialized: startup, explicit restarts, server-setting changes and deactivation own at
 most one client. Cleanup must succeed before its owner is cleared and a replacement starts; failed cleanup retains
 the client for retry. Failed-start disposal is awaited. Deactivation immediately disables future starts and then
@@ -181,7 +181,7 @@ The extension's checks run with Node.js: `npm run check` compiles every regular 
 Oniguruma (`vscode-oniguruma`, the engine VS Code uses), tokenizes a sample with `vscode-textmate` and checks the scope
 of each of its parts, and tokenizes the example grammars, none of which may contain an invalid token; it also checks
 the manifest and activates the extension with stand-ins for VS Code and the language client;
-`npm run check-server` talks to a running `pego lsp` with `vscode-jsonrpc`, the JSON-RPC library of the language
+`npm run check-server` talks to a running `zp lsp` with `vscode-jsonrpc`, the JSON-RPC library of the language
 client, to check that the two interoperate.
 The node modules and the packaged `.vsix` are not committed.
 
@@ -218,7 +218,7 @@ non-ASCII and astral characters, incremental changes (several changes in one not
 The position conversions have unit tests of their own, including lone `\r`, offsets inside `\r\n` and positions
 inside surrogate pairs.
 Every example grammar is analyzed without diagnostics, every name in it resolves, and its formatting edits give what
-`pego fmt` prints.
+`zp fmt` prints.
 Deliberately breaking the UTF-16 width of astral characters, the ranges of incremental changes, the refusal to format
 a file with errors, the line ends kept by formatting, the rename conflict check, the compile step, the exit after
 shutdown and the comment check of completion each makes the tests fail.

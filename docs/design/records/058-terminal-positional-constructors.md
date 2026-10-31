@@ -5,7 +5,7 @@
 - **Date**: 2026-10-14
 
 > **Note (2026-10)**: Terminal types and their positional constructors were removed. A token type is now a text
-> struct, `type T = { Text string }`, built with `T{Text: x}`, and `pego fix` rewrites the forms this record describes
+> struct, `type T = { Text string }`, built with `T{Text: x}`, and `zp fix` rewrites the forms this record describes
 > (see [Value Types and Generic Nodes](060-value-types-and-generic-nodes.md)). The record keeps the original syntax.
 
 ## Summary
@@ -23,7 +23,7 @@ string already produced or transformed by another expression. Positional
 construction expresses this directly without representing a terminal as a
 struct with fields.
 
-```pego
+```zp
 type Int terminal
 rule digits Int = [0-9]+
 rule zero Int = "0" => Int{"0"}

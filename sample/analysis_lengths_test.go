@@ -3,7 +3,7 @@ package sample
 import (
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestAnalysisLengthSaturation(t *testing.T) {

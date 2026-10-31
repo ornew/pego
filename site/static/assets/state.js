@@ -45,7 +45,7 @@ export async function decodeState(hash) {
     }
     if (h.startsWith("j=")) return JSON.parse(new TextDecoder().decode(fromBase64URL(h.slice(2))));
   } catch (err) {
-    console.warn("pego: cannot read the state in the URL:", err);
+    console.warn("zp: cannot read the state in the URL:", err);
   }
   return null;
 }

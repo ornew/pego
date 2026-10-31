@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 func TestSparseMemoRuleAndPageBoundaries(t *testing.T) {
@@ -93,7 +93,7 @@ func TestSparseMemoResetBounds(t *testing.T) {
 
 func TestSparseMemoParseControls(t *testing.T) {
 	t.Parallel()
-	src, err := os.ReadFile("../../parsers/typescript/typescript.pego")
+	src, err := os.ReadFile("../../parsers/typescript/typescript.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestSparseMemoParseControls(t *testing.T) {
 
 func TestSparseMemoInputSelection(t *testing.T) {
 	t.Parallel()
-	data, err := os.ReadFile("../../parsers/typescript/typescript.pego")
+	data, err := os.ReadFile("../../parsers/typescript/typescript.zp")
 	if err != nil {
 		t.Fatal(err)
 	}

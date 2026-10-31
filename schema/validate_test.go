@@ -76,7 +76,7 @@ func TestOutputSchemaDecodeRejectsInvalidGraph(t *testing.T) {
 			if !strings.Contains(body, `"rules":`) {
 				body += `,"rules":[]`
 			}
-			data := []byte(`{"format":"pego-output-schema","version":2,"start":"main","positionUnitIndependent":true,` + body + `}`)
+			data := []byte(`{"format":"zp-output-schema","version":2,"start":"main","positionUnitIndependent":true,` + body + `}`)
 			original := Output{Format: "sentinel"}
 			got := original
 			if err := json.Unmarshal(data, &got); err == nil || !strings.Contains(err.Error(), tt.want) {
@@ -139,7 +139,7 @@ func TestOutputSchemaDecodeRejectsUnknownFieldsAndInvalidEnvelope(t *testing.T) 
 }
 
 func TestOutputSchemaDecodeAcceptsNodeCaptureShape(t *testing.T) {
-	data := []byte(`{"format":"pego-output-schema","version":2,"start":"main","positionUnitIndependent":true,"sourceInfo":true,"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple","elements":[{"kind":"node","value":{"kind":"scalar","scalar":"string"}},{"kind":"list","element":{"kind":"top"}}]},"captures":[{"name":"value","paths":[[0],[1,2]],"shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}},{"name":"look","side":true,"shape":{"kind":"error"}}]}}],"rules":[{"name":"main","origin":"inferred","result":{"kind":"ref","ref":"inferred/main"}}]}`)
+	data := []byte(`{"format":"zp-output-schema","version":2,"start":"main","positionUnitIndependent":true,"sourceInfo":true,"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple","elements":[{"kind":"node","value":{"kind":"scalar","scalar":"string"}},{"kind":"list","element":{"kind":"top"}}]},"captures":[{"name":"value","paths":[[0],[1,2]],"shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}},{"name":"look","side":true,"shape":{"kind":"error"}}]}}],"rules":[{"name":"main","origin":"inferred","result":{"kind":"ref","ref":"inferred/main"}}]}`)
 	var got Output
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatal(err)
@@ -151,7 +151,7 @@ func TestOutputSchemaDecodeAcceptsNodeCaptureShape(t *testing.T) {
 }
 
 func TestOutputSchemaDecodeAcceptsNamedRecursiveReference(t *testing.T) {
-	data := []byte(`{"format":"pego-output-schema","version":2,"start":"main","positionUnitIndependent":true,"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct","fields":[{"name":"Next","shape":{"kind":"optional","element":{"kind":"ref","ref":"declared/Item"}}}]}},{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"ref","ref":"declared/Item"}}],"rules":[{"name":"main","origin":"declared","result":{"kind":"ref","ref":"inferred/main"}}]}`)
+	data := []byte(`{"format":"zp-output-schema","version":2,"start":"main","positionUnitIndependent":true,"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct","fields":[{"name":"Next","shape":{"kind":"optional","element":{"kind":"ref","ref":"declared/Item"}}}]}},{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"ref","ref":"declared/Item"}}],"rules":[{"name":"main","origin":"declared","result":{"kind":"ref","ref":"inferred/main"}}]}`)
 	var got Output
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatal(err)
@@ -163,7 +163,7 @@ func TestOutputSchemaDecodeAcceptsNamedRecursiveReference(t *testing.T) {
 
 func validInMemoryOutputSchema() Output {
 	return Output{
-		Format: "pego-output-schema", Version: 2, Start: "main", PositionUnitIndependent: true,
+		Format: "zp-output-schema", Version: 2, Start: "main", PositionUnitIndependent: true,
 		Types: []Type{
 			{ID: "declared/Item", Name: "Item", Origin: "declared", Shape: Shape{Kind: "struct"}},
 			{ID: "inferred/main", Name: "main", Origin: "inferred", Shape: Shape{Kind: "ref", Ref: "declared/Item"}},

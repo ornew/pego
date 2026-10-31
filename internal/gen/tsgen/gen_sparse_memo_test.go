@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // Small tables cannot select sparse storage, so their default TypeScript
@@ -51,7 +51,7 @@ func TestGeneratedTSSparseMemoControls(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	src, err := os.ReadFile("../../../parsers/typescript/typescript.pego")
+	src, err := os.ReadFile("../../../parsers/typescript/typescript.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func TestGeneratedTSSparseMemoControls(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir := os.Getenv("PEGO_SPARSE_MEMO_TS_DIR")
+	dir := os.Getenv("ZP_SPARSE_MEMO_TS_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}
@@ -169,8 +169,8 @@ for (const unit of [CodePoints, Bytes]) {
 const sparseMemoTSBenchmark = `import {readFileSync} from "node:fs";
 import {performance} from "node:perf_hooks";
 import {parse, recognize, CodePoints, Bytes, testMemoStorage} from "./parser.ts";
-const text = process.env.PEGO_SPARSE_MEMO_INPUT
-  ? readFileSync(process.env.PEGO_SPARSE_MEMO_INPUT, "utf8")
+const text = process.env.ZP_SPARSE_MEMO_INPUT
+  ? readFileSync(process.env.ZP_SPARSE_MEMO_INPUT, "utf8")
   : "const 日本語 = 1 + 2;\n".repeat(12000);
 const out = [];
 for (const unit of [CodePoints, Bytes]) {

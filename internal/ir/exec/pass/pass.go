@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/ornew/pego/internal/ir/exec"
+	"github.com/ornew/zeroparse/internal/ir/exec"
 )
 
 // Specialize returns a copy of the function f of the module m named name and specialized for the

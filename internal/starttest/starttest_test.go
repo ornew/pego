@@ -3,9 +3,9 @@ package starttest_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/starttest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/starttest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 func TestMarkAllSkipsHiddenRules(t *testing.T) {

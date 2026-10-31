@@ -1,6 +1,6 @@
 package gentest
 
-import "github.com/ornew/pego/internal/value"
+import "github.com/ornew/zeroparse/internal/value"
 
 // One shared grammar keeps the same scope/selection cases in the engine and generated Go/TS corpus.
 const PrefixPartCuts = `type Atom = { Text string }

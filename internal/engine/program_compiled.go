@@ -7,15 +7,15 @@ import (
 	"fmt"
 	"hash/crc32"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/compile"
 )
 
-// The compiled grammar format (.pegoc), specified in the File format section of
+// The compiled grammar format (.zpc), specified in the File format section of
 // spec/bytecode/README.md. A file holds one execution-only compile result: the module of one mode.
 //
-//	magic    "PEGOC\x00"
+//	magic    "ZPC\x00"
 //	version  1 byte (compiledVersion)
 //	mode     1 byte (CompiledMode)
 //	payload  instruction set version, string table, start rule, module
@@ -26,7 +26,7 @@ import (
 // static analysis, type checking, and compilation to bytecode.
 
 const (
-	compiledMagic   = "PEGOC\x00"
+	compiledMagic   = "ZPC\x00"
 	compiledVersion = 7
 )
 
@@ -47,7 +47,7 @@ const (
 var (
 	compiledModeNames = [...]string{CompiledParse: "parse", CompiledRecognize: "recognize", CompiledDocument: "document"}
 	// compiledModeAPI names the modes in the Go API, for error messages.
-	compiledModeAPI = [...]string{CompiledParse: "pego.CompiledParse", CompiledRecognize: "pego.CompiledRecognize", CompiledDocument: "pego.CompiledDocument"}
+	compiledModeAPI = [...]string{CompiledParse: "zeroparse.CompiledParse", CompiledRecognize: "zeroparse.CompiledRecognize", CompiledDocument: "zeroparse.CompiledDocument"}
 )
 
 // String returns the name of the mode: parse, recognize or document.
@@ -71,7 +71,7 @@ func ParseCompiledMode(s string) (CompiledMode, error) {
 // unsupportedISA is the error for a module of instruction set isa.
 func unsupportedISA(isa int) error {
 	if isa < bytecode.ISAVersion {
-		return fmt.Errorf("unsupported instruction set version %d: the file was compiled by an older pego; compile the grammar again", isa)
+		return fmt.Errorf("unsupported instruction set version %d: the file was compiled by an older zp; compile the grammar again", isa)
 	}
 	return fmt.Errorf("unsupported instruction set version %d", isa)
 }
@@ -85,7 +85,7 @@ var errClosureNeedsSource = errors.New("the closure backend needs the grammar so
 var errSchemaNeedsSource = fmt.Errorf("%w: a compiled grammar holds no schema; export the schema from the grammar source", compile.ErrSchemaUnavailable)
 
 // ErrNotCompiled reports that the data is not a compiled grammar.
-var ErrNotCompiled = errors.New("not a compiled PEGO grammar")
+var ErrNotCompiled = errors.New("not a compiled ZeroParse grammar")
 
 // IsCompiled reports whether the data is in the compiled grammar format.
 func IsCompiled(data []byte) bool { return bytes.HasPrefix(data, []byte(compiledMagic)) }

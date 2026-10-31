@@ -1,6 +1,6 @@
 package compile
 
-import "github.com/ornew/pego/grammar"
+import "github.com/ornew/zeroparse/grammar"
 
 // NoExprs is an expression builder that builds nothing: the compiler still walks every rule body
 // and decides its static facts. Its methods implement ExprBuilder, which documents them,

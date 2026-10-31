@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/ir/core"
-	irbuild "github.com/ornew/pego/internal/ir/core/build"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/ir/core"
+	irbuild "github.com/ornew/zeroparse/internal/ir/core/build"
 )
 
 // A rule of the Node table (rules), the recognizer table (recRules) or the typed table (trules) has

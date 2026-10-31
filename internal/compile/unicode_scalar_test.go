@@ -4,15 +4,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func BenchmarkCharacterRangeValidation(b *testing.B) {
-	for _, tc := range []struct{ name, path string }{{"JSON", "../../parsers/json/json.pego"}, {"Go", "../../parsers/golang/golang.pego"}, {"YAML", "../../parsers/yaml/yaml.pego"}} {
+	for _, tc := range []struct{ name, path string }{{"JSON", "../../parsers/json/json.zp"}, {"Go", "../../parsers/golang/golang.zp"}, {"YAML", "../../parsers/yaml/yaml.zp"}} {
 		b.Run(tc.name, func(b *testing.B) {
 			path := tc.path
-			if tc.name == "YAML" && os.Getenv("PEGO_BENCH_YAML_GRAMMAR") != "" {
-				path = os.Getenv("PEGO_BENCH_YAML_GRAMMAR")
+			if tc.name == "YAML" && os.Getenv("ZP_BENCH_YAML_GRAMMAR") != "" {
+				path = os.Getenv("ZP_BENCH_YAML_GRAMMAR")
 			}
 			source, err := os.ReadFile(path)
 			if err != nil {

@@ -8,18 +8,18 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // The generated parser has only the typed entry point, so the check that it agrees with the grammar does not
 // rest on other entry points of the same generated code: the oracle is the engine's interpreter, which runs
-// cue.pego itself.
-var interpreter = sync.OnceValue(func() *pego.Parser {
-	src, err := os.ReadFile("cue.pego")
+// cue.zp itself.
+var interpreter = sync.OnceValue(func() *zeroparse.Parser {
+	src, err := os.ReadFile("cue.zp")
 	if err != nil {
 		panic(err)
 	}
-	p, err := pego.CompileSource(string(src), "main")
+	p, err := zeroparse.CompileSource(string(src), "main")
 	if err != nil {
 		panic(err)
 	}
@@ -50,14 +50,14 @@ func spanOf(v any) (start, end int, ok bool) {
 // interpreterDiff compares ParseAST with the interpreter p, in both position units: they must accept the same input
 // with the same error (message, line, column and offset), and the value must cover the range of p's node. It
 // returns what differs, or "".
-func interpreterDiff(src string, p *pego.Parser) string {
+func interpreterDiff(src string, p *zeroparse.Parser) string {
 	for _, unit := range []struct {
 		name string
 		g    PositionUnit
-		i    pego.PositionUnit
-	}{{"code points", CodePoints, pego.CodePoints}, {"bytes", Bytes, pego.Bytes}} {
+		i    zeroparse.PositionUnit
+	}{{"code points", CodePoints, zeroparse.CodePoints}, {"bytes", Bytes, zeroparse.Bytes}} {
 		v, gerr := ParseAST(src, WithUnit(unit.g))
-		n, ierr := p.Parse(src, pego.WithUnit(unit.i))
+		n, ierr := p.Parse(src, zeroparse.WithUnit(unit.i))
 		if (gerr == nil) != (ierr == nil) || (gerr != nil && gerr.Error() != ierr.Error()) {
 			return fmt.Sprintf("%q (%s): ParseAST: %v; interpreter: %v", src, unit.name, gerr, ierr)
 		}
@@ -81,7 +81,7 @@ func agreeWithInterpreter(t testing.TB, src string) {
 // TestInterpreterOracle checks that the comparison can fail: against an interpreter of a grammar that differs
 // it reports a difference, for an accepted input and a rejected one, and the range comparison has a range.
 func TestInterpreterOracle(t *testing.T) {
-	src, err := os.ReadFile("cue.pego")
+	src, err := os.ReadFile("cue.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func TestInterpreterOracle(t *testing.T) {
 	if mutated == string(src) {
 		t.Fatal("the mutation did not apply")
 	}
-	other, err := pego.CompileSource(mutated, "main")
+	other, err := zeroparse.CompileSource(mutated, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

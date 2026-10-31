@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // TsReservedTypes are the names types.ts declares itself, or imports. A grammar type with one of
@@ -94,7 +94,7 @@ func (g *Generator) typedTS(start *compile.Rule) (types, parser string, err erro
 	st := t.RuleRef(start.Name)
 	repr := t.recipe(st)
 	stType := qualifyTypes(t.tsType(st))
-	b.WriteString("\n// --- Typed values (pego gen -types) ---\n\n")
+	b.WriteString("\n// --- Typed values (zp gen -types) ---\n\n")
 	// With budget controls every parse is controlled, so parseAST takes the path of parseASTWithOptions.
 	astBody := fmt.Sprintf("astResult<%s>(run(G, R%d, nseen, input, unit), %d)", stType, start.ID, repr)
 	if !g.NoBudget {

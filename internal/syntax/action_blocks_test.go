@@ -1,7 +1,7 @@
 package syntax
 
 import (
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 	"strings"
 	"testing"
 )

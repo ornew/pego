@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ornew/pego/parsers/json"
+	"github.com/ornew/zeroparse/parsers/json"
 )
 
 // TestBudgetControls checks that the parser, generated with budget controls, stops at a budget limit

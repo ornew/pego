@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/starttest"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/starttest"
 )
 
 func BenchmarkClassCompileCancellation(b *testing.B) {

@@ -6,8 +6,8 @@ next. You also want the lines that were fine, so that the rest of the program ca
 Mark the unit that can go wrong (here a setting) with `#recover`. When it fails, the parser records the error, skips
 to a place where parsing can go on, and puts an `error` value where the setting would have been.
 
-```pego
-// settings.pego
+```zp
+// settings.zp
 type Setting = { Key node[string]; Value node[string] }
 type Item ~ Setting | error
 type File = { Settings []Item }
@@ -53,14 +53,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed settings.pego
+//go:embed settings.zp
 var grammar string
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,25 +70,25 @@ func main() {
 	}
 
 	// Bytes positions index src directly.
-	tree, err := p.Parse(string(src), pego.WithUnit(pego.Bytes))
+	tree, err := p.Parse(string(src), zeroparse.WithUnit(zeroparse.Bytes))
 
 	// With recovery, err is not nil even though there is a tree: SyntaxErrors holds every error that was recovered
 	// from. Any other error means that there is no tree.
-	var errs pego.SyntaxErrors
+	var errs zeroparse.SyntaxErrors
 	if err != nil && !errors.As(err, &errs) {
-		log.Fatal(err) // a *pego.SyntaxError: nothing could be recovered
+		log.Fatal(err) // a *zeroparse.SyntaxError: nothing could be recovered
 	}
 	for _, e := range errs {
 		fmt.Printf("app.conf:%d:%d: %s\n", e.Line, e.Col, e.Message())
 	}
 
 	// The tree has the settings that parsed, and an error value where one did not.
-	for _, s := range tree.Field("Settings").(*pego.Node).Elems() {
-		if s.Kind() == pego.KindError {
+	for _, s := range tree.Field("Settings").(*zeroparse.Node).Elems() {
+		if s.Kind() == zeroparse.KindError {
 			fmt.Printf("skipped %q\n", src[s.Start():s.End()])
 			continue
 		}
-		fmt.Printf("%s = %s\n", s.Field("Key").(*pego.Node).Text(), s.Field("Value").(*pego.Node).Text())
+		fmt.Printf("%s = %s\n", s.Field("Key").(*zeroparse.Node).Text(), s.Field("Value").(*zeroparse.Node).Text())
 	}
 	if len(errs) > 0 {
 		os.Exit(1)
@@ -123,10 +123,10 @@ The program exits with status 1, because there were errors.
   `port = 1;`, `name = 5`, `host = 1;`.)
 - **Types.** `error` is a built-in type that only recovery produces, and `a #recover(...)` has the type `A | error`.
   That is why `setting` is declared `Item`, the join `Setting | error`, and the `Settings` field is a list of `Item`.
-  Go sees `s.Kind() == pego.KindError`, with the skipped range in `s.Start()` and `s.End()` and the message, with its
+  Go sees `s.Kind() == zeroparse.KindError`, with the skipped range in `s.Start()` and `s.End()` and the message, with its
   position (`2:8: expected ...`), in `s.Text()`.
-- **`pego.SyntaxErrors` is the second kind of result.** `Parse` returns the tree and an error that is a
-  `pego.SyntaxErrors` (a slice of `*pego.SyntaxError`, each with `Line`, `Col` and `Message()`). Do not write
+- **`zeroparse.SyntaxErrors` is the second kind of result.** `Parse` returns the tree and an error that is a
+  `zeroparse.SyntaxErrors` (a slice of `*zeroparse.SyntaxError`, each with `Line`, `Col` and `Message()`). Do not write
   `if err != nil { return err }` first: that throws the tree away. `errors.As` needs a variable of the slice type, not a
   pointer.
 - **The order of the attributes matters**: `@error(...) #recover(...)`, in that order, so that the recorded error carries

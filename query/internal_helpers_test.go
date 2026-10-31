@@ -1,6 +1,6 @@
 package query
 
-import "github.com/ornew/pego/schema"
+import "github.com/ornew/zeroparse/schema"
 
 // validInMemoryOutputSchema is a minimal valid schema built in memory. Package schema's tests
 // have the same helper; this copy serves the query tests here.

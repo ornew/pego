@@ -10,7 +10,7 @@ path clears dead frames and rewinds the used prefix of the existing slab while
 preserving the live top-level frame. Capture value arrays and result child
 slices remain separately allocated and immutable, so reuse cannot change an
 emitted node. The implementation adds no parser field. The
-`pego_reference_stream_frames` build tag selects the former allocation path at
+`zp_reference_stream_frames` build tag selects the former allocation path at
 build time, without a runtime selector.
 
 ## Evidence
@@ -58,19 +58,19 @@ Build both benchmark binaries from the same revision; the reference build tag
 selects the former allocator:
 
 ```sh
-go test -c -o /tmp/pego-stream-optimized.test ./bench
-go test -tags=pego_reference_stream_frames -c \
-  -o /tmp/pego-stream-reference.test ./bench
+go test -c -o /tmp/zp-stream-optimized.test ./bench
+go test -tags=zp_reference_stream_frames -c \
+  -o /tmp/zp-stream-reference.test ./bench
 ```
 
 From `bench/`, run the three engine sub-benchmarks in alternating order for
 five pairs, reversing the first binary on each pair:
 
 ```sh
-/tmp/pego-stream-reference.test -test.run='^$' \
+/tmp/zp-stream-reference.test -test.run='^$' \
   -test.bench='^BenchmarkStream$/(closure|bytecode|iterative)$' \
   -test.benchtime=300ms -test.benchmem
-/tmp/pego-stream-optimized.test -test.run='^$' \
+/tmp/zp-stream-optimized.test -test.run='^$' \
   -test.bench='^BenchmarkStream$/(closure|bytecode|iterative)$' \
   -test.benchtime=300ms -test.benchmem
 ```
@@ -79,10 +79,10 @@ The supplemental Unicode benchmark is `BenchmarkStreamFrameScratch` in
 `internal/engine`. Build its binaries with and without the same tag:
 
 ```sh
-go test -c -o /tmp/pego-stream-engine-optimized.test ./internal/engine
-go test -tags=pego_reference_stream_frames -c \
-  -o /tmp/pego-stream-engine-reference.test ./internal/engine
-/tmp/pego-stream-engine-reference.test -test.run='^$' \
+go test -c -o /tmp/zp-stream-engine-optimized.test ./internal/engine
+go test -tags=zp_reference_stream_frames -c \
+  -o /tmp/zp-stream-engine-reference.test ./internal/engine
+/tmp/zp-stream-engine-reference.test -test.run='^$' \
   -test.bench='^BenchmarkStreamFrameScratch$' -test.benchtime=300ms -test.benchmem
 ```
 

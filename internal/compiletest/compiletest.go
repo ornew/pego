@@ -7,13 +7,13 @@ package compiletest
 import (
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/starttest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/starttest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
-// Parse parses PEGO source for a test whose subject is not start rules: unless the source has
+// Parse parses ZeroParse source for a test whose subject is not start rules: unless the source has
 // declaration attributes, every rule becomes a start rule, the first one the default.
 func Parse(src string) (*grammar.Grammar, error) {
 	g, err := syntax.Parse(src)

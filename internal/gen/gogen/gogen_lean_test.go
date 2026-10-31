@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // External rule-table entry and nested direct calls must count the same rule
@@ -68,10 +68,10 @@ rule left = left "+" "é" / "é"
 			t.Fatalf("unsupported direct route for %s in recRules", name)
 		}
 	}
-	if !strings.Contains(string(code), "var pegoGrammar = rt.NewGrammar(100000)") {
+	if !strings.Contains(string(code), "var zpGrammar = rt.NewGrammar(100000)") {
 		t.Fatal("generated depth default not found")
 	}
-	code = []byte(strings.Replace(string(code), "var pegoGrammar = rt.NewGrammar(100000)", "var pegoGrammar = rt.NewGrammar(5)", 1))
+	code = []byte(strings.Replace(string(code), "var zpGrammar = rt.NewGrammar(100000)", "var zpGrammar = rt.NewGrammar(5)", 1))
 	prog := mustCompile(t, src)
 	var rows strings.Builder
 	// Go literals preserve invalid UTF-8 bytes; the JSON-transport corpus would
@@ -85,14 +85,14 @@ rule left = left "+" "é" / "é"
 		}
 	}
 	tests := `package depth
-import("fmt";"testing";pegort "github.com/ornew/pego/runtime")
+import("fmt";"testing";zprt "github.com/ornew/zeroparse/runtime")
 func TestRoutesAndReuse(t *testing.T) {
  cases:=[]struct{name,input string; unit PositionUnit; want string}{` + rows.String() + `}
  for repeat:=0;repeat<3;repeat++ { for _,c:=range cases {
-  var selected *pegort.Rule
+  var selected *zprt.Rule
   for _,r:=range recRules {if r.Name==c.name {selected=r;break}}
   if selected==nil {t.Fatal(c.name)}
-  n,err:=pegort.RunParse(selected,c.input,[]ParseOption{WithExpectations(), WithUnit(c.unit)})
+  n,err:=zprt.RunParse(selected,c.input,[]ParseOption{WithExpectations(), WithUnit(c.unit)})
   if n!=nil {t.Fatalf("recognition built a value for %s",c.name)}
   if got:=fmt.Sprint(err);got!=c.want {t.Fatalf("%s %q unit%d: got %s want %s",c.name,c.input,c.unit,got,c.want)}
  }}

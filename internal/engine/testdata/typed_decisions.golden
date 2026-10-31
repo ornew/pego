@@ -239,7 +239,7 @@ cond	236	"ch == 97"
 cond	237	"ch == 98"
 cond	238	"ch == 99 || ch == 67"
 cond	239	"ch == 99"
-grammar	lean,lean observable,lean boxed	"../../examples/calculator/calc.pego"
+grammar	lean,lean observable,lean boxed	"../../examples/calculator/calc.zp"
 guard	1	10	1	0	0	"\"+\""	191
 guard	1	11	1	0	0	"\"-\""	193
 guard	1	13	1	0	0	"\"*\""	190
@@ -263,7 +263,7 @@ term	1	-5	new-in-order(capture capture capture)
 term	1	-6	new-in-order(capture capture capture)
 term	1	-7	new-in-order(capture capture)
 term	1	-8	new-in-order(capture capture capture)
-grammar	controlled	"../../examples/calculator/calc.pego"
+grammar	controlled	"../../examples/calculator/calc.zp"
 guard	1	10	1	0	0	"\"+\""	191
 guard	1	11	1	0	0	"\"-\""	193
 guard	1	13	1	0	0	"\"*\""	190
@@ -287,7 +287,7 @@ term	1	-5	new(capture capture capture)
 term	1	-6	new(capture capture capture)
 term	1	-7	new(capture capture)
 term	1	-8	new(capture capture capture)
-grammar	lean,lean observable,lean boxed	"../../examples/calculator/calc_lr.pego"
+grammar	lean,lean observable,lean boxed	"../../examples/calculator/calc_lr.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	2	7	1	0	0	"\"+\""	191
@@ -315,7 +315,7 @@ term	4	-1	new-in-order(capture capture capture)
 term	6	-1	new-in-order(capture capture)
 term	8	-1	new-in-order(capture capture capture)
 term	9	-1	capture
-grammar	controlled	"../../examples/calculator/calc_lr.pego"
+grammar	controlled	"../../examples/calculator/calc_lr.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	2	7	1	0	0	"\"+\""	191
@@ -343,7 +343,7 @@ term	4	-1	new(capture capture capture)
 term	6	-1	new(capture capture)
 term	8	-1	new(capture capture capture)
 term	9	-1	capture
-grammar	lean,lean observable,lean boxed	"../../examples/minilang/minilang.pego"
+grammar	lean,lean observable,lean boxed	"../../examples/minilang/minilang.zp"
 guard	14	28	1	0	0	"\"==\""	209
 guard	14	29	1	0	0	"\"!=\""	181
 guard	14	30	1	0	0	"\"<=\""	208
@@ -444,7 +444,7 @@ term	6	-1	new-in-order(capture capture capture)
 term	7	-1	capture
 term	8	-1	new-in-order(capture capture)
 term	9	-1	new-in-order(capture)
-grammar	controlled	"../../examples/minilang/minilang.pego"
+grammar	controlled	"../../examples/minilang/minilang.zp"
 guard	14	28	1	0	0	"\"==\""	209
 guard	14	29	1	0	0	"\"!=\""	181
 guard	14	30	1	0	0	"\"<=\""	208
@@ -545,7 +545,7 @@ term	6	-1	new(capture capture capture)
 term	7	-1	capture
 term	8	-1	new(capture capture)
 term	9	-1	new(capture)
-grammar	lean,lean observable,lean boxed	"../../examples/outline/outline.pego"
+grammar	lean,lean observable,lean boxed	"../../examples/outline/outline.zp"
 guard	6	1	1	0	0	"\"\\n\""	145
 guard	6	2	0	0	0	""	48
 guard	9	1	1	0	0	"\"\\n\""	145
@@ -561,7 +561,7 @@ term	2	3	binary:==(call:len(capture) var)
 term	3	-1	capture
 term	3	7	binary:>(call:len(capture) var)
 term	3	8	call:len(capture)
-grammar	controlled	"../../examples/outline/outline.pego"
+grammar	controlled	"../../examples/outline/outline.zp"
 guard	6	1	1	0	0	"\"\\n\""	145
 guard	6	2	0	0	0	""	48
 guard	9	1	1	0	0	"\"\\n\""	145
@@ -31756,7 +31756,7 @@ grammar	controlled	"terminal constructor value error"
 term	0	-1	new(cast(binary:[](call:list(var const) const)))
 term	0	1	const
 grammar	lean,lean observable,controlled,lean boxed	"terminal singleton union"
-grammar	lean,lean observable,lean boxed	"testdata/typed/calclr.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/calclr.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	2	7	1	0	0	"\"+\""	191
@@ -31784,7 +31784,7 @@ term	4	-1	new-in-order(capture capture capture)
 term	6	-1	new-in-order(capture capture)
 term	8	-1	new-in-order(capture capture capture)
 term	9	-1	capture
-grammar	controlled	"testdata/typed/calclr.pego"
+grammar	controlled	"testdata/typed/calclr.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	2	7	1	0	0	"\"+\""	191
@@ -31812,7 +31812,7 @@ term	4	-1	new(capture capture capture)
 term	6	-1	new(capture capture)
 term	8	-1	new(capture capture capture)
 term	9	-1	capture
-grammar	lean,lean observable,lean boxed	"testdata/typed/direct_backtrack.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/direct_backtrack.zp"
 guard	1	2	0	0	0	""	48
 guard	1	43	0	0	0	""	48
 guard	1	46	1	0	0	"\">\""	210
@@ -31829,7 +31829,7 @@ term	1	-1	new-in-order(capture capture capture capture capture call:map(capture 
 term	1	44	const
 term	3	1	const
 term	4	1	const
-grammar	controlled	"testdata/typed/direct_backtrack.pego"
+grammar	controlled	"testdata/typed/direct_backtrack.zp"
 guard	1	2	0	0	0	""	48
 guard	1	43	0	0	0	""	48
 guard	1	46	1	0	0	"\">\""	210
@@ -31846,7 +31846,7 @@ term	1	-1	new(capture capture capture capture capture call:map(capture lambda(me
 term	1	44	const
 term	3	1	const
 term	4	1	const
-grammar	lean,lean observable,lean boxed	"testdata/typed/direct_errors.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/direct_errors.zp"
 guard	0	5	1	0	0	"\"<\""	208
 guard	0	9	1	0	0	"\"<\""	208
 guard	1	10	1	0	0	"\"w\""	168
@@ -31867,7 +31867,7 @@ term	0	-1	new-in-order(call:map(capture lambda(member(capture))) capture)
 term	1	-1	new-in-order(capture capture capture capture capture projected-map(capture))
 term	1	14	text-eq(capture capture)
 term	2	-1	capture
-grammar	controlled	"testdata/typed/direct_errors.pego"
+grammar	controlled	"testdata/typed/direct_errors.zp"
 guard	0	5	1	0	0	"\"<\""	208
 guard	0	9	1	0	0	"\"<\""	208
 guard	1	10	1	0	0	"\"w\""	168
@@ -31888,7 +31888,7 @@ term	0	-1	new(call:map(capture lambda(member(capture))) capture)
 term	1	-1	new(capture capture capture capture capture projected-map(capture))
 term	1	14	text-eq(capture capture)
 term	2	-1	capture
-grammar	lean,lean observable,lean boxed	"testdata/typed/direct_lists.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/direct_lists.zp"
 scan	0	33
 scan	4	1
 scope	0	18	p
@@ -31897,7 +31897,7 @@ scope	0	6	c
 term	0	-1	new-in-order(call:map(capture lambda(new-in-order(call:map(member(capture) lambda(member(capture))) member(capture) call:len(member(capture)) call:text(capture) member(capture) member(capture) binary:||(binary:&&(binary:>(call:len(member(capture)) const) unary:!(binary:>(call:len(member(capture)) const))) const)))) call:foldl(const capture lambda(binary:+(capture call:len(member(capture))))) unary:-(call:len(capture)) binary:+(call:text(capture) const) projected-map(capture) capture)
 term	1	-1	new-in-order(capture capture binary:+(binary:+(binary:+(binary:+(call:text(capture) call:text(capture)) call:text(capture)) const) call:text(capture)))
 term	2	-1	new-in-order(member(capture) member(capture) binary:/(const binary:-(call:len(member(capture)) const)))
-grammar	controlled	"testdata/typed/direct_lists.pego"
+grammar	controlled	"testdata/typed/direct_lists.zp"
 scan	0	33
 scan	4	1
 scope	0	18	p
@@ -31906,7 +31906,7 @@ scope	0	6	c
 term	0	-1	new(call:map(capture lambda(new(call:map(member(capture) lambda(member(capture))) member(capture) call:len(member(capture)) call:text(capture) member(capture) member(capture) binary:||(binary:&&(binary:>(call:len(member(capture)) const) unary:!(binary:>(call:len(member(capture)) const))) const)))) call:foldl(const capture lambda(binary:+(capture call:len(member(capture))))) unary:-(call:len(capture)) binary:+(call:text(capture) const) projected-map(capture) capture)
 term	1	-1	new(capture capture binary:+(binary:+(binary:+(binary:+(call:text(capture) call:text(capture)) call:text(capture)) const) call:text(capture)))
 term	2	-1	new(member(capture) member(capture) binary:/(const binary:-(call:len(member(capture)) const)))
-grammar	lean,lean observable,lean boxed	"testdata/typed/direct_literals.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/direct_literals.zp"
 guard	0	11	1	0	0	"\"abcd\""	236
 guard	0	12	1	0	0	"\"abc\""	236
 guard	0	16	1	0	0	"\"abcde\""	236
@@ -31916,7 +31916,7 @@ guard	0	4	1	0	0	"\"ab\""	236
 guard	0	7	1	0	0	"\"→→\""	226
 guard	0	8	1	0	0	"\"→\""	226
 term	0	-1	new-in-order(capture capture capture capture)
-grammar	controlled	"testdata/typed/direct_literals.pego"
+grammar	controlled	"testdata/typed/direct_literals.zp"
 guard	0	11	1	0	0	"\"abcd\""	236
 guard	0	12	1	0	0	"\"abc\""	236
 guard	0	16	1	0	0	"\"abcde\""	236
@@ -31926,76 +31926,76 @@ guard	0	4	1	0	0	"\"ab\""	236
 guard	0	7	1	0	0	"\"→→\""	226
 guard	0	8	1	0	0	"\"→\""	226
 term	0	-1	new(capture capture capture capture)
-grammar	lean,lean observable,lean boxed	"testdata/typed/direct_names.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/direct_names.zp"
 term	0	-1	new-in-order(binary:+(const const) var call:text(member(capture)))
 term	0	1	const
 term	2	-1	new-in-order(const)
-grammar	controlled	"testdata/typed/direct_names.pego"
+grammar	controlled	"testdata/typed/direct_names.zp"
 term	0	-1	new(binary:+(const const) var call:text(member(capture)))
 term	0	1	const
 term	2	-1	new(const)
-grammar	lean,lean observable,lean boxed	"testdata/typed/element_scope_optional.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/element_scope_optional.zp"
 scope	0	3	y
 term	0	-1	new-in-order(call:text(capture))
 term	0	8	binary:==(call:len(capture) const)
-grammar	controlled	"testdata/typed/element_scope_optional.pego"
+grammar	controlled	"testdata/typed/element_scope_optional.zp"
 scope	0	3	y
 term	0	-1	new(call:text(capture))
 term	0	8	binary:==(call:len(capture) const)
-grammar	lean,lean observable,lean boxed	"testdata/typed/element_scope_plain.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/element_scope_plain.zp"
 scope	1	1	x
 scope	2	1	x
 term	0	-1	new-in-order(call:text(capture))
 term	1	5	binary:>(call:len(capture) const)
 term	2	5	binary:>(call:len(capture) const)
-grammar	controlled	"testdata/typed/element_scope_plain.pego"
+grammar	controlled	"testdata/typed/element_scope_plain.zp"
 scope	1	1	x
 scope	2	1	x
 term	0	-1	new(call:text(capture))
 term	1	5	binary:>(call:len(capture) const)
 term	2	5	binary:>(call:len(capture) const)
-grammar	lean,lean observable,lean boxed	"testdata/typed/element_scope_recover.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/element_scope_recover.zp"
 scope	1	2	y
 scope	2	2	y
 term	0	-1	new-in-order(call:text(capture))
 term	1	6	binary:>(call:len(capture) const)
 term	2	6	binary:>(call:len(capture) const)
-grammar	controlled	"testdata/typed/element_scope_recover.pego"
+grammar	controlled	"testdata/typed/element_scope_recover.zp"
 scope	1	2	y
 scope	2	2	y
 term	0	-1	new(call:text(capture))
 term	1	6	binary:>(call:len(capture) const)
 term	2	6	binary:>(call:len(capture) const)
-grammar	lean,lean observable,lean boxed	"testdata/typed/errlist.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/errlist.zp"
 scan	1	3
 term	0	-1	new-in-order(capture)
-grammar	controlled	"testdata/typed/errlist.pego"
+grammar	controlled	"testdata/typed/errlist.zp"
 scan	1	3
 term	0	-1	new(capture)
-grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/errlist2.pego"
+grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/errlist2.zp"
 scan	0	3
-grammar	lean,lean observable	"testdata/typed/fields.pego"
+grammar	lean,lean observable	"testdata/typed/fields.zp"
 scan	4	2
 term	0	-1	new-in-order(capture member(member(capture)) member(member(capture)) call:text(member(capture)) field-cmp(capture capture) field-cmp(capture const) field-cmp(capture const) field-cmp(capture const) field-cmp(capture const) member(capture))
 term	1	-1	new-in-order(capture capture call:text(capture))
 term	2	-1	capture
 term	3	-1	new-in-order(capture)
 term	5	-1	new-in-order(capture)
-grammar	controlled	"testdata/typed/fields.pego"
+grammar	controlled	"testdata/typed/fields.zp"
 scan	4	2
 term	0	-1	new(capture member(member(capture)) member(member(capture)) call:text(member(capture)) field-cmp(capture capture) field-cmp(capture const) field-cmp(capture const) field-cmp(capture const) field-cmp(capture const) member(capture))
 term	1	-1	new(capture capture call:text(capture))
 term	2	-1	capture
 term	3	-1	new(capture)
 term	5	-1	new(capture)
-grammar	lean boxed	"testdata/typed/fields.pego"
+grammar	lean boxed	"testdata/typed/fields.zp"
 scan	4	2
 term	0	-1	new-in-order(capture member(member(capture)) member(member(capture)) call:text(member(capture)) binary:==(member(capture) member(capture)) binary:==(member(capture) const) binary:==(member(capture) const) binary:==(member(capture) const) binary:==(member(capture) const) member(capture))
 term	1	-1	new-in-order(capture capture call:text(capture))
 term	2	-1	capture
 term	3	-1	new-in-order(capture)
 term	5	-1	new-in-order(capture)
-grammar	lean,lean observable,lean boxed	"testdata/typed/mix.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/mix.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	3	1	0	0	0	""	48
@@ -32015,7 +32015,7 @@ term	4	-1	new-in-order(capture call:map(capture lambda(member(capture))) capture
 term	4	18	binary:<(call:len(capture) const)
 term	5	-1	new-in-order(projected-map(capture) const)
 term	8	-1	new(call:text(capture) call:len(capture))
-grammar	controlled	"testdata/typed/mix.pego"
+grammar	controlled	"testdata/typed/mix.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	3	1	0	0	0	""	48
@@ -32035,7 +32035,7 @@ term	4	-1	new(capture call:map(capture lambda(member(capture))) capture call:len
 term	4	18	binary:<(call:len(capture) const)
 term	5	-1	new(projected-map(capture) const)
 term	8	-1	new(call:text(capture) call:len(capture))
-grammar	lean,lean observable,lean boxed	"testdata/typed/mixf.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/mixf.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	3	1	0	0	0	""	48
@@ -32055,7 +32055,7 @@ term	4	-1	new-in-order(capture call:map(capture lambda(member(capture))) capture
 term	4	18	binary:<(call:len(capture) const)
 term	5	-1	new-in-order(projected-map(capture) const)
 term	8	-1	new(call:text(capture) call:len(capture))
-grammar	controlled	"testdata/typed/mixf.pego"
+grammar	controlled	"testdata/typed/mixf.zp"
 guard	1	1	0	0	0	""	48
 guard	1	2	0	0	0	""	48
 guard	3	1	0	0	0	""	48
@@ -32075,7 +32075,7 @@ term	4	-1	new(capture call:map(capture lambda(member(capture))) capture call:len
 term	4	18	binary:<(call:len(capture) const)
 term	5	-1	new(projected-map(capture) const)
 term	8	-1	new(call:text(capture) call:len(capture))
-grammar	lean,lean observable,lean boxed	"testdata/typed/operators_rule1.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/operators_rule1.zp"
 guard	1	21	1	0	0	"\"+\""	191
 guard	1	22	1	0	0	"\"-\""	193
 guard	1	25	1	0	0	"\"*\""	190
@@ -32103,7 +32103,7 @@ term	1	-6	new-in-order(capture capture capture)
 term	1	-7	new-in-order(capture capture capture)
 term	1	-8	new-in-order(capture capture)
 term	1	-9	new-in-order(capture capture call:list)
-grammar	controlled	"testdata/typed/operators_rule1.pego"
+grammar	controlled	"testdata/typed/operators_rule1.zp"
 guard	1	21	1	0	0	"\"+\""	191
 guard	1	22	1	0	0	"\"-\""	193
 guard	1	25	1	0	0	"\"*\""	190
@@ -32131,7 +32131,7 @@ term	1	-6	new(capture capture capture)
 term	1	-7	new(capture capture capture)
 term	1	-8	new(capture capture)
 term	1	-9	new(capture capture call:list)
-grammar	lean,lean observable,lean boxed	"testdata/typed/operators_rule1f.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/operators_rule1f.zp"
 guard	1	21	1	0	0	"\"+\""	191
 guard	1	22	1	0	0	"\"-\""	193
 guard	1	25	1	0	0	"\"*\""	190
@@ -32159,7 +32159,7 @@ term	1	-6	new-in-order(capture capture capture)
 term	1	-7	new-in-order(capture capture capture)
 term	1	-8	new-in-order(capture capture)
 term	1	-9	new-in-order(capture capture call:list)
-grammar	controlled	"testdata/typed/operators_rule1f.pego"
+grammar	controlled	"testdata/typed/operators_rule1f.zp"
 guard	1	21	1	0	0	"\"+\""	191
 guard	1	22	1	0	0	"\"-\""	193
 guard	1	25	1	0	0	"\"*\""	190
@@ -32187,88 +32187,88 @@ term	1	-6	new(capture capture capture)
 term	1	-7	new(capture capture capture)
 term	1	-8	new(capture capture)
 term	1	-9	new(capture capture call:list)
-grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/order.pego"
+grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/order.zp"
 term	0	-1	new(binary:/(const binary:-(call:len(capture) const)) binary:[](call:list(const) const))
-grammar	lean,lean observable,lean boxed	"testdata/typed/proj1.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/proj1.zp"
 scope	0	12	n
 scope	0	3	xs
 scope	0	6	n
 term	0	-1	new-in-order(call:map(capture lambda(member(capture))) call:map(capture lambda(call:map(member(capture) lambda(member(capture))))))
 term	1	-1	new-in-order(capture)
-grammar	controlled	"testdata/typed/proj1.pego"
+grammar	controlled	"testdata/typed/proj1.zp"
 scope	0	12	n
 scope	0	3	xs
 scope	0	6	n
 term	0	-1	new(call:map(capture lambda(member(capture))) call:map(capture lambda(call:map(member(capture) lambda(member(capture))))))
 term	1	-1	new(capture)
-grammar	lean,lean observable,lean boxed	"testdata/typed/proj2.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/proj2.zp"
 scope	0	4	n
 term	0	-1	new-in-order(call:map(capture lambda(member(capture))))
-grammar	controlled	"testdata/typed/proj2.pego"
+grammar	controlled	"testdata/typed/proj2.zp"
 scope	0	4	n
 term	0	-1	new(call:map(capture lambda(member(capture))))
-grammar	lean,lean observable,lean boxed	"testdata/typed/proj3.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/proj3.zp"
 scope	0	4	n
 term	0	-1	new-in-order(call:map(capture lambda(member(capture))) call:map(capture lambda(member(capture))) call:text(capture))
-grammar	controlled	"testdata/typed/proj3.pego"
+grammar	controlled	"testdata/typed/proj3.zp"
 scope	0	4	n
 term	0	-1	new(call:map(capture lambda(member(capture))) call:map(capture lambda(member(capture))) call:text(capture))
-grammar	lean,lean observable,lean boxed	"testdata/typed/proj4.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/proj4.zp"
 guard	0	5	1	0	0	"\"a\""	236
 guard	0	7	1	0	0	"\"b\""	237
 scope	0	4	n
 term	0	-1	new-in-order(call:map(capture lambda(member(capture))))
-grammar	controlled	"testdata/typed/proj4.pego"
+grammar	controlled	"testdata/typed/proj4.zp"
 guard	0	5	1	0	0	"\"a\""	236
 guard	0	7	1	0	0	"\"b\""	237
 scope	0	4	n
 term	0	-1	new(call:map(capture lambda(member(capture))))
-grammar	lean,lean observable,lean boxed	"testdata/typed/proj5.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/proj5.zp"
 scope	0	6	n
 term	0	-1	new-in-order(projected-map(capture))
 term	1	-1	new-in-order(binary:[](call:list(const) const))
-grammar	controlled	"testdata/typed/proj5.pego"
+grammar	controlled	"testdata/typed/proj5.zp"
 scope	0	6	n
 term	0	-1	new(projected-map(capture))
 term	1	-1	new(binary:[](call:list(const) const))
-grammar	lean,lean observable,lean boxed	"testdata/typed/proj6.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/proj6.zp"
 scope	0	11	n
 scope	0	3	xs
 term	0	-1	new-in-order(call:map(capture lambda(member(capture))) call:map(capture lambda(member(capture))))
-grammar	controlled	"testdata/typed/proj6.pego"
+grammar	controlled	"testdata/typed/proj6.zp"
 scope	0	11	n
 scope	0	3	xs
 term	0	-1	new(call:map(capture lambda(member(capture))) call:map(capture lambda(member(capture))))
-grammar	lean,lean observable,lean boxed	"testdata/typed/proj7.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/proj7.zp"
 scope	0	11	n
 scope	0	3	xs
 term	0	-1	new-in-order(call:map(capture lambda(member(capture))) call:len(capture))
-grammar	controlled	"testdata/typed/proj7.pego"
+grammar	controlled	"testdata/typed/proj7.zp"
 scope	0	11	n
 scope	0	3	xs
 term	0	-1	new(call:map(capture lambda(member(capture))) call:len(capture))
-grammar	lean,lean observable,lean boxed	"testdata/typed/spanname.pego"
+grammar	lean,lean observable,lean boxed	"testdata/typed/spanname.zp"
 term	0	-1	new-in-order(new-in-order(capture))
-grammar	controlled	"testdata/typed/spanname.pego"
+grammar	controlled	"testdata/typed/spanname.zp"
 term	0	-1	new(new(capture))
-grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/splice_recursive_capture.pego"
-grammar	lean,lean observable,lean boxed	"testdata/typed/splice_recursive_capture_action.pego"
+grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/splice_recursive_capture.zp"
+grammar	lean,lean observable,lean boxed	"testdata/typed/splice_recursive_capture_action.zp"
 term	0	-1	new-in-order(call:text(capture))
-grammar	controlled	"testdata/typed/splice_recursive_capture_action.pego"
+grammar	controlled	"testdata/typed/splice_recursive_capture_action.zp"
 term	0	-1	new(call:text(capture))
-grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/splice_recursive_choice.pego"
+grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/splice_recursive_choice.zp"
 guard	1	1	1	0	0	"\"x\""	169
 guard	1	2	1	0	0	"\"(\""	188
-grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/splice_recursive_choice_in_seq.pego"
+grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/splice_recursive_choice_in_seq.zp"
 guard	1	3	1	1	0	"\"(\""	188
 guard	1	4	1	0	0	"\"x\""	169
-grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/splice_recursive_optional.pego"
-grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/splice_recursive_repeat.pego"
-grammar	lean,lean observable,lean boxed	"testdata/typed/unif.pego"
+grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/splice_recursive_optional.zp"
+grammar	lean,lean observable,controlled,lean boxed	"testdata/typed/splice_recursive_repeat.zp"
+grammar	lean,lean observable,lean boxed	"testdata/typed/unif.zp"
 scan	1	1
 scope	0	3	w
 term	0	-1	new-in-order(call:map(capture lambda(member(capture))) capture binary:+(call:len(capture) call:len(call:text(capture))) binary:+(call:text(capture) call:text(capture)))
-grammar	controlled	"testdata/typed/unif.pego"
+grammar	controlled	"testdata/typed/unif.zp"
 scan	1	1
 scope	0	3	w
 term	0	-1	new(call:map(capture lambda(member(capture))) capture binary:+(call:len(capture) call:len(call:text(capture))) binary:+(call:text(capture) call:text(capture)))

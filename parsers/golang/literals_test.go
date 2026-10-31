@@ -3,8 +3,8 @@ package golang_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/parsers/golang"
-	"github.com/ornew/pego/parsers/golang/types"
+	"github.com/ornew/zeroparse/parsers/golang"
+	"github.com/ornew/zeroparse/parsers/golang/types"
 )
 
 func TestLiterals(t *testing.T) {

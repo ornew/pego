@@ -1,8 +1,8 @@
 package core
 
 import (
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // Matcher tries to match at the current position and returns the value and whether it

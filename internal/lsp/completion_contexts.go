@@ -1,8 +1,8 @@
 package lsp
 
 import (
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // contextualItems recognizes unfinished syntax without requiring the containing

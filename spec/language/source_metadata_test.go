@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/spec/language/internal/sourceast"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/spec/language/internal/sourceast"
 )
 
 // Package ownership is compared at the public metadata boundary. The adapter
@@ -25,9 +25,9 @@ func TestCanonicalPackageMetadataParity(t *testing.T) {
 		"package p\n\n// unowned\n",
 	} {
 		t.Run(src, func(t *testing.T) {
-			manual, manualErr := pego.ParseGrammar(src)
-			for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-				n, err := p.Parse(src, pego.WithBackend(backend))
+			manual, manualErr := zeroparse.ParseGrammar(src)
+			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+				n, err := p.Parse(src, zeroparse.WithBackend(backend))
 				if (err == nil) != (manualErr == nil) {
 					t.Fatalf("acceptance differs: manual=%v canonical=%v", manualErr, err)
 				}

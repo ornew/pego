@@ -94,7 +94,7 @@ was not declared; `TestLocalErrorsDetectsUnusedVariable` is its negative control
 `TestFlowVarsMutantFailsToCompile` shows that treating every variable as unread fails the check. The
 same test checks that the forms without budget controls have no blank line inside a function.
 
-The engine suite passes in both fixture modes (`PEGO_TEST_ORDINARY=1` generates without
+The engine suite passes in both fixture modes (`ZP_TEST_ORDINARY=1` generates without
 budget controls, which the default run does not exercise).
 
 ## Decision and Limits

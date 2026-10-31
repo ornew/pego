@@ -1,7 +1,7 @@
 # Operators Rule
 
 Expressions with operators (`1 + 2 * 3`, `-x ** 2`, `f(a)[i].name`, `c ? a : b`) are where a grammar needs
-precedence and associativity. PEGO gives you three ways to write them:
+precedence and associativity. ZeroParse gives you three ways to write them:
 
 | Technique | You write | Typical size |
 |:--|:--|:--|
@@ -15,16 +15,16 @@ text is in [Operators Rule](../../spec/language/operators-rule.md) and
 [Left recursion](../../spec/language/parser-expressions.md#left-recursion), and the reasoning behind the design in
 [design record 005](../design/records/005-operators-rule.md) and [design record 003](../design/records/003-packrat-parsing.md).
 
-To follow along, put each grammar in the file named on its first line and run the commands shown (`pego` is the tool
-from `go install github.com/ornew/pego/cmd/pego@latest`, or `go run ./cmd/pego` in a checkout). The Operators Rule and the
-left-recursive calculator are the files `calc.pego` and `calc_lr.pego` in
+To follow along, put each grammar in the file named on its first line and run the commands shown (`zp` is the tool
+from `go install github.com/ornew/zeroparse/cmd/zp@latest`, or `go run ./cmd/zp` in a checkout). The Operators Rule and the
+left-recursive calculator are the files `calc.zp` and `calc_lr.zp` in
 [`examples/calculator`](../../examples/calculator) (without their header comments); the chain variant is written out
 below.
 
 ## An Operators Rule Calculator
 
-```pego
-// calc.pego
+```zp
+// calc.zp
 package calc
 
 
@@ -59,12 +59,12 @@ rule ws = [ \t\r\n]*
 ```
 
 ```bash
-pego parse -g calc.pego -f sexpr -i '1 + 2 * 3'
-pego parse -g calc.pego -f sexpr -i '1 - 2 - 3'
-pego parse -g calc.pego -f sexpr -i '2 ^ 3 ^ 2'
-pego parse -g calc.pego -f sexpr -i '-2 ^ 2'
-pego parse -g calc.pego -f sexpr -i '2 ^ -1'
-pego parse -g calc.pego -f sexpr -i '(1 + 2) * 3'
+zp parse -g calc.zp -f sexpr -i '1 + 2 * 3'
+zp parse -g calc.zp -f sexpr -i '1 - 2 - 3'
+zp parse -g calc.zp -f sexpr -i '2 ^ 3 ^ 2'
+zp parse -g calc.zp -f sexpr -i '-2 ^ 2'
+zp parse -g calc.zp -f sexpr -i '2 ^ -1'
+zp parse -g calc.zp -f sexpr -i '(1 + 2) * 3'
 ```
 
 ```text
@@ -102,22 +102,22 @@ If the input ends where an operand is required, the error lists what could have 
 `skip` would have consumed (compare the next section):
 
 ```bash
-pego parse -g calc.pego -f sexpr -i '1 +'
+zp parse -g calc.zp -f sexpr -i '1 +'
 ```
 
 ```text
-pego: 1:4: syntax error: expected "(", "+", "-", [0-9]
+zp: 1:4: syntax error: expected "(", "+", "-", [0-9]
 ```
 
 ## The Same Language With Left Recursion
 
-A PEG rule may call itself in leftmost position, directly or through other rules. PEGO detects such cycles and parses
+A PEG rule may call itself in leftmost position, directly or through other rules. ZeroParse detects such cycles and parses
 them by growing a seed: it first matches the non-recursive alternatives, then repeatedly tries again with the result so
 far as the recursive call, as long as the match gets longer. The result is exactly what the grammar says in the textbook
 notation, without any rewriting:
 
-```pego
-// calc_lr.pego
+```zp
+// calc_lr.zp
 package calc
 
 
@@ -158,12 +158,12 @@ rule ws = [ \t\r\n]*
 ```
 
 ```bash
-pego parse -g calc_lr.pego -f sexpr -i '1 + 2 * 3'
-pego parse -g calc_lr.pego -f sexpr -i '1 - 2 - 3'
-pego parse -g calc_lr.pego -f sexpr -i '2 ^ 3 ^ 2'
-pego parse -g calc_lr.pego -f sexpr -i '-2 ^ 2'
-pego parse -g calc_lr.pego -f sexpr -i '2 ^ -1'
-pego parse -g calc_lr.pego -f sexpr -i '(1 + 2) * 3'
+zp parse -g calc_lr.zp -f sexpr -i '1 + 2 * 3'
+zp parse -g calc_lr.zp -f sexpr -i '1 - 2 - 3'
+zp parse -g calc_lr.zp -f sexpr -i '2 ^ 3 ^ 2'
+zp parse -g calc_lr.zp -f sexpr -i '-2 ^ 2'
+zp parse -g calc_lr.zp -f sexpr -i '2 ^ -1'
+zp parse -g calc_lr.zp -f sexpr -i '(1 + 2) * 3'
 ```
 
 ```text
@@ -191,11 +191,11 @@ grammar is organized.
   [level-restricted calls](#level-restricted-calls)).
 
 ```bash
-pego parse -g calc_lr.pego -f sexpr -i '1 +'
+zp parse -g calc_lr.zp -f sexpr -i '1 +'
 ```
 
 ```text
-pego: 1:4: syntax error: expected "(", "+", "-", [ \t\r\n], [0-9]
+zp: 1:4: syntax error: expected "(", "+", "-", [ \t\r\n], [0-9]
 ```
 
 Note the extra `[ \t\r\n]` in the expected list: a rule-based grammar reports its whitespace, while `skip` is hidden
@@ -207,8 +207,8 @@ from error messages.
 alternatives *in order* with the recursive call bound to the result so far. If the base case comes first, it matches
 again with the same length, nothing grows, and the rest of the input is left over:
 
-```pego
-// lr-order.pego
+```zp
+// lr-order.zp
 @start(default)
 rule good = expr $$
 rule expr = expr "+" term / term
@@ -220,13 +220,13 @@ rule expr2 = term / expr2 "+" term
 ```
 
 ```bash
-pego parse -g lr-order.pego -s good -f sexpr -i '1+2+3'
-pego parse -g lr-order.pego -s bad -f sexpr -i '1+2+3'
+zp parse -g lr-order.zp -s good -f sexpr -i '1+2+3'
+zp parse -g lr-order.zp -s bad -f sexpr -i '1+2+3'
 ```
 
 ```text
 ((("1" "+" "2") "+" "3"))
-pego: 1:2: syntax error: expected end of input, [0-9]
+zp: 1:2: syntax error: expected end of input, [0-9]
 ```
 
 The error ("expected a digit or the end of input at column 2") is accurate but gives no hint about the order of
@@ -236,8 +236,8 @@ alternatives; when a left-recursive rule stops short, look at the order first.
 and `=2` is left over; write `"<=" / "<"` (or put `!"="` after `"<"`). This is the usual PEG rule, and you have to
 follow it in every operator list. An Operators Rule does not have the problem ([Pitfalls](#pitfalls)).
 
-```pego
-// lr-ops.pego
+```zp
+// lr-ops.zp
 @start(default)
 rule rel = l:num op:("<" / "<=") r:num
 @start
@@ -246,12 +246,12 @@ rule num = [0-9]+ #atomic
 ```
 
 ```bash
-pego parse -g lr-ops.pego -s rel -f sexpr -i '1<=2'
-pego parse -g lr-ops.pego -s rel2 -f sexpr -i '1<=2'
+zp parse -g lr-ops.zp -s rel -f sexpr -i '1<=2'
+zp parse -g lr-ops.zp -s rel2 -f sexpr -i '1<=2'
 ```
 
 ```text
-pego: 1:3: syntax error: expected [0-9]
+zp: 1:3: syntax error: expected [0-9]
 ("1" "<=" "2")
 ```
 
@@ -261,8 +261,8 @@ The oldest way to write an expression grammar needs neither left recursion nor O
 the next level, followed by any number of operator-operand pairs, and `foldl` builds the left-leaning tree
 ([the `foldl` recipe](actions.md#left-associative-trees-with-foldl)):
 
-```pego
-// chain.pego
+```zp
+// chain.zp
 type Binary = { Left Expr; Op node[string]; Right Expr }
 type Unary = { Op node[string]; X Expr }
 type Expr ~ node[string] | Binary | Unary
@@ -288,9 +288,9 @@ rule ws = [ \t\r\n]*
 ```
 
 ```bash
-pego parse -g chain.pego -f sexpr -i '1 - 2 - 3'
-pego parse -g chain.pego -f sexpr -i '2 ^ 3 ^ 2'
-pego parse -g chain.pego -f sexpr -i '-2 ^ 2'
+zp parse -g chain.zp -f sexpr -i '1 - 2 - 3'
+zp parse -g chain.zp -f sexpr -i '2 ^ 3 ^ 2'
+zp parse -g chain.zp -f sexpr -i '-2 ^ 2'
 ```
 
 ```text
@@ -306,8 +306,8 @@ per level, whitespace handled by hand, and one rule call per level for every ope
 **Non-associative operators.** Replace the repetition with `#repeat(0,1)`: it yields a list with at most one element, so
 `foldl` handles it unchanged, and a second operator is simply not consumed:
 
-```pego
-// chain-cmp.pego
+```zp
+// chain-cmp.zp
 type Bin = { L E; Op node[string]; R E }
 type E ~ node[string] | Bin
 
@@ -325,13 +325,13 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g chain-cmp.pego -f sexpr -i '1 + 2 <= 3'
-pego parse -g chain-cmp.pego -f sexpr -i '1 < 2 < 3'
+zp parse -g chain-cmp.zp -f sexpr -i '1 + 2 <= 3'
+zp parse -g chain-cmp.zp -f sexpr -i '1 < 2 < 3'
 ```
 
 ```text
 Bin{L: Bin{L: "1", Op: "+", R: "2"}, Op: "<=", R: "3"}
-pego: 1:7: syntax error: expected end of input, " ", "+", "-"
+zp: 1:7: syntax error: expected end of input, " ", "+", "-"
 ```
 
 ## Level-Restricted Calls
@@ -350,8 +350,8 @@ If a construct forbids a prefix at entry, guard its input explicitly, accounting
 
 The grammar below is the one from the specification: it has every kind of operator.
 
-```pego
-// js.pego
+```zp
+// js.zp
 type Comma = { L Expr; R Expr }
 type Assign = { L Expr; R Expr }
 type Cond = { Cond Expr; Then Expr; Else Expr }
@@ -392,12 +392,12 @@ rule ws = [ \t\r\n]*
 ```
 
 ```bash
-pego parse -g js.pego -s expr -f sexpr -i 'x, y'
-pego parse -g js.pego -s expr -f sexpr -i 'f(a = 1, b)(2)[3].x'
-pego parse -g js.pego -s expr -f sexpr -i 'a = b = c'
-pego parse -g js.pego -s expr -f sexpr -i 'a ? b : c ? d : e'
-pego parse -g js.pego -s expr -f sexpr -i '-a ** b'
-pego parse -g js.pego -s expr -f sexpr -i '2 ** -1'
+zp parse -g js.zp -s expr -f sexpr -i 'x, y'
+zp parse -g js.zp -s expr -f sexpr -i 'f(a = 1, b)(2)[3].x'
+zp parse -g js.zp -s expr -f sexpr -i 'a = b = c'
+zp parse -g js.zp -s expr -f sexpr -i 'a ? b : c ? d : e'
+zp parse -g js.zp -s expr -f sexpr -i '-a ** b'
+zp parse -g js.zp -s expr -f sexpr -i '2 ** -1'
 ```
 
 ```text
@@ -437,11 +437,11 @@ Things to notice:
 unexpected input. In the grammar of the previous section:
 
 ```bash
-pego parse -g js.pego -s expr -f sexpr -i 'a == b == c'
+zp parse -g js.zp -s expr -f sexpr -i 'a == b == c'
 ```
 
 ```text
-pego: 1:8: syntax error: expected "(", "*", "**", "+", ",", "-", ".", "/", "?", "["
+zp: 1:8: syntax error: expected "(", "*", "**", "+", ",", "-", ".", "/", "?", "["
 ```
 
 The reported position is the second `==`, and the list of expected tokens contains neither `==` nor `!=`, which is the
@@ -450,8 +450,8 @@ accurate message for a chain: the expression stops after `a == b`, and the start
 **Juxtaposition.** An infix operator may match the empty string, which is how application is written. It is a normal
 level, so you choose how tightly it binds:
 
-```pego
-// apply.pego
+```zp
+// apply.zp
 type Bin = { L E; Op node[string]; R E }
 type App = { Fn E; Arg E }
 type Neg = { X E }
@@ -473,10 +473,10 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g apply.pego -s e -f sexpr -i 'f x y'
-pego parse -g apply.pego -s e -f sexpr -i 'f x + g y'
-pego parse -g apply.pego -s e -f sexpr -i 'f -1'
-pego parse -g apply.pego -s e -f sexpr -i 'f (-1)'
+zp parse -g apply.zp -s e -f sexpr -i 'f x y'
+zp parse -g apply.zp -s e -f sexpr -i 'f x + g y'
+zp parse -g apply.zp -s e -f sexpr -i 'f -1'
+zp parse -g apply.zp -s e -f sexpr -i 'f (-1)'
 ```
 
 ```text
@@ -493,8 +493,8 @@ the empty operator match and the longer one wins (see [pitfalls](#pitfalls)). Th
 postfix operator of the same level is applied to the whole prefix expression: `-3!` is `(-3)!`. Put the postfix operator
 in a tighter level if you want `-(3!)`.
 
-```pego
-// same-level.pego
+```zp
+// same-level.zp
 type Neg = { X E }
 type Fact = { X E }
 type E ~ node[string] | Neg | Fact
@@ -518,8 +518,8 @@ rule num = [0-9]+ #atomic
 ```
 
 ```bash
-pego parse -g same-level.pego -s same -f sexpr -i '-3!'
-pego parse -g same-level.pego -s tighter -f sexpr -i '-3!'
+zp parse -g same-level.zp -s same -f sexpr -i '-3!'
+zp parse -g same-level.zp -s tighter -f sexpr -i '-3!'
 ```
 
 ```text
@@ -535,8 +535,8 @@ When an operator has no action, it produces a tuple of its parts: `(lhs, op, rhs
 `(lhs, op)` for postfix operators. Operands without an action appear unchanged. With source information, the tuple
 carries the rule name and the captures `lhs`, `op` and `rhs`:
 
-```pego
-// raw.pego
+```zp
+// raw.zp
 @start
 rule e = #operators {
     operand [0-9]+ #atomic
@@ -548,8 +548,8 @@ rule e = #operators {
 ```
 
 ```bash
-pego parse -g raw.pego -s e -f sexpr -i '-1+2*3!'
-pego parse -g raw.pego -s e -f sexpr -i '1+2+3'
+zp parse -g raw.zp -s e -f sexpr -i '-1+2*3!'
+zp parse -g raw.zp -s e -f sexpr -i '1+2+3'
 ```
 
 ```text
@@ -561,8 +561,8 @@ The input is `(-1) + (2 * (3!))`. The tree is as deep as the
 expression, not as deep as the number of levels. Compare the tree of a rule chain without actions, where even a bare
 number passes through every level:
 
-```pego
-// chain-cst.pego
+```zp
+// chain-cst.zp
 @start
 rule expr = term (("+" / "-") term)*
 rule term = factor (("*" / "/") factor)*
@@ -570,8 +570,8 @@ rule factor = [0-9]+ #atomic
 ```
 
 ```bash
-pego parse -g chain-cst.pego -s expr -f sexpr -i '7'
-pego parse -g raw.pego -s e -f sexpr -i '7'
+zp parse -g chain-cst.zp -s expr -f sexpr -i '7'
+zp parse -g raw.zp -s e -f sexpr -i '7'
 ```
 
 ```text
@@ -583,8 +583,8 @@ The default Operators Rule tree is a good starting point (nothing to write), but
 rule has a declared struct type, **every operator needs an action**, because the tuple is not assignable to a struct. A
 declared join that includes `node[_]` accepts the tuples, as `type E ~ node[_] | Bin` does:
 
-```pego
-// raw-typed.pego
+```zp
+// raw-typed.zp
 type Bin = { L node[string]; Op node[string]; R node[string] }
 @start
 rule t Bin = #operators {
@@ -595,12 +595,12 @@ rule num = [0-9]+ #atomic
 ```
 
 ```bash
-pego parse -g raw-typed.pego -s t -i '1+2'
+zp parse -g raw-typed.zp -s t -i '1+2'
 ```
 
 ```text
-pego: raw-typed.pego:4:1: operatorsRule t produces node[string], which is not assignable to Bin
-raw-typed.pego:4:1: operators of t without an action produce a tuple node, which is not assignable to Bin
+zp: raw-typed.zp:4:1: operatorsRule t produces node[string], which is not assignable to Bin
+raw-typed.zp:4:1: operators of t without an action produce a tuple node, which is not assignable to Bin
 ```
 
 A rule declared with exactly a named node type, as `type E = node[_]` and `rule t E = #operators { ... }`, converts every
@@ -613,8 +613,8 @@ it `rule num E = ...`), or the Operators Rule must be declared as a join that in
 Operator actions refer to their operands as `$lhs`, `$rhs` and `$op`, and to the captures in the operator part. Operand
 actions use the captures of their line:
 
-```pego
-// operand-captures.pego
+```zp
+// operand-captures.zp
 type Paren = { X E }
 type E ~ node[string] | Paren
 
@@ -627,7 +627,7 @@ rule num = [0-9]+ #atomic
 ```
 
 ```bash
-pego parse -g operand-captures.pego -s e -f sexpr -i '((1))'
+zp parse -g operand-captures.zp -s e -f sexpr -i '((1))'
 ```
 
 ```text
@@ -640,8 +640,8 @@ An action after the closing `}` computes the rule's value from the complete expr
 rule, after the last operator is applied, and reads the folded value as `$value`. Building the right operand of an
 operator is part of the same call, so the action never sees an intermediate result:
 
-```pego
-// whole-action.pego
+```zp
+// whole-action.zp
 type Expr = { Root _ }
 
 @start
@@ -654,8 +654,8 @@ rule e Expr = #operators {
 ```
 
 ```bash
-pego parse -g whole-action.pego -s e -f sexpr -i '1 + 2 + 3'
-pego parse -g whole-action.pego -s e -f sexpr -i '(1 + 2) + 3'
+zp parse -g whole-action.zp -s e -f sexpr -i '1 + 2 + 3'
+zp parse -g whole-action.zp -s e -f sexpr -i '(1 + 2) + 3'
 ```
 
 ```text
@@ -717,8 +717,8 @@ pick another name such as `atom`. The complete list is in
 
 **An operand cannot call its own rule at the start.** It would be left recursion inside the loop. The compiler says so:
 
-```pego
-// operand-lr.pego
+```zp
+// operand-lr.zp
 @start
 rule e = #operators {
     operand e "!"
@@ -728,11 +728,11 @@ rule e = #operators {
 ```
 
 ```bash
-pego parse -g operand-lr.pego -s e -i '1'
+zp parse -g operand-lr.zp -s e -i '1'
 ```
 
 ```text
-pego: operand-lr.pego:3:20: operand of e calls e at its start (left recursion); use infix or postfix instead
+zp: operand-lr.zp:3:20: operand of e calls e at its start (left recursion); use infix or postfix instead
 ```
 
 Write `!` as a postfix operator instead.
@@ -748,8 +748,8 @@ part fails, the operator is not applied, and the error is reported at the farthe
 which no operator can continue). After the last token the Operators Rule stops, so the rule that uses it must
 consume trailing whitespace (the `main` rules of the calculators say `ws $$`).
 
-```pego
-// skip.pego
+```zp
+// skip.zp
 type Cond = { C E; T E; F E }
 type E ~ node[string] | Cond
 
@@ -773,13 +773,13 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g skip.pego -s loose -f sexpr -i 'a ? b : c'
-pego parse -g skip.pego -s loose -f sexpr -i 'a ? b: c'
-pego parse -g skip.pego -s tight -f sexpr -i 'a ? b : c'
+zp parse -g skip.zp -s loose -f sexpr -i 'a ? b : c'
+zp parse -g skip.zp -s loose -f sexpr -i 'a ? b: c'
+zp parse -g skip.zp -s tight -f sexpr -i 'a ? b : c'
 ```
 
 ```text
-pego: 1:7: syntax error: expected "?"
+zp: 1:7: syntax error: expected "?"
 Cond{C: "a", F: "c", T: "b"}
 Cond{C: "a", F: "c", T: "b"}
 ```
@@ -795,8 +795,8 @@ order, and `1 <= 2` parses as expected (in rule-based grammars `"<" / "<="` is t
 Second, `a ++b` is a postfix `++` followed by an unexpected `b`, and not `a + (+b)`, even though both are
 syntactically possible:
 
-```pego
-// munch.pego
+```zp
+// munch.zp
 type Bin = { L E; Op node[string]; R E }
 type Un = { Op node[string]; X E }
 type Post = { X E; Op node[string] }
@@ -817,14 +817,14 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g munch.pego -f sexpr -i '1 + +2'
-pego parse -g munch.pego -f sexpr -i '1 ++2'
-pego parse -g munch.pego -f sexpr -i '1 ++'
+zp parse -g munch.zp -f sexpr -i '1 + +2'
+zp parse -g munch.zp -f sexpr -i '1 ++2'
+zp parse -g munch.zp -f sexpr -i '1 ++'
 ```
 
 ```text
 Bin{L: "1", Op: "+", R: Un{Op: "+", X: "2"}}
-pego: 1:5: syntax error: expected end of input, "+", "++"
+zp: 1:5: syntax error: expected end of input, "+", "++"
 Post{Op: "++", X: "1"}
 ```
 
@@ -833,8 +833,8 @@ As in C, write `1 + +2` with a space between the operators.
 **Word operators need a word boundary.** `"and"` also matches the start of `android`. Check the boundary in the
 operator part with a negative lookahead, and exclude the keywords from identifiers:
 
-```pego
-// words.pego
+```zp
+// words.zp
 type Bin = { L E; Op node[(node[string],)]; R E }
 type Not = { X E }
 type E ~ node[string] | Bin | Not
@@ -854,8 +854,8 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g words.pego -s e -f sexpr -i 'a or b and not c'
-pego parse -g words.pego -s e -f sexpr -i 'notable or a'
+zp parse -g words.zp -s e -f sexpr -i 'a or b and not c'
+zp parse -g words.zp -s e -f sexpr -i 'notable or a'
 ```
 
 ```text
@@ -868,8 +868,8 @@ operator and ends the expression there, leaving the operator for the enclosing r
 rule reports the error at the farthest failure), but if the same text can also continue differently, the expression
 quietly ends early. A cut (`#cut`) in the operator part commits to the operator:
 
-```pego
-// cut.pego
+```zp
+// cut.zp
 type Bin = { L E; Op node[(node[string],)]; R E }
 type E ~ node[string] | Bin
 
@@ -893,13 +893,13 @@ rule ws = " "*
 ```
 
 ```bash
-pego parse -g cut.pego -s m1 -f sexpr -i '1 + x'
-pego parse -g cut.pego -s m2 -f sexpr -i '1 + x'
+zp parse -g cut.zp -s m1 -f sexpr -i '1 + x'
+zp parse -g cut.zp -s m2 -f sexpr -i '1 + x'
 ```
 
 ```text
 ("1" [" "] "+" [" "] "x")
-pego: 1:5: syntax error: expected [0-9]
+zp: 1:5: syntax error: expected [0-9]
 ```
 
 Without the cut, `1 + x` is the number `1` followed by the literal text `+ x`; with it, the `+` is an operator and the
@@ -910,10 +910,10 @@ check the order of its alternatives first.
 
 ## A Larger Example: Minilang
 
-[`examples/minilang`](../../examples/minilang/minilang.pego) is a small language where statements are ordinary PEG rules
+[`examples/minilang`](../../examples/minilang/minilang.zp) is a small language where statements are ordinary PEG rules
 and expressions are one Operators Rule, nested in each other. The pieces that matter for this guide:
 
-```pego
+```zp
 rule expr Expr = e:operation @error(message="expected an expression") => $e
 
 rule operation Expr = #operators {
@@ -952,9 +952,9 @@ rule args = first:expr rest:(-ws -"," x:expr)* => concat(list($first), map($rest
 Parsing a few statements with the real grammar:
 
 ```bash
-pego parse -g examples/minilang/minilang.pego -f sexpr -i 'let x = a + b * c;'
-pego parse -g examples/minilang/minilang.pego -f sexpr -i 'f(1)(2)[3].x;'
-pego parse -g examples/minilang/minilang.pego -f sexpr -i 'let z = -f(x) * 2;'
+zp parse -g examples/minilang/minilang.zp -f sexpr -i 'let x = a + b * c;'
+zp parse -g examples/minilang/minilang.zp -f sexpr -i 'f(1)(2)[3].x;'
+zp parse -g examples/minilang/minilang.zp -f sexpr -i 'let z = -f(x) * 2;'
 ```
 
 ```text

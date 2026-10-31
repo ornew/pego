@@ -13,7 +13,7 @@ import (
 // failed until the text changed.
 func TestIncompletePackageClause(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///package.pego"
+	uri := "file:///package.zp"
 	c.open(uri, "rule a = b\n")
 	for i, text := range []string{"package ", "package", "package {", "package\nrule a = \"x\""} {
 		d := change(c, uri, i+2, map[string]any{"text": text})
@@ -34,19 +34,19 @@ func TestIncompletePackageClause(t *testing.T) {
 func TestHostileInput(t *testing.T) {
 	c := newInitialized(t)
 	junk := "rule a = \"x\"\n" + strings.Repeat("`'😀", 1<<19)
-	if d := c.open("file:///junk.pego", junk); len(d) != 1 || !strings.HasPrefix(d[0].Message, "unexpected characters") {
+	if d := c.open("file:///junk.zp", junk); len(d) != 1 || !strings.HasPrefix(d[0].Message, "unexpected characters") {
 		t.Errorf("junk: %d diagnostics, the first %+v", len(d), d[:min(len(d), 1)])
 	}
-	if d := c.open("file:///deep.pego", "rule a = "+strings.Repeat("(\n", 1<<20)); messages(d) != "nesting too deep" {
+	if d := c.open("file:///deep.zp", "rule a = "+strings.Repeat("(\n", 1<<20)); messages(d) != "nesting too deep" {
 		t.Errorf("deep nesting: %.200s", messages(d))
 	}
 	// Separate invalid characters: the parser records at most 100 errors.
-	if d := c.open("file:///many.pego", strings.Repeat("` ", 10000)); len(d) != 101 || d[100].Message != "too many errors" {
+	if d := c.open("file:///many.zp", strings.Repeat("` ", 10000)); len(d) != 101 || d[100].Message != "too many errors" {
 		t.Errorf("many syntax errors: %d diagnostics", len(d))
 	}
 	// Compile errors: the server publishes at most 100.
 	refs := strings.Repeat(" x", 300)
-	if d := c.open("file:///undefined.pego", "@start\nrule a ="+refs); len(d) != 101 || d[100].Message != "200 more errors" || d[100].Range != rng(1, 209, 1, 210) {
+	if d := c.open("file:///undefined.zp", "@start\nrule a ="+refs); len(d) != 101 || d[100].Message != "200 more errors" || d[100].Range != rng(1, 209, 1, 210) {
 		t.Errorf("many compile errors: %d diagnostics, the last %+v", len(d), d[len(d)-1])
 	}
 	c.exit()
@@ -57,7 +57,7 @@ func TestHostileInput(t *testing.T) {
 // accepting a capture or a rule there (Enter after typing them) broke the expression.
 func TestCompletionAfterTriggerCharacters(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///trigger.pego"
+	uri := "file:///trigger.zp"
 	lines := []string{
 		`rule a = x:"a" $`,
 		`rule b = x:"a" $x`,
@@ -87,7 +87,7 @@ func TestCompletionAfterTriggerCharacters(t *testing.T) {
 // but not defined: the references to that name would silently start to refer to it.
 func TestRenameToUndefinedName(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///undefined.pego"
+	uri := "file:///undefined.zp"
 	c.open(uri, "rule a = b c\nrule b = \"x\"\ntype T = { F U }\nrule d T = \"d\"")
 	for _, tc := range []struct {
 		line, char int
@@ -113,7 +113,7 @@ func TestRenameToUndefinedName(t *testing.T) {
 // sequence, from its backslash.
 func TestEscapeErrorRange(t *testing.T) {
 	c := newInitialized(t)
-	d := c.open("file:///escape.pego", "rule a = \"😀\\q\" ` b")
+	d := c.open("file:///escape.zp", "rule a = \"😀\\q\" ` b")
 	if len(d) != 2 || d[0].Range != rng(0, 12, 0, 14) || d[1].Range != rng(0, 16, 0, 17) {
 		t.Errorf("diagnostics %+v", d)
 	}
@@ -126,7 +126,7 @@ func TestDecimalReferenceErrorRange(t *testing.T) {
 		c := newInitialized(t)
 		end := len(utf16.Encode([]rune(prefix + "$" + digits)))
 		start := len(utf16.Encode([]rune(prefix)))
-		d := c.open("file:///decimal.pego", prefix+"$"+digits+"\nrule after = \"ok\"")
+		d := c.open("file:///decimal.zp", prefix+"$"+digits+"\nrule after = \"ok\"")
 		if len(d) != 1 || !strings.Contains(d[0].Message, "invalid positional reference") || d[0].Range != rng(0, start, 0, end) {
 			t.Errorf("%q: diagnostics %+v", digits, d)
 		}
@@ -138,7 +138,7 @@ func TestDecimalReferenceErrorRange(t *testing.T) {
 // which used to read as one comment line: no definitions, no diagnostics.
 func TestLoneCarriageReturns(t *testing.T) {
 	c := newInitialized(t)
-	uri := "file:///cr.pego"
+	uri := "file:///cr.zp"
 	text := "// The rules.\r@start\rrule a = b x // c\rrule b = \"😀\"\r"
 	d := c.open(uri, text)
 	if messages(d) != "undefined rule x" || d[0].Range != rng(2, 11, 2, 12) {
@@ -174,17 +174,17 @@ func TestFailedAnalysis(t *testing.T) {
 	const want = "internal error while analyzing the document: boom"
 
 	// The first version fails: an empty analysis.
-	if d := c.open("file:///new.pego", "rule BOOM = x"); messages(d) != want {
+	if d := c.open("file:///new.zp", "rule BOOM = x"); messages(d) != want {
 		t.Errorf("diagnostics %+v", d)
 	}
 	var syms []DocumentSymbol
-	c.requestInto("textDocument/documentSymbol", docParams("file:///new.pego"), &syms)
+	c.requestInto("textDocument/documentSymbol", docParams("file:///new.zp"), &syms)
 	if len(syms) != 0 {
 		t.Errorf("symbols %+v", syms)
 	}
 
 	// A later version fails: the analysis of the earlier one is kept.
-	uri := "file:///boom.pego"
+	uri := "file:///boom.zp"
 	c.open(uri, "rule a = \"x\"\n@start\nrule main = a")
 	if d := change(c, uri, 2, edit(1, 0, 1, 0, "# BOOM\n")); messages(d) != want {
 		t.Errorf("diagnostics %+v", d)

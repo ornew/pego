@@ -1,6 +1,6 @@
 # Using the Ready-Made Parsers
 
-[parsers/](../../parsers/README.md) holds complete parsers for ten languages, written in PEGO and generated into Go:
+[parsers/](../../parsers/README.md) holds complete parsers for ten languages, written in ZeroParse and generated into Go:
 CEL, CSV, CUE, DuckDB SQL, Go, JSON, Python, TypeScript, XML and YAML. You import one, call a function and get a tree
 or an error, with nothing to compile or generate at run time. This guide is for the program that uses them: how to
 pick an entry point, how to read the tree, what the positions mean, how errors look, what the limits are, and how to
@@ -19,34 +19,34 @@ it differs from the reference implementation; this guide covers what they have i
 
 ## Install
 
-Each parser is a Go module of its own. It depends only on the standard library and the PEGO runtime package (`github.com/ornew/pego/runtime`, which itself needs
-nothing else), not on the PEGO engine and not on the language's own implementation (DuckDB's parser does not need DuckDB):
+Each parser is a Go module of its own. It depends only on the standard library and the ZeroParse runtime package (`github.com/ornew/zeroparse/runtime`, which itself needs
+nothing else), not on the ZeroParse engine and not on the language's own implementation (DuckDB's parser does not need DuckDB):
 
-Until PEGO publishes a release, the ready-made parser modules depend on the `github.com/ornew/pego` module through a
-local `replace` directive (`replace github.com/ornew/pego => ../..` in each parser's `go.mod`). That directive only
-applies inside the repository, so `go get github.com/ornew/pego/parsers/json` does not work from another module. Use a
+Until ZeroParse publishes a release, the ready-made parser modules depend on the `github.com/ornew/zeroparse` module through a
+local `replace` directive (`replace github.com/ornew/zeroparse => ../..` in each parser's `go.mod`). That directive only
+applies inside the repository, so `go get github.com/ornew/zeroparse/parsers/json` does not work from another module. Use a
 parser from a checkout of the repository, in one of two ways.
 
 With a `go.work` file next to your module's `go.mod`:
 
 ```bash
 go work init .
-go work use ~/src/pego ~/src/pego/parsers/json
+go work use ~/src/zeroparse ~/src/zeroparse/parsers/json
 ```
 
 or with `replace` directives in your own `go.mod`, which the `go.mod` of the parser cannot supply for you:
 
 ```text
-require github.com/ornew/pego/parsers/json v0.0.0
+require github.com/ornew/zeroparse/parsers/json v0.0.0
 
-replace github.com/ornew/pego/parsers/json => /path/to/pego/parsers/json
-replace github.com/ornew/pego => /path/to/pego
+replace github.com/ornew/zeroparse/parsers/json => /path/to/zp/parsers/json
+replace github.com/ornew/zeroparse => /path/to/zp
 ```
 
-(`/path/to/pego` is the full path of your checkout; `go.mod` does not expand `~`.) Run `go mod tidy` afterwards to record the requirement of the `github.com/ornew/pego` module. Then import the parser:
+(`/path/to/zp` is the full path of your checkout; `go.mod` does not expand `~`.) Run `go mod tidy` afterwards to record the requirement of the `github.com/ornew/zeroparse` module. Then import the parser:
 
 ```go
-import "github.com/ornew/pego/parsers/json"
+import "github.com/ornew/zeroparse/parsers/json"
 ```
 
 The parsers are generated code, and large ones are very large: the `parser.go` of the JSON parser is a few hundred
@@ -57,7 +57,7 @@ cold build cache (with other builds running), the Go one about 11. They are the 
 
 ## What Every Parser Offers
 
-All ten have the API of a parser generated with `pego gen -types -recognize`
+All ten have the API of a parser generated with `zp gen -types -recognize`
 ([code generation](generated-go-api.md#the-generated-api)):
 
 | | |
@@ -93,15 +93,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ornew/pego/parsers/csv"
-	"github.com/ornew/pego/parsers/yaml"
+	"github.com/ornew/zeroparse/parsers/csv"
+	"github.com/ornew/zeroparse/parsers/yaml"
 )
 
 func main() {
 	header, rows, err := csv.Table("id,name\n1,alice\n2,\"bob, jr\"\n")
 	fmt.Println(header, rows, err)
 
-	v, err := yaml.Load("name: pego\ntags: [peg, operators-rule]\nstars: 42\n")
+	v, err := yaml.Load("name: zp\ntags: [peg, operators-rule]\nstars: 42\n")
 	fmt.Println(v, err)
 
 	_, _, err = csv.Table("id,name\n1\n")
@@ -112,7 +112,7 @@ func main() {
 
 ```text
 [id name] [[1 alice] [2 bob, jr]] <nil>
-map[name:pego stars:42 tags:[peg operators-rule]] <nil>
+map[name:zp stars:42 tags:[peg operators-rule]] <nil>
 true csv: line 2: record has 1 fields, the header has 2
 ```
 
@@ -127,7 +127,7 @@ There are four kinds of entry point, and the same input costs different amounts 
 |:--|:--|:--|
 | The language's own (`Decode`, `Load`, `ParseFile`, `ParseModule`, `ParseExpr`, `Records`) | Values or a tree as the language's tools produce them, after the checks that the language's reference does and that are not part of its grammar | You want what the reference implementation would give you: it accepts what the reference accepts |
 | `ParseAST` | The grammar's own typed values, with positions | You analyze or transform the source and need to know where everything is, or the language has no value form (SQL, TypeScript) |
-| `Parse` | The generic `*Node` tree, as the engine builds it | You work with several PEGO grammars at once, or compare with the engine ([testing](testing-grammars.md)) |
+| `Parse` | The generic `*Node` tree, as the engine builds it | You work with several ZeroParse grammars at once, or compare with the engine ([testing](testing-grammars.md)) |
 | `Recognize`, `Valid` | Only whether the input is valid | You validate input and do not need the tree |
 
 Note the first row: `ParseAST` is the grammar alone. The language's own function also runs the checks that a grammar
@@ -151,7 +151,7 @@ a quarter of the memory. Prefer it. And `Valid` (`Recognize`) builds nothing, bu
 hand-written scanner: here it takes about as long as `ParseAST` and is 11 times slower than `encoding/json`'s `Valid`.
 Use it to avoid allocating, not to save time. These are the numbers of one grammar and one input; measure yours.
 How these compare with the engine's backends is in [benchmarks.md](../benchmarks.md) and
-[performance.md](../performance.md#where-pego-stands).
+[performance.md](../performance.md#where-zeroparse-stands).
 
 ## Reading the Tree
 
@@ -168,7 +168,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ornew/pego/parsers/json"
+	"github.com/ornew/zeroparse/parsers/json"
 )
 
 // lineCol converts an offset in code points to a 1-based line and column.
@@ -256,7 +256,7 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/ornew/pego/parsers/golang"
+	"github.com/ornew/zeroparse/parsers/golang"
 )
 
 const src = `package shapes
@@ -327,7 +327,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/zeroparse/parsers/duckdb"
 )
 
 const script = `
@@ -376,7 +376,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ornew/pego/parsers/json"
+	"github.com/ornew/zeroparse/parsers/json"
 )
 
 func main() {
@@ -415,8 +415,8 @@ Do not mix units: if you parse with `Bytes` and report to an editor that counts 
 
 ## Errors
 
-A parse that fails returns a `*SyntaxError` of the parser's own package (not `pego.SyntaxError`: the parsers do not
-import PEGO). Use `errors.As`:
+A parse that fails returns a `*SyntaxError` of the parser's own package (not `zeroparse.SyntaxError`: the parsers do not
+import ZeroParse). Use `errors.As`:
 
 ```go
 _, err := json.ParseAST(`{"a": [1, 2,]}`)
@@ -469,19 +469,19 @@ Limits to plan for:
 ## Using the Grammar With the Engine
 
 The generated Go code gives up what the engine offers: streaming, incremental reparsing, the choice of backend and
-the tools (`pego trace`, `pego profile`, `pego sample`). The grammar each parser is generated from, `<language>.pego`, is
+the tools (`zp trace`, `zp profile`, `zp sample`). The grammar each parser is generated from, `<language>.zp`, is
 in its module, so you can use it with the engine without copying it. Find it in the module cache:
 
 ```bash
-go list -m -f '{{.Dir}}' github.com/ornew/pego/parsers/csv    # the directory of the module, with csv.pego in it
+go list -m -f '{{.Dir}}' github.com/ornew/zeroparse/parsers/csv    # the directory of the module, with csv.zp in it
 ```
 
-and give it to `pego parse`, or read it in Go and compile it with `pego.CompileSource`. The CSV grammar marks its
+and give it to `zp parse`, or read it in Go and compile it with `zeroparse.CompileSource`. The CSV grammar marks its
 records with `#stream`, so a file larger than memory can be read one record at a time:
 
 ```bash
-csv=$(go list -m -f '{{.Dir}}' github.com/ornew/pego/parsers/csv)/csv.pego
-printf 'id,name\n1,alice\n2,"bob, jr"\n' | pego parse -g "$csv" -stream -f sexpr
+csv=$(go list -m -f '{{.Dir}}' github.com/ornew/zeroparse/parsers/csv)/csv.zp
+printf 'id,name\n1,alice\n2,"bob, jr"\n' | zp parse -g "$csv" -stream -f sexpr
 ```
 
 ```text
@@ -491,19 +491,19 @@ Record{Fields: ["2" "\"bob, jr\""]}
 ```
 
 The same grammar works with `NewDocument` for incremental parsing of an edited text
-([incremental parsing](incremental.md)), and `pego sample -g csv.pego` generates inputs for tests
+([incremental parsing](incremental.md)), and `zp sample -g csv.zp` generates inputs for tests
 ([testing grammars](testing-grammars.md)). The engine gives the same trees as the generated parser, because the parser
 is generated from the same grammar and tested against it on every backend
 ([parsers/README.md](../../parsers/README.md#development)). The price is the engine's speed against generated code
-([code generation](code-generation.md#why-generate)) and a dependency on `github.com/ornew/pego`.
+([code generation](code-generation.md#why-generate)) and a dependency on `github.com/ornew/zeroparse`.
 
 ## When to Write Your Own
 
 If a ready-made parser matches what you need, use it: it has been checked against the language's reference on far more
 input than you will write tests for. Write your own grammar when the language is not here, or when you need a variant:
 a subset, a dialect, an extra construct, a tree shaped for your program. The ready-made grammars are also the best
-examples of large PEGO grammars: [parsers/json/json.pego](../../parsers/json/json.pego) is 41 lines,
-[parsers/csv/csv.pego](../../parsers/csv/csv.pego) 28, and you can copy one and change it (each module carries its own
+examples of large ZeroParse grammars: [parsers/json/json.zp](../../parsers/json/json.zp) is 41 lines,
+[parsers/csv/csv.zp](../../parsers/csv/csv.zp) 28, and you can copy one and change it (each module carries its own
 licence file). [Code generation](code-generation.md) turns a grammar of your own into a package like these.
 
 ## See Also

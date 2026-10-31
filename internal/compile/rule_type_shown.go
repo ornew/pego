@@ -1,6 +1,6 @@
 package compile
 
-import "github.com/ornew/pego/grammar"
+import "github.com/ornew/zeroparse/grammar"
 
 // shownRuleTypes returns the type of each rule as Program.RuleType shows it: the declared type of
 // a rule with one, and otherwise the rule's value type, in which a reference to a rule with a

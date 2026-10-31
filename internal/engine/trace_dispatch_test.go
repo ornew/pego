@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // TestTraceFirstCharacterDispatch records executed calls, not synthetic calls

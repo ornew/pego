@@ -7,15 +7,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
-// PEGO_GENERATED_SHARING_DIR preserves standalone controls for prebuilt
+// ZP_GENERATED_SHARING_DIR preserves standalone controls for prebuilt
 // parsing, generation-size, compiler-cost and binary-size measurements.
 func TestGeneratedSharingWorkloads(t *testing.T) {
 	t.Parallel()
-	if os.Getenv("PEGO_GENERATED_SHARING_DIR") != "" {
+	if os.Getenv("ZP_GENERATED_SHARING_DIR") != "" {
 		// The preserved controls have one layout, so they are written in one form.
 		gentest.PinOrdinary(t)
 		testGeneratedSharingWorkloads(t)
@@ -28,14 +28,14 @@ func testGeneratedSharingWorkloads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone controls")
 	}
-	dir := os.Getenv("PEGO_GENERATED_SHARING_DIR")
+	dir := os.Getenv("ZP_GENERATED_SHARING_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}
 	node, _ := exec.LookPath("node")
 	for _, lang := range []string{"json", "typescript"} {
 		t.Run(lang, func(t *testing.T) {
-			src, err := os.ReadFile(filepath.Join("../../parsers", lang, lang+".pego"))
+			src, err := os.ReadFile(filepath.Join("../../parsers", lang, lang+".zp"))
 			if err != nil {
 				t.Fatal(err)
 			}

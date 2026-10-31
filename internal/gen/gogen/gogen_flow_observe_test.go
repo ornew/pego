@@ -15,10 +15,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 // observeProbeMain is the consumer of the generated packages with the prefix PREFIX: for each input and entry
@@ -33,10 +33,10 @@ import (
 	"os"
 	"strings"
 
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 IMPORTS)
 
-var entries = []struct{ parse, recognize func(string, ...pegort.ParseOption) error }{
+var entries = []struct{ parse, recognize func(string, ...zprt.ParseOption) error }{
 ENTRIES}
 
 func sum(v any) string {
@@ -44,11 +44,11 @@ func sum(v any) string {
 	return fmt.Sprintf("%x", sha256.Sum256(b))[:16]
 }
 
-func report(id, name string, run func(string, ...pegort.ParseOption) error, in string, detail bool) {
-	var events []pegort.TraceEvent
-	err := run(in, pegort.WithTrace(func(e pegort.TraceEvent) { events = append(events, e) }))
-	var prof pegort.Profile
-	perr := run(in, pegort.WithProfile(&prof))
+func report(id, name string, run func(string, ...zprt.ParseOption) error, in string, detail bool) {
+	var events []zprt.TraceEvent
+	err := run(in, zprt.WithTrace(func(e zprt.TraceEvent) { events = append(events, e) }))
+	var prof zprt.Profile
+	perr := run(in, zprt.WithProfile(&prof))
 	snap := prof.Snapshot()
 	snap.Time = 0
 	for i := range snap.Rules {
@@ -87,10 +87,10 @@ func observeSources(pkg string, n int) string {
 	var imports, entries strings.Builder
 	for i := 0; i < n; i++ {
 		fmt.Fprintf(&imports, "\t%s%d \"obsprobe/%s%d\"\n", pkg, i, pkg, i)
-		fmt.Fprintf(&entries, `	{parse: func(in string, opts ...pegort.ParseOption) error {
+		fmt.Fprintf(&entries, `	{parse: func(in string, opts ...zprt.ParseOption) error {
 		_, err := %[1]s%[2]d.Parse(in, opts...)
 		return err
-	}, recognize: func(in string, opts ...pegort.ParseOption) error { return %[1]s%[2]d.Recognize(in, opts...) }},
+	}, recognize: func(in string, opts ...zprt.ParseOption) error { return %[1]s%[2]d.Recognize(in, opts...) }},
 `, pkg, i)
 	}
 	return strings.NewReplacer("IMPORTS", imports.String(), "ENTRIES", entries.String()).Replace(observeProbeMain)

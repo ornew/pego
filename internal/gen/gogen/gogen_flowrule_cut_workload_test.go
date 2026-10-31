@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
-// PEGO_TYPED_CUT_DIR preserves both latest-generator variants so their test
+// ZP_TYPED_CUT_DIR preserves both latest-generator variants so their test
 // binaries can be built once and measured in alternating benchmark runs.
 func TestGeneratedTypedCutWorkload(t *testing.T) {
 	t.Parallel()
@@ -30,7 +30,7 @@ rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / 
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir := os.Getenv("PEGO_TYPED_CUT_DIR")
+	dir := os.Getenv("ZP_TYPED_CUT_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}

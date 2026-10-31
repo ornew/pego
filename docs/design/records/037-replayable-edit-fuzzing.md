@@ -6,7 +6,7 @@
 
 ## Summary
 
-Add a Go API and `pego edit-fuzz` command that exercise arbitrary grammars against `Document` by applying deterministic edit-operation sequences and comparing each checked state with a fresh parse. A failure is saved as a versioned event log containing the exact input and replacements as bytes, so replay does not depend on a random-number implementation or future generator choices. The tool also minimizes a failing sequence while preserving a stable failure signature.
+Add a Go API and `zp edit-fuzz` command that exercise arbitrary grammars against `Document` by applying deterministic edit-operation sequences and comparing each checked state with a fresh parse. A failure is saved as a versioned event log containing the exact input and replacements as bytes, so replay does not depend on a random-number implementation or future generator choices. The tool also minimizes a failing sequence while preserving a stable failure signature.
 
 Illustrative saved input:
 
@@ -34,7 +34,7 @@ Text and replacement payloads are base64-encoded raw bytes; edit offsets use the
 
 ## Implementation
 
-Package [`editfuzz`](../../../editfuzz) and `pego edit-fuzz` implement this design; the guide is
+Package [`editfuzz`](../../../editfuzz) and `zp edit-fuzz` implement this design; the guide is
 [fuzzing edits](../../guide/sampling-and-fuzzing.md#fuzzing-edits). The implementation settles the open names and refines some
 rules:
 
@@ -43,7 +43,7 @@ rules:
   `Replay` returns a `*Mismatch` or an `*InvalidError`. `Options` also has `Sequences`, `Minimize` and
   `MaxAttempts`, which the CLI exposes as `-sequences`, `-minimize` and `-max-attempts`.
 - Units are written `codepoints` and `bytes`, and backends `closure`, `bytecode` and `bytecode-iterative`, the names
-  of the other `pego` commands. `-backend` and `-unit` take comma-separated lists and default to all of them.
+  of the other `zp` commands. `-backend` and `-unit` take comma-separated lists and default to all of them.
 - Undo and redo do not apply the inverse of the recorded edit. Undo restores the observed text with the smallest
   single edit on character boundaries, found by a common prefix and suffix of whole characters. Such an edit
   always reproduces the exact bytes, so there is no rebuild fallback: a Document that ends with other text is a
@@ -66,7 +66,7 @@ rules:
   representation they choose for texts of 4 KiB or more.
 - Failure files are named after a hash of their contents and created with a hard link from a synced temporary file,
   or exclusively where hard links are unsupported, so an existing file is never replaced; saving identical
-  contents returns the existing file. Writing validates a sequence as reading does. `pego edit-fuzz`
+  contents returns the existing file. Writing validates a sequence as reading does. `zp edit-fuzz`
   requires `-save-failures` with `-minimize` when it generates sequences, and rejects generation flags with
   `-replay`.
 
@@ -95,7 +95,7 @@ A seed alone is not a durable reproducer: changes in generator logic, corpus ord
 
 ### Public Behavior and Contracts
 
-Provide a small `sample`-adjacent Go API and the `pego edit-fuzz` command. Package placement is open to a prototype; the proposed entry point is:
+Provide a small `sample`-adjacent Go API and the `zp edit-fuzz` command. Package placement is open to a prototype; the proposed entry point is:
 
 ```go
 type EditFuzzOptions struct {
@@ -112,7 +112,7 @@ func ReplayEdits(grammarSource []byte, sequence EditSequence) error
 func MinimizeEdits(grammarSource []byte, sequence EditSequence) (EditSequence, error)
 ```
 
-The CLI accepts `-g grammar.pego`, `-s start`, `-backend`, `-unit byte|rune`, `-seed`, `-corpus`, `-operations`, `-save-failures`, `-replay` and `-minimize`. Corpus files are read as bytes; absent an explicit corpus, seeded `sample` output can provide initial text. Corpus paths are sorted before seeded selection. A replay file takes precedence over generation. Its `grammar_sha256` is computed over the exact grammar source bytes before parsing, with `grammar_normalization: "none"`; this detects accidental source mismatch. The Go entry points also take exact grammar source bytes, verify the saved hash before replay or minimization, and compile their own parser with the recorded options. A precompiled `Parser` is insufficient provenance because it does not retain the original source; formatting its AST cannot reconstruct the source hash. The hash does not make replay safe for untrusted grammars.
+The CLI accepts `-g grammar.zp`, `-s start`, `-backend`, `-unit byte|rune`, `-seed`, `-corpus`, `-operations`, `-save-failures`, `-replay` and `-minimize`. Corpus files are read as bytes; absent an explicit corpus, seeded `sample` output can provide initial text. Corpus paths are sorted before seeded selection. A replay file takes precedence over generation. Its `grammar_sha256` is computed over the exact grammar source bytes before parsing, with `grammar_normalization: "none"`; this detects accidental source mismatch. The Go entry points also take exact grammar source bytes, verify the saved hash before replay or minimization, and compile their own parser with the recorded options. A precompiled `Parser` is insufficient provenance because it does not retain the original source; formatting its AST cannot reconstruct the source hash. The hash does not make replay safe for untrusted grammars.
 
 An `EditSequence` contains schema version, raw grammar hash and normalization metadata, start rule, backend, position unit, seed for provenance, base64-encoded initial bytes and ordered operations. Edit replacements are also base64 raw bytes, preserving invalid UTF-8 exactly through JSON. In byte mode offsets count bytes and must be valid character boundaries under the existing `Document.Edit` contract. In rune mode offsets count the parser's decoded code points, including its documented handling of invalid UTF-8 bytes. Each edit's offsets refer to the current text immediately before that event.
 

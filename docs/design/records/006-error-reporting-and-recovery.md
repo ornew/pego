@@ -30,7 +30,7 @@ The reported position is the farthest position reached inside the expression, no
 | Approach | Overview | Decision |
 |:--|:--|:--|
 | Labeled failures with recovery rules | Attach labels to failures and define a recovery rule per label outside the grammar | Expressive, but the mapping between labels and recovery rules must be maintained separately |
-| Synchronization tokens | On failure, skip to a specific token | Simple, but does not fit PEGO, which has no tokens (no scanner) |
+| Synchronization tokens | On failure, skip to a specific token | Simple, but does not fit ZeroParse, which has no tokens (no scanner) |
 | **`#recover(skip=expr)` on an expression** | On failure, skip the input described by a parser expression | Adopted. Where to recover and how to skip are written in the same place. |
 
 ### Recovered Errors and Backtracking

@@ -21,7 +21,7 @@ input. No peak or retained-heap reduction was measured.
 This applies only to engine `Document` parsing with the recursive or iterative
 bytecode VM. Closure documents do not retain the stack; ordinary `Parse`,
 generated parsers and TypeScript are unchanged. The compile-time
-`pego_reference_document_vm_values` tag restores fresh-stack allocation for
+`zp_reference_document_vm_values` tag restores fresh-stack allocation for
 same-revision comparisons without a runtime selector. `Document` contains one
 additional slice header (24 bytes on the measured 64-bit host and 12 bytes on
 linux/386). Both optimized and reference variants include this header, so the
@@ -42,7 +42,7 @@ parser outputs unchanged.
 
 Five alternating 300 ms pairs on Go 1.27.1, darwin/arm64, Apple M3 Max
 (16 CPUs) compare the optimized build with the same-revision
-`pego_reference_document_vm_values` build. Ratios are medians of paired
+`zp_reference_document_vm_values` build. Ratios are medians of paired
 optimized/reference times; ranges show the minimum and maximum paired ratios.
 
 `BenchmarkDocumentReparse` edits one byte in a 100,000-line document and
@@ -79,15 +79,15 @@ Reproduce the ownership tests and benchmark setup:
 
 ```sh
 go test ./internal/engine/document -run '^TestDocumentVMValueStorage' -count=1
-go test -tags pego_reference_document_vm_values ./internal/engine/document \
+go test -tags zp_reference_document_vm_values ./internal/engine/document \
   -run '^TestDocumentVMValueStorage' -count=1
 go test -c -o /tmp/document-vm-values.test ./internal/engine
-go test -tags pego_reference_document_vm_values -c \
+go test -tags zp_reference_document_vm_values -c \
   -o /tmp/document-vm-values-reference.test ./internal/engine
 (
   cd bench
   go test -c -o /tmp/document-vm-values-bench.test .
-  go test -tags pego_reference_document_vm_values -c \
+  go test -tags zp_reference_document_vm_values -c \
     -o /tmp/document-vm-values-reference-bench.test .
 )
 ```

@@ -6,7 +6,7 @@
 
 ## Summary
 
-Allow `pego gen -lang ts -types` and `gen.TypeScript{Types: true}`
+Allow `zp gen -lang ts -types` and `gen.TypeScript{Types: true}`
 to generate interfaces, aliases and unions corresponding to grammar types (a grammar join type becomes a TypeScript union),
 plus typed parse-result entry points. The first implementation runs
 the existing Node parser once and converts its completed result into typed
@@ -327,7 +327,7 @@ The generated Go parsers and TypeScript runtime were unchanged by regeneration.
 The typed replay compared 168 results across 23 grammars against generated
 Go's Node-conversion path, in both units, with explicit integer, text and CST
 normalization. Strict consumers verified imports and declaration exports.
-`PEGO_TS_TYPED_DIR` exported matching typed/untyped sources, strict consumers,
+`ZP_TS_TYPED_DIR` exported matching typed/untyped sources, strict consumers,
 declarations and small/large inputs for field-heavy, capture-free, recovery
 and shared-DAG controls. The checked-in `bench/ts-typed.mjs` harness has SHA-256
 `ed66f403f3de4e2c5ccddb8605dee8e175002bed1f5c8a356b6edf3a854e44da`.
@@ -407,7 +407,7 @@ Export the checked fixtures with Node 22.18+ and TypeScript 5.9 on `PATH`:
 
 ```bash
 typed_fixtures="$(mktemp -d)"
-PEGO_TS_TYPED_DIR="$typed_fixtures" go test ./internal/engine \
+ZP_TS_TYPED_DIR="$typed_fixtures" go test ./internal/engine \
   -run '^TestGeneratedTSTyped(Workloads|SharedDAG)$' -count=1
 
 # Field-heavy large CodePoints: five alternating fresh-process pairs.

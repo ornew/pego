@@ -3,9 +3,9 @@ package gogen_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/gen/gogen"
-	pegort "github.com/ornew/pego/runtime"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	zprt "github.com/ornew/zeroparse/runtime"
 )
 
 // TestClassBits builds the runtime's Class from the generator's tables for classes whose ranges
@@ -25,7 +25,7 @@ func TestClassBits(t *testing.T) {
 		for _, neg := range []bool{false, true} {
 			e := &grammar.CharClass{Ranges: rs, Negated: neg}
 			ascii, wide := gogen.ClassBits(e)
-			c := pegort.Class{ASCII: ascii, Wide: wide, Neg: neg}
+			c := zprt.Class{ASCII: ascii, Wide: wide, Neg: neg}
 			for r := rune(0); r < 0x200; r++ {
 				in := false
 				for _, x := range rs {

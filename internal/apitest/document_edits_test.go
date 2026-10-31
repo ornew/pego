@@ -3,8 +3,8 @@ package apitest_test
 import (
 	"context"
 	"errors"
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/engine/core"
 	"testing"
 )
 
@@ -13,8 +13,8 @@ func TestDocumentVersionAndBatchAfterInterruption(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
-		d, err := p.NewDocument("éabcd", pego.WithUnit(unit))
+	for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+		d, err := p.NewDocument("éabcd", zeroparse.WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -23,20 +23,20 @@ func TestDocumentVersionAndBatchAfterInterruption(t *testing.T) {
 		if core.BudgetControlsEnabled {
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
-			if n, err := d.Parse(pego.WithContext(ctx)); n != nil || !errors.Is(err, context.Canceled) {
+			if n, err := d.Parse(zeroparse.WithContext(ctx)); n != nil || !errors.Is(err, context.Canceled) {
 				t.Fatal("cancellation", n, err)
 			}
 			if d.Version() != base {
 				t.Fatal("cancellation advanced text version")
 			}
-			if n, err := d.Parse(pego.WithLimits(pego.Limits{Budget: 1})); n != nil || !errors.Is(err, pego.ErrLimit) {
+			if n, err := d.Parse(zeroparse.WithLimits(zeroparse.Limits{Budget: 1})); n != nil || !errors.Is(err, zeroparse.ErrLimit) {
 				t.Fatal("budget limit", n, err)
 			}
 			if d.Version() != base {
 				t.Fatal("execution interruption advanced text version")
 			}
 		}
-		if err := d.EditBatch(base, pego.TextEdit{Start: 0, End: 0, Text: "x"}); err != nil {
+		if err := d.EditBatch(base, zeroparse.TextEdit{Start: 0, End: 0, Text: "x"}); err != nil {
 			t.Fatal(err)
 		}
 		if d.Version().Sequence() != base.Sequence()+1 || d.Text() != "xéabcd" {
@@ -53,13 +53,13 @@ func TestDocumentEditBatchPublicContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
-		doc, err := parser.NewDocument("éabcd", pego.WithUnit(unit))
+	for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+		doc, err := parser.NewDocument("éabcd", zeroparse.WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)
 		}
 		base := doc.Version()
-		seen := map[pego.DocumentVersion]string{base: "initial"}
+		seen := map[zeroparse.DocumentVersion]string{base: "initial"}
 		if doc.Unit() != unit || base.Sequence() != 1 {
 			t.Fatal("initial version/unit")
 		}
@@ -69,10 +69,10 @@ func TestDocumentEditBatchPublicContract(t *testing.T) {
 		}
 		before := old.String()
 		offset := 1
-		if unit == pego.Bytes {
+		if unit == zeroparse.Bytes {
 			offset = 2
 		}
-		changes := []pego.TextEdit{{Start: offset, End: offset + 1, Text: "XYZ"}, {Start: offset + 3, End: offset + 4, Text: "!"}}
+		changes := []zeroparse.TextEdit{{Start: offset, End: offset + 1, Text: "XYZ"}, {Start: offset + 3, End: offset + 4, Text: "!"}}
 		if err := doc.EditBatch(base, changes...); err != nil {
 			t.Fatal(err)
 		}
@@ -89,7 +89,7 @@ func TestDocumentEditBatchPublicContract(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		fresh, err := parser.Parse(doc.Text(), pego.WithUnit(unit))
+		fresh, err := parser.Parse(doc.Text(), zeroparse.WithUnit(unit))
 		if err != nil || actual.String() != fresh.String() {
 			t.Fatal("fresh parity", err)
 		}

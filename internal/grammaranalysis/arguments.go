@@ -4,7 +4,7 @@ import (
 	"cmp"
 	"slices"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // ExpressionArgsWithPoll preserves Attribute.ExpressionArgs order and fresh

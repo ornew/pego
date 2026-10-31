@@ -16,12 +16,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // streamRun is one stream parse of a differential test. The reader returns
@@ -1021,7 +1021,7 @@ rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`)
 const generatedRecoveringStreamConsumer = `package recovering
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 	"errors"
 	"io"
 	"runtime"
@@ -1063,8 +1063,8 @@ func TestDiagnosticLimitBoundsMemory(t *testing.T) {
 				at[count/(2*n)] = ms.HeapAlloc
 			}
 			return nil
-		}, WithUnit(unit), pegort.WithDiagnosticLimit(3), pegort.WithDiagnosticCallback(func(*SyntaxError) error { diags++; return nil }))
-		var truncated *pegort.TruncatedSyntaxErrors
+		}, WithUnit(unit), zprt.WithDiagnosticLimit(3), zprt.WithDiagnosticCallback(func(*SyntaxError) error { diags++; return nil }))
+		var truncated *zprt.TruncatedSyntaxErrors
 		if !errors.As(err, &truncated) || truncated.Total != n || truncated.Dropped != n-3 || truncated.CountsSaturated || count != 2*n || diags != n {
 			t.Fatal(err, count, diags)
 		}
@@ -1079,7 +1079,7 @@ func TestDiagnosticLimitBoundsMemory(t *testing.T) {
 }
 
 func TestDiagnosticOptionsAreStreamOnly(t *testing.T) {
-	for _, opt := range []ParseOption{pegort.WithDiagnosticLimit(0), pegort.WithDiagnosticCallback(func(*SyntaxError) error { return nil })} {
+	for _, opt := range []ParseOption{zprt.WithDiagnosticLimit(0), zprt.WithDiagnosticCallback(func(*SyntaxError) error { return nil })} {
 		check := func(name string, err error) {
 			if err == nil || !strings.Contains(err.Error(), "only supported for stream parsing") {
 				t.Errorf("%s: %v", name, err)
@@ -1103,15 +1103,15 @@ func TestDiagnosticOptionsAreStreamOnly(t *testing.T) {
 		check("Document.ParseAST", err)
 	}
 	// A nil callback is not an option to reject.
-	if _, err := Parse("ab;", pegort.WithDiagnosticCallback(nil)); err != nil {
+	if _, err := Parse("ab;", zprt.WithDiagnosticCallback(nil)); err != nil {
 		t.Error(err)
 	}
 	read := false
 	r := readFunc(func([]byte) (int, error) { read = true; return 0, io.EOF })
-	if err := ParseStream(r, nil, pegort.WithDiagnosticLimit(-1)); err == nil || !strings.Contains(err.Error(), "nonnegative") {
+	if err := ParseStream(r, nil, zprt.WithDiagnosticLimit(-1)); err == nil || !strings.Contains(err.Error(), "nonnegative") {
 		t.Error(err)
 	}
-	if _, err := Iterate(r, pegort.WithDiagnosticLimit(-1)); err == nil {
+	if _, err := Iterate(r, zprt.WithDiagnosticLimit(-1)); err == nil {
 		t.Error("Iterate accepted a negative limit")
 	}
 	if _, err := IterateAST(r, WithMaxDepth(-1)); err == nil {
@@ -1134,7 +1134,7 @@ func TestIterateAST(t *testing.T) {
 		t.Fatal(err, want)
 	}
 	var diags []*SyntaxError
-	it, err := IterateAST(strings.NewReader("ab;1x;cd;"), pegort.WithDiagnosticCallback(func(e *SyntaxError) error { diags = append(diags, e); return nil }))
+	it, err := IterateAST(strings.NewReader("ab;1x;cd;"), zprt.WithDiagnosticCallback(func(e *SyntaxError) error { diags = append(diags, e); return nil }))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1161,12 +1161,12 @@ func TestIterateAST(t *testing.T) {
 		t.Fatal(ok, err)
 	}
 	it.Close()
-	if _, ok, err := it.Next(); ok || err != pegort.ErrStreamClosed {
+	if _, ok, err := it.Next(); ok || err != zprt.ErrStreamClosed {
 		t.Fatal(ok, err)
 	}
 	// A callback panic reaches the caller of Next unchanged.
 	type marker struct{}
-	nodes, _ := Iterate(strings.NewReader("1x;"), pegort.WithDiagnosticCallback(func(*SyntaxError) error { panic(marker{}) }))
+	nodes, _ := Iterate(strings.NewReader("1x;"), zprt.WithDiagnosticCallback(func(*SyntaxError) error { panic(marker{}) }))
 	func() {
 		defer func() {
 			if x := recover(); x != (marker{}) {
@@ -1252,7 +1252,7 @@ func TestParseStreamASTBudgetControls(t *testing.T) {
 const generatedStreamConsumer = `package fixture
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 	"context"
 	"errors"
 	"io"
@@ -1264,26 +1264,26 @@ import (
 const input = "a=1\nbc=22\nd=3\n"
 
 func TestTraceAndProfile(t *testing.T) {
-	var events []pegort.TraceEvent
-	profile := &pegort.Profile{}
+	var events []zprt.TraceEvent
+	profile := &zprt.Profile{}
 	n := 0
 	err := ParseStream(strings.NewReader(input), func(*Node) error { n++; return nil },
-		pegort.WithTrace(func(e pegort.TraceEvent) { events = append(events, e) }), pegort.WithProfile(profile))
+		zprt.WithTrace(func(e zprt.TraceEvent) { events = append(events, e) }), zprt.WithProfile(profile))
 	if err != nil || n != 3 {
 		t.Fatal(err, n)
 	}
-	if len(events) == 0 || events[0].Rule != "main" || events[0].Kind != pegort.TraceEnter {
+	if len(events) == 0 || events[0].Rule != "main" || events[0].Kind != zprt.TraceEnter {
 		t.Fatal(events)
 	}
 	depth, items := 0, 0
 	for _, e := range events {
 		switch e.Kind {
-		case pegort.TraceEnter:
+		case zprt.TraceEnter:
 			depth++
 			if e.Rule == "item" {
 				items++
 			}
-		case pegort.TraceExit:
+		case zprt.TraceExit:
 			depth--
 		}
 		if e.ExaminedKnown {
@@ -1386,7 +1386,7 @@ func TestMemoryIsBounded(t *testing.T) {
 const generatedStreamListsConsumer = `package lists
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 	"io"
 	"runtime"
 	"testing"
@@ -1426,7 +1426,7 @@ func TestMemoryIsBounded(t *testing.T) {
 			count := 0
 			opts := []ParseOption{WithUnit(unit)}
 			if profiled {
-				opts = append(opts, pegort.WithProfile(&pegort.Profile{}))
+				opts = append(opts, zprt.WithProfile(&zprt.Profile{}))
 			}
 			err := ParseStream(&listReader{n: n, seed: 1}, func(*Node) error {
 				count++
@@ -1452,7 +1452,7 @@ func TestMemoryIsBounded(t *testing.T) {
 const generatedStreamMemoConsumer = `package memo
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 	"io"
 	"runtime"
 	"testing"
@@ -1487,7 +1487,7 @@ func TestMemoryIsBounded(t *testing.T) {
 			count := 0
 			opts := []ParseOption{WithUnit(unit)}
 			if profiled {
-				opts = append(opts, pegort.WithProfile(&pegort.Profile{}))
+				opts = append(opts, zprt.WithProfile(&zprt.Profile{}))
 			}
 			err := ParseStream(&lineReader{line: "key=42\n", n: n}, func(*Node) error {
 				count++

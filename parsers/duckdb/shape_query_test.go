@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ornew/pego/parsers/duckdb/types"
+	"github.com/ornew/zeroparse/parsers/duckdb/types"
 )
 
 // cteQuery maps the query of a common table expression; that of a recursive one is a RECURSIVE_CTE_NODE.

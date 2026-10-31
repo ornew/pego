@@ -53,20 +53,20 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 |:--|:--|:--|:-:|:-:|:-:|:-:|:-:|:-:|:--|:--|
 | [R010](mechanisms/R010-per-position-memo-chains.md) | Per-position memo chains and key storage | C/RVM/IVM/GN/TG/TS; exact per-backend route | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
 | [R020](mechanisms/R020-deferred-memoization.md) | Defer memo allocation until a second same-position call | C/RVM/IVM/GN/TG/TS; no universal control | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
-| [R030](mechanisms/R030-sparse-seen-position-storage.md) | Sparse deferred-memo seen positions with dense small-input path | C/RVM/IVM/GN/TG/TS; core build-tag and generation controls differ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | pego_reference_sparse_memo; GenOptions.DisableSparseMemo (TypeScript) |
+| [R030](mechanisms/R030-sparse-seen-position-storage.md) | Sparse deferred-memo seen positions with dense small-input path | C/RVM/IVM/GN/TG/TS; core build-tag and generation controls differ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | zp_reference_sparse_memo; GenOptions.DisableSparseMemo (TypeScript) |
 | [R040](mechanisms/R040-memo-entry-retirement.md) | Retire obsolete memo entries | C/RVM/IVM only; active seed ownership preserved | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
 | [R050](mechanisms/R050-bounded-variable-bindings.md) | Bound variable binding histories | All six default; slot-indexed persistent vector | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
-| [R060](mechanisms/R060-chunked-document-input.md) | Chunked Document text storage | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_document_pieces |
+| [R060](mechanisms/R060-chunked-document-input.md) | Chunked Document text storage | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | zp_reference_document_pieces |
 | [R070](mechanisms/R070-document-memo-edits.md) | Gap-buffer memo splice and lazy advancement | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
 | [R080](mechanisms/R080-lazy-code-point-offsets.md) | On-demand code-point offsets | Core recognition and Document offset tables | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
 | [R090](mechanisms/R090-moving-document-trees.md) | Move reused Document results | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
 | [R100](mechanisms/R100-document-repetition-resumption.md) | Resume saved long repetition runs | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
 | [R110](mechanisms/R110-document-run-record-retention.md) | Retain unchanged-generation repetition records | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
 | [R120](mechanisms/R120-transient-rule-memo-policy.md) | Avoid ordinary memoization for transient rules | All six; Document remains eager | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
-| [R130](mechanisms/R130-document-snapshot-record-sharing.md) | Share exact immutable records in Document snapshots | C/RVM/IVM Document snapshots; candidate/reference build tag | ✓ | ✓ | ✓ | — | — | — | Default | pego_snapshot_sharing_reference |
-| [R140](mechanisms/R140-share-document-snapshot-child-runs.md) | Share immutable child-run backing between exact Document snapshot records | Document snapshot child-run backing; immutable records only | ✓ | ✓ | ✓ | — | — | — | Default | pego_snapshot_child_chunks_reference |
+| [R130](mechanisms/R130-document-snapshot-record-sharing.md) | Share exact immutable records in Document snapshots | C/RVM/IVM Document snapshots; candidate/reference build tag | ✓ | ✓ | ✓ | — | — | — | Default | zp_snapshot_sharing_reference |
+| [R140](mechanisms/R140-share-document-snapshot-child-runs.md) | Share immutable child-run backing between exact Document snapshot records | Document snapshot child-run backing; immutable records only | ✓ | ✓ | ✓ | — | — | — | Default | zp_snapshot_child_chunks_reference |
 | [R150](mechanisms/R150-cache-snapshot-child-run-descriptors.md) | Cache immutable child-run descriptors in SnapshotNode records | Document snapshot record access; caches immutable child-run descriptors | ✓ | ✓ | ✓ | — | — | — | Default | No cache-off control; reference retains this cache |
-| [R160](mechanisms/R160-relative-snapshot-position-overlays.md) | Store per-version relative positions over shared snapshot records | Private Document snapshot comparison; no matching-path change | Private off | Private off | Private off | — | — | — | Private off | `pego_snapshot_position_overlays` |
+| [R160](mechanisms/R160-relative-snapshot-position-overlays.md) | Store per-version relative positions over shared snapshot records | Private Document snapshot comparison; no matching-path change | Private off | Private off | Private off | — | — | — | Private off | `zp_snapshot_position_overlays` |
 | [R170](mechanisms/R170-left-recursion-member-memo.md) | Memoize left-recursion cycle members except results that read a growing seed | All six; Documents store no seed-dependent result | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | `DisableMemo` disables all memoization |
 
 ### A — Allocation and Retention
@@ -82,7 +82,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [A070](mechanisms/A070-typed-output-bootstrap.md) | Independent initial typed allocations before slab growth | TG only; default applied, control `DisableTypedOutputBootstrap` | — | — | — | — | ✓ | — | Default | GenOptions.DisableTypedOutputBootstrap |
 | [A080](mechanisms/A080-generated-node-capture-scratch.md) | Reusable generated Node capture scratch | Generated Go Node capture frames | — | — | — | ✓ | — | — | Default | — |
 | [A090](mechanisms/A090-typed-output-liveness-cleanup.md) | Clear unreachable generated typed output slots | TG measured; not adopted or implemented | — | — | — | — | — | — | — | — |
-| [A100](mechanisms/A100-document-vm-value-stack.md) | Reuse bounded VM value stack for Document parses | RVM/IVM Document paths only | — | ✓ | ✓ | — | — | — | Default | pego_reference_document_vm_values |
+| [A100](mechanisms/A100-document-vm-value-stack.md) | Reuse bounded VM value stack for Document parses | RVM/IVM Document paths only | — | ✓ | ✓ | — | — | — | Default | zp_reference_document_vm_values |
 | [A110](mechanisms/A110-expected-set-ids.md) | Interned expectation IDs and shared windows | All six; backend storage differs | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
 | [A120](mechanisms/A120-source-token-text.md) | Source substring token text | All six subject to input representation; stream separately | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
 | [A130](mechanisms/A130-closure-lambda-arenas.md) | LIFO lambda call/context arenas | C only; VM allocation separate | ✓ | — | — | — | — | — | Default | None maintained |
@@ -92,11 +92,11 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [A170](mechanisms/A170-operators-attempt-scratch.md) | Reusable Operators Rule candidate storage | C/RVM/IVM/GN/TG by route; TS does not use Go by-value attempt | Partial | Partial | Partial | Partial | Partial | — | Default | None maintained |
 | [A180](mechanisms/A180-typed-frame-reuse.md) | Release/reuse typed runtime capture frames | TG only | — | — | — | — | ✓ | — | Default | None maintained |
 | [A190](mechanisms/A190-evaluation-context-reuse.md) | Reusable action evaluation context | All six per parser; no TS cross-call pool | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
-| [A200](mechanisms/A200-stream-capture-frame-reuse.md) | Reuse completed stream capture frames | C/RVM/IVM; pego_reference_stream_frames | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_stream_frames |
-| [A210](mechanisms/A210-bounded-stream-text-snapshots.md) | Share bounded immutable stream text | C/RVM/IVM; pego_reference_stream_text | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_stream_text |
-| [A220](mechanisms/A220-stream-prefix-isolation.md) | Isolate live stream prefix ownership | C/RVM/IVM; pego_reference_stream_prefix | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_stream_prefix |
-| [A230](mechanisms/A230-stream-undo-cleanup.md) | Clear inactive stream undo backing | C/RVM/IVM; pego_reference_stream_undo | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_stream_undo |
-| [A240](mechanisms/A240-stream-vm-stack-cleanup.md) | Clear inactive stream VM value stack | RVM/IVM; pego_reference_stream_stack | — | ✓ | ✓ | — | — | — | Default | pego_reference_stream_stack |
+| [A200](mechanisms/A200-stream-capture-frame-reuse.md) | Reuse completed stream capture frames | C/RVM/IVM; zp_reference_stream_frames | ✓ | ✓ | ✓ | — | — | — | Default | zp_reference_stream_frames |
+| [A210](mechanisms/A210-bounded-stream-text-snapshots.md) | Share bounded immutable stream text | C/RVM/IVM; zp_reference_stream_text | ✓ | ✓ | ✓ | — | — | — | Default | zp_reference_stream_text |
+| [A220](mechanisms/A220-stream-prefix-isolation.md) | Isolate live stream prefix ownership | C/RVM/IVM; zp_reference_stream_prefix | ✓ | ✓ | ✓ | — | — | — | Default | zp_reference_stream_prefix |
+| [A230](mechanisms/A230-stream-undo-cleanup.md) | Clear inactive stream undo backing | C/RVM/IVM; zp_reference_stream_undo | ✓ | ✓ | ✓ | — | — | — | Default | zp_reference_stream_undo |
+| [A240](mechanisms/A240-stream-vm-stack-cleanup.md) | Clear inactive stream VM value stack | RVM/IVM; zp_reference_stream_stack | — | ✓ | ✓ | — | — | — | Default | zp_reference_stream_stack |
 | [A250](mechanisms/A250-typed-object-slabs.md) | Typed object/terminal slab growth | TG; DisableTypedObjectSlabs | — | — | — | — | ✓ | — | Default | GenOptions.DisableTypedObjectSlabs |
 | [A260](mechanisms/A260-typed-list-slabs.md) | Typed list slab growth | TG; DisableTypedListSlabs | — | — | — | — | ✓ | — | Default | GenOptions.DisableTypedListSlabs |
 | [A270](mechanisms/A270-shared-empty-capture-frame.md) | Share immutable capture-free frame | All six; capture-free scopes only | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func BenchmarkClassLintCancellation(b *testing.B) {

@@ -3,7 +3,7 @@ package cel_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/parsers/cel"
+	"github.com/ornew/zeroparse/parsers/cel"
 )
 
 // TestMacros checks which calls CheckMacros rejects (the differential test compares it with cel-go on 12,000

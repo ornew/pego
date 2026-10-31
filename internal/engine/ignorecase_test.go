@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/bytecode"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // ignoreCaseCase is one parse of a grammar whose main rule has case-insensitive literals. The

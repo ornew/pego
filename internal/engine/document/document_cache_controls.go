@@ -4,8 +4,8 @@ import (
 	"unsafe"
 	"weak"
 
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // CacheStats describes retained incremental history. EstimatedBytes includes

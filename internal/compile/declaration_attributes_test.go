@@ -3,7 +3,7 @@ package compile
 import (
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestUnknownDeclarationAttribute(t *testing.T) {

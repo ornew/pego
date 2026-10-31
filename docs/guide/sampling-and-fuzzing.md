@@ -6,9 +6,9 @@ compare a parser with another implementation of the same language, and to seed a
 from inputs that get past the first token. Near-miss invalid inputs, valid ones with one mutation, exercise error
 reporting and recovery.
 
-| | Command line | Go (`github.com/ornew/pego/sample`) |
+| | Command line | Go (`github.com/ornew/zeroparse/sample`) |
 |:--|:--|:--|
-| Inputs the grammar accepts | `pego sample -g g.pego` | `sample.Generate`, `Generator.Next`, `Generator.Generate` |
+| Inputs the grammar accepts | `zp sample -g g.zp` | `sample.Generate`, `Generator.Next`, `Generator.Generate` |
 | Prefer what was not exercised yet, and report it | `-coverage` | `sample.WithCoverage()`, `Generator.Coverage` |
 | Near-miss inputs the grammar rejects | `-invalid` | `Generator.Invalid`, `Generator.GenerateInvalid` |
 | Seed a fuzz test | | `sample.Seed(f, p, n)` |
@@ -31,12 +31,12 @@ How generated inputs fit into a test suite for a grammar is in [testing grammars
 
 ## On the Command Line
 
-`pego sample` prints distinct inputs that the grammar accepts, ten by default (`-n`), each as a Go-quoted string on its
+`zp sample` prints distinct inputs that the grammar accepts, ten by default (`-n`), each as a Go-quoted string on its
 own line, so that inputs containing line breaks stay on one line. With the JSON grammar of
-[parsers/json](../../parsers/json/json.pego):
+[parsers/json](../../parsers/json/json.zp):
 
 ```bash
-pego sample -g parsers/json/json.pego -n 8
+zp sample -g parsers/json/json.zp -n 8
 ```
 
 ```text
@@ -54,13 +54,13 @@ The inputs are random, not pretty: the grammar allows whitespace between tokens,
 characters are drawn mostly from printable ASCII with some multi-byte characters mixed in, and otherwise from any code
 point the character class matches (never a surrogate). `strconv.Unquote` reads each line back.
 
-`-seed` selects the random decisions; the default is 0. With the same version of PEGO, the same grammar, options and
+`-seed` selects the random decisions; the default is 0. With the same version of ZeroParse, the same grammar, options and
 seed give the same inputs on every run and machine, whichever Go release built it, so a seed is enough to reproduce a
-test case. Across versions of PEGO they may differ, as the generator's algorithm changes as it improves. Keep the
+test case. Across versions of ZeroParse they may differ, as the generator's algorithm changes as it improves. Keep the
 inputs themselves (as test files, or in a fuzz corpus) where they must not change. `-f json` prints a JSON document instead:
 
 ```bash
-pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json
+zp sample -g parsers/json/json.zp -n 2 -seed 5 -f json
 ```
 
 ```text
@@ -93,16 +93,16 @@ pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json
 `stats` counts the work, as `Stats` does in Go (see [From Go](#from-go)). `ruleCuts` splits the cuts by the rule
 whose body holds the check or predicate, the rules with the most cuts first, as `Generator.Cuts` does.
 
-`-s` selects the start rule (the grammar's default start rule if omitted). A compiled grammar (`.pegoc`) cannot be
+`-s` selects the start rule (the grammar's default start rule if omitted). A compiled grammar (`.zpc`) cannot be
 sampled: generation needs the grammar source.
 
-If the grammar accepts fewer distinct inputs than requested, or the generator cannot find more, `pego sample` prints
-what it found and says so on standard error (`pego sample: found only 3 distinct inputs`). If it finds none at all, it
+If the grammar accepts fewer distinct inputs than requested, or the generator cannot find more, `zp sample` prints
+what it found and says so on standard error (`zp sample: found only 3 distinct inputs`). If it finds none at all, it
 fails: the grammar may accept nothing (`rule main = "a"* "a"`: the repetition takes every `a`), or every input may fail
 an action at run time. The error tells what became of the attempts:
 
 ```text
-pego: sample: no input found that the parser accepts in 100 attempts: 0 candidates rejected by the parser, 0 searches out of budget, 100 searches without a way to finish (2900 ways cut by checks, 0 by predicates; most cuts in main (2900 by checks, 0 by predicates))
+zp: sample: no input found that the parser accepts in 100 attempts: 0 candidates rejected by the parser, 0 searches out of budget, 100 searches without a way to finish (2900 ways cut by checks, 0 by predicates; most cuts in main (2900 by checks, 0 by predicates))
 ```
 
 Here no search found a way to finish, and checks cut thousands of ways: the generator saw that the parser would not
@@ -127,7 +127,7 @@ A repetition takes each further iteration with probability 1/2, so short lists a
 calculator expressions:
 
 ```bash
-pego sample -g examples/calculator/calc.pego -n 5 -seed 7 -max-len 30 -max-repeat 1
+zp sample -g examples/calculator/calc.zp -n 5 -seed 7 -max-len 30 -max-repeat 1
 ```
 
 ```text
@@ -162,11 +162,11 @@ Three limits are hard, and each has a knob:
 
 ## Coverage
 
-With `-coverage`, the generator prefers rules and alternatives that no input has exercised yet, and `pego sample`
+With `-coverage`, the generator prefers rules and alternatives that no input has exercised yet, and `zp sample`
 reports on standard error what the inputs exercised and what they missed. Take a list whose items may be words,
 numbers or booleans:
 
-```pego
+```zp
 @start
 rule main = item ("," item)*
 rule item = word / number / "true" / "false"
@@ -175,7 +175,7 @@ rule number = [0-9]+ #atomic
 ```
 
 ```bash
-pego sample -g items.pego -n 5 -coverage
+zp sample -g items.zp -n 5 -coverage
 ```
 
 ```text
@@ -206,22 +206,22 @@ An [inline action](actions.md) counts as a rule, because the parser runs it as o
 the rule that holds it: `the inline action in rule main`, or `inline action 2 in rule main` when the rule holds
 several. The alternatives are printed as written, with the inline action in place.
 
-For the XML grammar of [parsers/xml](../../parsers/xml/xml.pego), 50 inputs cover all of it:
+For the XML grammar of [parsers/xml](../../parsers/xml/xml.zp), 50 inputs cover all of it:
 
 ```bash
-pego sample -g parsers/xml/xml.pego -n 50 -seed 1 -coverage > /dev/null
+zp sample -g parsers/xml/xml.zp -n 50 -seed 1 -coverage > /dev/null
 ```
 
 ```text
 rules 74/74 (100%), alternatives 89/89 (100%)
 ```
 
-Not every grammar is like that. The Python grammar of [parsers/python](../../parsers/python/python.pego) keeps the
+Not every grammar is like that. The Python grammar of [parsers/python](../../parsers/python/python.zp) keeps the
 indentation of the current block packed in a variable and compares it in predicates (`stmt_sep`, `indented_block`),
 which the generator rarely satisfies by chance, so it misses the rules that need them:
 
 ```bash
-pego sample -g parsers/python/python.pego -n 50 -seed 1 -coverage > /dev/null
+zp sample -g parsers/python/python.zp -n 50 -seed 1 -coverage > /dev/null
 ```
 
 ```text
@@ -248,7 +248,7 @@ format, each comes with the input it was made from, the mutation (positions are 
 error:
 
 ```bash
-pego sample -g parsers/json/json.pego -n 3 -invalid -f json
+zp sample -g parsers/json/json.zp -n 3 -invalid -f json
 ```
 
 ```text
@@ -280,7 +280,7 @@ pego sample -g parsers/json/json.pego -n 3 -invalid -f json
 
 Use them to check error messages and positions, and recovery with `#recover`: a recovered error counts as rejected, so
 the inputs of a grammar with `#recover` include ones that produce both a tree and errors. A grammar that accepts every
-input, such as `rule main = .*`, has no near misses: `pego sample -invalid` then fails with "no mutation found that the
+input, such as `rule main = .*`, has no near misses: `zp sample -invalid` then fails with "no mutation found that the
 parser rejects" (`sample.ErrNoInvalid` in Go), not with the error for grammars that accept nothing.
 
 ## From Go
@@ -289,7 +289,7 @@ parser rejects" (`sample.ErrNoInvalid` in Go), not with the error for grammars t
 parser's start rule (use `Parser.WithStart` for another).
 
 ```go
-p, err := pego.CompileSource(`@start
+p, err := zeroparse.CompileSource(`@start
 rule main =  pair ("," " "? pair)*
 rule pair =  key "=" value
 rule key =  [a-z]+ #atomic
@@ -367,7 +367,7 @@ forget, and a seed reproduces any failure. Two kinds of checks work without know
 
 ```go
 func TestJSONAgreesWithEncodingJSON(t *testing.T) {
-	p := ... // the parser of parsers/json/json.pego
+	p := ... // the parser of parsers/json/json.zp
 	g, err := sample.New(p, sample.WithSeed(1), sample.WithCoverage())
 	if err != nil {
 		t.Fatal(err)
@@ -407,11 +407,11 @@ cannot generate any, and returns them:
 // FuzzCalculator checks that the calculator never panics, whatever the input, that all backends agree,
 // and that the generated inputs it is seeded with parse.
 func FuzzCalculator(f *testing.F) {
-	src, err := os.ReadFile("../examples/calculator/calc.pego")
+	src, err := os.ReadFile("../examples/calculator/calc.zp")
 	if err != nil {
 		f.Fatal(err)
 	}
-	p, err := pego.CompileSource(string(src), "main")
+	p, err := zeroparse.CompileSource(string(src), "main")
 	if err != nil {
 		f.Fatal(err)
 	}
@@ -436,8 +436,8 @@ func FuzzCalculator(f *testing.F) {
 		if valid[in] && err != nil {
 			t.Fatalf("generated input %q does not parse: %v", in, err)
 		}
-		for _, b := range []pego.Backend{pego.Bytecode, pego.BytecodeIterative} {
-			m, err2 := p.Parse(in, pego.WithBackend(b))
+		for _, b := range []zeroparse.Backend{zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+			m, err2 := p.Parse(in, zeroparse.WithBackend(b))
 			if fmt.Sprint(n, err) != fmt.Sprint(m, err2) {
 				t.Fatalf("%q: backend %v returned %v, %v; the closure backend %v, %v", in, b, m, err2, n, err)
 			}
@@ -463,19 +463,19 @@ Replace the body of the fuzz function with what you want to hold for every input
 must not panic, must not loop, and must handle `SyntaxError` and `SyntaxErrors` (from `#recover`). Keep seeds short
 with `WithMaxLen`: the fuzzer works best on short inputs.
 
-To fuzz incremental parsing, use `pego edit-fuzz`, which starts from generated inputs too and edits them; see
+To fuzz incremental parsing, use `zp edit-fuzz`, which starts from generated inputs too and edits them; see
 [Fuzzing Edits](#fuzzing-edits).
 
 ## Fuzzing Edits
 
 A `Document` has one rule: its result equals a fresh parse of its text. The rule can be checked mechanically for any grammar
-(see [Incremental Parsing](incremental.md)). `pego edit-fuzz` applies random sequences of edits, undos
+(see [Incremental Parsing](incremental.md)). `zp edit-fuzz` applies random sequences of edits, undos
 and redos to a `Document` and, at the initial text and at each checkpoint, compares its result with a fresh parse of
 `doc.Text()`: values with their full spans, and errors with their positions, expectations and messages. It runs
 every backend in both position units:
 
 ```bash
-pego edit-fuzz -g examples/calculator/calc.pego -seed 1
+zp edit-fuzz -g examples/calculator/calc.zp -seed 1
 ```
 
 ```text
@@ -499,11 +499,11 @@ next to it. Without `-save-failures`, the message includes the failing sequence 
 `Document` fails:
 
 ```bash
-pego edit-fuzz -g calc.pego -save-failures failures -minimize
+zp edit-fuzz -g calc.zp -save-failures failures -minimize
 ```
 
 ```text
-pego: calc.pego (seed 0): closure/codepoints: document result differs from a fresh parse at operation 21 (text "…") in error.error.col:
+zp: calc.zp (seed 0): closure/codepoints: document result differs from a fresh parse at operation 21 (text "…") in error.error.col:
 document: 1
 fresh:    2
 saved to failures/editfuzz-0be4ccb60eadff90.json
@@ -515,11 +515,11 @@ minimized to 4 operations in failures/editfuzz-9d0bcab55578f1b5.json
 Replaying the minimized sequence fails the same way:
 
 ```bash
-pego edit-fuzz -g calc.pego -replay failures/editfuzz-9d0bcab55578f1b5.json
+zp edit-fuzz -g calc.zp -replay failures/editfuzz-9d0bcab55578f1b5.json
 ```
 
 ```text
-pego: failures/editfuzz-9d0bcab55578f1b5.json: closure/codepoints: document result differs from a fresh parse at operation 3 (text " �6\t") in error.error.col:
+zp: failures/editfuzz-9d0bcab55578f1b5.json: closure/codepoints: document result differs from a fresh parse at operation 3 (text " �6\t") in error.error.col:
 document: 1
 fresh:    2
 ```
@@ -565,11 +565,11 @@ The same is available from Go in package `editfuzz`, for example in a test that 
 cases:
 
 ```go
-src, err := os.ReadFile("grammar.pego")
+src, err := os.ReadFile("grammar.zp")
 if err != nil {
 	t.Fatal(err)
 }
-err = editfuzz.Fuzz(src, editfuzz.Options{Start: "main", Backend: pego.BytecodeIterative, Unit: pego.Bytes,
+err = editfuzz.Fuzz(src, editfuzz.Options{Start: "main", Backend: zeroparse.BytecodeIterative, Unit: zeroparse.Bytes,
 	Seed: 1, SaveFailures: t.TempDir()})
 if err != nil {
 	t.Fatal(err) // a *editfuzz.Failure, with the saved path
@@ -602,8 +602,8 @@ parser would read differently:
   greedy);
 - `!e` must not match; for `&e`, a text for `e` is generated and the input must continue with it;
 - predicates are evaluated on the generated text, with captures, variables, `len`, `text`, comparisons and arithmetic,
-  so indentation (as in [examples/outline](../../examples/outline/outline.pego)) and matching tags (as in
-  [parsers/xml](../../parsers/xml/xml.pego)) work;
+  so indentation (as in [examples/outline](../../examples/outline/outline.zp)) and matching tags (as in
+  [parsers/xml](../../parsers/xml/xml.zp)) work;
 - Operators Rule expressions are generated as chains of operands and operators, avoiding chains of `infix none` operators,
   with the outer infix/postfix tail filtered by level-restricted calls. Prefixes remain available at every operand
   position, including prefixes below the entry level. Their right operands can use operators tighter than the
@@ -641,7 +641,7 @@ fields, and lookaheads into Operators Rules or left-recursive rules. Those const
 and checking, which costs attempts; a grammar where most choices depend on them yields fewer inputs per second and
 lower coverage. In practice:
 
-- **No input found** (`sample.ErrNoInput`, or `pego sample` fails): the error counts what became of the attempts.
+- **No input found** (`sample.ErrNoInput`, or `zp sample` fails): the error counts what became of the attempts.
   Check that some input parses at all: the grammar may accept nothing, or every input may fail an action at run time
   (candidates rejected by the parser). If the inputs it needs are long (searches out of budget), raise the budget
   (`WithBudget`) or, for long repetitions, `WithMaxRepeat`; if they are merely rare, raise `WithAttempts`.

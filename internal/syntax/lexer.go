@@ -1,4 +1,4 @@
-// Package syntax parses PEGO source code into a grammar AST.
+// Package syntax parses ZeroParse source code into a grammar AST.
 package syntax
 
 import (
@@ -9,7 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 type tokenKind int

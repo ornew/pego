@@ -68,7 +68,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // A 1,000-line document of lines like "item_a = 0".
@@ -145,7 +145,7 @@ rule main =  ([a-z_]+ #atomic " = " [0-9]+ #atomic "\n")* $$ `, lines(-1)},
 func main() {
 	fmt.Printf("%-28s %-20s %s\n", "grammar", "first parse", "after editing line 500")
 	for _, v := range variants {
-		p, err := pego.CompileSource(v.grammar, "main")
+		p, err := zeroparse.CompileSource(v.grammar, "main")
 		if err != nil {
 			log.Fatal(err)
 		}

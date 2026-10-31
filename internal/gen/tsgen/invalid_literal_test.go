@@ -11,11 +11,11 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/tsgen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/tsgen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // literalTextUnits computes JS text units from the documented byte-preserving

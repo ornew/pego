@@ -8,17 +8,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // The exporter keeps timing and generated artifacts outside the repository.
 // Run its standalone benchmarks serially with fixed toolchain and GC settings.
 func TestExportGeneratedTraceBenchmarks(t *testing.T) {
 	t.Parallel()
-	dir := os.Getenv("PEGO_TRACE_BENCH_DIR")
+	dir := os.Getenv("ZP_TRACE_BENCH_DIR")
 	if dir == "" {
-		t.Skip("set PEGO_TRACE_BENCH_DIR to export standalone benchmarks")
+		t.Skip("set ZP_TRACE_BENCH_DIR to export standalone benchmarks")
 	}
 	write := func(name string, data []byte) {
 		t.Helper()
@@ -32,9 +32,9 @@ func TestExportGeneratedTraceBenchmarks(t *testing.T) {
 	}
 	write("go.mod", []byte(gentest.GoMod("tracebench")))
 	cases := []struct{ name, path, input string }{
-		{"json", "parsers/json/json.pego", "[" + strings.TrimSuffix(strings.Repeat(`{"name":"éclair","n":123,"ok":true},`, 64), ",") + "]"},
-		{"xml", "parsers/xml/xml.pego", "<root>" + strings.Repeat(`<item name="éclair">123</item>`, 64) + "</root>"},
-		{"calc", "examples/calculator/calc.pego", strings.TrimSuffix(strings.Repeat("1+2*3+", 32), "+")},
+		{"json", "parsers/json/json.zp", "[" + strings.TrimSuffix(strings.Repeat(`{"name":"éclair","n":123,"ok":true},`, 64), ",") + "]"},
+		{"xml", "parsers/xml/xml.zp", "<root>" + strings.Repeat(`<item name="éclair">123</item>`, 64) + "</root>"},
+		{"calc", "examples/calculator/calc.zp", strings.TrimSuffix(strings.Repeat("1+2*3+", 32), "+")},
 	}
 	sizes := map[string]int{}
 	for _, c := range cases {
@@ -87,7 +87,7 @@ func BenchmarkTrace(b *testing.B){for _,mode:=range []string{"full","root","unkn
 var generatedTraceBenchmarkSource []byte
 
 func BenchmarkGeneratedObservabilityGeneration(b *testing.B) {
-	for _, fixture := range []struct{ name, path string }{{"json", "parsers/json/json.pego"}, {"xml", "parsers/xml/xml.pego"}, {"calc", "examples/calculator/calc.pego"}} {
+	for _, fixture := range []struct{ name, path string }{{"json", "parsers/json/json.zp"}, {"xml", "parsers/xml/xml.zp"}, {"calc", "examples/calculator/calc.zp"}} {
 		source, err := os.ReadFile(filepath.Join("../../..", fixture.path))
 		if err != nil {
 			b.Fatal(err)

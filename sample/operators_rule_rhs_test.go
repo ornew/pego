@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/sample"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/sample"
 )
 
 const sampleRHSLevels = `rule e = #operators {
@@ -98,9 +98,9 @@ func TestSampleOperatorsRuleIncompleteRHS(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			p := compile(t, "rule main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
-			for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
-				for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-					_, err := p.Parse(c.input, pego.WithUnit(unit), pego.WithBackend(backend))
+			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+				for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+					_, err := p.Parse(c.input, zeroparse.WithUnit(unit), zeroparse.WithBackend(backend))
 					if (err == nil) != c.valid {
 						t.Fatalf("unit%v backend%v: %v expectedvalid%t", unit, backend, err, c.valid)
 					}

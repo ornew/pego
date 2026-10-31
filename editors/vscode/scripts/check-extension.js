@@ -15,16 +15,16 @@ function fail(message) {
   failures++;
 }
 
-// The manifest: pego.server.path names a program to run, so in an untrusted workspace VS Code must
+// The manifest: zp.server.path names a program to run, so in an untrusted workspace VS Code must
 // ignore the workspace's value of it.
 const manifest = require(path.join(__dirname, '..', 'package.json'));
-const serverPath = manifest.contributes.configuration.properties['pego.server.path'];
+const serverPath = manifest.contributes.configuration.properties['zp.server.path'];
 if (serverPath.scope !== 'machine-overridable') {
-  fail(`pego.server.path has scope ${serverPath.scope}, want machine-overridable`);
+  fail(`zp.server.path has scope ${serverPath.scope}, want machine-overridable`);
 }
 const untrusted = (manifest.capabilities || {}).untrustedWorkspaces || {};
-if (untrusted.supported !== 'limited' || !(untrusted.restrictedConfigurations || []).includes('pego.server.path')) {
-  fail('capabilities.untrustedWorkspaces does not restrict pego.server.path: ' + JSON.stringify(untrusted));
+if (untrusted.supported !== 'limited' || !(untrusted.restrictedConfigurations || []).includes('zp.server.path')) {
+  fail('capabilities.untrustedWorkspaces does not restrict zp.server.path: ' + JSON.stringify(untrusted));
 }
 
 async function check(name, f) {
@@ -44,11 +44,11 @@ function empty(h) {
 async function main() {
   await check('failed start and retry', async () => {
     const h = loadExtension([plan({ startError: new Error('spawn ENOENT') })]);
-    h.settings['server.path'] = '/no/such/pego';
+    h.settings['server.path'] = '/no/such/zp';
     await h.activate();
     empty(h);
     assert.equal(h.clients[0].calls.dispose, 1);
-    assert(h.events.some((e) => e.startsWith('error: ') && e.includes('/no/such/pego lsp')));
+    assert(h.events.some((e) => e.startsWith('error: ') && e.includes('/no/such/zp lsp')));
     await h.restart();
     assert.equal(h.running.size, 1);
     await h.extension.deactivate();
@@ -157,10 +157,10 @@ async function main() {
     await Promise.all([activation, disabled]);
     empty(h);
     h.settings['server.enabled'] = true;
-    h.settings['server.path'] = '/new/pego';
+    h.settings['server.path'] = '/new/zp';
     await h.change();
     assert.equal(h.running.size, 1);
-    assert.equal(h.clients.at(-1).command, '/new/pego');
+    assert.equal(h.clients.at(-1).command, '/new/zp');
     const count = h.created;
     await h.change(false);
     assert.equal(h.created, count, 'unrelated settings do not restart');
@@ -182,15 +182,15 @@ async function main() {
     const first = plan({ stopGate: deferred() });
     const h = loadExtension([first]);
     await h.activate();
-    h.settings['server.path'] = '/old/pego';
+    h.settings['server.path'] = '/old/zp';
     const a = h.change();
     await first.stopping.promise;
-    h.settings['server.path'] = '/latest/pego';
+    h.settings['server.path'] = '/latest/zp';
     const b = h.change();
     first.stopGate.resolve();
     await Promise.all([a, b]);
     assert.equal(h.maxRunning, 1);
-    assert(h.clients.slice(1).every((c) => c.command === '/latest/pego'));
+    assert(h.clients.slice(1).every((c) => c.command === '/latest/zp'));
     assert.equal(h.running.size, 1);
     await h.extension.deactivate();
     empty(h);

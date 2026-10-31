@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 //go:noinline

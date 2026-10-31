@@ -6,9 +6,9 @@
 
 ## Summary
 
-The package `github.com/ornew/pego/sample` generates inputs that a grammar accepts, to test code that consumes parse
-results and to seed fuzz tests, and `pego sample` exposes it on the command line. A generator walks the grammar AST
-from the start rule of a `*pego.Parser`, makes random but reproducible decisions, and returns an input only after the
+The package `github.com/ornew/zeroparse/sample` generates inputs that a grammar accepts, to test code that consumes parse
+results and to seed fuzz tests, and `zp sample` exposes it on the command line. A generator walks the grammar AST
+from the start rule of a `*zeroparse.Parser`, makes random but reproducible decisions, and returns an input only after the
 parser has accepted it. It can bias its decisions toward rules and alternatives that no input has exercised yet and
 report what was missed, and it can produce near-miss invalid inputs by mutating valid ones. The guide
 [Sampling inputs and fuzzing](../../guide/sampling-and-fuzzing.md) shows how to use it.
@@ -28,7 +28,7 @@ and it needs nothing internal: only `Parser.Grammar`, `Parser.Start` and `Parser
 core API small, keeps programs that only parse from linking it, and shows that the public API is enough. The fuzzing
 helper takes an interface satisfied by `*testing.F`, so importing `sample` does not import `testing`.
 
-A parser loaded from a `.pegoc` cannot be sampled: the bytecode alone does not describe the
+A parser loaded from a `.zpc` cannot be sampled: the bytecode alone does not describe the
 grammar well enough (actions, levels, captures).
 
 ## Why Validation by Parsing Is Mandatory
@@ -126,7 +126,7 @@ The generator prunes candidates that the parser would read differently from how 
   and undone again and again (twenty such `x` in a row found no input).
 - **Positive lookahead.** `&e` generates a text for `e`, then removes it and forces the input that follows to start
   with it. Captures and variables made in `e` stay in effect, as in the parser, so `&(s:spaces) {len($s) > indent}`
-  works as in [examples/outline](../../../examples/outline/outline.pego). Forcing guesses the text before the rest of the
+  works as in [examples/outline](../../../examples/outline/outline.zp). Forcing guesses the text before the rest of the
   input exists, so `&(. .) "ab"` almost never worked; when forcing fails and `e` makes no captures and defines no
   variables, the generator falls back to a check that `e` match whatever the rest of the input turns out to be.
   (Using only the check made the Python grammar's coverage slightly worse: forcing `&")"` or `&(ws ":")` guides
@@ -221,7 +221,7 @@ and the error. Single mutations of valid inputs exercise error reporting and rec
 
 ### Command Line
 
-`pego sample -g grammar [-s rule] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L] [-coverage] [-invalid]
+`zp sample -g grammar [-s rule] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L] [-coverage] [-invalid]
 [-f lines|json]` prints distinct inputs. The lines format writes each input as a Go-quoted string, because inputs
 contain line breaks and arbitrary characters; the JSON format writes one document with the start rule, the seed, the
 inputs (or the invalid inputs with their base, mutation and error) and, with `-coverage`, the coverage. In the lines
@@ -231,19 +231,19 @@ unless asked otherwise.
 
 ## Results
 
-Coverage in coverage mode, seed 1 (`pego sample -g <grammar> -n <count> -seed 1 -coverage`):
+Coverage in coverage mode, seed 1 (`zp sample -g <grammar> -n <count> -seed 1 -coverage`):
 
 | Grammar | Rules (50 inputs) | Alternatives (50) | Rules (200) | Alternatives (200) |
 |:--|--:|--:|--:|--:|
-| calculator/calc.pego | 4/4 | 13/13 | 4/4 | 13/13 |
-| calculator/calc_lr.pego | 13/13 | 17/17 | 13/13 | 17/17 |
-| csv/csv.pego | 6/6 | 7/7 | 6/6 | 7/7 |
-| json/json.pego | 19/19 | 14/14 | 19/19 | 14/14 |
-| minilang/minilang.pego | 30/30 | 45/45 | 30/30 | 45/45 |
-| outline/outline.pego | 8/8 | 2/2 | 8/8 | 2/2 |
-| xml/xml.pego | 15/15 | 19/19 | 15/15 | 19/19 |
-| python/python.pego | 175/184 (95%) | 182/202 (90%) | 176/184 (96%) | 184/202 (91%) |
-| golang/go.pego | 158/204 (77%) | 160/228 (70%) | 188/204 (92%) | 201/228 (88%) |
+| calculator/calc.zp | 4/4 | 13/13 | 4/4 | 13/13 |
+| calculator/calc_lr.zp | 13/13 | 17/17 | 13/13 | 17/17 |
+| csv/csv.zp | 6/6 | 7/7 | 6/6 | 7/7 |
+| json/json.zp | 19/19 | 14/14 | 19/19 | 14/14 |
+| minilang/minilang.zp | 30/30 | 45/45 | 30/30 | 45/45 |
+| outline/outline.zp | 8/8 | 2/2 | 8/8 | 2/2 |
+| xml/xml.zp | 15/15 | 19/19 | 15/15 | 19/19 |
+| python/python.zp | 175/184 (95%) | 182/202 (90%) | 176/184 (96%) | 184/202 (91%) |
+| golang/go.zp | 158/204 (77%) | 160/228 (70%) | 188/204 (92%) | 201/228 (88%) |
 
 The Python grammar misses `elif`/`else` clauses, augmented assignments and `except` handlers: each needs several
 predicates and indentation checks to hold together after a long prefix. The Go grammar's statements are reached late:
@@ -255,11 +255,11 @@ other mechanisms), most candidates for the larger grammars are rejected by the p
 
 | Grammar | Rules, with | Rejected candidates, with | Rules, without | Rejected candidates, without |
 |:--|--:|--:|--:|--:|
-| golang/go.pego | 63% | 0 of 30 | 16% | 389 of 419 |
-| python/python.pego | 95% | 4 of 37 | 12% | 118 of 150 |
-| minilang/minilang.pego | 100% | 0 of 32 | 77% | 240 of 290 |
-| outline/outline.pego | 100% | 0 of 30 | 100% | 29 of 59 |
-| xml/xml.pego | 100% | 0 of 30 | 100% | 14 of 44 |
+| golang/go.zp | 63% | 0 of 30 | 16% | 389 of 419 |
+| python/python.zp | 95% | 4 of 37 | 12% | 118 of 150 |
+| minilang/minilang.zp | 100% | 0 of 32 | 77% | 240 of 290 |
+| outline/outline.zp | 100% | 0 of 30 | 100% | 29 of 59 |
+| xml/xml.zp | 100% | 0 of 30 | 100% | 14 of 44 |
 
 The calculator, CSV and JSON grammars need neither: no candidate is rejected either way.
 

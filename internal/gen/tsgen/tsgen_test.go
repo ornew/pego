@@ -2,15 +2,15 @@ package tsgen_test
 
 import (
 	"encoding/json"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/syntax"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // tsVariantLen is the length up to which TestGeneratedTSParsersMatchEngine also parses variants of
@@ -88,7 +88,7 @@ func TestGenerateTSErrors(t *testing.T) {
 		t.Errorf("got %v", err)
 	}
 	// Generating is deterministic.
-	src, _ := os.ReadFile("../../../parsers/json/json.pego")
+	src, _ := os.ReadFile("../../../parsers/json/json.zp")
 	jg, err := parseTest(string(src))
 	if err != nil {
 		t.Fatal(err)

@@ -3,11 +3,11 @@ package engine
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
-// A terminal type rewritten by pego fix holds the text the terminal held: want is the text of
+// A terminal type rewritten by zp fix holds the text the terminal held: want is the text of
 // the terminal that the grammar produced before.
 func TestFixTerminalTypes(t *testing.T) {
 	t.Parallel()

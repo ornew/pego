@@ -1,6 +1,6 @@
 # Design
 
-How PEGO is built today, and the records of the decisions that shaped it. Read these pages to find your way in
+How ZeroParse is built today, and the records of the decisions that shaped it. Read these pages to find your way in
 `internal/engine/` and the runtimes; read the [specification](../../spec/README.md) for what an implementation must do.
 
 | Page | Contents |

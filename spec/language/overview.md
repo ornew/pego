@@ -10,10 +10,10 @@ Declaration Statements. Type definitions use Type Expressions; ordinary Rule
 Declaration Statements combine a Rule Expression with an optional Value Action
 containing an Action Expression. An Operators Rule is a specialized Rule
 Declaration Statement. Rule Expressions use PEG choice and repetition, along with
-PEGO-specific constructs. A parse starts at a **start rule** and has to match
+ZeroParse-specific constructs. A parse starts at a **start rule** and has to match
 the whole input (see [Parsing](../runtime/parsing.md)).
 
-PEGO extends PEG (Parsing Expression Grammar), but it is not plain PEG: the
+ZeroParse extends PEG (Parsing Expression Grammar), but it is not plain PEG: the
 language adds typed values, actions, contextual recognition, and error recovery:
 
 | A grammar says | By means of | Chapter |

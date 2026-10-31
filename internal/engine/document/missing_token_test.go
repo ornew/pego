@@ -3,7 +3,7 @@ package document_test
 import (
 	"testing"
 
-	. "github.com/ornew/pego/internal/engine"
+	. "github.com/ornew/zeroparse/internal/engine"
 )
 
 func TestMissingTokensDocumentChangesRejectionPreservesBaseline(t *testing.T) {

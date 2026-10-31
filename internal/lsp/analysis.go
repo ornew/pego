@@ -8,10 +8,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/syntax"
-	"github.com/ornew/pego/lint"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/syntax"
+	"github.com/ornew/zeroparse/lint"
 )
 
 // symKind is the namespace of a name: rules and types have separate namespaces.
@@ -130,7 +130,7 @@ func failedAnalysis(text string, good *analysis, err error) *analysis {
 	}
 	a.publicationDiags = nil
 	a.syntaxErrs = syntax.ErrorList{&syntax.Error{Msg: msg}}
-	a.diags = []Diagnostic{{Range: Range{}, Severity: severityError, Source: "pego", Message: msg}}
+	a.diags = []Diagnostic{{Range: Range{}, Severity: severityError, Source: "zp", Message: msg}}
 	return &a
 }
 
@@ -171,7 +171,7 @@ func analyzeContext(ctx context.Context, text string) (*analysis, error) {
 				return nil, err
 			}
 		}
-		start, end := a.idx.pegoOffset(t.Pos), a.idx.pegoOffset(t.End)
+		start, end := a.idx.zpOffset(t.Pos), a.idx.zpOffset(t.End)
 		a.tokAt[start] = len(a.toks)
 		a.toks = append(a.toks, token{t, start, end})
 	}
@@ -193,7 +193,7 @@ func analyzeContext(ctx context.Context, text string) (*analysis, error) {
 const maxCompileErrors = 100
 
 func (a *analysis) diag(r Range, msg string) {
-	a.diags = append(a.diags, Diagnostic{Range: r, Severity: severityError, Source: "pego", Message: msg})
+	a.diags = append(a.diags, Diagnostic{Range: r, Severity: severityError, Source: "zp", Message: msg})
 }
 
 // compileContext records ordinary compile errors; cancellation publishes neither
@@ -237,7 +237,7 @@ func compileContextSafely(ctx context.Context, g *grammar.Grammar) (prog *engine
 // definitions set, they are reported at its name instead.
 func (a *analysis) errorRangeControlled(pos grammar.Pos, definitions bool, control *renderControl) Range {
 	control.poll()
-	off := a.idx.pegoOffset(pos)
+	off := a.idx.zpOffset(pos)
 	if definitions {
 		for _, d := range a.defs {
 			control.poll()
@@ -257,9 +257,9 @@ func (a *analysis) errorRangeControlled(pos grammar.Pos, definitions bool, contr
 	return a.idx.rangeOf(off, end)
 }
 
-// tokenIndex returns the index of the token that starts at the PEGO position pos.
+// tokenIndex returns the index of the token that starts at the ZeroParse position pos.
 func (a *analysis) tokenIndex(pos grammar.Pos) (int, bool) {
-	i, ok := a.tokAt[a.idx.pegoOffset(pos)]
+	i, ok := a.tokAt[a.idx.zpOffset(pos)]
 	return i, ok
 }
 

@@ -18,7 +18,7 @@ import (
 // The reference is generated from the Go source of the repository with go/doc, so that it always
 // matches the code it is built with; pkg.go.dev has the reference of published versions.
 
-const modulePath = "github.com/ornew/pego"
+const modulePath = "github.com/ornew/zeroparse"
 
 // refPackage is a package documented in the reference.
 type refPackage struct {
@@ -26,15 +26,15 @@ type refPackage struct {
 }
 
 var refPackages = []refPackage{
-	{dir: ".", importPath: modulePath, url: "reference/pego/", title: "Package pego", label: "pego"},
-	{dir: "grammar", importPath: modulePath + "/grammar", url: "reference/grammar/", title: "Package pego/grammar", label: "pego/grammar"},
-	{dir: "runtime", importPath: modulePath + "/runtime", url: "reference/runtime/", title: "Package pego/runtime", label: "pego/runtime"},
-	{dir: "gen", importPath: modulePath + "/gen", url: "reference/gen/", title: "Package pego/gen", label: "pego/gen"},
-	{dir: "lint", importPath: modulePath + "/lint", url: "reference/lint/", title: "Package pego/lint", label: "pego/lint"},
-	{dir: "schema", importPath: modulePath + "/schema", url: "reference/schema/", title: "Package pego/schema", label: "pego/schema"},
-	{dir: "query", importPath: modulePath + "/query", url: "reference/query/", title: "Package pego/query", label: "pego/query"},
-	{dir: "sample", importPath: modulePath + "/sample", url: "reference/sample/", title: "Package pego/sample", label: "pego/sample"},
-	{dir: "editfuzz", importPath: modulePath + "/editfuzz", url: "reference/editfuzz/", title: "Package pego/editfuzz", label: "pego/editfuzz"},
+	{dir: ".", importPath: modulePath, url: "reference/zp/", title: "Package zp", label: "zp"},
+	{dir: "grammar", importPath: modulePath + "/grammar", url: "reference/grammar/", title: "Package zp/grammar", label: "zp/grammar"},
+	{dir: "runtime", importPath: modulePath + "/runtime", url: "reference/runtime/", title: "Package zp/runtime", label: "zp/runtime"},
+	{dir: "gen", importPath: modulePath + "/gen", url: "reference/gen/", title: "Package zp/gen", label: "zp/gen"},
+	{dir: "lint", importPath: modulePath + "/lint", url: "reference/lint/", title: "Package zp/lint", label: "zp/lint"},
+	{dir: "schema", importPath: modulePath + "/schema", url: "reference/schema/", title: "Package zp/schema", label: "zp/schema"},
+	{dir: "query", importPath: modulePath + "/query", url: "reference/query/", title: "Package zp/query", label: "zp/query"},
+	{dir: "sample", importPath: modulePath + "/sample", url: "reference/sample/", title: "Package zp/sample", label: "zp/sample"},
+	{dir: "editfuzz", importPath: modulePath + "/editfuzz", url: "reference/editfuzz/", title: "Package zp/editfuzz", label: "zp/editfuzz"},
 }
 
 const cliURL = "reference/cli/"
@@ -51,7 +51,7 @@ func (s *Site) referencePages() *Section {
 		sec.Pages = append(sec.Pages, p)
 	}
 	cli := &Page{URL: cliURL, Kind: "doc", Title: "CLI Reference", Nav: "CLI Reference", Section: sec.Name,
-		SourceURL: s.cfg.GitHub + "/blob/" + s.cfg.Ref + "/cmd/pego/main.go"}
+		SourceURL: s.cfg.GitHub + "/blob/" + s.cfg.Ref + "/cmd/zp/main.go"}
 	s.add(cli)
 	sec.Pages = append(sec.Pages, cli)
 	return sec
@@ -104,8 +104,8 @@ func (s *Site) renderReference() error {
 	var ib strings.Builder
 	ib.WriteString(`<h1 id="api-reference">Go API Reference</h1>
 <p>The reference of the public Go API, generated from the source of this
-version of PEGO. The reference of released versions is also on
-<a href="https://pkg.go.dev/github.com/ornew/pego">pkg.go.dev</a>.</p>
+version of ZeroParse. The reference of released versions is also on
+<a href="https://pkg.go.dev/github.com/ornew/zeroparse">pkg.go.dev</a>.</p>
 <table><thead><tr><th>Package</th><th>Synopsis</th></tr></thead><tbody>
 `)
 	for _, rp := range refPackages {
@@ -134,7 +134,7 @@ version of PEGO. The reference of released versions is also on
 	cli := s.page(cliURL)
 	body, toc, err := s.renderCLI(cli)
 	if err != nil {
-		return fmt.Errorf("reference of the pego command: %w", err)
+		return fmt.Errorf("reference of the zp command: %w", err)
 	}
 	cli.Body, cli.TOC, cli.Text = template.HTML(body), toc, plainText(body)
 	ib.WriteString("</tbody></table>\n")

@@ -9,7 +9,7 @@
 
 ## 1. Summary
 
-This document describes the design used to add efficient packrat parsing (memoization) to the PEGO parser, together with an algorithm that correctly handles direct and indirect left recursion.
+This document describes the design used to add efficient packrat parsing (memoization) to the ZeroParse parser, together with an algorithm that correctly handles direct and indirect left recursion.
 
 In the VM-based implementation, the compiler analyzes the dependencies between grammar rules as a graph and detects its strongly connected components (SCCs); the VM then applies a memoization strategy chosen from that analysis. To resolve left recursion, the "grow-the-seed" algorithm was introduced. This makes it possible to support left-recursive grammars, which could not be handled before, while bounding the re-evaluation of rule calls.
 

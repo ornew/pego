@@ -3,10 +3,10 @@ package engine
 import (
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/ir/core"
-	"github.com/ornew/pego/internal/ir/flow"
-	flowlower "github.com/ornew/pego/internal/ir/flow/lower"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/ir/core"
+	"github.com/ornew/zeroparse/internal/ir/flow"
+	flowlower "github.com/ornew/zeroparse/internal/ir/flow/lower"
 )
 
 // TestFlowVerifiesCorpus lowers every typed rule of the corpus that Flow IR covers, from the Core

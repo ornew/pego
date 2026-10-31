@@ -7,14 +7,14 @@
 //	go run ./hack/corpora pin name          download a source and print the digest for the manifest
 //	go run ./hack/corpora dir name          print the directory of a fetched source
 //
-// The cache is $PEGO_CORPORA or pego/corpora in the user cache directory. The tests never download anything.
+// The cache is $ZP_CORPORA or zp/corpora in the user cache directory. The tests never download anything.
 package main
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/ornew/pego/internal/corpora"
+	"github.com/ornew/zeroparse/internal/corpora"
 )
 
 func main() {

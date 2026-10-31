@@ -48,7 +48,7 @@ To generate the same-generator routes and check that they return identical
 values and errors:
 
 ```sh
-export PEGO_TYPED_OPERATORS_RULE_DIR=/tmp/pego-typed-operators-rule
+export ZP_TYPED_OPERATORS_RULE_DIR=/tmp/zp-typed-operators-rule
 go test ./internal/gen/gogen -run '^TestGeneratedTypedOperatorsRule(Workload|ActionWorkload)$' -count=1
 ```
 
@@ -57,7 +57,7 @@ benchmark binaries:
 
 ```sh
 for workload in calculator actions; do
-  fixture=$PEGO_TYPED_OPERATORS_RULE_DIR
+  fixture=$ZP_TYPED_OPERATORS_RULE_DIR
   if [ "$workload" = actions ]; then fixture="$fixture/actions"; fi
   for variant in direct general; do
     (cd "$fixture/$variant" && go test -c -o "$fixture/$variant.test" .)
@@ -75,7 +75,7 @@ for pair in 1 2 3 4 5; do
     first=direct; second=general
   fi
   for workload in calculator actions; do
-    fixture=$PEGO_TYPED_OPERATORS_RULE_DIR
+    fixture=$ZP_TYPED_OPERATORS_RULE_DIR
     if [ "$workload" = actions ]; then fixture="$fixture/actions"; fi
     for variant in "$first" "$second"; do
       "$fixture/$variant.test" -test.run='^$' \

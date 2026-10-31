@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/starttest"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/starttest"
 )
 
 var differentialGrammars = flag.Int("differential", 600, "number of random grammars TestLinearClaims generates")
@@ -175,12 +175,12 @@ func linearClaims(t *testing.T, count int, claimsLinear func(*grammar.Grammar) b
 	var failures []string
 	for n := range count {
 		src := randomCostGrammar(rng)
-		g, err := pego.ParseGrammar(src)
+		g, err := zeroparse.ParseGrammar(src)
 		if err != nil {
 			t.Fatalf("generated grammar %d does not parse: %v\n%s", n, err, src)
 		}
 		g = starttest.MarkAll(g)
-		p, err := pego.Compile(g, "main")
+		p, err := zeroparse.Compile(g, "main")
 		if err != nil {
 			continue // left recursion without a base case, a repetition of nothing and the like
 		}
@@ -189,7 +189,7 @@ func linearClaims(t *testing.T, count int, claimsLinear func(*grammar.Grammar) b
 		}
 		checked++
 	measure:
-		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode} {
+		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode} {
 			for i, build := range differentialInputs {
 				s := Series{Sizes: differentialSizes}
 				for _, size := range differentialSizes {

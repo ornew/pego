@@ -19,7 +19,7 @@ TypeScript have no Document API.
 
 ## Reference Control
 
-Build tag `pego_reference_document_pieces` selects flat same-source input. It
+Build tag `zp_reference_document_pieces` selects flat same-source input. It
 isolates storage while retaining surrounding Document logic.
 
 ## Evidence and Implementation

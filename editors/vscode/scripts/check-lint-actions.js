@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const { loadExtension, deferred, within } = require('./extension-harness');
 const manifest = require('../package.json');
 
-const uri = { toString: () => 'file:///lint.pego' };
+const uri = { toString: () => 'file:///lint.zp' };
 const source = ['@start', 'rule main = [a-cb-z] &"b"* "x"', '// Not used.', 'rule x = "b"', ''].join('\n');
 // getText answers from a source with LF line breaks; a range is {start, end} of line and character.
 const textOf = (range) => {
@@ -17,19 +17,19 @@ const textOf = (range) => {
 const document = () => ({ uri, version: 1, isClosed: false, lineCount: 4, getText: textOf });
 const token = () => ({ isCancellationRequested: false });
 const diagnostic = (version = 1, generation = 1, code = 'unused-capture') => ({
-  source: 'pego-lint', code, message: 'capture b is unused',
+  source: 'zp-lint', code, message: 'capture b is unused',
   data: { uri: uri.toString(), version, generation, key: '0:unused-capture' },
 });
 const explanation = (d = diagnostic()) => ({
   title: 'Explain unused-capture', diagnostics: [d],
-  command: { command: 'pego.showExplanation', arguments: ['unused-capture', d.message, 'A discarded capture.'] },
+  command: { command: 'zp.showExplanation', arguments: ['unused-capture', d.message, 'A discarded capture.'] },
 });
 const suppression = (d = diagnostic(), target = uri, text = '// lint:ignore unused-capture\n', line = 1, character = 0) => ({
   title: 'Suppress unused-capture on this finding line', diagnostics: [d],
   edit: { entries: () => [[target, [{ range: { start: { line, character }, end: { line, character } }, newText: text }]]] },
 });
 const fixDiagnostic = (code, version = 1, generation = 1) => ({
-  source: 'pego-lint', code, message: code,
+  source: 'zp-lint', code, message: code,
   data: { uri: uri.toString(), version, generation, key: '0:' + code },
 });
 const range = (sl, sc, el, ec) => ({ start: { line: sl, character: sc }, end: { line: el, character: ec } });
@@ -49,7 +49,7 @@ async function using(enabled, f) {
 }
 
 async function main() {
-  assert.equal(manifest.contributes.configuration.properties['pego.server.experimentalLint'].default, false);
+  assert.equal(manifest.contributes.configuration.properties['zp.server.experimentalLint'].default, false);
   await using(false, async (h) => {
     assert.equal(h.clients[0].capabilities.experimental, undefined);
     const d = document(); h.workspace.textDocuments = [d];
@@ -58,25 +58,25 @@ async function main() {
     assert.deepEqual(await actions(h, d, () => [ordinary]), [ordinary], 'disabled middleware passes ordinary actions through');
     assert.deepEqual(await actions(h, d, () => returned), [], 'disabled middleware drops lint actions');
     assert.deepEqual(await actions(h, d, () => [suppression()]), [], 'disabled middleware drops lint edits');
-    assert.equal(await h.commands['pego.showExplanation']('unused-capture', 'message', 'explanation'), false);
+    assert.equal(await h.commands['zp.showExplanation']('unused-capture', 'message', 'explanation'), false);
     assert.equal(h.information.length, 0);
   });
   await using(true, async (h) => {
     const capabilities = h.clients[0].capabilities;
-    assert.deepEqual(capabilities.experimental.pego, { lintDiagnostics: true, responsiveAnalysis: true, showExplanation: true });
-    const extra = { experimental: { elsewhere: true, pego: { future: true } } };
+    assert.deepEqual(capabilities.experimental.zp, { lintDiagnostics: true, responsiveAnalysis: true, showExplanation: true });
+    const extra = { experimental: { elsewhere: true, zp: { future: true } } };
     h.clients[0].features[0].fillClientCapabilities(extra);
     assert.equal(extra.experimental.elsewhere, true);
-    assert.equal(extra.experimental.pego.future, true);
+    assert.equal(extra.experimental.zp.future, true);
     const d = document(); h.workspace.textDocuments = [d]; publish(h, [diagnostic()]);
     const [explain] = await actions(h, d, () => [explanation(), suppression()]);
     assert.equal(await execute(h, explain), true);
     assert.equal(h.information.length, 1);
     const [suppress] = await actions(h, d, () => [suppression()]);
     assert.equal(suppress.edit, undefined, 'the unversioned WorkspaceEdit is replaced by a guarded command');
-    assert.equal(suppress.command.command, 'pego.applyLintSuppression');
+    assert.equal(suppress.command.command, 'zp.applyLintSuppression');
     assert.deepEqual(suppress.command.arguments.slice(0, 2), [1, '// lint:ignore unused-capture\n']);
-    assert.equal(await h.commands['pego.applyLintSuppression']({}, {}), false, 'legacy suppression commands are refused');
+    assert.equal(await h.commands['zp.applyLintSuppression']({}, {}), false, 'legacy suppression commands are refused');
     assert.equal(h.applied.length, 0);
     d.version = 2;
     assert.equal(await execute(h, explain), false, 'reject stale explanation');
@@ -108,10 +108,10 @@ async function main() {
     assert.deepEqual(await actions(h, d, () => [explanation()], cancel), []);
     assert.deepEqual(await actions(h, d, () => [explanation({ ...diagnostic(), data: undefined })]), []);
     assert.deepEqual(await actions(h, d, () => [{ ...explanation(), command: { command: 'unrelated.command' } }]), []);
-    assert.deepEqual(await actions(h, d, () => [suppression(diagnostic(), { toString: () => 'file:///other.pego' })]), []);
+    assert.deepEqual(await actions(h, d, () => [suppression(diagnostic(), { toString: () => 'file:///other.zp' })]), []);
     assert.deepEqual(await actions(h, d, () => [suppression(diagnostic(), uri, 'delete grammar source')]), []);
     const [explain] = await actions(h, d, () => [explanation()]);
-    assert.equal(await h.commands['pego.showExplanation']('bad check', 'message', 'explanation', explain.command.arguments[3]), false);
+    assert.equal(await h.commands['zp.showExplanation']('bad check', 'message', 'explanation', explain.command.arguments[3]), false);
     assert.equal(h.applied.length, 0);
   });
   await using(true, async (h) => {
@@ -130,9 +130,9 @@ async function main() {
       ['two edits', { ...suppression(), edit: { entries: () => [[uri, [
         { range: { start: { line: 1, character: 0 }, end: { line: 1, character: 0 } }, newText: '// lint:ignore unused-capture\n' },
         { range: { start: { line: 2, character: 0 }, end: { line: 2, character: 0 } }, newText: '// lint:ignore unused-capture\n' }]]] } }],
-      ['two documents', { ...suppression(), edit: { entries: () => [...suppression().edit.entries(), ...suppression(diagnostic(), { toString: () => 'file:///other.pego' }).edit.entries()] } }],
+      ['two documents', { ...suppression(), edit: { entries: () => [...suppression().edit.entries(), ...suppression(diagnostic(), { toString: () => 'file:///other.zp' }).edit.entries()] } }],
       ['two findings', { ...suppression(), diagnostics: [diagnostic(), diagnostic()] }],
-      ['edit and command', { ...suppression(), command: { command: 'pego.showExplanation', arguments: ['unused-capture', 'message', 'explanation'] } }],
+      ['edit and command', { ...suppression(), command: { command: 'zp.showExplanation', arguments: ['unused-capture', 'message', 'explanation'] } }],
     ];
     for (const [name, candidate] of unsafe) {
       assert.deepEqual(await actions(h, d, () => [candidate]), [], name + ': unsafe edit is not surfaced');
@@ -160,8 +160,8 @@ async function main() {
     // Replaying a command after an edit is refused before reaching the editor.
     d.version = 2;
     assert.equal(await execute(h, action), false, 'stale version is not applied');
-    assert.equal(await h.commands['pego.applyLintSuppression'](1, '// lint:ignore unused-capture\n', { ...guard, version: 2 }), false, 'a forged guard is refused');
-    assert.equal(await h.commands['pego.applyLintSuppression'](1, '// lint:ignore unused-capture\n', { ...guard, session: 'x' }), false, 'a guard from another session is refused');
+    assert.equal(await h.commands['zp.applyLintSuppression'](1, '// lint:ignore unused-capture\n', { ...guard, version: 2 }), false, 'a forged guard is refused');
+    assert.equal(await h.commands['zp.applyLintSuppression'](1, '// lint:ignore unused-capture\n', { ...guard, session: 'x' }), false, 'a guard from another session is refused');
     assert.equal(h.applied.length, 1);
     // A change the extension host has not seen yet is refused by the main thread.
     d.version = 1; publish(h, [diagnostic()]);
@@ -173,7 +173,7 @@ async function main() {
     h.mainVersion = () => d.version;
     const args = again.command.arguments;
     for (const bad of [[-1, args[1]], [4, args[1]], [1.5, args[1]], [1, 'delete everything\n'], [1, '// lint:ignore a\nrule x = "y"\n'], [1, undefined]]) {
-      assert.equal(await h.commands['pego.applyLintSuppression'](...bad, args[2]), false, JSON.stringify(bad));
+      assert.equal(await h.commands['zp.applyLintSuppression'](...bad, args[2]), false, JSON.stringify(bad));
     }
     assert.equal(h.applied.length, 2);
     // A new publication or a close invalidates a command already in a menu.
@@ -199,7 +199,7 @@ async function main() {
     for (const [code, r, text] of good) {
       const [action] = await actions(h, d, () => [fix(code, r, text)]);
       assert.equal(action.edit, undefined, code + ': the unversioned WorkspaceEdit is replaced by a guarded command');
-      assert.equal(action.command.command, 'pego.applyLintFix');
+      assert.equal(action.command.command, 'zp.applyLintFix');
       const before = h.applied.length;
       const pending = execute(h, action);
       assert.equal(h.applied.length, before + 1, code + ': applyEdit is called synchronously');
@@ -221,7 +221,7 @@ async function main() {
       ['backwards range', fix('char-class', range(1, 20, 1, 12), '[a-z]')],
       ['negative position', fix('char-class', range(1, -1, 1, 20), '[a-z]')],
       ['malformed range', { ...fix('char-class', classRange, '[a-z]'), edit: { entries: () => [[uri, [{ newText: '[a-z]' }]]] } }],
-      ['other document', fix('char-class', classRange, '[a-z]', undefined, { toString: () => 'file:///other.pego' })],
+      ['other document', fix('char-class', classRange, '[a-z]', undefined, { toString: () => 'file:///other.zp' })],
       ['a check without a fix', fix('unused-capture', classRange, '[a-z]')],
       ['two findings', { ...fix('char-class', classRange, '[a-z]'), diagnostics: [fixDiagnostic('char-class'), fixDiagnostic('char-class')] }],
       ['two edits', { ...fix('char-class', classRange, '[a-z]'), edit: { entries: () => [[uri, [
@@ -242,7 +242,7 @@ async function main() {
       [check, [1, 12, 1], text, guard], [check, [1, 12, 1, 12], text, guard], [check, [9, 0, 9, 4], text, guard],
       [check, r, text, { ...guard, session: 'x' }], [check, r, text, { ...guard, version: 2 }], [check, r, text, undefined],
     ]) {
-      assert.equal(await h.commands['pego.applyLintFix'](...forged), false, JSON.stringify(forged));
+      assert.equal(await h.commands['zp.applyLintFix'](...forged), false, JSON.stringify(forged));
     }
     assert.equal(h.applied.length, applied, 'forged fixes never reach the editor');
     d.version = 2;
@@ -273,7 +273,7 @@ async function main() {
     const [suppressAction] = await actions(h, d, () => [lazy('char-class', 'suppress')]);
     for (const a of [fixAction, suppressAction]) {
       assert.equal(a.edit, undefined);
-      assert.equal(a.command.command, 'pego.applyLintAction');
+      assert.equal(a.command.command, 'zp.applyLintAction');
       assert.equal(a.command.arguments[1].version, 1);
     }
     assert.equal(h.requests.length, 0, 'listing asks the server for nothing');
@@ -302,7 +302,7 @@ async function main() {
     const refused = [
       ['no edit', {}],
       ['stamped for another version', fixReply('[a-z]', classRange, 2)],
-      ['for another document', reply(1, [{ range: classRange, newText: '[a-z]' }], 'file:///other.pego')],
+      ['for another document', reply(1, [{ range: classRange, newText: '[a-z]' }], 'file:///other.zp')],
       ['two edits', reply(1, [{ range: classRange, newText: '[a-z]' }, { range: classRange, newText: '[a-z]' }])],
       ['two documents', { edit: { documentChanges: [...fixReply().edit.documentChanges, ...fixReply().edit.documentChanges] } }],
       ['changes without versions', { edit: { changes: { [uri.toString()]: [{ range: classRange, newText: '[a-z]' }] } } }],
@@ -342,11 +342,11 @@ async function main() {
       [{ ...spec, action: 'delete' }, guard], [{ ...spec, key: 'x' }, guard], [{ ...spec, key: '0:unused-capture' }, guard],
       [{ ...spec, title: '' }, guard], [spec, { ...guard, session: 'x' }], [spec, { ...guard, version: 2 }], [undefined, guard], [spec, undefined],
     ]) {
-      assert.equal(await h.commands['pego.applyLintAction'](...forged), false, JSON.stringify(forged));
+      assert.equal(await h.commands['zp.applyLintAction'](...forged), false, JSON.stringify(forged));
     }
     assert.equal(h.requests.length, before, 'forged commands ask nothing');
     // Data that does not match the finding is not listed.
-    for (const over of [{ uri: 'file:///other.pego' }, { version: 2 }, { generation: 2 }, { key: '1:char-class' }, { action: 'delete' }, { key: '0:unused-capture' }]) {
+    for (const over of [{ uri: 'file:///other.zp' }, { version: 2 }, { generation: 2 }, { key: '1:char-class' }, { action: 'delete' }, { key: '0:unused-capture' }]) {
       assert.deepEqual(await actions(h, d, () => [lazy('char-class', 'fix', over)]), [], JSON.stringify(over));
     }
     assert.deepEqual(await actions(h, d, () => [lazy('unused-capture', 'fix')]), [], 'a check without a fix');
@@ -360,25 +360,25 @@ async function main() {
     const d = document(); h.workspace.textDocuments = [d];
     const lazy = { title: 'Fix', diagnostics: [fixDiagnostic('char-class')], data: { uri: uri.toString(), version: 1, generation: 1, key: '0:char-class', action: 'fix' } };
     assert.deepEqual(await actions(h, d, () => [lazy]), [], 'disabled middleware drops lazy lint actions');
-    assert.equal(await h.commands['pego.applyLintAction']({ action: 'fix', key: '0:char-class', title: 'Fix' }, {}), false);
+    assert.equal(await h.commands['zp.applyLintAction']({ action: 'fix', key: '0:char-class', title: 'Fix' }, {}), false);
     assert.equal(h.requests.length, 0);
   });
   await using(false, async (h) => {
     const d = document(); h.workspace.textDocuments = [d];
     const disabled = [fix('char-class', range(1, 12, 1, 20), '[a-z]')];
     assert.deepEqual(await actions(h, d, () => disabled), [], 'disabled middleware drops lint fixes');
-    assert.equal(await h.commands['pego.applyLintFix']('char-class', [1, 12, 1, 20], '[a-z]', {}), false, 'disabled lint applies no fix');
+    assert.equal(await h.commands['zp.applyLintFix']('char-class', [1, 12, 1, 20], '[a-z]', {}), false, 'disabled lint applies no fix');
     assert.equal(h.applied.length, 0);
   });
   await using(false, async (h) => {
     const d = document(); h.workspace.textDocuments = [d];
-    assert.equal(await h.commands['pego.applyLintSuppression'](1, '// lint:ignore unused-capture\n', {}), false, 'disabled lint applies nothing');
+    assert.equal(await h.commands['zp.applyLintSuppression'](1, '// lint:ignore unused-capture\n', {}), false, 'disabled lint applies nothing');
     assert.equal(h.applied.length, 0);
   });
   await using(false, async (h) => {
     h.settings['server.experimentalLint'] = true;
     await h.change();
-    assert.equal(h.clients.at(-1).capabilities.experimental.pego.lintDiagnostics, true);
+    assert.equal(h.clients.at(-1).capabilities.experimental.zp.lintDiagnostics, true);
     h.settings['server.experimentalLint'] = false;
     await h.change();
     assert.equal(h.clients.at(-1).capabilities.experimental, undefined);

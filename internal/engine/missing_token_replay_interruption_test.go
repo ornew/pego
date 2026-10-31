@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package engine
 
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 // Cancel only after a real grammar has produced a successful LR seed and a

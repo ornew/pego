@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // TestCanonicalValues checks the canonical forms on hand-written values: a pair of values that

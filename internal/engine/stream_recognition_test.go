@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/syntax"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/syntax"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 func TestStreamCaptureRecognition(t *testing.T) {
@@ -90,7 +90,7 @@ func BenchmarkStreamCaptureRecognition(b *testing.B) {
 		// The old capture-bearing #stream recognizer is invalid. Its ordinary
 		// repetition is the equivalent successful baseline, since #stream has
 		// no effect on recognition. Keep grammar setup outside the timed loop.
-		if os.Getenv("PEGO_BENCH_RECOGNITION_PLAIN") != "" {
+		if os.Getenv("ZP_BENCH_RECOGNITION_PLAIN") != "" {
 			source = strings.ReplaceAll(source, " #stream", "")
 		}
 		g, err := parseTest(source)

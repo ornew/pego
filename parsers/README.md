@@ -1,54 +1,54 @@
 # Ready-Made Parsers
 
-Parsers for common languages, written in PEGO and generated into Go with `pego gen`. Each is a Go module of its own
-that depends only on the standard library and the PEGO runtime (`github.com/ornew/pego/runtime`): import it and parse, with nothing to generate or compile at run time.
+Parsers for common languages, written in ZeroParse and generated into Go with `zp gen`. Each is a Go module of its own
+that depends only on the standard library and the ZeroParse runtime (`github.com/ornew/zeroparse/runtime`): import it and parse, with nothing to generate or compile at run time.
 
 | Language | Module | Specification | Checked against |
 |:--|:--|:--|:--|
-| CEL | [`github.com/ornew/pego/parsers/cel`](cel/) | The [CEL language definition](https://github.com/google/cel-spec/blob/master/doc/langdef.md), as cel-go parses it | All 2,527 conformance tests of cel-spec; cel-go v0.32.0 (trees, offsets and literal values on 32,794 expressions; fuzz tests) |
-| CSV | [`github.com/ornew/pego/parsers/csv`](csv/) | [RFC 4180](https://www.rfc-editor.org/rfc/rfc4180), with the leniencies of `encoding/csv` | 73 edge cases, `encoding/csv` (differential and fuzz tests) |
-| CUE | [`github.com/ornew/pego/parsers/cue`](cue/) | [The CUE Language Specification](https://cuelang.org/docs/reference/spec/), as `cue/parser` v0.17.1 parses it | `cue/parser`: 4,061 sources of the CUE repository, 32,488 mutants, 15,000 generated inputs and 4,126 literals (trees, offsets and comments; no difference); fuzz tests |
-| DuckDB SQL | [`github.com/ornew/pego/parsers/duckdb`](duckdb/) | DuckDB 1.5.6's SQL dialect | DuckDB 1.5.6 on 158,605 texts (acceptance, statement splitting and the AST of SELECT statements; 13 known deviations) |
-| Go | [`github.com/ornew/pego/parsers/golang`](golang/) | [The Go Programming Language Specification](https://go.dev/ref/spec) (go1.27), as `go/parser` parses it; `ParseFile` returns `go/ast` | `go/parser`: every file of GOROOT/src (whole trees, positions included), the programs embedded in its tests, mutations and fuzz tests (no difference) |
-| JSON | [`github.com/ornew/pego/parsers/json`](json/) | [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259) | [JSONTestSuite](https://github.com/nst/JSONTestSuite) (every `y_` and `n_` case), `encoding/json` (differential and fuzz tests) |
-| Python | [`github.com/ornew/pego/parsers/python`](python/) | Python 3.14, as CPython 3.14.0 parses it | CPython's `ast.dump`, positions included, on the standard library, `Lib/test` and its 61,540 code snippets (no difference); mutation and fuzz tests |
-| TypeScript | [`github.com/ornew/pego/parsers/typescript`](typescript/) | TypeScript 5.9 and TSX, as the TypeScript 5.9.3 compiler parses them | The compiler's trees on its own test cases (14,799 of 14,804 files agree), its `lib` declaration files and mutated sources |
-| XML | [`github.com/ornew/pego/parsers/xml`](xml/) | [XML 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/), non-validating, with [Namespaces in XML 1.0](https://www.w3.org/TR/xml-names/) | [W3C XML Conformance Test Suite](https://www.w3.org/XML/Test/) (no failure among the XML 1.0 tests that need no external entity), `encoding/xml` (differential and fuzz tests) |
-| YAML | [`github.com/ornew/pego/parsers/yaml`](yaml/) | [YAML 1.2.2](https://yaml.org/spec/1.2.2/), with the core schema for Go values | [yaml-test-suite](https://github.com/yaml/yaml-test-suite) (all 402 tests: events and JSON values) |
+| CEL | [`github.com/ornew/zeroparse/parsers/cel`](cel/) | The [CEL language definition](https://github.com/google/cel-spec/blob/master/doc/langdef.md), as cel-go parses it | All 2,527 conformance tests of cel-spec; cel-go v0.32.0 (trees, offsets and literal values on 32,794 expressions; fuzz tests) |
+| CSV | [`github.com/ornew/zeroparse/parsers/csv`](csv/) | [RFC 4180](https://www.rfc-editor.org/rfc/rfc4180), with the leniencies of `encoding/csv` | 73 edge cases, `encoding/csv` (differential and fuzz tests) |
+| CUE | [`github.com/ornew/zeroparse/parsers/cue`](cue/) | [The CUE Language Specification](https://cuelang.org/docs/reference/spec/), as `cue/parser` v0.17.1 parses it | `cue/parser`: 4,061 sources of the CUE repository, 32,488 mutants, 15,000 generated inputs and 4,126 literals (trees, offsets and comments; no difference); fuzz tests |
+| DuckDB SQL | [`github.com/ornew/zeroparse/parsers/duckdb`](duckdb/) | DuckDB 1.5.6's SQL dialect | DuckDB 1.5.6 on 158,605 texts (acceptance, statement splitting and the AST of SELECT statements; 13 known deviations) |
+| Go | [`github.com/ornew/zeroparse/parsers/golang`](golang/) | [The Go Programming Language Specification](https://go.dev/ref/spec) (go1.27), as `go/parser` parses it; `ParseFile` returns `go/ast` | `go/parser`: every file of GOROOT/src (whole trees, positions included), the programs embedded in its tests, mutations and fuzz tests (no difference) |
+| JSON | [`github.com/ornew/zeroparse/parsers/json`](json/) | [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259) | [JSONTestSuite](https://github.com/nst/JSONTestSuite) (every `y_` and `n_` case), `encoding/json` (differential and fuzz tests) |
+| Python | [`github.com/ornew/zeroparse/parsers/python`](python/) | Python 3.14, as CPython 3.14.0 parses it | CPython's `ast.dump`, positions included, on the standard library, `Lib/test` and its 61,540 code snippets (no difference); mutation and fuzz tests |
+| TypeScript | [`github.com/ornew/zeroparse/parsers/typescript`](typescript/) | TypeScript 5.9 and TSX, as the TypeScript 5.9.3 compiler parses them | The compiler's trees on its own test cases (14,799 of 14,804 files agree), its `lib` declaration files and mutated sources |
+| XML | [`github.com/ornew/zeroparse/parsers/xml`](xml/) | [XML 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/), non-validating, with [Namespaces in XML 1.0](https://www.w3.org/TR/xml-names/) | [W3C XML Conformance Test Suite](https://www.w3.org/XML/Test/) (no failure among the XML 1.0 tests that need no external entity), `encoding/xml` (differential and fuzz tests) |
+| YAML | [`github.com/ornew/zeroparse/parsers/yaml`](yaml/) | [YAML 1.2.2](https://yaml.org/spec/1.2.2/), with the core schema for Go values | [yaml-test-suite](https://github.com/yaml/yaml-test-suite) (all 402 tests: events and JSON values) |
 
 ## Install
 
-Until PEGO publishes a release, the ready-made parser modules depend on the `github.com/ornew/pego` module through a
-local `replace` directive (`replace github.com/ornew/pego => ../..` in each parser's `go.mod`). That directive only
-applies inside the repository, so `go get github.com/ornew/pego/parsers/json` does not work from another module. Use a
+Until ZeroParse publishes a release, the ready-made parser modules depend on the `github.com/ornew/zeroparse` module through a
+local `replace` directive (`replace github.com/ornew/zeroparse => ../..` in each parser's `go.mod`). That directive only
+applies inside the repository, so `go get github.com/ornew/zeroparse/parsers/json` does not work from another module. Use a
 parser from a checkout of the repository, in one of two ways.
 
 With a `go.work` file next to your module's `go.mod`:
 
 ```bash
 go work init .
-go work use ~/src/pego ~/src/pego/parsers/json
+go work use ~/src/zeroparse ~/src/zeroparse/parsers/json
 ```
 
 or with `replace` directives in your own `go.mod`, which the `go.mod` of the parser cannot supply for you:
 
 ```text
-require github.com/ornew/pego/parsers/json v0.0.0
+require github.com/ornew/zeroparse/parsers/json v0.0.0
 
-replace github.com/ornew/pego/parsers/json => /path/to/pego/parsers/json
-replace github.com/ornew/pego => /path/to/pego
+replace github.com/ornew/zeroparse/parsers/json => /path/to/zp/parsers/json
+replace github.com/ornew/zeroparse => /path/to/zp
 ```
 
-(`/path/to/pego` is the full path of your checkout; `go.mod` does not expand `~`.) Run `go mod tidy` afterwards to record the requirement of the `github.com/ornew/pego` module.
+(`/path/to/zp` is the full path of your checkout; `go.mod` does not expand `~`.) Run `go mod tidy` afterwards to record the requirement of the `github.com/ornew/zeroparse` module.
 
 ```go
-import "github.com/ornew/pego/parsers/json"
+import "github.com/ornew/zeroparse/parsers/json"
 
-v, err := json.Decode(`{"name": "pego", "tags": ["peg", "operators-rule"]}`) // map[string]any{...}
+v, err := json.Decode(`{"name": "zp", "tags": ["peg", "operators-rule"]}`) // map[string]any{...}
 ast, err := json.ParseAST(src)                                      // typed values with positions
 ```
 
-Every parser has the API of a parser generated with `pego gen -types -recognize` (see
+Every parser has the API of a parser generated with `zp gen -types -recognize` (see
 [code generation](../docs/guide/generated-go-api.md#the-generated-api)), plus functions written for its language:
 
 | | |
@@ -66,12 +66,12 @@ Each directory holds:
 
 | File | Contents |
 |:--|:--|
-| `<language>.pego` | The grammar. It can be used with the engine too (`pego.CompileSource`), for streaming, incremental parsing or the `pego` tools. |
-| `parser.go`, `api.go`, `types/types.go` | The parser generated from the grammar, the names it re-exports from the runtime, and the Go types of the grammar (the package `types`). The parser imports the runtime package `github.com/ornew/pego/runtime` (generated with `-runtime import`). Do not edit them. |
+| `<language>.zp` | The grammar. It can be used with the engine too (`zeroparse.CompileSource`), for streaming, incremental parsing or the `zp` tools. |
+| `parser.go`, `api.go`, `types/types.go` | The parser generated from the grammar, the names it re-exports from the runtime, and the Go types of the grammar (the package `types`). The parser imports the runtime package `github.com/ornew/zeroparse/runtime` (generated with `-runtime import`). Do not edit them. |
 | other `.go` files | Code written for the language: documentation, conversions to Go values, helpers. Those in `types/` hold the methods of the types of the grammar (a method can only be declared in the package of its type); what needs the parser or the decoder is a function of the module instead. |
 | `*_test.go` | Tests against the language's specification, conformance suites and reference implementations; examples; benchmarks |
 | `testdata/*.txt`, `*.golden` | Inputs and the expected trees and errors, checked on the generated parser here and on every backend of the engine by [parsers_test.go](parsers_test.go) |
-| `go.mod`, `LICENCE` | The module, which requires `github.com/ornew/pego` for the runtime |
+| `go.mod`, `LICENCE` | The module, which requires `github.com/ornew/zeroparse` for the runtime |
 
 ## Development
 

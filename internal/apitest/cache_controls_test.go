@@ -3,7 +3,7 @@ package apitest_test
 import (
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func TestPublicDocumentCacheControls(t *testing.T) {
@@ -12,8 +12,8 @@ rule line = [a-z]+ "\n"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		d, err := p.NewDocument("ab\ncd\n", pego.WithBackend(backend))
+	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+		d, err := p.NewDocument("ab\ncd\n", zeroparse.WithBackend(backend))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -36,7 +36,7 @@ rule line = [a-z]+ "\n"`, "main")
 		}
 		version := d.Version()
 		d.ResetHistory()
-		if got := d.CacheStats(); got != (pego.CacheStats{}) {
+		if got := d.CacheStats(); got != (zeroparse.CacheStats{}) {
 			t.Fatalf("%s reset history: %+v", backend, got)
 		}
 		if d.Stats() != last || d.Text() != "ab\nxd\n" || d.Version() != version || version == beforeVersion {

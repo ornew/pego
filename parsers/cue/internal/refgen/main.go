@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/parsers/cue/internal/upstream"
+	"github.com/ornew/zeroparse/parsers/cue/internal/upstream"
 )
 
 func main() {

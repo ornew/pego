@@ -1,4 +1,4 @@
-// Package fixture runs JSON-described examples against PEGO grammars.
+// Package fixture runs JSON-described examples against ZeroParse grammars.
 package fixture
 
 import (
@@ -13,8 +13,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // FormatVersion is the only fixture format version understood by this package.
@@ -187,7 +187,7 @@ type RunOptions struct {
 	Backends    []string
 	Equivalence *bool
 	Context     context.Context
-	Limits      pego.Limits
+	Limits      zeroparse.Limits
 }
 
 // Outcome describes whether parsing matched cleanly, recovered, or rejected input.
@@ -240,7 +240,7 @@ type Report struct {
 	Equivalence []EquivalenceResult `json:"equivalence,omitempty"`
 }
 
-// Load reads and validates a suite and its PEGO-source or JSON grammar.
+// Load reads and validates a suite and its ZeroParse-source or JSON grammar.
 func Load(path string) (*Suite, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -349,7 +349,7 @@ func Load(path string) (*Suite, error) {
 	if strings.HasSuffix(grammarPath, ".json") {
 		suite.grammar, err = grammar.UnmarshalJSON(grammarBytes)
 	} else {
-		suite.grammar, err = pego.ParseGrammar(string(grammarBytes))
+		suite.grammar, err = zeroparse.ParseGrammar(string(grammarBytes))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("%s: grammar %s: %w", path, suite.Grammar, err)
@@ -384,13 +384,13 @@ func Run(suite *Suite, opts RunOptions) (Report, error) {
 			return report, err
 		}
 	}
-	unit := pego.CodePoints
+	unit := zeroparse.CodePoints
 	if suite.Unit == "bytes" {
-		unit = pego.Bytes
+		unit = zeroparse.Bytes
 	}
-	parsers := make(map[string]*pego.Parser, len(backends))
+	parsers := make(map[string]*zeroparse.Parser, len(backends))
 	for _, backend := range backends {
-		p, err := pego.Compile(suite.grammar, suite.Start)
+		p, err := zeroparse.Compile(suite.grammar, suite.Start)
 		if err != nil {
 			return Report{}, fmt.Errorf("compile grammar: %w", err)
 		}
@@ -597,21 +597,21 @@ func setGoldens(exp *Expectation, actual Actual) {
 	copy(exp.Errors, actual.Errors)
 }
 
-func runCase(p *pego.Parser, backend string, unit pego.PositionUnit, input string, ctx context.Context, limits pego.Limits) (Actual, error) {
-	var b pego.Backend
+func runCase(p *zeroparse.Parser, backend string, unit zeroparse.PositionUnit, input string, ctx context.Context, limits zeroparse.Limits) (Actual, error) {
+	var b zeroparse.Backend
 	switch backend {
 	case "default":
-		b = pego.DefaultBackend
+		b = zeroparse.DefaultBackend
 	case "closure":
-		b = pego.Closure
+		b = zeroparse.Closure
 	case "bytecode":
-		b = pego.Bytecode
+		b = zeroparse.Bytecode
 	case "bytecode-iterative":
-		b = pego.BytecodeIterative
+		b = zeroparse.BytecodeIterative
 	}
-	options := []pego.ParseOption{pego.WithExpectations(), pego.WithUnit(unit), pego.WithBackend(b), pego.WithLimits(limits)}
+	options := []zeroparse.ParseOption{zeroparse.WithExpectations(), zeroparse.WithUnit(unit), zeroparse.WithBackend(b), zeroparse.WithLimits(limits)}
 	if ctx != nil {
-		options = append(options, pego.WithContext(ctx))
+		options = append(options, zeroparse.WithContext(ctx))
 	}
 	node, parseErr := p.Parse(input, options...)
 	actual := Actual{}
@@ -623,8 +623,8 @@ func runCase(p *pego.Parser, backend string, unit pego.PositionUnit, input strin
 		actual.Node = data
 		actual.Start, actual.End = intPointer(int(node.Start())), intPointer(int(node.End()))
 	}
-	var many pego.SyntaxErrors
-	var one *pego.SyntaxError
+	var many zeroparse.SyntaxErrors
+	var one *zeroparse.SyntaxError
 	switch {
 	case parseErr == nil:
 		actual.Outcome = Accepted
@@ -651,7 +651,7 @@ func runCase(p *pego.Parser, backend string, unit pego.PositionUnit, input strin
 	return actual, nil
 }
 
-func errorLocation(e *pego.SyntaxError) ErrorLocation {
+func errorLocation(e *zeroparse.SyntaxError) ErrorLocation {
 	return ErrorLocation{Pos: e.Pos, Line: e.Line, Column: e.Col}
 }
 

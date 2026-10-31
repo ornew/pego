@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/value"
-	"github.com/ornew/pego/query"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/value"
+	"github.com/ornew/zeroparse/query"
+	"github.com/ornew/zeroparse/schema"
 )
 
 func TestPublicOutputSchema(t *testing.T) {
@@ -30,7 +30,7 @@ rule unused = "z"`, "main")
 	if _, err := query.Compile(query.Pattern{Type: "Missing"}, s); err == nil {
 		t.Fatal("accepted a type absent from the supplied schema")
 	}
-	if s.Format != "pego-output-schema" || s.Version != 2 || s.Start != "main" || len(s.Rules) != 2 {
+	if s.Format != "zp-output-schema" || s.Version != 2 || s.Start != "main" || len(s.Rules) != 2 {
 		t.Fatalf("default schema: %+v", s)
 	}
 	first, err := json.Marshal(s)
@@ -47,7 +47,7 @@ rule unused = "z"`, "main")
 			t.Fatalf("unstable schema: %s, %v", encoded, err)
 		}
 	}
-	all, err := p.OutputSchema(pego.WithAllSchemaRules())
+	all, err := p.OutputSchema(zeroparse.WithAllSchemaRules())
 	if err != nil || len(all.Rules) != 3 {
 		t.Fatalf("all rules: %+v, %v", all, err)
 	}
@@ -58,31 +58,31 @@ rule unused = "z"`, "main")
 	if got, _ := json.Marshal(&decoded); !bytes.Equal(first, got) {
 		t.Fatalf("round trip changed schema: %s", got)
 	}
-	if err := json.Unmarshal([]byte(`{"format":"pego-output-schema","version":3}`), &decoded); err == nil {
+	if err := json.Unmarshal([]byte(`{"format":"zp-output-schema","version":3}`), &decoded); err == nil {
 		t.Fatal("accepted a future schema version")
 	}
 	data, err := p.MarshalBinary()
 	if err != nil {
 		t.Fatal(err)
 	}
-	loaded, err := pego.LoadParser(data)
+	loaded, err := zeroparse.LoadParser(data)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// A compiled grammar holds no schema in any mode: the schema comes from the grammar source.
-	if _, err := loaded.OutputSchema(); !errors.Is(err, pego.ErrSchemaUnavailable) || !strings.Contains(err.Error(), "grammar source") {
+	if _, err := loaded.OutputSchema(); !errors.Is(err, zeroparse.ErrSchemaUnavailable) || !strings.Contains(err.Error(), "grammar source") {
 		t.Fatalf("loaded parser schema: %v", err)
 	}
-	for _, mode := range []pego.CompiledMode{pego.CompiledParse, pego.CompiledRecognize, pego.CompiledDocument} {
+	for _, mode := range []zeroparse.CompiledMode{zeroparse.CompiledParse, zeroparse.CompiledRecognize, zeroparse.CompiledDocument} {
 		data, err := p.Marshal(mode)
 		if err != nil {
 			t.Fatal(err)
 		}
-		loaded, err := pego.LoadParser(data)
+		loaded, err := zeroparse.LoadParser(data)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := loaded.OutputSchema(); !errors.Is(err, pego.ErrSchemaUnavailable) || !strings.Contains(err.Error(), "grammar source") {
+		if _, err := loaded.OutputSchema(); !errors.Is(err, zeroparse.ErrSchemaUnavailable) || !strings.Contains(err.Error(), "grammar source") {
 			t.Fatalf("%s mode: loaded parser schema: %v", mode, err)
 		}
 	}
@@ -135,10 +135,10 @@ func TestPublicStructuralQuerySharedEdgesAndLimits(t *testing.T) {
 	if partial, err := q.Matches(root, query.WithContext(ctx)); partial != nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("cancelled query: %+v, %v", partial, err)
 	}
-	if partial, err := q.Matches(root, query.WithLimits(pego.Limits{Budget: 1})); partial != nil || !errors.Is(err, pego.ErrLimit) {
+	if partial, err := q.Matches(root, query.WithLimits(zeroparse.Limits{Budget: 1})); partial != nil || !errors.Is(err, zeroparse.ErrLimit) {
 		t.Fatalf("limited query: %+v, %v", partial, err)
 	}
-	var kids []*pego.Node
+	var kids []*zeroparse.Node
 	for _, c := range root.Elems() {
 		kids = append(kids, c)
 	}

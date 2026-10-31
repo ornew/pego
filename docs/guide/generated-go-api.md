@@ -1,6 +1,6 @@
 # The Generated Go API
 
-A Go parser written by [`pego gen`](code-generation.md) has a small API: `parser.go` defines the functions that parse, `api.go` re-exports the types and options of the runtime package (the copy in `internal/runtime`, or `github.com/ornew/pego/runtime` with `-runtime import`) under their own names, and, with `-types`, `types/types.go` defines the Go types of the grammar. This guide describes
+A Go parser written by [`zp gen`](code-generation.md) has a small API: `parser.go` defines the functions that parse, `api.go` re-exports the types and options of the runtime package (the copy in `internal/runtime`, or `github.com/ornew/zeroparse/runtime` with `-runtime import`) under their own names, and, with `-types`, `types/types.go` defines the Go types of the grammar. This guide describes
 it, the call options that all entry points share, and recognition. Options that add typed values, incremental documents
 and streams have their own guides:
 
@@ -61,16 +61,16 @@ Compared with the engine's API:
   `rule nope is not defined`. An empty name selects the grammar's default start rule, as for
   `Parser.WithStart`. Like the engine, both require the rule to consume the whole input.
 - **The types belong to the generated package.** `pairsparser.Node` has the same fields, methods and JSON encoding as
-  `pego.Node`, but it is a different Go type: you cannot pass one where the other is expected, and error checks use
+  `zeroparse.Node`, but it is a different Go type: you cannot pass one where the other is expected, and error checks use
   `errors.As` with the generated `*pairsparser.SyntaxError` (and `pairsparser.SyntaxErrors` for errors recovered with
-  `#recover`). If other code needs `pego.Node`, convert through JSON, which is identical for both, or write code against
+  `#recover`). If other code needs `zeroparse.Node`, convert through JSON, which is identical for both, or write code against
   the fields you need.
 - **Fields.** As with the engine, a field value is a `*Node`, `int`, `string`, `bool` or `nil`: assert it to
-  `*pairsparser.Node` (as the example does with `Field("Key")`), not to `*pego.Node`.
+  `*pairsparser.Node` (as the example does with `Field("Key")`), not to `*zeroparse.Node`.
 - **Errors** carry the same positions and messages. Recovered errors work too.
-  With this grammar, `rec.pego`:
+  With this grammar, `rec.zp`:
 
-  ```pego
+  ```zp
   @start
   rule main =  stmt* $$
   rule stmt =  s:("let" " " name ";") #recover(skip=[^;]* ";") => $s
@@ -104,7 +104,7 @@ Compared with the engine's API:
 
 | Part | Contents |
 |:--|:--|
-| Runtime | The parser state, memoization, left recursion, Operators Rule loop, attribute handling and the built-in functions of actions. It is **the same for every grammar**: the package `github.com/ornew/pego/runtime`, which the generated package imports (`-runtime import`) or carries a copy of in `internal/runtime` (`-runtime embed`, the default). |
+| Runtime | The parser state, memoization, left recursion, Operators Rule loop, attribute handling and the built-in functions of actions. It is **the same for every grammar**: the package `github.com/ornew/zeroparse/runtime`, which the generated package imports (`-runtime import`) or carries a copy of in `internal/runtime` (`-runtime embed`, the default). |
 | `api.go` | The names of the runtime that the users of the parser need (`Node`, `SyntaxError`, the options and so on), as aliases and wrappers. It is the same for grammars generated with the same options. |
 | `types/types.go` | With `-types`, the package `<module>/types`: a Go type for each type of the grammar, `TNode`, `Error` and the tuple types. |
 | Rule table | For each rule, the results of the engine's static analysis (memoized? left-recursion leader? capture names?). |
@@ -129,7 +129,7 @@ It is the engine's [`RecognizeOnly`](recognition-mode.md) in generated form: the
 with no rule building a value (except those whose values predicates read), into a second rule table in the same file.
 Actions whose values are not needed by predicates are skipped. Actions needed by predicates still run and can report runtime errors. On the benchmark workloads it
 takes about half the time of `Parse` (JSON 8.8 → 4.9 ms on a 262 KB input, CSV 4.0 → 1.8 ms), and it is the fastest
-way PEGO has to validate input. The price is a larger file: the second table adds about as much code as the first.
+way ZeroParse has to validate input. The price is a larger file: the second table adds about as much code as the first.
 
 ## Invocation Options
 
@@ -199,7 +199,7 @@ preparation and before publishing a result.
 With `-types`, the types of the grammar are declared in the package `<module>/types`, not in the parser package, so they
 share no namespace with `parser.go` and `api.go`: a grammar type may be called `Node`, `ParseOption`, `Walk` or like any
 other name of the parser package, and is then used as `types.Node`. The types package declares `TNode`, `Error`,
-`PegoHooks` and, where used, `Unit`, `TupleN`, `PegoNodeTypes` itself and the constant `PegoSchema_<digest>` (which ties the parser to this package), and generation fails if a grammar type has one
+`ZPHooks` and, where used, `Unit`, `TupleN`, `ZPNodeTypes` itself and the constant `ZPSchema_<digest>` (which ties the parser to this package), and generation fails if a grammar type has one
 of those names. Declarations that you add by hand to the generated packages must not reuse the names they declare. The
 [generated parser contract](../../spec/runtime/generated-parsers.md) lists the rule.
 

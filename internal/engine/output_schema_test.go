@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego/internal/compile"
-	ischema "github.com/ornew/pego/internal/schema"
-	"github.com/ornew/pego/schema"
+	"github.com/ornew/zeroparse/internal/compile"
+	ischema "github.com/ornew/zeroparse/internal/schema"
+	"github.com/ornew/zeroparse/schema"
 )
 
 func TestOutputSchemaPrototype(t *testing.T) {
@@ -91,10 +91,10 @@ rule unused = "z"`)
 	if !bytes.Equal(first, roundtrip) {
 		t.Fatal("schema roundtrip")
 	}
-	if err := json.Unmarshal([]byte(`{"format":"pego-output-schema","version":3}`), &decoded); err == nil {
+	if err := json.Unmarshal([]byte(`{"format":"zp-output-schema","version":3}`), &decoded); err == nil {
 		t.Fatal("accepted future version")
 	}
-	if err := json.Unmarshal([]byte(`{"format":"pego-output-schema","version":1}`), &decoded); err == nil {
+	if err := json.Unmarshal([]byte(`{"format":"zp-output-schema","version":1}`), &decoded); err == nil {
 		t.Fatal("accepted version 1")
 	}
 	all, err := outputSchemaPrototype(p, "main", true)

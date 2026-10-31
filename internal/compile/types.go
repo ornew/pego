@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // Ty is a type used in type checking.

@@ -3,8 +3,8 @@ package engine
 import (
 	"context"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
 )
 
 // Complexity is the classification of the cost of a grammar from one start rule (see

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // snapshotPhaseContext changes state only while the freezer is on the stack.

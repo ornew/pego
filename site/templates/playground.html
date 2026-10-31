@@ -28,19 +28,19 @@
           <select id="pg-compiler"><option value="go">Go</option><option id="pg-compiler-tinygo" value="tinygo">TinyGo</option></select>
         </label>
         <label class="check"><input type="checkbox" id="pg-recognize"> Recognize only</label>
-        <label class="check" title="Show the rule of each node and the names of captures (pego parse -source-info)"><input type="checkbox" id="pg-source-info"> Source info</label>
-        <label class="check" title="Drop value actions and declared rule types, and show the default node tree (pego parse -default-value)"><input type="checkbox" id="pg-default-value"> Default value</label>
+        <label class="check" title="Show the rule of each node and the names of captures (zp parse -source-info)"><input type="checkbox" id="pg-source-info"> Source info</label>
+        <label class="check" title="Drop value actions and declared rule types, and show the default node tree (zp parse -default-value)"><input type="checkbox" id="pg-default-value"> Default value</label>
       </div>
     </details>
     <span class="spacer"></span>
-    <button type="button" class="button small" id="pg-format" title="Format the grammar (pego fmt)">Format</button>
+    <button type="button" class="button small" id="pg-format" title="Format the grammar (zp fmt)">Format</button>
     <button type="button" class="button small" id="pg-share" title="Copy a link to this grammar and input">Share</button>
   </div>
 
   <div class="pg-editors">
     <section class="pane" aria-labelledby="pg-grammar-label">
       <header class="pane-head"><h2 id="pg-grammar-label">Grammar</h2><span class="pane-info" id="pg-grammar-info"></span></header>
-      <div class="editor" id="pg-grammar-editor" data-language="pego">
+      <div class="editor" id="pg-grammar-editor" data-language="zp">
         <div class="gutter" aria-hidden="true"></div>
         <div class="editor-body">
           <pre class="backdrop" aria-hidden="true"></pre>

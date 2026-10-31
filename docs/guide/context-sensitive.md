@@ -2,7 +2,7 @@
 
 A plain PEG describes what may follow what, but it cannot remember anything: it cannot check that a closing tag has the
 name of its opening tag, that a block is indented like its siblings, or that a here-document ends with the delimiter
-that started it. PEGO adds three tools for this: **captures that Predicate Actions can read**, **variables** that carry context
+that started it. ZeroParse adds three tools for this: **captures that Predicate Actions can read**, **variables** that carry context
 down into the rules a rule calls, and **lookahead** that can look at the input without consuming it. This guide shows
 how they work and how to combine them, with complete grammars for matching tags, indentation-based blocks,
 here-documents and similar constructs.
@@ -20,8 +20,8 @@ Contents:
    [long brackets](#long-brackets), [limiting nesting](#limiting-nesting)
 4. [Pitfalls](#pitfalls)
 
-The examples use the `pego` command (`go build -o pego ./cmd/pego`). Commands are followed by their output, standard
-output and standard error together. A grammar block whose first line is `// name.pego` is a complete file to save under
+The examples use the `zp` command (`go build -o zp ./cmd/zp`). Commands are followed by their output, standard
+output and standard error together. A grammar block whose first line is `// name.zp` is a complete file to save under
 that name; a block marked `(changed rules)` replaces the rules of the same names in that file. Every command and its
 output below were run as shown, in this order.
 
@@ -38,8 +38,8 @@ read the captures `$label` made **earlier in the same rule**. Three consequences
 
 **Only `false` is false.** A predicate that evaluates to the integer `0` succeeds. Always write the comparison:
 
-```pego
-// truthy.pego
+```zp
+// truthy.zp
 rule zero = {0} "a"
 @start(default)
 rule lenonly = s:"x"* #atomic {len($s)} "a"
@@ -48,7 +48,7 @@ rule compared = s:"x"* #atomic {len($s) > 0} "a"
 ```
 
 ```bash
-pego parse -g truthy.pego -s lenonly -f sexpr -i 'a'
+zp parse -g truthy.zp -s lenonly -f sexpr -i 'a'
 ```
 
 ```text
@@ -58,18 +58,18 @@ pego parse -g truthy.pego -s lenonly -f sexpr -i 'a'
 `{ len($s) }` is the integer 0 here, and the rule matches anyway. The comparison fails as intended:
 
 ```bash
-pego parse -g truthy.pego -s compared -f sexpr -i 'a'
+zp parse -g truthy.zp -s compared -f sexpr -i 'a'
 ```
 
 ```text
-pego: 1:1: syntax error: expected "x"
+zp: 1:1: syntax error: expected "x"
 ```
 
 **Compare text, not nodes.** `==` on nodes compares identity, and two captures are different nodes even when they
 cover the same text. Use `text(x)` (the matched text) or `len(x)`:
 
-```pego
-// identity.pego
+```zp
+// identity.zp
 @start(default)
 rule by_identity = "<" a:name "></" b:name {$a == $b} ">"
 @start
@@ -78,15 +78,15 @@ rule name = [a-z]+ #atomic
 ```
 
 ```bash
-pego parse -g identity.pego -s by_identity -i '<a></a>'
+zp parse -g identity.zp -s by_identity -i '<a></a>'
 ```
 
 ```text
-pego: 1:7: syntax error: expected [a-z]
+zp: 1:7: syntax error: expected [a-z]
 ```
 
 ```bash
-pego parse -g identity.pego -s by_text -f sexpr -i '<a></a>'
+zp parse -g identity.zp -s by_text -f sexpr -i '<a></a>'
 ```
 
 ```text
@@ -102,19 +102,19 @@ Also remember that a mistake inside a predicate is not reported either: an evalu
 misspelled variable name is not such an error: every variable must be declared with `var`, so the compiler rejects an
 undeclared name when the grammar is compiled:
 
-```pego
-// typo.pego
+```zp
+// typo.zp
 var indent int
 @start
 rule main = {indent := 0} "a" {idnent == 0}
 ```
 
 ```bash
-pego parse -g typo.pego -i 'a'
+zp parse -g typo.zp -i 'a'
 ```
 
 ```text
-pego: typo.pego:4:32: undefined variable idnent; declare it with var idnent at the top level
+zp: typo.zp:4:32: undefined variable idnent; declare it with var idnent at the top level
 ```
 
 If a predicate unexpectedly fails, check the values and conditions it compares.
@@ -132,7 +132,7 @@ blocks are compile-time errors, and Value Actions have no block form: they use t
 
 A variable is declared once at the top level of the grammar with its type and, optionally, its initial value:
 
-```pego
+```zp
 var depth int = 0
 var mode string
 var seen = false
@@ -156,8 +156,8 @@ an environment that flows **down** the call tree.
 The following grammar has one start rule for each row. All the rules are pure predicates, so the commands use `-check`,
 which prints `ok` on success:
 
-```pego
-// lab.pego
+```zp
+// lab.zp
 // A callee reads the caller's variable.
 var x int
 var y int
@@ -193,7 +193,7 @@ rule peeked = &{p := 1} {p == 1}
 ```
 
 ```bash
-pego parse -g lab.pego -s inherit -check -i ''
+zp parse -g lab.zp -s inherit -check -i ''
 ```
 
 ```text
@@ -201,7 +201,7 @@ ok
 ```
 
 ```bash
-pego parse -g lab.pego -s shadow -check -i ''
+zp parse -g lab.zp -s shadow -check -i ''
 ```
 
 ```text
@@ -209,23 +209,15 @@ ok
 ```
 
 ```bash
-pego parse -g lab.pego -s hidden -check -i ''
+zp parse -g lab.zp -s hidden -check -i ''
 ```
 
 ```text
-pego: 1:1: syntax error
+zp: 1:1: syntax error
 ```
 
 ```bash
-pego parse -g lab.pego -s undone -check -i 'ac'
-```
-
-```text
-ok
-```
-
-```bash
-pego parse -g lab.pego -s stays -check -i 'aa'
+zp parse -g lab.zp -s undone -check -i 'ac'
 ```
 
 ```text
@@ -233,7 +225,7 @@ ok
 ```
 
 ```bash
-pego parse -g lab.pego -s kept -check -i 'a'
+zp parse -g lab.zp -s stays -check -i 'aa'
 ```
 
 ```text
@@ -241,7 +233,15 @@ ok
 ```
 
 ```bash
-pego parse -g lab.pego -s peeked -check -i ''
+zp parse -g lab.zp -s kept -check -i 'a'
+```
+
+```text
+ok
+```
+
+```bash
+zp parse -g lab.zp -s peeked -check -i ''
 ```
 
 ```text
@@ -276,14 +276,14 @@ keyword, and `(&[ \t] .)*` a whitespace rule that never clutters error messages.
 **Captures and variable definitions made inside a positive lookahead stay in effect after it; only the input position
 is restored.** This lets a rule peek at something, bind it, and test it before consuming:
 
-```pego
-// peek.pego
+```zp
+// peek.zp
 @start
 rule main = &s:[a-z]+ {len($s) == 3} [a-z]+ $$
 ```
 
 ```bash
-pego parse -g peek.pego -check -i 'abc'
+zp parse -g peek.zp -check -i 'abc'
 ```
 
 ```text
@@ -291,11 +291,11 @@ ok
 ```
 
 ```bash
-pego parse -g peek.pego -check -i 'abcd'
+zp parse -g peek.zp -check -i 'abcd'
 ```
 
 ```text
-pego: 1:1: syntax error
+zp: 1:1: syntax error
 ```
 
 The indentation recipe below uses exactly this to read the indentation of the *next* line without consuming it.
@@ -331,7 +331,7 @@ Three attributes matter here:
 
 A packrat parser caches the result of a rule at each input position, so that backtracking does not repeat work. A rule
 that reads variables does not depend on the position alone: the same rule at the same position can succeed with one
-`indent` and fail with another. PEGO therefore keys the cache by the position **and the values of the variables the rule
+`indent` and fail with another. ZeroParse therefore keys the cache by the position **and the values of the variables the rule
 can read** in predicates and actions, including Operators Rule actions, directly or through the rules it calls (see the
 [specification](../../spec/language/predicates.md#interaction-with-memoization)). A cached result is reused only when
 those values are equal, so memoization never changes what a parse returns, only what it costs.
@@ -340,8 +340,8 @@ What this means when you write a grammar:
 
 - **Write it naturally.** A rule that reads variables can still be memoized: calls at the same position are kept separate only when the values they read differ. An ordered choice that re-parses a prefix can therefore reuse work when those values match:
 
-```pego
-// memo.pego
+```zp
+// memo.zp
 // Each level parses the nested group, fails at "x", and parses it again for "y". Without
 // memoization that is 2^n work for n levels; `group` reads `mode`.
 var mode int
@@ -352,7 +352,7 @@ rule group = "(" group ")" "x" {mode == 1} / "(" group ")" "y" {mode == 1} / "z"
 ```
 
 ```bash
-pego parse -g memo.pego -check -i "$(printf '(%.0s' {1..40})z$(printf ')y%.0s' {1..40})"
+zp parse -g memo.zp -check -i "$(printf '(%.0s' {1..40})z$(printf ')y%.0s' {1..40})"
 ```
 
 ```text
@@ -376,23 +376,23 @@ own grammar, see the [performance measurement method](../performance.md#how-to-m
 ### Matching Tags
 
 The closing tag must repeat the name of the opening tag. When both are in the same rule, capture the names and compare
-the text. That is how [parsers/xml](../../parsers/xml/xml.pego) does it (a rule `element`, with
+the text. That is how [parsers/xml](../../parsers/xml/xml.zp) does it (a rule `element`, with
 `"<" n:name ... "</" e:name {text($e) == text($n)} @error(message="mismatched end tag")`):
 
 ```bash
-pego parse -g parsers/xml/xml.pego -f sexpr -i '<a><b>text</c></a>'
+zp parse -g parsers/xml/xml.zp -f sexpr -i '<a><b>text</c></a>'
 ```
 
 ```text
-pego: 1:14: mismatched end tag
+zp: 1:14: mismatched end tag
 ```
 
 (Run from the repository root.) When the closing tag is parsed by **another rule**, because it is shared or because the
 content rule is complicated, the name must travel to it: define a variable after the opening tag. The nesting works by
 itself, because each `element` invocation defines its own `tag` and the definition disappears when it returns:
 
-```pego
-// tags.pego
+```zp
+// tags.zp
 package tags
 
 type Element = { Name node[string]; Children []Content }
@@ -415,7 +415,7 @@ rule name = [a-z]+ #atomic
 ```
 
 ```bash
-pego parse -g tags.pego -f sexpr -i '<a><b>x</b><c>y</c></a>'
+zp parse -g tags.zp -f sexpr -i '<a><b>x</b><c>y</c></a>'
 ```
 
 ```text
@@ -423,30 +423,30 @@ Element{Children: [Element{Children: ["x"], Name: "b"} Element{Children: ["y"], 
 ```
 
 ```bash
-pego parse -g tags.pego -i '<a><b>x</a></b>'
+zp parse -g tags.zp -i '<a><b>x</a></b>'
 ```
 
 ```text
-pego: 1:11: mismatched end tag
+zp: 1:11: mismatched end tag
 ```
 
 The error is at the position after the offending name: the predicate is evaluated there, and the label is recorded at
 that position. An unclosed element fails in `content*`/`close_tag` the ordinary way:
 
 ```bash
-pego parse -g tags.pego -i '<a><a>x</a>'
+zp parse -g tags.zp -i '<a><a>x</a>'
 ```
 
 ```text
-pego: 1:12: syntax error: expected "<", "</", [^<]
+zp: 1:12: syntax error: expected "<", "</", [^<]
 ```
 
 ### Indentation Blocks
 
-[examples/outline](../../examples/outline/outline.pego) parses an outline whose hierarchy is its indentation:
+[examples/outline](../../examples/outline/outline.zp) parses an outline whose hierarchy is its indentation:
 
-```pego
-// outline.pego
+```zp
+// outline.zp
 package outline
 
 type Item = {
@@ -476,7 +476,7 @@ rule blank = [ \t]* "\n"
 ```
 
 ```bash
-pego parse -g outline.pego -f sexpr -i $'fruits\n  apple\n  citrus\n    lemon\nvegetables\n'
+zp parse -g outline.zp -f sexpr -i $'fruits\n  apple\n  citrus\n    lemon\nvegetables\n'
 ```
 
 ```text
@@ -502,19 +502,19 @@ The failure case is the instructive one. A line that is indented but matches no 
 `block`:
 
 ```bash
-pego parse -g outline.pego -i $'a\n    b\n  c\n'
+zp parse -g outline.zp -i $'a\n    b\n  c\n'
 ```
 
 ```text
-pego: 3:3: syntax error: expected " ", "\n", [ \t]
+zp: 3:3: syntax error: expected " ", "\n", [ \t]
 ```
 
 That error is only the farthest point the parser reached, at the end of the indentation of `  c`, where the rules for
 more spaces and for a blank line were still trying; it says nothing about the problem. Label the predicate (a failed
 predicate records no expected item, so the label alone is recorded at that position):
 
-```pego
-// outline.pego (changed rules)
+```zp
+// outline.zp (changed rules)
 rule item Item = (
     s:spaces {len($s) == indent} @error(message="inconsistent indentation")
     text:line eol cs:children?
@@ -522,15 +522,15 @@ rule item Item = (
 ```
 
 ```bash
-pego parse -g outline.pego -i $'a\n    b\n  c\n'
+zp parse -g outline.zp -i $'a\n    b\n  c\n'
 ```
 
 ```text
-pego: 3:3: inconsistent indentation
+zp: 3:3: inconsistent indentation
 ```
 
 ```bash
-pego parse -g outline.pego -f sexpr -i $'a\n b\n  c\n d\n'
+zp parse -g outline.zp -f sexpr -i $'a\n b\n  c\n d\n'
 ```
 
 ```text
@@ -540,7 +540,7 @@ pego parse -g outline.pego -f sexpr -i $'a\n b\n  c\n d\n'
 The label does not make valid input fail: at a normal block end, `item` fails at the same predicate, but that only
 records a candidate error, which matters only if the parse as a whole fails and this is its farthest failure.
 
-**The Python grammar.** [parsers/python](../../parsers/python/python.pego) uses the same idea at scale. It packs the
+**The Python grammar.** [parsers/python](../../parsers/python/python.zp) uses the same idea at scale. It packs the
 indentation of the current block (its column, its column with tabs counted as one, which detects inconsistent use of
 tabs, and the number of enclosing blocks) into one variable, `ind`:
 
@@ -555,19 +555,19 @@ tabs, and the number of enclosing blocks) into one variable, `ind`:
   after the other, and `main` ends with its own message, `invalid syntax`.
 
 ```bash
-pego parse -g parsers/python/python.pego -f sexpr -i $'if x:\npass\n'
+zp parse -g parsers/python/python.zp -f sexpr -i $'if x:\npass\n'
 ```
 
 ```text
-pego: 2:1: expected an indented block
+zp: 2:1: expected an indented block
 ```
 
 ```bash
-pego parse -g parsers/python/python.pego -i $'if x:\n    a = 1\n  b = 2\n'
+zp parse -g parsers/python/python.zp -i $'if x:\n    a = 1\n  b = 2\n'
 ```
 
 ```text
-pego: 3:3: invalid syntax
+zp: 3:3: invalid syntax
 ```
 
 ### Newlines That Depend on Context
@@ -576,8 +576,8 @@ Python also joins lines inside brackets. The grammar keeps a boolean variable `n
 newline only while `nl` is true; every rule that opens a bracket defines `nl = true`. Because a variable is visible
 only below the rule that defines it, the flag turns off by itself when the bracket closes:
 
-```pego
-// nl.pego
+```zp
+// nl.zp
 // Statements end at a newline, except inside brackets, where a newline is whitespace.
 var nl bool
 
@@ -596,7 +596,7 @@ rule number = [0-9]+ #atomic
 ```
 
 ```bash
-pego parse -g nl.pego -check -i $'x = (1 +\n  2)\ny = 3\n'
+zp parse -g nl.zp -check -i $'x = (1 +\n  2)\ny = 3\n'
 ```
 
 ```text
@@ -604,11 +604,11 @@ ok
 ```
 
 ```bash
-pego parse -g nl.pego -i $'x = 1 +\n  2\n'
+zp parse -g nl.zp -i $'x = 1 +\n  2\n'
 ```
 
 ```text
-pego: 1:8: syntax error: expected "(", [ \t], [0-9], [a-z]
+zp: 1:8: syntax error: expected "(", [ \t], [0-9], [a-z]
 ```
 
 In the first input the newline inside `( ... )` is whitespace; the one after `)` ends the statement. In the second there
@@ -622,8 +622,8 @@ or not defined).
 A here-document ends at a line that is exactly the delimiter given at the start. The delimiter is data from the input,
 so it needs a variable:
 
-```pego
-// heredoc.pego
+```zp
+// heredoc.zp
 package doc
 
 type Heredoc = { Tag node[string]; Lines []node[string] }
@@ -651,7 +651,7 @@ rule ws = [ \t\r\n]*
 ```
 
 ```bash
-pego parse -g heredoc.pego -f sexpr -i $'echo a\ncat <<END\nline EOF\nEOF\nEND\necho b\n'
+zp parse -g heredoc.zp -f sexpr -i $'echo a\ncat <<END\nline EOF\nEOF\nEND\necho b\n'
 ```
 
 ```text
@@ -670,19 +670,19 @@ technique:
 single iteration of a repetition. The body of the repetition is a new scope, so `$tag` is not defined there, and this is
 detected when the grammar is compiled:
 
-```pego
-// scope_bad.pego
+```zp
+// scope_bad.zp
 @start
 rule main = t:word ("," w:word {text($w) != text($t)})* $$
 rule word = [a-z]+ #atomic
 ```
 
 ```bash
-pego parse -g scope_bad.pego -i 'a,b'
+zp parse -g scope_bad.zp -i 'a,b'
 ```
 
 ```text
-pego: scope_bad.pego:3:50: capture $t is not visible in a repetition element, which sees only its own captures; define a variable from it before the repetition
+zp: scope_bad.zp:3:50: capture $t is not visible in a repetition element, which sees only its own captures; define a variable from it before the repetition
 ```
 
 A variable crosses scopes (it is visible to everything below the rule that defines it, including repetition bodies),
@@ -691,11 +691,11 @@ which is what makes it the right carrier for "something from the beginning that 
 An unterminated document is reported where it ends:
 
 ```bash
-pego parse -g heredoc.pego -i $'cat <<EOF\nhello\n'
+zp parse -g heredoc.zp -i $'cat <<EOF\nhello\n'
 ```
 
 ```text
-pego: 3:1: unterminated here-document
+zp: 3:1: unterminated here-document
 ```
 
 ### Long Brackets
@@ -704,8 +704,8 @@ Lua writes strings as `[[ ... ]]`, `[=[ ... ]=]`, `[==[ ... ]==]`: the closing b
 opening one, so that the text may contain shorter closers. The number is a variable, and the closing bracket is a rule
 that reads it:
 
-```pego
-// longstr.pego
+```zp
+// longstr.zp
 @start
 rule main = long_string $$
 var level int
@@ -715,7 +715,7 @@ rule long_close = "]" e:"="* #atomic "]" {len($e) == level}
 ```
 
 ```bash
-pego parse -g longstr.pego -f sexpr -i '[==[a]]b]=]c]==]'
+zp parse -g longstr.zp -f sexpr -i '[==[a]]b]=]c]==]'
 ```
 
 ```text
@@ -723,11 +723,11 @@ pego parse -g longstr.pego -f sexpr -i '[==[a]]b]=]c]==]'
 ```
 
 ```bash
-pego parse -g longstr.pego -i '[==[a]=]'
+zp parse -g longstr.zp -i '[==[a]=]'
 ```
 
 ```text
-pego: 1:9: unterminated long string
+zp: 1:9: unterminated long string
 ```
 
 `!long_close` is a negative lookahead that calls a rule with captures: that is allowed, because the restriction on
@@ -739,8 +739,8 @@ captures in `!` is about the expression written inside it, and the captures of `
 A counter along the call chain checks a depth limit: every `group` defines a new `depth` from its caller's value, so
 siblings at the same level see the same value:
 
-```pego
-// depth.pego
+```zp
+// depth.zp
 // Parentheses nested at most three levels deep.
 var depth int
 
@@ -751,7 +751,7 @@ rule group = "(" {depth := depth + 1} {depth <= 3} @error(message="nested too de
 ```
 
 ```bash
-pego parse -g depth.pego -check -i '((()()))'
+zp parse -g depth.zp -check -i '((()()))'
 ```
 
 ```text
@@ -759,11 +759,11 @@ ok
 ```
 
 ```bash
-pego parse -g depth.pego -check -i '(((())))'
+zp parse -g depth.zp -check -i '(((())))'
 ```
 
 ```text
-pego: 1:5: nested too deeply
+zp: 1:5: nested too deeply
 ```
 
 ## Pitfalls

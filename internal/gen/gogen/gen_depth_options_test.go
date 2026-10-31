@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // Differentially exercise every rule-call owner, including first-character
@@ -96,7 +96,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 				}
 			}
 			harness := `package ` + pkg + `
-import("fmt";"strings";"sync";"testing";pegort "github.com/ornew/pego/runtime")
+import("fmt";"strings";"sync";"testing";zprt "github.com/ornew/zeroparse/runtime")
 func TestLimitsAndReuse(t *testing.T) {
  rows:=[]struct{name,input string;unit PositionUnit;limit int;want,recWant string}{` + rows.String() + `}
  for repeat:=0;repeat<3;repeat++ {for _,c:=range rows {
@@ -142,7 +142,7 @@ func TestConfiguration(t *testing.T) {
  if _,err:=Parse("?",WithMaxDepth(20),bad);err==nil || !strings.Contains(err.Error(),"max depth") {t.Fatal("last setting not applied")}
  if _,err:=Parse("?",WithMaxDepth(int(^uint(0)>>1)));err!=nil && strings.Contains(err.Error(),"max depth") {t.Fatal("largest native int rejected")}
  called:=0
- option:=func(o *pegort.X_parseOptions){called++;o.X_maxDepth=20;_,err:=Parse("?",WithMaxDepth(1));_ = err}
+ option:=func(o *zprt.X_parseOptions){called++;o.X_maxDepth=20;_,err:=Parse("?",WithMaxDepth(1));_ = err}
  Parse("?",option);ParseAST("?",option);Recognize("?",option)
  if called!=3 {t.Fatal("options retained or evaluated more than once")}
  for _,invoke:=range []func(){func(){Parse("?",nil)},func(){ParseRule("missing","?",nil)},func(){ParseAST("?",nil)},func(){Recognize("?",nil)}} {

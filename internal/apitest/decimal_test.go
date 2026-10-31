@@ -5,13 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func TestInvalidSourceDecimalReferences(t *testing.T) {
 	for _, digits := range []string{"١", "１２", "1١", strconv.FormatUint(uint64(^uint(0)>>1)+1, 10)} {
 		source := `def main="a" -> $` + digits
-		if g, err := pego.ParseGrammar(source); g != nil || err == nil || !strings.Contains(err.Error(), "invalid positional reference") {
+		if g, err := zeroparse.ParseGrammar(source); g != nil || err == nil || !strings.Contains(err.Error(), "invalid positional reference") {
 			t.Fatalf("ParseGrammar accepted %q: %v, %v", source, g, err)
 		}
 		if p, err := compileTestSource(source, "main"); p != nil || err == nil || !strings.Contains(err.Error(), "invalid positional reference") {
@@ -31,9 +31,9 @@ func TestDecimalReferenceValues(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-			for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
-				n, err := p.Parse("ab", pego.WithBackend(backend), pego.WithUnit(unit))
+		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+				n, err := p.Parse("ab", zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
 				if err != nil || n.String() != tc.want {
 					t.Fatalf("%s backend=%v unit=%v: %v, %v", tc.source, backend, unit, n, err)
 				}

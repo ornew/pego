@@ -9,12 +9,12 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/parsers/duckdb"
-	"github.com/ornew/pego/parsers/duckdb/types"
+	"github.com/ornew/zeroparse/parsers/duckdb"
+	"github.com/ornew/zeroparse/parsers/duckdb/types"
 )
 
 // TestGolden checks the generated parser against the golden files of testdata, which the tests of
-// github.com/ornew/pego/parsers check every backend of the engine against.
+// github.com/ornew/zeroparse/parsers check every backend of the engine against.
 func TestGolden(t *testing.T) {
 	inputs, _ := filepath.Glob("testdata/*.txt")
 	if len(inputs) == 0 {

@@ -13,8 +13,8 @@ import (
 	"runtime"
 	"runtime/debug"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/bench/inputs"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/internal/bench/inputs"
 )
 
 const forcedGCs = 3
@@ -99,10 +99,10 @@ func run(args []string, out io.Writer) error {
 
 	// Allocate the owner slice before the baseline so its backing storage is
 	// excluded. Input and source remain alive across both snapshots.
-	owners := make([]*pego.Parser, o.count)
+	owners := make([]*zeroparse.Parser, o.count)
 	before := liveHeap()
 	for i := range owners {
-		owners[i], err = pego.CompileSource(source, "main")
+		owners[i], err = zeroparse.CompileSource(source, "main")
 		if err != nil {
 			return fmt.Errorf("compilation %d: %w", i, err)
 		}
@@ -129,13 +129,13 @@ func corpus(repo, name string) (source, input string, err error) {
 	var path string
 	switch name {
 	case "json":
-		path, input = "parsers/json/json.pego", inputs.JSONInput(256<<10)
+		path, input = "parsers/json/json.zp", inputs.JSONInput(256<<10)
 	case "xml":
-		path, input = "parsers/xml/xml.pego", inputs.XMLInput(256<<10)
+		path, input = "parsers/xml/xml.zp", inputs.XMLInput(256<<10)
 	case "arithmetic":
-		path, input = "examples/calculator/calc.pego", inputs.ArithInput(20000)
+		path, input = "examples/calculator/calc.zp", inputs.ArithInput(20000)
 	case "minilang":
-		path, input = "examples/minilang/minilang.pego", inputs.MinilangInput(300, 0)
+		path, input = "examples/minilang/minilang.zp", inputs.MinilangInput(300, 0)
 	default:
 		return "", "", fmt.Errorf("unknown corpus %q", name)
 	}
@@ -147,12 +147,12 @@ func corpus(repo, name string) (source, input string, err error) {
 func warm(source, input string, count int) (string, error) {
 	var result string
 	for i := 0; i < count; i++ {
-		p, err := pego.CompileSource(source, "main")
+		p, err := zeroparse.CompileSource(source, "main")
 		if err != nil {
 			return "", fmt.Errorf("warmup compilation %d: %w", i, err)
 		}
 		if i == 0 {
-			n, err := p.Parse(input, pego.WithBackend(pego.Closure), pego.WithUnit(pego.CodePoints))
+			n, err := p.Parse(input, zeroparse.WithBackend(zeroparse.Closure), zeroparse.WithUnit(zeroparse.CodePoints))
 			if err != nil {
 				return "", fmt.Errorf("full-input validation: %w", err)
 			}

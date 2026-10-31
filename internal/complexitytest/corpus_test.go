@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/bench/inputs"
+	"github.com/ornew/zeroparse/internal/bench/inputs"
 )
 
 // corpusCap bounds the budget of one corpus parse; a linear grammar stays far below it.
@@ -35,7 +35,7 @@ type corpusEntry struct {
 	// source says where the inputs come from.
 	source string
 	// syntaxErrors marks inputs that the grammar reports syntax errors for, such as inputs with
-	// recovered errors; the parse finishes with a *pego.SyntaxError or pego.SyntaxErrors.
+	// recovered errors; the parse finishes with a *zeroparse.SyntaxError or zeroparse.SyntaxErrors.
 	syntaxErrors bool
 }
 
@@ -63,67 +63,67 @@ func corpusEntries() []corpusEntry {
 	const units = "hand-written units repeated under a list-like start rule"
 	one := func(f func(n int) string) func(n, v int) string { return func(n, _ int) string { return f(n) } }
 	return []corpusEntry{
-		{name: "json", grammar: "../../parsers/json/json.pego", build: one(inputs.JSONInput), variants: 1,
+		{name: "json", grammar: "../../parsers/json/json.zp", build: one(inputs.JSONInput), variants: 1,
 			sizes: double(4096), shortSizes: double(1024), order: Linear, source: bench},
-		{name: "csv", grammar: "../../parsers/csv/csv.pego", build: one(inputs.CSVInput), variants: 1,
+		{name: "csv", grammar: "../../parsers/csv/csv.zp", build: one(inputs.CSVInput), variants: 1,
 			sizes: double(100), shortSizes: double(25), order: Linear, source: bench},
-		{name: "xml", grammar: "../../parsers/xml/xml.pego", build: one(inputs.XMLInput), variants: 1,
+		{name: "xml", grammar: "../../parsers/xml/xml.zp", build: one(inputs.XMLInput), variants: 1,
 			sizes: double(4096), shortSizes: double(1024), order: Linear, source: bench},
-		{name: "calc operators rule", grammar: "../../examples/calculator/calc.pego", build: one(inputs.ArithInput), variants: 1,
+		{name: "calc operators rule", grammar: "../../examples/calculator/calc.zp", build: one(inputs.ArithInput), variants: 1,
 			sizes: double(100), shortSizes: double(25), order: Linear, source: bench},
-		{name: "calc left recursion", grammar: "../../examples/calculator/calc_lr.pego", build: one(inputs.ArithInput), variants: 1,
+		{name: "calc left recursion", grammar: "../../examples/calculator/calc_lr.zp", build: one(inputs.ArithInput), variants: 1,
 			sizes: double(100), shortSizes: double(25), order: Linear, source: bench},
-		{name: "minilang", grammar: "../../examples/minilang/minilang.pego",
+		{name: "minilang", grammar: "../../examples/minilang/minilang.zp",
 			build: one(func(n int) string { return inputs.MinilangInput(n, 0) }), variants: 1,
 			sizes: double(10), shortSizes: double(5), order: Linear, source: bench},
-		{name: "minilang recovery", grammar: "../../examples/minilang/minilang.pego",
+		{name: "minilang recovery", grammar: "../../examples/minilang/minilang.zp",
 			build: one(func(n int) string { return inputs.MinilangInput(n, 7) }), variants: 1, syntaxErrors: true,
 			sizes: double(10), shortSizes: double(5), order: Linear, source: bench},
-		{name: "outline", grammar: "../../examples/outline/outline.pego", build: one(inputs.OutlineInput), variants: 1,
+		{name: "outline", grammar: "../../examples/outline/outline.zp", build: one(inputs.OutlineInput), variants: 1,
 			sizes: double(100), shortSizes: double(25), order: Linear, source: bench},
-		{name: "golang", grammar: "../../parsers/golang/golang.pego", variants: 3, source: units,
+		{name: "golang", grammar: "../../parsers/golang/golang.zp", variants: 3, source: units,
 			build: repeated("package p\n\n", []string{
 				"func f%d(a, b int) int {\n\treturn a*b + 1\n}\n\n",
 				"type T%d struct {\n\tA int\n\tB string\n}\n\n",
 				"var v%d = map[string][]int{\"a\": {1, 2}, \"b\": {3}}\n",
 			}, ""),
 			sizes: double(40), shortSizes: double(10), order: Linear},
-		{name: "python", grammar: "../../parsers/python/python.pego", variants: 3, source: units,
+		{name: "python", grammar: "../../parsers/python/python.zp", variants: 3, source: units,
 			build: repeated("", []string{
 				"def f%d(x):\n    return x + 1\n\n",
 				"class C%d:\n    def m(self, a, b=1):\n        if a:\n            return b\n        return None\n\n",
 				"x%d = [i * 2 for i in range(10)]\n",
 			}, ""),
 			sizes: double(40), shortSizes: double(10), order: Linear},
-		{name: "cel", grammar: "../../parsers/cel/cel.pego", variants: 3, source: units,
+		{name: "cel", grammar: "../../parsers/cel/cel.zp", variants: 3, source: units,
 			build: repeated("true", []string{
 				" && request.auth.claims.email.endsWith(\"@example.com\") && %d > 0",
 				" && (resource.name.startsWith(\"p-\") || \"admin\" in groups) && %d > 0",
 				" && items.exists(k, k == %d)",
 			}, ""),
 			sizes: double(40), shortSizes: double(10), order: Linear},
-		{name: "cue", grammar: "../../parsers/cue/cue.pego", variants: 3, source: units,
+		{name: "cue", grammar: "../../parsers/cue/cue.zp", variants: 3, source: units,
 			build: repeated("package p\n\n", []string{
 				"a%d: 1 + 2\n",
 				"#D%d: {name!: string, age?: int & >=0}\n",
 				"l%d: [for i in [1, 2, 3] if i > 1 {i * 2}]\n",
 			}, ""),
 			sizes: double(40), shortSizes: double(10), order: Linear},
-		{name: "duckdb", grammar: "../../parsers/duckdb/duckdb.pego", variants: 3, source: units,
+		{name: "duckdb", grammar: "../../parsers/duckdb/duckdb.zp", variants: 3, source: units,
 			build: repeated("", []string{
 				"SELECT a, b FROM t WHERE a > %d;\n",
 				"INSERT INTO t VALUES (%d, 'x');\n",
 				"WITH r AS (SELECT o.id, sum(o.total) AS s FROM orders AS o GROUP BY o.id) SELECT id, s FROM r WHERE id > %d ORDER BY s DESC LIMIT 10;\n",
 			}, ""),
 			sizes: double(40), shortSizes: double(10), order: Linear},
-		{name: "typescript", grammar: "../../parsers/typescript/typescript.pego", variants: 3, source: units,
+		{name: "typescript", grammar: "../../parsers/typescript/typescript.zp", variants: 3, source: units,
 			build: repeated("", []string{
 				"export function f%d(a: number, b?: string): number {\n  return a * 2 + 1;\n}\n",
 				"interface P%d<T = number> {\n  x: T;\n  readonly y?: T;\n}\n",
 				"const v%d = async <T,>(xs: T[]) => xs.map((x) => x as unknown as string);\n",
 			}, ""),
 			sizes: double(40), shortSizes: double(10), order: Linear},
-		{name: "yaml", grammar: "../../parsers/yaml/yaml.pego", variants: 3, source: units,
+		{name: "yaml", grammar: "../../parsers/yaml/yaml.zp", variants: 3, source: units,
 			build: repeated("", []string{
 				"key%d: value\n",
 				"- item%d\n",

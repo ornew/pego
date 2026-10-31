@@ -6,14 +6,14 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // Positions are converted through byte offsets in the document text. Three kinds of positions
 // meet here:
 //
 //   - LSP positions: zero-based lines and columns in UTF-16 code units;
-//   - PEGO positions (grammar.Pos): one-based lines and columns in code points, in which the "\r"
+//   - ZeroParse positions (grammar.Pos): one-based lines and columns in code points, in which the "\r"
 //     of a "\r\n" counts as a column of its line;
 //   - byte offsets into the UTF-8 text, which both are converted to and from.
 //
@@ -190,9 +190,9 @@ func (t *textIndex) rangeOf(start, end int) Range {
 	return Range{Start: t.position(start), End: t.position(end)}
 }
 
-// pegoOffset returns the byte offset of the PEGO position p. A column after the end of its line
+// zpOffset returns the byte offset of the ZeroParse position p. A column after the end of its line
 // is the end of the line (the offset of its "\n").
-func (t *textIndex) pegoOffset(p grammar.Pos) int {
+func (t *textIndex) zpOffset(p grammar.Pos) int {
 	if p.Line < 1 {
 		return 0
 	}

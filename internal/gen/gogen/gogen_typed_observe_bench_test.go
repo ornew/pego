@@ -8,17 +8,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // Export isolated typed tracing controls, keeping generation, compilation and
 // raw measurements outside the timed parse loop and outside the repository.
 func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 	t.Parallel()
-	dir := os.Getenv("PEGO_TYPED_TRACE_BENCH_DIR")
+	dir := os.Getenv("ZP_TYPED_TRACE_BENCH_DIR")
 	if dir == "" {
-		t.Skip("set PEGO_TYPED_TRACE_BENCH_DIR to export benchmark controls")
+		t.Skip("set ZP_TYPED_TRACE_BENCH_DIR to export benchmark controls")
 	}
 	write := func(name string, data []byte) {
 		t.Helper()
@@ -36,9 +36,9 @@ func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 		DirectStart bool
 	}{}
 	for _, fixture := range []struct{ name, path, input string }{
-		{"json", "parsers/json/json.pego", "[" + strings.TrimSuffix(strings.Repeat(`{"name":"éclair","n":123,"ok":true},`, 64), ",") + "]"},
-		{"xml", "parsers/xml/xml.pego", "<root>" + strings.Repeat(`<item name="éclair">123</item>`, 64) + "</root>"},
-		{"calc", "examples/calculator/calc.pego", strings.TrimSuffix(strings.Repeat("1+2*3+", 32), "+")},
+		{"json", "parsers/json/json.zp", "[" + strings.TrimSuffix(strings.Repeat(`{"name":"éclair","n":123,"ok":true},`, 64), ",") + "]"},
+		{"xml", "parsers/xml/xml.zp", "<root>" + strings.Repeat(`<item name="éclair">123</item>`, 64) + "</root>"},
+		{"calc", "examples/calculator/calc.zp", strings.TrimSuffix(strings.Repeat("1+2*3+", 32), "+")},
 	} {
 		data, err := os.ReadFile(filepath.Join("../../..", fixture.path))
 		if err != nil {
@@ -66,7 +66,7 @@ func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 				manifest[path] = struct {
 					Bytes       int
 					DirectStart bool
-				}{len(code), strings.Contains(string(code), "return pegort.TParse(trules[")}
+				}{len(code), strings.Contains(string(code), "return zprt.TParse(trules[")}
 				write(path+"/parser.go", code)
 				driver := strings.NewReplacer("PACKAGE", pkg, "INPUT", fmt.Sprintf("%q", fixture.input)).Replace(generatedTypedTraceBenchmark)
 				if enabled {

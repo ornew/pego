@@ -24,7 +24,7 @@ enabled handles are 32 bytes.
 
 ## Reference Control
 
-Build tag `pego_snapshot_position_overlays` enables the candidate. The same-source
+Build tag `zp_snapshot_position_overlays` enables the candidate. The same-source
 no-tag build is the unchanged default comparator.
 
 ## Evidence and Implementation

@@ -166,7 +166,7 @@ var templateFS embed.FS
 var staticFS embed.FS
 
 // marker marks an output directory written by Build, which a later build may replace.
-const marker = ".pego-site"
+const marker = ".zp-site"
 
 // docSection lists the Markdown files of a section of the documentation.
 func prepareOut(out string) error {
@@ -422,7 +422,7 @@ func buildWasm(repo, dir, toolchain string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	tmp := filepath.Join(abs, "pego.wasm.tmp")
+	tmp := filepath.Join(abs, "zp.wasm.tmp")
 	spec, err := selectWasmBuild(toolchain, tmp)
 	if err != nil {
 		return "", err
@@ -435,14 +435,14 @@ func buildWasm(repo, dir, toolchain string) (string, error) {
 	cmd.Dir = repo
 	cmd.Env = append(os.Environ(), "GOOS=js", "GOARCH=wasm")
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return "", fmt.Errorf("building pego.wasm with %s: %v\n%s", spec.command, err, out)
+		return "", fmt.Errorf("building zp.wasm with %s: %v\n%s", spec.command, err, out)
 	}
 	data, err := os.ReadFile(tmp)
 	if err != nil {
 		return "", err
 	}
 	sum := sha256.Sum256(data)
-	name := "wasm/pego-" + hex.EncodeToString(sum[:])[:16] + ".wasm"
+	name := "wasm/zp-" + hex.EncodeToString(sum[:])[:16] + ".wasm"
 	if err := writeFile(filepath.Join(abs, filepath.FromSlash(name)), data); err != nil {
 		return "", err
 	}

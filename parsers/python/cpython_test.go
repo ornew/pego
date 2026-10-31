@@ -19,21 +19,21 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/parsers/python"
+	"github.com/ornew/zeroparse/parsers/python"
 )
 
 // The tests in this file compare the parser with CPython 3.14, which they run as a subprocess:
-// the interpreter named by PEGO_PYTHON, or python3.14 on PATH. They are skipped without it.
-// PEGO_CPYTHON_SRC names a checkout of CPython 3.14.0 whose Lib/test is used as a corpus too.
+// the interpreter named by ZP_PYTHON, or python3.14 on PATH. They are skipped without it.
+// ZP_CPYTHON_SRC names a checkout of CPython 3.14.0 whose Lib/test is used as a corpus too.
 
 // python returns the path of CPython 3.14, or skips the test.
 func findPython(t testing.TB) string {
 	t.Helper()
-	py := os.Getenv("PEGO_PYTHON")
+	py := os.Getenv("ZP_PYTHON")
 	if py == "" {
 		var err error
 		if py, err = exec.LookPath("python3.14"); err != nil {
-			t.Skip("CPython 3.14 not found (set PEGO_PYTHON)")
+			t.Skip("CPython 3.14 not found (set ZP_PYTHON)")
 		}
 	}
 	out, err := exec.Command(py, "-I", "-c", "import sys; print(sys.version_info[:2] == (3, 14))").Output()
@@ -104,7 +104,7 @@ func corpus(t *testing.T, py string) []string {
 		t.Fatal(err)
 	}
 	dirs := []string{strings.TrimSpace(string(out))}
-	if src := os.Getenv("PEGO_CPYTHON_SRC"); src != "" {
+	if src := os.Getenv("ZP_CPYTHON_SRC"); src != "" {
 		dirs = append(dirs, filepath.Join(src, "Lib", "test"))
 	}
 	var files []string
@@ -125,7 +125,7 @@ func corpus(t *testing.T, py string) []string {
 func TestCPythonCorpus(t *testing.T) {
 	py := findPython(t)
 	files := corpus(t, py)
-	if only := os.Getenv("PEGO_PYTHON_ONLY"); only != "" {
+	if only := os.Getenv("ZP_PYTHON_ONLY"); only != "" {
 		var sel []string
 		for _, f := range files {
 			if strings.Contains(f, only) {
@@ -179,14 +179,14 @@ func TestCPythonCorpus(t *testing.T) {
 }
 
 // TestCPythonSnippets compares the parser with CPython on the snippets of code in the strings and
-// doctests of CPython's Lib/test (PEGO_CPYTHON_SRC): tens of thousands of programs, most of them
+// doctests of CPython's Lib/test (ZP_CPYTHON_SRC): tens of thousands of programs, most of them
 // small and many of them invalid, written to test the compiler. The same snippets must be
 // accepted, with the same ast.dump.
 func TestCPythonSnippets(t *testing.T) {
 	py := findPython(t)
-	src := os.Getenv("PEGO_CPYTHON_SRC")
+	src := os.Getenv("ZP_CPYTHON_SRC")
 	if src == "" {
-		t.Skip("set PEGO_CPYTHON_SRC to a checkout of CPython 3.14")
+		t.Skip("set ZP_CPYTHON_SRC to a checkout of CPython 3.14")
 	}
 	results := runCPython(t, py, nil, "-x", filepath.Join(src, "Lib", "test"))
 	var same, rejected, byCheck int
@@ -246,7 +246,7 @@ func TestCPythonPositions(t *testing.T) {
 	py := findPython(t)
 	files := corpus(t, py)
 	results := runCPython(t, py, files, "-a")
-	if src := os.Getenv("PEGO_CPYTHON_SRC"); src != "" {
+	if src := os.Getenv("ZP_CPYTHON_SRC"); src != "" {
 		results = append(results, runCPython(t, py, nil, "-a", "-x", filepath.Join(src, "Lib", "test"))...)
 	}
 	var same, diff int
@@ -322,13 +322,13 @@ func TestCPythonMutations(t *testing.T) {
 	if testing.Short() {
 		n = 6000
 	}
-	if v, err := strconv.Atoi(os.Getenv("PEGO_MUTANTS")); err == nil {
+	if v, err := strconv.Atoi(os.Getenv("ZP_MUTANTS")); err == nil {
 		n = v
 	}
 	pieces := []string{"(", ")", "[", "]", "{", "}", ":", ":=", ",", ";", ".", "...", "=", "==", "*", "**", "->", "@", "\n", "\n    ", "\t",
 		" ", "\\\n", "#", "'", "\"", "'''", "f'", "f\"{", "}", "{", "!r", "lambda ", "async ", "await ", "yield ", "not ", "in ", "if ",
 		"else ", "for ", "def ", "class ", "match ", "case ", "type ", "except ", "*", "0x", "1_", "e5", "j", "u", "b'", "r'", "ä", "\x0c"}
-	seed, _ := strconv.Atoi(os.Getenv("PEGO_MUTANTS_SEED"))
+	seed, _ := strconv.Atoi(os.Getenv("ZP_MUTANTS_SEED"))
 	rng := rand.New(rand.NewPCG(7, uint64(11+seed)))
 	mutants := make([]string, 0, n)
 	for len(mutants) < n {
@@ -393,10 +393,10 @@ func TestCPythonLines(t *testing.T) {
 	if testing.Short() {
 		n = 10000
 	}
-	if v, err := strconv.Atoi(os.Getenv("PEGO_MUTANTS")); err == nil {
+	if v, err := strconv.Atoi(os.Getenv("ZP_MUTANTS")); err == nil {
 		n = v
 	}
-	seed, _ := strconv.Atoi(os.Getenv("PEGO_MUTANTS_SEED"))
+	seed, _ := strconv.Atoi(os.Getenv("ZP_MUTANTS_SEED"))
 	rng := rand.New(rand.NewPCG(13, uint64(17+seed)))
 	var progs, inputs []string
 	for len(progs) < n {

@@ -84,7 +84,7 @@ func TestTitleCase(t *testing.T) {
 		{"Recovering from Errors", "Recovering From Errors"},
 		{"Using the Errors from Go", "Using the Errors From Go"},
 		{"Keeping Generated Code up to Date", "Keeping Generated Code Up to Date"},
-		{"Generating Parsers with `pego gen`", "Generating Parsers With `pego gen`"},
+		{"Generating Parsers with `zp gen`", "Generating Parsers With `zp gen`"},
 		{"Labels on Predicate Actions and On `_|_`", "Labels on Predicate Actions and on `_|_`"},
 		{"Why generate", "Why Generate"},
 		{"Cancellation and budget limits", "Cancellation and Budget Limits"},
@@ -195,7 +195,7 @@ func forEachFence(t *testing.T, f func(file, lang string, line int, body []strin
 func fenceLanguageProblem(lang string) string {
 	switch lang {
 	case "":
-		return "code block without a language; use pego, go, ts, json, bash or text"
+		return "code block without a language; use zp, go, ts, json, bash or text"
 	case "sh", "shell", "zsh", "console", "terminal":
 		return "code block tagged " + lang + "; use bash for commands and text for output"
 	}
@@ -205,7 +205,7 @@ func fenceLanguageProblem(lang string) string {
 func TestFenceLanguageProblem(t *testing.T) {
 	for lang, bad := range map[string]bool{
 		"": true, "sh": true, "shell": true, "zsh": true, "console": true, "terminal": true,
-		"bash": false, "text": false, "pego": false, "go": false, "ts": false, "json": false,
+		"bash": false, "text": false, "zp": false, "go": false, "ts": false, "json": false,
 	} {
 		if got := fenceLanguageProblem(lang) != ""; got != bad {
 			t.Errorf("fenceLanguageProblem(%q) reports a problem: %v, want %v", lang, got, bad)
@@ -245,13 +245,13 @@ func TestPromptLines(t *testing.T) {
 		body []string
 		want []int
 	}{
-		{"prompt in bash", "bash", []string{"$ pego fmt", "out"}, []int{0}},
+		{"prompt in bash", "bash", []string{"$ zp fmt", "out"}, []int{0}},
 		{"prompt in text", "text", []string{"out", "  $ ls"}, []int{1}},
 		{"two prompts", "bash", []string{"$ a", "$ b"}, []int{0, 1}},
-		{"clean bash", "bash", []string{"pego fmt x.pego", "echo $HOME"}, nil},
+		{"clean bash", "bash", []string{"zp fmt x.zp", "echo $HOME"}, nil},
 		{"dollar in text", "text", []string{"cost: $5", "$$"}, nil},
 		{"go is not checked", "go", []string{"$ x := 1"}, nil},
-		{"pego anchor", "pego", []string{"$ $"}, nil},
+		{"zp anchor", "zp", []string{"$ $"}, nil},
 	}
 	for _, c := range cases {
 		got := promptLines(c.lang, c.body)

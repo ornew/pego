@@ -1,6 +1,6 @@
 package compile
 
-import "github.com/ornew/pego/grammar"
+import "github.com/ornew/zeroparse/grammar"
 
 // nodeMembers are the members of a node, and the removed ones that the checker reports: they are
 // not captures, which are read with x.$name.
@@ -59,7 +59,7 @@ func (c *Compiler) CheckTerm(t grammar.Term, s *Scope, locals []string) {
 			c.errorf(t.Diagnostic(), "%s is not a struct type or a node type", t.Type)
 		} else if len(t.Args) != 0 {
 			if f := FieldOf(st, "Text"); f != nil && len(t.Args) == 1 {
-				c.errorf(t.Diagnostic(), "a struct constructor names its fields: write %s{Text: ...} (pego fix rewrites %s{...})", t.Type, t.Type)
+				c.errorf(t.Diagnostic(), "a struct constructor names its fields: write %s{Text: ...} (zp fix rewrites %s{...})", t.Type, t.Type)
 			} else {
 				c.errorf(t.Diagnostic(), "a struct constructor names its fields: write %s{Field: value}", t.Type)
 			}

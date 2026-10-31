@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/starttest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/engine"
+	"github.com/ornew/zeroparse/internal/starttest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // Fix rewrites positional captures to named captures that produce the same results. The engine
@@ -112,7 +112,7 @@ func run(p *engine.Program, input string) string {
 // not parse.
 func TestPositionalRejected(t *testing.T) {
 	_, err := syntax.Parse(`rule main = "a" => $1`)
-	if err == nil || !strings.Contains(err.Error(), "pego fix") {
+	if err == nil || !strings.Contains(err.Error(), "zp fix") {
 		t.Fatalf("got %v", err)
 	}
 	if _, err := syntax.Fix(`rule main = "a" => $2`); err == nil || !strings.Contains(err.Error(), "1:20: $2 is out of range") {
@@ -210,7 +210,7 @@ func TestLambdaParamDollarRejected(t *testing.T) {
 // x.y with a name that is not a field name reads a capture, which is written x.$y.
 func TestCaptureMemberRejected(t *testing.T) {
 	_, err := syntax.Parse(`rule main = xs:(y:"a")* => map($xs, (i) => i.y)`)
-	if err == nil || !strings.Contains(err.Error(), "1:46: a capture is read with .$y; run pego fix to rewrite .y") {
+	if err == nil || !strings.Contains(err.Error(), "1:46: a capture is read with .$y; run zp fix to rewrite .y") {
 		t.Fatalf("got %v", err)
 	}
 	for _, src := range []string{

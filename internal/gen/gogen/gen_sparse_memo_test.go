@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
-// PEGO_SPARSE_MEMO_GENERATED_DIR preserves the generated fixture for
+// ZP_SPARSE_MEMO_GENERATED_DIR preserves the generated fixture for
 // separately built timing and allocation measurements.
 func TestGeneratedSparseMemo(t *testing.T) {
 	t.Parallel()
@@ -22,7 +22,7 @@ func testGeneratedSparseMemo(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	src, err := os.ReadFile("../../../parsers/typescript/typescript.pego")
+	src, err := os.ReadFile("../../../parsers/typescript/typescript.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func testGeneratedSparseMemo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir := os.Getenv("PEGO_SPARSE_MEMO_GENERATED_DIR")
+	dir := os.Getenv("ZP_SPARSE_MEMO_GENERATED_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}
@@ -77,7 +77,7 @@ func testGeneratedSparseMemo(t *testing.T) {
 const sparseMemoGeneratedFixture = `package memofixture
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
     "crypto/sha256"
     "encoding/json"
     "fmt"
@@ -87,7 +87,7 @@ import (
 )
 
 func TestSparseGeneratedResults(t *testing.T) {
-    if pegoGrammar.X_nseen <= 64 || pegoRecGrammar.X_nseen <= 64 { t.Fatal("fixture no longer exercises sparse tables") }
+    if zpGrammar.X_nseen <= 64 || zpRecGrammar.X_nseen <= 64 { t.Fatal("fixture no longer exercises sparse tables") }
     inputs := []string{
         "const 日本語 = \"😀\"; const v = [1, 2].map(x => x + 1);",
         strings.Repeat("const 日本語 = 1 + 2;\n", 1200),
@@ -108,7 +108,7 @@ func TestSparseGeneratedResults(t *testing.T) {
 }
 
 func TestSparseGeneratedInputSelection(t *testing.T) {
-    p := &pegort.TParser{Parser: &pegort.Parser{}, Ext: &tslabs{}}
+    p := &zprt.TParser{Parser: &zprt.Parser{}, Ext: &tslabs{}}
     for _, input := range []string{
         "/*" + strings.Repeat("a", 1020) + "*/",
         "/*" + strings.Repeat("a", 1021) + "*/",
@@ -116,7 +116,7 @@ func TestSparseGeneratedInputSelection(t *testing.T) {
         "/*" + strings.Repeat("a", 1020) + "*/",
     } {
         for _, unit := range []PositionUnit{CodePoints, Bytes} {
-            _, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+            _, err := p.X_run(trules[0], input, zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth}, &tslabs{})
             if err != nil { t.Fatal(err) }
             want := len([]rune(input)) > 1024
             if unit == Bytes { want = len(input) > 1024 }
@@ -129,13 +129,13 @@ func TestSparseGeneratedInputSelection(t *testing.T) {
 // An optional real corpus exercises retained scratch across successful and
 // failed large parses, with small parses between them, in the same parser.
 func TestSparseGeneratedRealCorpusReuse(t *testing.T) {
-    path := os.Getenv("PEGO_SPARSE_MEMO_INPUT")
-    if path == "" { t.Skip("PEGO_SPARSE_MEMO_INPUT not set") }
+    path := os.Getenv("ZP_SPARSE_MEMO_INPUT")
+    if path == "" { t.Skip("ZP_SPARSE_MEMO_INPUT not set") }
     data, err := os.ReadFile(path); if err != nil { t.Fatal(err) }
     for _, unit := range []PositionUnit{CodePoints, Bytes} {
-        p := &pegort.TParser{Parser: &pegort.Parser{}}
+        p := &zprt.TParser{Parser: &zprt.Parser{}}
         for i, input := range []string{string(data), "const x=1;", string(data)+"\nfunction (", "const x=1;", string(data)} {
-            _, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+            _, err := p.X_run(trules[0], input, zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth}, &tslabs{})
             if (err != nil) != (i == 2) { t.Fatalf("unit=%d step=%d err=%v", unit, i, err) }
             p.X_recycle()
             if p.X_memo.X_bitPages.X_n != 0 { t.Fatal("used pages survived recycle") }
@@ -154,7 +154,7 @@ func TestSparseGeneratedRealCorpusReuse(t *testing.T) {
 
 func BenchmarkSparseMemoGenerated(b *testing.B) {
     inputs := []struct{name, text string}{{"synthetic", strings.Repeat("const 日本語 = 1 + 2;\n", 12000)}, {"small", "const 日本語 = 1 + 2;\n"}}
-    if path := os.Getenv("PEGO_SPARSE_MEMO_INPUT"); path != "" {
+    if path := os.Getenv("ZP_SPARSE_MEMO_INPUT"); path != "" {
         data, err := os.ReadFile(path); if err != nil { b.Fatal(err) }
         inputs = append(inputs, struct{name, text string}{"compiler", string(data)})
     }

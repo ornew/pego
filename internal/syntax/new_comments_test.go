@@ -3,7 +3,7 @@ package syntax
 import (
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func TestBlockCommentsNestedRanges(t *testing.T) {

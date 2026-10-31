@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/ornew/pego/parsers/cel"
-	"github.com/ornew/pego/parsers/cel/types"
+	"github.com/ornew/zeroparse/parsers/cel"
+	"github.com/ornew/zeroparse/parsers/cel/types"
 )
 
 func ExampleParseExpr() {

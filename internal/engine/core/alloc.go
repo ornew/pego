@@ -1,6 +1,6 @@
 package core
 
-import "github.com/ornew/pego/internal/value"
+import "github.com/ornew/zeroparse/internal/value"
 
 // Nodes and child slices created during a parse are allocated in bulk from per-parse chunks.
 // This reduces the number of allocations and the number of objects the GC has to track. A chunk

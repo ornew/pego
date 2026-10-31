@@ -32,10 +32,10 @@ backend, a compiled file, generated code, an incremental reparse) behave like th
 
 ## The Grammar Under Test
 
-The examples use `pairs.pego` of the [Running Parsers](running-parsers.md), which reads `key=value` pairs separated by optional
+The examples use `pairs.zp` of the [Running Parsers](running-parsers.md), which reads `key=value` pairs separated by optional
 semicolons and whitespace:
 
-```pego
+```zp
 type Pair = { Key node[string]; Value node[string] }
 
 @start
@@ -47,12 +47,12 @@ rule ws = [ \t\n]*
 ```
 
 The tests live in a Go module next to it. Each file below is part of the package `pairs_test`, and the grammar is
-embedded and compiled once, because a `*pego.Parser` is safe for concurrent use:
+embedded and compiled once, because a `*zeroparse.Parser` is safe for concurrent use:
 
 ```text
 example.com/pairs
 ├── go.mod
-├── pairs.pego
+├── pairs.zp
 ├── pairs_test.go
 ├── golden_test.go
 ├── properties_test.go
@@ -80,15 +80,15 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed pairs.pego
+//go:embed pairs.zp
 var grammarSrc string
 
-// parser is shared by every test: a *pego.Parser is safe for concurrent use.
-var parser = func() *pego.Parser {
-	p, err := pego.CompileSource(grammarSrc, "main")
+// parser is shared by every test: a *zeroparse.Parser is safe for concurrent use.
+var parser = func() *zeroparse.Parser {
+	p, err := zeroparse.CompileSource(grammarSrc, "main")
 	if err != nil {
 		panic(err)
 	}
@@ -124,7 +124,7 @@ func TestRejects(t *testing.T) {
 		{"a=1\nb=x", 2, 3, []string{"[0-9]"}},
 	} {
 		_, err := parser.Parse(tc.in)
-		var se *pego.SyntaxError
+		var se *zeroparse.SyntaxError
 		if !errors.As(err, &se) {
 			t.Errorf("%q: got %v, want a syntax error", tc.in, err)
 			continue
@@ -242,12 +242,12 @@ Notes:
 
 - Golden tests are only as good as the review of `-update`. Read the diff: a golden file that is regenerated without
   looking proves nothing.
-- Print what you care about. `node.String()` has no positions; `json.MarshalIndent(node, "", "  ")` has them (and, when the parser is compiled with `pego.WithSourceInfo()`, the
+- Print what you care about. `node.String()` has no positions; `json.MarshalIndent(node, "", "  ")` has them (and, when the parser is compiled with `zeroparse.WithSourceInfo()`, the
   rule of each node), at the price of larger files. A grammar with `#recover` should also print the recovered errors
-  (`var recovered pego.SyntaxErrors; errors.As(err, &recovered)`): a parse can return a tree and an error together.
+  (`var recovered zeroparse.SyntaxErrors; errors.As(err, &recovered)`): a parse can return a tree and an error together.
 - Keep a few inputs that **fail**, with the error in the golden file. Error messages are part of a parser's interface.
-- The same layout is used by [examples/](../../examples/) and by every module of [parsers/](../../parsers/); the pego
-  command makes a golden file too: `pego parse -g pairs.pego -f sexpr < testdata/basic.txt`.
+- The same layout is used by [examples/](../../examples/) and by every module of [parsers/](../../parsers/); the zp
+  command makes a golden file too: `zp parse -g pairs.zp -f sexpr < testdata/basic.txt`.
 
 ## Fixture Suites
 
@@ -257,7 +257,7 @@ suite file; each case must provide an `input` string and an expected outcome:
 ```json
 {
   "version": 1,
-  "grammar": "grammar.pego",
+  "grammar": "grammar.zp",
   "backends": ["closure", "bytecode"],
   "equivalence": true,
   "cases": [
@@ -268,9 +268,9 @@ suite file; each case must provide an `input` string and an expected outcome:
 }
 ```
 
-For example, `grammar.pego` can contain:
+For example, `grammar.zp` can contain:
 
-```pego
+```zp
 @start
 rule main = "a" #recover(skip=[^;]+ ";"?)
 ```
@@ -278,7 +278,7 @@ rule main = "a" #recover(skip=[^;]+ ";"?)
 Run the suite with:
 
 ```bash
-pego test -f suite.json
+zp test -f suite.json
 ```
 
 The three outcomes are independent of whether the parse produced a node: a successful or recovered parse may have
@@ -294,7 +294,7 @@ may additionally include node JSON, root `start`/`end` positions, and ordered sy
 To refresh observed node and location goldens for one backend, select it explicitly:
 
 ```bash
-pego test -f suite.json -backend closure -update
+zp test -f suite.json -backend closure -update
 ```
 
 The update refuses to write if any selected case has a runtime error or its observed outcome differs from the
@@ -328,7 +328,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // checkInput checks what must hold for every input, valid or not.
@@ -336,24 +336,24 @@ func checkInput(t testing.TB, in string) {
 	t.Helper()
 
 	// Byte positions, so that a node's text is input[Start:End].
-	node, err := parser.Parse(in, pego.WithUnit(pego.Bytes))
+	node, err := parser.Parse(in, zeroparse.WithUnit(zeroparse.Bytes))
 
 	// Every backend returns the same tree and the same error.
-	for _, b := range []pego.Backend{pego.Bytecode, pego.BytecodeIterative} {
-		other, oerr := parser.Parse(in, pego.WithUnit(pego.Bytes), pego.WithBackend(b))
+	for _, b := range []zeroparse.Backend{zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+		other, oerr := parser.Parse(in, zeroparse.WithUnit(zeroparse.Bytes), zeroparse.WithBackend(b))
 		if fmt.Sprint(node, err) != fmt.Sprint(other, oerr) {
 			t.Fatalf("%q: backend %v returned %v, %v; the closure backend %v, %v", in, b, other, oerr, node, err)
 		}
 	}
 
 	// Recognition agrees with parsing.
-	if _, rerr := parser.Parse(in, pego.RecognizeOnly(), pego.WithUnit(pego.Bytes)); fmt.Sprint(rerr) != fmt.Sprint(err) {
+	if _, rerr := parser.Parse(in, zeroparse.RecognizeOnly(), zeroparse.WithUnit(zeroparse.Bytes)); fmt.Sprint(rerr) != fmt.Sprint(err) {
 		t.Fatalf("%q: Parse returned %v, RecognizeOnly %v", in, err, rerr)
 	}
 
 	if err != nil {
 		// A syntax error points into the input.
-		if se, ok := err.(*pego.SyntaxError); ok && (se.Pos < 0 || se.Pos > len(in)) {
+		if se, ok := err.(*zeroparse.SyntaxError); ok && (se.Pos < 0 || se.Pos > len(in)) {
 			t.Fatalf("%q: error position %d is outside the input", in, se.Pos)
 		}
 		return
@@ -362,13 +362,13 @@ func checkInput(t testing.TB, in string) {
 }
 
 // checkNode checks that a node lies within its parent and that a string node's text is the input it covers.
-func checkNode(t testing.TB, in string, n *pego.Node, lo, hi int) {
+func checkNode(t testing.TB, in string, n *zeroparse.Node, lo, hi int) {
 	t.Helper()
 	if n == nil {
 		return
 	}
 	switch n.Kind() {
-	case pego.KindTupleValue, pego.KindListValue, pego.KindValue:
+	case zeroparse.KindTupleValue, zeroparse.KindListValue, zeroparse.KindValue:
 		// Built by an action, without a range of its own: the elements lie in the enclosing range.
 	default:
 		if n.Start() < lo || n.Start() > n.End() || n.End() > hi {
@@ -376,14 +376,14 @@ func checkNode(t testing.TB, in string, n *pego.Node, lo, hi int) {
 		}
 		lo, hi = n.Start(), n.End()
 	}
-	if n.Kind() == pego.KindString && n.Text() != in[n.Start():n.End()] {
+	if n.Kind() == zeroparse.KindString && n.Text() != in[n.Start():n.End()] {
 		t.Fatalf("%q: string node %s has text %q, but [%d,%d) is %q", in, n, n.Text(), n.Start(), n.End(), in[n.Start():n.End()])
 	}
 	for _, c := range n.Elems() {
 		checkNode(t, in, c, lo, hi)
 	}
 	for _, v := range n.Fields() {
-		if c, ok := v.(*pego.Node); ok {
+		if c, ok := v.(*zeroparse.Node); ok {
 			checkNode(t, in, c, lo, hi)
 		}
 	}
@@ -411,7 +411,7 @@ same tree; the elements of a tree come in order of position; every identifier of
 
 `RecognizeOnly` does not run actions. If an action can fail at run time (`division by zero`), `Parse` fails and
 recognition succeeds, and the check above fails for the right reason. For such a grammar, compare only the syntax
-errors, or skip inputs that fail with an error that is not a `*pego.SyntaxError`.
+errors, or skip inputs that fail with an error that is not a `*zeroparse.SyntaxError`.
 
 ## Generated Inputs
 
@@ -426,7 +426,7 @@ package pairs_test
 import (
 	"testing"
 
-	"github.com/ornew/pego/sample"
+	"github.com/ornew/zeroparse/sample"
 )
 
 // TestGeneratedInputs runs the checks on inputs generated from the grammar, and requires that they exercise
@@ -469,7 +469,7 @@ test is deterministic, and try other seeds from time to time.
 On the command line:
 
 ```bash
-pego sample -g pairs.pego -n 3 -seed 1 -coverage
+zp sample -g pairs.zp -n 3 -seed 1 -coverage
 ```
 
 ```text
@@ -480,7 +480,7 @@ rules 5/5 (100%), alternatives 0/0 (100%)
 ```
 
 ```bash
-pego sample -g pairs.pego -n 2 -seed 1 -invalid
+zp sample -g pairs.zp -n 2 -seed 1 -invalid
 ```
 
 ```text
@@ -565,7 +565,7 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	"github.com/ornew/pego/sample"
+	"github.com/ornew/zeroparse/sample"
 )
 
 // TestDocumentMatchesFreshParse edits generated inputs at random and checks that reparsing the document gives the
@@ -602,7 +602,7 @@ func TestDocumentMatchesFreshParse(t *testing.T) {
 }
 ```
 
-`pego edit-fuzz` and package `editfuzz` run the same check with undo, redo, invalid UTF-8, spans and every backend
+`zp edit-fuzz` and package `editfuzz` run the same check with undo, redo, invalid UTF-8, spans and every backend
 and unit, and save a failing edit sequence as a file that replays it ([fuzzing edits](sampling-and-fuzzing.md#fuzzing-edits)).
 
 **A compiled grammar** must behave like the grammar it was made from ([compiled grammars](compiled-grammars.md)). This
@@ -615,17 +615,17 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/sample"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/sample"
 )
 
 // TestLoadedMatchesCompiled checks that a grammar saved and loaded again behaves like the one compiled from source.
 func TestLoadedMatchesCompiled(t *testing.T) {
-	data, err := parser.Marshal(pego.CompiledParse)
+	data, err := parser.Marshal(zeroparse.CompiledParse)
 	if err != nil {
 		t.Fatal(err)
 	}
-	loaded, err := pego.LoadParser(data)
+	loaded, err := zeroparse.LoadParser(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -654,13 +654,13 @@ those of the repetition in the tree that `Parse` returns for the same input. Cop
 
 Check the grammar as a file, too:
 
-- **`pego lint`** finds alternatives that can never match, contradictory anchors, nullable repetitions and unused rules
+- **`zp lint`** finds alternatives that can never match, contradictory anchors, nullable repetitions and unused rules
   ([linting grammars](linting.md)). `lint.Config.Run` makes it a test: see the example in that guide.
-- **`pego fmt -check`** lists the files whose formatting differs from the canonical one and exits with status 1 when
-  there are any (2 when a file cannot be parsed), so it can be a CI step as it is. `pego fmt -l` lists the same files
+- **`zp fmt -check`** lists the files whose formatting differs from the canonical one and exits with status 1 when
+  there are any (2 when a file cannot be parsed), so it can be a CI step as it is. `zp fmt -l` lists the same files
   but exits with status 0.
 
-- **Generated files** (`pego gen`, `pego compile`) are checked for staleness by a test that regenerates in memory and
+- **Generated files** (`zp gen`, `zp compile`) are checked for staleness by a test that regenerates in memory and
   compares: [code generation](code-generation.md#keeping-generated-code-up-to-date) and
   [compiled grammars](compiled-grammars.md#embedding-with-goembed).
 
@@ -670,8 +670,8 @@ Check the grammar as a file, too:
 go vet ./...
 go test ./...                                             # examples, golden files, properties, generated inputs
 go test -run '^$' -fuzz=FuzzParse -fuzztime=30s .         # a short fuzz run; the corpus of failures is kept in testdata/fuzz
-pego lint -g pairs.pego                                   # exits with status 1 on an error finding (-strict: also on warnings)
-pego fmt -check *.pego                                    # exits with status 1 if a file is not formatted
+zp lint -g pairs.zp                                   # exits with status 1 on an error finding (-strict: also on warnings)
+zp fmt -check *.zp                                    # exits with status 1 if a file is not formatted
 ```
 
 Fuzz for longer on a schedule rather than on every commit.
@@ -682,4 +682,4 @@ Fuzz for longer on a schedule rather than on every commit.
 - [Error messages](error-messages.md): shaping the errors that these tests check.
 - [Linting grammars](linting.md), [code generation](code-generation.md) and
   [compiled grammars](compiled-grammars.md): keeping the other artifacts honest.
-- [Debugging and profiling](debugging.md): when a test fails and you need to know why (`pego explain`, `pego trace`).
+- [Debugging and profiling](debugging.md): when a test fails and you need to know why (`zp explain`, `zp trace`).

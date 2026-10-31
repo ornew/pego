@@ -1,6 +1,6 @@
-package pego
+package zeroparse
 
-import "github.com/ornew/pego/internal/engine"
+import "github.com/ornew/zeroparse/internal/engine"
 
 // DocumentChangeKind distinguishes source operations, captured outcomes and
 // lost history requiring a full refresh.

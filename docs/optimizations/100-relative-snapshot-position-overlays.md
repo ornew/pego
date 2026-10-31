@@ -16,7 +16,7 @@ edges.
 
 The default no-tag representation remains unchanged: the graph has no position
 overlay and an arm64 `SnapshotNode` handle is 24 bytes. With
-`pego_snapshot_position_overlays`, a shared graph needing changed metadata
+`zp_snapshot_position_overlays`, a shared graph needing changed metadata
 allocates a 12-byte overlay entry per record, and every handle grows to 32 bytes
 on arm64. The opt-in build is private
 and default-off; the experiment has not been adopted. The implementation and
@@ -43,7 +43,7 @@ not inferred from those measurements.
 ## Reproduction
 
 The comparison used the no-tag absolute-position build as the reference and
-`-tags pego_snapshot_position_overlays` for the candidate from the same source
+`-tags zp_snapshot_position_overlays` for the candidate from the same source
 revision: the commit containing this record. Its parent is `eee93b9`; no-tag
 comparisons use the candidate source, rather than a different historical revision. Measurements ran on Go 1.27.1, Apple M3 Max (darwin/arm64), with
 `GOMAXPROCS=16` and `GOGC=100`. Timed runs used three serialized ABBA blocks and
@@ -53,21 +53,21 @@ reference times, then report the median and range of the three block ratios. Kee
 runs.
 
 ```sh
-go test -c -o /tmp/pego-snapshot-absolute.test ./internal/engine
-go test -c -tags pego_snapshot_position_overlays \
-  -o /tmp/pego-snapshot-relative.test ./internal/engine
-GOMAXPROCS=16 GOGC=100 /tmp/pego-snapshot-absolute.test \
+go test -c -o /tmp/zp-snapshot-absolute.test ./internal/engine
+go test -c -tags zp_snapshot_position_overlays \
+  -o /tmp/zp-snapshot-relative.test ./internal/engine
+GOMAXPROCS=16 GOGC=100 /tmp/zp-snapshot-absolute.test \
   -test.run '^$' \
   -test.bench '^BenchmarkDocumentSnapshot(PrefixEdit|MiddleEdit|MiddleEditRead|PrefixEditRead)$' \
   -test.benchmem -test.benchtime=500ms -test.count=1
-GOMAXPROCS=16 GOGC=100 /tmp/pego-snapshot-relative.test \
+GOMAXPROCS=16 GOGC=100 /tmp/zp-snapshot-relative.test \
   -test.run '^$' \
   -test.bench '^BenchmarkDocumentSnapshot(PrefixEdit|MiddleEdit|MiddleEditRead|PrefixEditRead)$' \
   -test.benchmem -test.benchtime=500ms -test.count=1
 
 GOMAXPROCS=16 GOGC=100 go run ./bench/snapshot-retained \
   -mode snapshot -edit prepend -size 4096 -versions 33 -window 0 -backend closure -unit bytes
-GOMAXPROCS=16 GOGC=100 go run -tags pego_snapshot_position_overlays \
+GOMAXPROCS=16 GOGC=100 go run -tags zp_snapshot_position_overlays \
   ./bench/snapshot-retained -mode snapshot -edit prepend \
   -size 4096 -versions 33 -window 0 -backend closure -unit bytes
 ```

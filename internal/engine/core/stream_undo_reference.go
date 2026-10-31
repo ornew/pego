@@ -1,4 +1,4 @@
-//go:build pego_reference_stream_undo || pego_reference_stream_storage
+//go:build zp_reference_stream_undo || zp_reference_stream_storage
 
 package core
 

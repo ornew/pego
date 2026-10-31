@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
-// PEGO_TYPED_FRAMED_CUT_DIR preserves current direct/reference modules for
+// ZP_TYPED_FRAMED_CUT_DIR preserves current direct/reference modules for
 // separate-binary paired benchmarks without any generated runtime selector.
 func TestGeneratedTypedFramedCutWorkloads(t *testing.T) {
 	t.Parallel()
@@ -20,7 +20,7 @@ func testGeneratedTypedFramedCutWorkloads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	dir := os.Getenv("PEGO_TYPED_FRAMED_CUT_DIR")
+	dir := os.Getenv("ZP_TYPED_FRAMED_CUT_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}

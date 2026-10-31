@@ -1,8 +1,8 @@
 package document
 
 import (
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/zeroparse/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/value"
 )
 
 // The external tests of this package parse with the engine's programs, which import this

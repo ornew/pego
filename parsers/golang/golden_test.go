@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/golang"
+	"github.com/ornew/zeroparse/parsers/golang"
 )
 
 // TestGolden checks the generated parser against the golden files of testdata, which the tests of
-// github.com/ornew/pego/parsers check every backend of the engine against.
+// github.com/ornew/zeroparse/parsers check every backend of the engine against.
 func TestGolden(t *testing.T) {
 	inputs, _ := filepath.Glob("testdata/*.txt")
 	if len(inputs) == 0 {

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/json"
+	"github.com/ornew/zeroparse/parsers/json"
 )
 
-// benchInput is an array of objects of about 256 KB, like the JSON workload of the benchmarks of PEGO
-// (bench/ in github.com/ornew/pego).
+// benchInput is an array of objects of about 256 KB, like the JSON workload of the benchmarks of ZeroParse
+// (bench/ in github.com/ornew/zeroparse).
 var benchInput = func() string {
 	words := []string{"alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta"}
 	r := rand.New(rand.NewPCG(1, 2))

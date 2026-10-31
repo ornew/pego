@@ -2,7 +2,7 @@
 //
 //   node --experimental-strip-types bench/ts-parse.mjs --module DIR/parser.ts --input FILE [--name json] [--entry parse|parseAST|recognize]
 //
-// The inputs come from the bench package: PEGO_TS_INPUT_DIR=DIR go test ./bench -run TestExportTSInputs.
+// The inputs come from the bench package: ZP_TS_INPUT_DIR=DIR go test ./bench -run TestExportTSInputs.
 // The script prints one line in the format of go test -bench, so that benchstat can compare runs:
 //
 //   BenchmarkTSParse/json 12 8123456 ns/op 30.8 MB/s

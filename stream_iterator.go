@@ -1,9 +1,9 @@
-package pego
+package zeroparse
 
 import (
 	"io"
 
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/zeroparse/internal/engine"
 )
 
 // StreamIterator delivers one committed stream element per Next call.

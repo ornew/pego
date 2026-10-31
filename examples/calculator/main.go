@@ -1,4 +1,4 @@
-// Command calculator parses an arithmetic expression with calc.pego and evaluates it.
+// Command calculator parses an arithmetic expression with calc.zp and evaluates it.
 //
 //	go run ./examples/calculator "1 + 2 * (3 - 4) ^ 2"
 package main
@@ -11,14 +11,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
-//go:embed calc.pego
+//go:embed calc.zp
 var grammar string
 
 func main() {
-	p, err := pego.CompileSource(grammar, "main")
+	p, err := zeroparse.CompileSource(grammar, "main")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -31,7 +31,7 @@ func main() {
 	fmt.Println(v)
 }
 
-func eval(p *pego.Parser, src string) (float64, error) {
+func eval(p *zeroparse.Parser, src string) (float64, error) {
 	n, err := p.Parse(src)
 	if err != nil {
 		return 0, err
@@ -39,30 +39,30 @@ func eval(p *pego.Parser, src string) (float64, error) {
 	return evalNode(n)
 }
 
-// evalNode evaluates the AST (Number, Binary, Unary) built by the actions of calc.pego.
-func evalNode(n *pego.Node) (float64, error) {
+// evalNode evaluates the AST (Number, Binary, Unary) built by the actions of calc.zp.
+func evalNode(n *zeroparse.Node) (float64, error) {
 	switch n.Type() {
 	case "Number":
 		return strconv.ParseFloat(n.Text(), 64)
 	case "Unary":
-		x, err := evalNode(n.Field("X").(*pego.Node))
+		x, err := evalNode(n.Field("X").(*zeroparse.Node))
 		if err != nil {
 			return 0, err
 		}
-		if n.Field("Op").(*pego.Node).Text() == "-" {
+		if n.Field("Op").(*zeroparse.Node).Text() == "-" {
 			return -x, nil
 		}
 		return x, nil
 	case "Binary":
-		l, err := evalNode(n.Field("Left").(*pego.Node))
+		l, err := evalNode(n.Field("Left").(*zeroparse.Node))
 		if err != nil {
 			return 0, err
 		}
-		r, err := evalNode(n.Field("Right").(*pego.Node))
+		r, err := evalNode(n.Field("Right").(*zeroparse.Node))
 		if err != nil {
 			return 0, err
 		}
-		switch op := n.Field("Op").(*pego.Node).Text(); op {
+		switch op := n.Field("Op").(*zeroparse.Node).Text(); op {
 		case "+":
 			return l + r, nil
 		case "-":

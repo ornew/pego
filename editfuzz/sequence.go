@@ -1,5 +1,5 @@
 // Package editfuzz checks incremental parsing with a grammar against fresh parses by applying sequences of
-// edits to a pego.Document, and saves a failing sequence as a file that replays it exactly.
+// edits to a zeroparse.Document, and saves a failing sequence as a file that replays it exactly.
 //
 // A Sequence is a versioned event log: the initial text, then edit, undo, redo and checkpoint operations.
 // At the start and at each checkpoint, the Document's parse result is compared with a fresh parse of the
@@ -23,7 +23,7 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 // Version is the version of the Sequence format that this package reads and writes.
@@ -122,12 +122,12 @@ type Sequence struct {
 	// sources.
 	GrammarSHA256 string
 	Start         string
-	Backend       pego.Backend
-	Unit          pego.PositionUnit
+	Backend       zeroparse.Backend
+	Unit          zeroparse.PositionUnit
 	// Limits bound the Documents and the fresh parses of a replay. A Document that reuses earlier work
 	// spends less than a fresh parse, so a check in which either parse exhausts its budget compares
 	// nothing. The saved format does not record the limits, so a replay supplies them again.
-	Limits pego.Limits
+	Limits zeroparse.Limits
 	// Seed is the seed that generated the sequence, kept only as provenance: replay does not use it.
 	Seed       uint64
 	Initial    []byte
@@ -246,8 +246,8 @@ var sequenceFields = []string{"version", "grammar_sha256", "grammar_normalizatio
 	"text_encoding", "initial_base64", "operations"}
 
 // ParseBackend returns the backend named closure, bytecode or bytecode-iterative.
-func ParseBackend(name string) (pego.Backend, error) {
-	for _, b := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+func ParseBackend(name string) (zeroparse.Backend, error) {
+	for _, b := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
 		if b.String() == name {
 			return b, nil
 		}
@@ -256,8 +256,8 @@ func ParseBackend(name string) (pego.Backend, error) {
 }
 
 // ParseUnit returns the unit named codepoints or bytes.
-func ParseUnit(name string) (pego.PositionUnit, error) {
-	for _, u := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
+func ParseUnit(name string) (zeroparse.PositionUnit, error) {
+	for _, u := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
 		if u.String() == name {
 			return u, nil
 		}
@@ -265,8 +265,8 @@ func ParseUnit(name string) (pego.PositionUnit, error) {
 	return 0, fmt.Errorf("unknown unit %q", name)
 }
 
-func backendName(b pego.Backend) (string, error) {
-	if b == pego.DefaultBackend {
+func backendName(b zeroparse.Backend) (string, error) {
+	if b == zeroparse.DefaultBackend {
 		return "", errors.New("a sequence needs an explicit backend")
 	}
 	if _, err := ParseBackend(b.String()); err != nil {
@@ -282,8 +282,8 @@ func checkHash(h string) error {
 	return nil
 }
 
-func unitName(u pego.PositionUnit) (string, error) {
-	if u != pego.CodePoints && u != pego.Bytes {
+func unitName(u zeroparse.PositionUnit) (string, error) {
+	if u != zeroparse.CodePoints && u != zeroparse.Bytes {
 		return "", fmt.Errorf("unknown unit %d", u)
 	}
 	return u.String(), nil

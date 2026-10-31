@@ -1,4 +1,4 @@
-//go:build !pego_budget_controls_reference
+//go:build !zp_budget_controls_reference
 
 package bench
 
@@ -7,10 +7,10 @@ import (
 	"runtime"
 	"testing"
 
-	gcsv "github.com/ornew/pego/internal/bench/gen/csv"
-	gjson "github.com/ornew/pego/internal/bench/gen/json"
-	gxml "github.com/ornew/pego/internal/bench/gen/xml"
-	"github.com/ornew/pego/internal/bench/inputs"
+	gcsv "github.com/ornew/zeroparse/internal/bench/gen/csv"
+	gjson "github.com/ornew/zeroparse/internal/bench/gen/json"
+	gxml "github.com/ornew/zeroparse/internal/bench/gen/xml"
+	"github.com/ornew/zeroparse/internal/bench/inputs"
 )
 
 // TestGeneratedBudgetErrorsAreDeterministic requires that a parse under a finite budget fails the

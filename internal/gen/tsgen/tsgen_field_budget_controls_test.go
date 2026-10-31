@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen"
 )
 
 func TestGeneratedTSBudgetControlFields(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/gen"
+	"github.com/ornew/zeroparse/gen"
 )
 
 func TestMaxDepth(t *testing.T) {
@@ -33,7 +33,7 @@ func TestMaxDepth(t *testing.T) {
 			t.Fatalf("equivalent default: %v", err)
 		}
 		got, err = generate(7)
-		want := "var pegoGrammar = rt.NewGrammar(7)"
+		want := "var zpGrammar = rt.NewGrammar(7)"
 		if ts {
 			want = "const G = mkGrammar(7, "
 		}

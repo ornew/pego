@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { playground } from "./playground_harness.mjs";
 
 const base = { g: 'rule main = "é" $$\nrule alt = "x" $$', i: "é" };
-const app = process.env.PEGO_PLAYGROUND_APP;
+const app = process.env.ZP_PLAYGROUND_APP;
 const parseCalls = (h) => h.calls.filter((c) => c.method === "parse");
 
 for (const [name, field, value, request] of [

@@ -37,12 +37,12 @@ The closure backend also serves as the reference (oracle) for checking the corre
 grammar.Grammar ──Compile──▶ engine.Program ─┬─ backend: closure  ──▶ executed as closures
                                              └─ backend: bytecode ──▶ Module ──▶ executed on the VM
                                                                         │  ▲
-                                                               Marshal ─┘  └─ Load (.pegoc)
+                                                               Marshal ─┘  └─ Load (.zpc)
 ```
 
 - `engine.Compile` performs syntax, type and static analysis as it does now, and then builds an executable form for each backend.
 - The unit of bytecode is called a **module**. A module is a collection of instruction sequences and tables, and it is the only thing the runtime reads.
-- In the public API, the backend and execution model are chosen with an option (for example `p.Parse(input, pego.WithBackend(pego.BytecodeIterative))`). Based on the performance comparison ([decision 4](#4-default-backend)), the default is the closure backend when the AST is available and bytecode otherwise.
+- In the public API, the backend and execution model are chosen with an option (for example `p.Parse(input, zeroparse.WithBackend(zeroparse.BytecodeIterative))`). Based on the performance comparison ([decision 4](#4-default-backend)), the default is the closure backend when the AST is available and bytecode otherwise.
 
 ## Execution Models
 
@@ -204,7 +204,7 @@ An evaluation error in an action is an error of the whole parse, and in a predic
 
 ## Module and File Format
 
-Raise the `.pegoc` version to 2 and make its content a module. The AST is included by default and can be omitted ([decision 3](#3-ast-in-pegoc)).
+Raise the `.zpc` version to 2 and make its content a module. The AST is included by default and can be omitted ([decision 3](#3-ast-in-zpc)).
 
 | Part | Contents |
 |:--|:--|
@@ -215,7 +215,7 @@ Raise the `.pegoc` version to 2 and make its content a module. The AST is includ
 | Rule table | Name, start of body code, capture scope, action code, terminal type, memoization, left-recursion leader, position dependency, and the shape of the body for `$n` |
 | Operators Rule table | As above |
 | Instruction sequences | Match code and expression code |
-| AST (optional) | For loading into the closure backend and for `pego convert` (formerly `pego fmt`). Can be omitted. |
+| AST (optional) | For loading into the closure backend and for `zp convert` (formerly `zp fmt`). Can be omitted. |
 | Checksum | CRC-32 |
 
 The runtime reads only the parts other than the AST. If the AST is omitted, the file contains only what the runtime needs.
@@ -229,8 +229,8 @@ Version 1 files (AST and analysis results) are no longer loaded.
 
 ## Impact on Code Generation
 
-In the future, `pego gen` will also be able to embed "bytecode plus a minimal VM". Because the generated code then follows the runtime specification, generators for other languages can be built just by porting the VM.
-Within the scope of this design, the current `pego gen` (which generates Go code) is unchanged.
+In the future, `zp gen` will also be able to embed "bytecode plus a minimal VM". Because the generated code then follows the runtime specification, generators for other languages can be built just by porting the VM.
+Within the scope of this design, the current `zp gen` (which generates Go code) is unchanged.
 
 ## Verification
 
@@ -251,7 +251,7 @@ Different grammar features may favor different backends, so the benchmarks are c
 | Go standard library | Only where a comparable standard parser exists (table below) |
 | Closure | The current engine |
 | Bytecode (recursive and iterative) | The same grammar executed as bytecode |
-| Generated Go parser | Output of `pego gen` |
+| Generated Go parser | Output of `zp gen` |
 
 Both code-point and byte position units are measured.
 
@@ -268,9 +268,9 @@ Both code-point and byte position units are measured.
 | Error recovery | `examples/minilang` | Programs with many errors | `#recover`, expectation recording | None |
 | Incremental | `examples/minilang` | Repeated one-character edits to a large program | Memo reuse | None (compared with a fresh parse) |
 | Stream | A sequence of records | Tens of MB of input | Reading and discarding, memory bound | None |
-| Preparation | Each example's grammar | None | Compiling from source, loading `.pegoc` | None |
+| Preparation | Each example's grammar | None | Compiling from source, loading `.zpc` | None |
 
-Comparisons with the standard library state the differences in output in the table (every PEGO backend builds a tree with positions).
+Comparisons with the standard library state the differences in output in the table (every ZeroParse backend builds a tree with positions).
 Inputs are generated in the tests from a fixed random seed so that results are reproducible.
 
 ## Implementation Order
@@ -280,7 +280,7 @@ Inputs are generated in the tests from a fixed random seed so that results are r
 3. The recursive VM: matching, control, values, and rule calls (memoization, left recursion)
 4. The VM for action and predicate expressions
 5. Operators Rule declarations, attributes, streams and incremental parsing
-6. Backend selection in the public API and the CLI, `.pegoc` version 2
+6. Backend selection in the public API and the CLI, `.zpc` version 2
 7. The iterative VM
 8. Extend the equivalence tests to all tests
 9. Benchmarks (including the new example grammars), recording the results, and choosing the default backend
@@ -299,7 +299,7 @@ At each step, the equivalence tests for the features implemented so far must pas
 - Options: code points / UTF-8 bytes / selectable.
 - **Decision**: selectable (code points by default). The unit is selectable in every backend, and results are compared between backends in the same unit.
 
-### 3. AST in .Pegoc
+### 3. AST in .zpc
 
 - Options: included by default and omittable / always included / never included.
 - **Decision**: included by default and omittable.

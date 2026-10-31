@@ -1,9 +1,9 @@
-# PEGO Site Build
+# ZeroParse Site Build
 
 The pinned Nanosite CLI and `sitegen.BuildWith` share the standard publication
 pipeline. `site/config.json` controls source publication, defaults, front matter,
 record indexes, navigation, paging, and search. The project driver supplies the
-PEGO landing page, API reference and Playground/theme integration through
+ZeroParse landing page, API reference and Playground/theme integration through
 Nanosite extension hooks; consult the installed Nanosite skill for config
 semantics. The driver owns project-specific build flags and integration only.
 

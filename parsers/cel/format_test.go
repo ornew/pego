@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/ornew/pego/parsers/cel"
-	"github.com/ornew/pego/parsers/cel/types"
+	"github.com/ornew/zeroparse/parsers/cel"
+	"github.com/ornew/zeroparse/parsers/cel/types"
 )
 
 // stripPos removes the offsets from a canonical form.

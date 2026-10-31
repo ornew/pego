@@ -11,8 +11,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/internal/bench/inputs"
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/bench/inputs"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 // tsWorkload is a workload measured on the generated TypeScript parser: the grammar and the input
@@ -24,13 +24,13 @@ type tsWorkload struct {
 }
 
 var tsWorkloads = []tsWorkload{
-	{"JSON", "parsers/json/json.pego", func() string { return inputs.JSONInput(256 << 10) }},
-	{"CSV", "parsers/csv/csv.pego", func() string { return inputs.CSVInput(5000) }},
-	{"XML", "parsers/xml/xml.pego", func() string { return inputs.XMLInput(256 << 10) }},
-	{"Arith_OperatorsRule", "examples/calculator/calc.pego", func() string { return inputs.ArithInput(20000) }},
-	{"Arith_LeftRec", "examples/calculator/calc_lr.pego", func() string { return inputs.ArithInput(20000) }},
-	{"Minilang", "examples/minilang/minilang.pego", func() string { return inputs.MinilangInput(300, 0) }},
-	{"Outline", "examples/outline/outline.pego", func() string { return inputs.OutlineInput(5000) }},
+	{"JSON", "parsers/json/json.zp", func() string { return inputs.JSONInput(256 << 10) }},
+	{"CSV", "parsers/csv/csv.zp", func() string { return inputs.CSVInput(5000) }},
+	{"XML", "parsers/xml/xml.zp", func() string { return inputs.XMLInput(256 << 10) }},
+	{"Arith_OperatorsRule", "examples/calculator/calc.zp", func() string { return inputs.ArithInput(20000) }},
+	{"Arith_LeftRec", "examples/calculator/calc_lr.zp", func() string { return inputs.ArithInput(20000) }},
+	{"Minilang", "examples/minilang/minilang.zp", func() string { return inputs.MinilangInput(300, 0) }},
+	{"Outline", "examples/outline/outline.zp", func() string { return inputs.OutlineInput(5000) }},
 }
 
 // tsModes are the entry points of a generated TypeScript parser that are measured, by the name
@@ -44,7 +44,7 @@ var tsModes = []struct{ name, entry string }{
 // captureTS generates a TypeScript parser for every workload, measures each entry point in count
 // rounds of fresh Node processes (bench/ts-parse.mjs) and returns the results with a header.
 func captureTS(root, commit, work, node string, count int) ([]byte, error) {
-	pego, err := buildPego(root, work)
+	zp, err := buildZP(root, work)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func captureTS(root, commit, work, node string, count int) ([]byte, error) {
 			return nil, err
 		}
 		args := []string{"gen", "-lang", "ts", "-types", "-recognize", "-g", filepath.Join(root, w.grammar), "-o", filepath.Join(work, "ts", w.name)}
-		if _, err := execOut(root, nil, pego, args...); err != nil {
+		if _, err := execOut(root, nil, zp, args...); err != nil {
 			return nil, err
 		}
 	}
@@ -100,7 +100,7 @@ func captureTS(root, commit, work, node string, count int) ([]byte, error) {
 // read from parsers/generate.go.
 var sizeParsers = []string{"json", "csv", "xml", "yaml", "cel", "cue", "golang", "python", "typescript", "duckdb"}
 
-var genDirective = regexp.MustCompile(`^//go:generate go run \.\./cmd/pego gen (.*)$`)
+var genDirective = regexp.MustCompile(`^//go:generate go run \.\./cmd/zp gen (.*)$`)
 
 // parserGenArgs returns the options with which parsers/generate.go generates parser name, adapted
 // to TypeScript: the Go-only options (-module, -runtime import, -nodoc, -typed-only) are dropped.
@@ -138,7 +138,7 @@ func parserGenArgs(root, name string) ([]string, error) {
 // the generated TypeScript parser.ts and of that file compressed with gzip -9. The embedded
 // TypeScript runtime is common to all parsers and is recorded once as parser "runtime".
 func captureSizes(root, commit, work string) ([]byte, error) {
-	pego, err := buildPego(root, work)
+	zp, err := buildZP(root, work)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func captureSizes(root, commit, work string) ([]byte, error) {
 			return nil, err
 		}
 		out := filepath.Join(work, "size-ts", name)
-		if _, err := execOut(root, nil, pego, append(append([]string{"gen", "-lang", "ts"}, args...), "-o", out)...); err != nil {
+		if _, err := execOut(root, nil, zp, append(append([]string{"gen", "-lang", "ts"}, args...), "-o", out)...); err != nil {
 			return nil, err
 		}
 		raw, gz, err := sizeOfFile(filepath.Join(out, "parser.ts"))
@@ -209,20 +209,20 @@ func buildBinary(root, work, name string) (int, error) {
 go 1.27.1
 
 require (
-	github.com/ornew/pego v0.0.0
-	github.com/ornew/pego/parsers/%[1]s v0.0.0
+	github.com/ornew/zeroparse v0.0.0
+	github.com/ornew/zeroparse/parsers/%[1]s v0.0.0
 )
 
-replace github.com/ornew/pego => %[2]s
+replace github.com/ornew/zeroparse => %[2]s
 
-replace github.com/ornew/pego/parsers/%[1]s => %[2]s/parsers/%[1]s
+replace github.com/ornew/zeroparse/parsers/%[1]s => %[2]s/parsers/%[1]s
 `, name, root)
 	src := fmt.Sprintf(`package main
 
 import (
 	"os"
 
-	p "github.com/ornew/pego/parsers/%s"
+	p "github.com/ornew/zeroparse/parsers/%s"
 )
 
 func main() {
@@ -247,10 +247,10 @@ func main() {
 	return int(st.Size()), nil
 }
 
-// buildPego builds the pego command of the repository into the work directory.
-func buildPego(root, work string) (string, error) {
-	out := filepath.Join(work, "pego")
-	if _, err := execOut(root, []string{"GOFLAGS=" + core.GoFlags(os.Getenv("GOFLAGS"))}, "go", "build", "-trimpath", "-o", out, "./cmd/pego"); err != nil {
+// buildZP builds the zp command of the repository into the work directory.
+func buildZP(root, work string) (string, error) {
+	out := filepath.Join(work, "zp")
+	if _, err := execOut(root, []string{"GOFLAGS=" + core.GoFlags(os.Getenv("GOFLAGS"))}, "go", "build", "-trimpath", "-o", out, "./cmd/zp"); err != nil {
 		return "", err
 	}
 	return out, nil

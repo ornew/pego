@@ -5,15 +5,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func TestDuckDBKeywordNames(t *testing.T) {
-	src, err := os.ReadFile("duckdb/duckdb.pego")
+	src, err := os.ReadFile("duckdb/duckdb.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := pego.CompileSource(string(src), "main")
+	p, err := zeroparse.CompileSource(string(src), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,9 +29,9 @@ func TestDuckDBKeywordNames(t *testing.T) {
 		{"SELECT 1 iN", false}, {"SELECT 1 iNt", false},
 		{"SELECT 1 iNtentionally", true},
 	} {
-		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-			for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
-				_, err := p.Parse(tc.sql, pego.WithBackend(backend), pego.WithUnit(unit))
+		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+				_, err := p.Parse(tc.sql, zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
 				if (err == nil) != tc.ok {
 					t.Errorf("Parse(%q, backend=%v, unit=%v): %v", tc.sql, backend, unit, err)
 				}
@@ -41,11 +41,11 @@ func TestDuckDBKeywordNames(t *testing.T) {
 }
 
 func TestDuckDBSetofTypes(t *testing.T) {
-	src, err := os.ReadFile("duckdb/duckdb.pego")
+	src, err := os.ReadFile("duckdb/duckdb.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := pego.CompileSource(string(src), "main")
+	p, err := zeroparse.CompileSource(string(src), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,9 +64,9 @@ func TestDuckDBSetofTypes(t *testing.T) {
 	} {
 		for _, template := range []string{"SELECT CAST(NULL AS %s)", "SELECT NULL::%s", "CREATE TABLE t (x %s)"} {
 			sql := fmt.Sprintf(template, tc.typ)
-			for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-				for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
-					_, err := p.Parse(sql, pego.WithBackend(backend), pego.WithUnit(unit))
+			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+				for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+					_, err := p.Parse(sql, zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
 					if (err == nil) != tc.ok {
 						t.Errorf("Parse(%q, backend=%v, unit=%v): %v", sql, backend, unit, err)
 					}
@@ -77,11 +77,11 @@ func TestDuckDBSetofTypes(t *testing.T) {
 }
 
 func TestDuckDBFrameBounds(t *testing.T) {
-	src, err := os.ReadFile("duckdb/duckdb.pego")
+	src, err := os.ReadFile("duckdb/duckdb.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := pego.CompileSource(string(src), "main")
+	p, err := zeroparse.CompileSource(string(src), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,9 +126,9 @@ func TestDuckDBFrameBounds(t *testing.T) {
 	} {
 		for _, frameUnit := range []string{"ROWS", "RANGE", "GROUPS"} {
 			sql := fmt.Sprintf(`SELECT sum("é") OVER (ORDER BY i %s %s)`, frameUnit, tc.bound)
-			for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-				for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
-					_, err := p.Parse(sql, pego.WithBackend(backend), pego.WithUnit(unit))
+			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+				for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+					_, err := p.Parse(sql, zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
 					if (err == nil) != tc.ok {
 						t.Errorf("Parse(%q, backend=%v, unit=%v): %v", sql, backend, unit, err)
 					}

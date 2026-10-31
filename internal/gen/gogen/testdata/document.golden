@@ -3,10 +3,10 @@
 # Rewrite with: go test ./internal/gen/gogen -run Document -update
 # A run checks every entry of its scope: an entry that is missing, stale or different fails. -update replaces the
 # entries of the scope, drops stale ones and logs a summary per case. Review the diff: it is a regression freeze.
-corpus/0/../../examples/calculator/calc.pego	373875d40f5d9bea0f55c6a5
-corpus/0/../../examples/calculator/calc_lr.pego	21df5c7296b8b2d69d428682
-corpus/0/../../examples/minilang/minilang.pego	eeaf537de038ab657bc67b8e
-corpus/0/../../examples/outline/outline.pego	238e019d3a48c5eaa7b3ebf3
+corpus/0/../../examples/calculator/calc.zp	373875d40f5d9bea0f55c6a5
+corpus/0/../../examples/calculator/calc_lr.zp	21df5c7296b8b2d69d428682
+corpus/0/../../examples/minilang/minilang.zp	eeaf537de038ab657bc67b8e
+corpus/0/../../examples/outline/outline.zp	238e019d3a48c5eaa7b3ebf3
 corpus/0/LR cut inside optional	08686329704ca242ff5a61fa
 corpus/0/Operators Rule explicit default action	4c868d821c064cc8b11e5dd8
 corpus/0/Operators Rule operand with a cut in the recovered body	0b7e63e06560d3449b03a9dc
@@ -197,38 +197,38 @@ corpus/0/terminal constructor predicate error	9a2d9df728f531e01c0a9d8f
 corpus/0/terminal constructor root	152d0ff1aee5db6bceffb3ea
 corpus/0/terminal constructor value error	2cfb4b6e104ab69a17a458ef
 corpus/0/terminal singleton union	f86d613ed3dc201c4d405726
-corpus/0/testdata/typed/calclr.pego	248af8484dd25242dece5dd7
-corpus/0/testdata/typed/direct_backtrack.pego	9cc5aeb67077b0c05194c965
-corpus/0/testdata/typed/direct_errors.pego	cd088deca89a8e064ee1bf05
-corpus/0/testdata/typed/direct_lists.pego	469520784fa6795294608cfe
-corpus/0/testdata/typed/direct_literals.pego	06b145ace3f4e931aeba4909
-corpus/0/testdata/typed/direct_names.pego	99b59e4eba7b3c83a220a0dd
-corpus/0/testdata/typed/element_scope_optional.pego	fa1a7ef4c9d53cbc4a7998c5
-corpus/0/testdata/typed/element_scope_plain.pego	6380399b3828bb0d8b590451
-corpus/0/testdata/typed/element_scope_recover.pego	a5d7be038d66728a6d57ec9b
-corpus/0/testdata/typed/errlist.pego	ae9f969cdf99b3529106ddb3
-corpus/0/testdata/typed/errlist2.pego	90909276151fa845689be769
-corpus/0/testdata/typed/fields.pego	9e67c625cd787fcef3eba2ca
-corpus/0/testdata/typed/mix.pego	4d8bdcf710485d7e2b9c6f59
-corpus/0/testdata/typed/mixf.pego	e704660fc4b3349f1cf2d86f
-corpus/0/testdata/typed/operators_rule1.pego	32687331aadeebf37b9d126f
-corpus/0/testdata/typed/operators_rule1f.pego	65e5d026ac7bbc399c753bfe
-corpus/0/testdata/typed/order.pego	ff6ff4cdb9f9761b2bc97482
-corpus/0/testdata/typed/proj1.pego	fe53226149b6165d3ea45367
-corpus/0/testdata/typed/proj2.pego	61d96879eb9f796be657802b
-corpus/0/testdata/typed/proj3.pego	ba5f358b77812edfbdf80c58
-corpus/0/testdata/typed/proj4.pego	a10171e14ea1719f4db963dd
-corpus/0/testdata/typed/proj5.pego	c70ce5b941aae6f9768038b6
-corpus/0/testdata/typed/proj6.pego	84af9f2a91b82223c2b90fda
-corpus/0/testdata/typed/proj7.pego	f19bc829bcdca5402db0f499
-corpus/0/testdata/typed/spanname.pego	2d62fcf3e204b3e396209915
-corpus/0/testdata/typed/splice_recursive_capture.pego	e5f4a62da61d75bb4e0bdcc1
-corpus/0/testdata/typed/splice_recursive_capture_action.pego	63c71ad39ee9032ec8bcb3ca
-corpus/0/testdata/typed/splice_recursive_choice.pego	04f5a8e829552675882846f7
-corpus/0/testdata/typed/splice_recursive_choice_in_seq.pego	3cdf39a28b92035392a0381f
-corpus/0/testdata/typed/splice_recursive_optional.pego	bc0744f6fd79cc1872e3a7f9
-corpus/0/testdata/typed/splice_recursive_repeat.pego	4b64934260caf5d27828f3d4
-corpus/0/testdata/typed/unif.pego	0bf8ee73e95a53b3f0dc1494
+corpus/0/testdata/typed/calclr.zp	248af8484dd25242dece5dd7
+corpus/0/testdata/typed/direct_backtrack.zp	9cc5aeb67077b0c05194c965
+corpus/0/testdata/typed/direct_errors.zp	cd088deca89a8e064ee1bf05
+corpus/0/testdata/typed/direct_lists.zp	469520784fa6795294608cfe
+corpus/0/testdata/typed/direct_literals.zp	06b145ace3f4e931aeba4909
+corpus/0/testdata/typed/direct_names.zp	99b59e4eba7b3c83a220a0dd
+corpus/0/testdata/typed/element_scope_optional.zp	fa1a7ef4c9d53cbc4a7998c5
+corpus/0/testdata/typed/element_scope_plain.zp	6380399b3828bb0d8b590451
+corpus/0/testdata/typed/element_scope_recover.zp	a5d7be038d66728a6d57ec9b
+corpus/0/testdata/typed/errlist.zp	ae9f969cdf99b3529106ddb3
+corpus/0/testdata/typed/errlist2.zp	90909276151fa845689be769
+corpus/0/testdata/typed/fields.zp	9e67c625cd787fcef3eba2ca
+corpus/0/testdata/typed/mix.zp	4d8bdcf710485d7e2b9c6f59
+corpus/0/testdata/typed/mixf.zp	e704660fc4b3349f1cf2d86f
+corpus/0/testdata/typed/operators_rule1.zp	32687331aadeebf37b9d126f
+corpus/0/testdata/typed/operators_rule1f.zp	65e5d026ac7bbc399c753bfe
+corpus/0/testdata/typed/order.zp	ff6ff4cdb9f9761b2bc97482
+corpus/0/testdata/typed/proj1.zp	fe53226149b6165d3ea45367
+corpus/0/testdata/typed/proj2.zp	61d96879eb9f796be657802b
+corpus/0/testdata/typed/proj3.zp	ba5f358b77812edfbdf80c58
+corpus/0/testdata/typed/proj4.zp	a10171e14ea1719f4db963dd
+corpus/0/testdata/typed/proj5.zp	c70ce5b941aae6f9768038b6
+corpus/0/testdata/typed/proj6.zp	84af9f2a91b82223c2b90fda
+corpus/0/testdata/typed/proj7.zp	f19bc829bcdca5402db0f499
+corpus/0/testdata/typed/spanname.zp	2d62fcf3e204b3e396209915
+corpus/0/testdata/typed/splice_recursive_capture.zp	e5f4a62da61d75bb4e0bdcc1
+corpus/0/testdata/typed/splice_recursive_capture_action.zp	63c71ad39ee9032ec8bcb3ca
+corpus/0/testdata/typed/splice_recursive_choice.zp	04f5a8e829552675882846f7
+corpus/0/testdata/typed/splice_recursive_choice_in_seq.zp	3cdf39a28b92035392a0381f
+corpus/0/testdata/typed/splice_recursive_optional.zp	bc0744f6fd79cc1872e3a7f9
+corpus/0/testdata/typed/splice_recursive_repeat.zp	4b64934260caf5d27828f3d4
+corpus/0/testdata/typed/unif.zp	0bf8ee73e95a53b3f0dc1494
 corpus/0/top-level cut in a called rule	41d6729d452298cf97ad710e
 corpus/0/transitive action variables	7497f7be265d1335ac8545f2
 corpus/0/tuple literal in struct fields	01302f23dee95a2fbd026128
@@ -354,10 +354,10 @@ corpus/0/wide scan minimum 9223372036854775807	93d97c435689485b194e515f
 corpus/0/wide unbounded minimum 2147483648	feeed285683bf93fbf9c653c
 corpus/0/wide unbounded minimum 4294967296	feeed285683bf93fbf9c653c
 corpus/0/wide unbounded minimum 9223372036854775807	feeed285683bf93fbf9c653c
-corpus/1/../../examples/calculator/calc.pego	373875d40f5d9bea0f55c6a5
-corpus/1/../../examples/calculator/calc_lr.pego	21df5c7296b8b2d69d428682
-corpus/1/../../examples/minilang/minilang.pego	eeaf537de038ab657bc67b8e
-corpus/1/../../examples/outline/outline.pego	238e019d3a48c5eaa7b3ebf3
+corpus/1/../../examples/calculator/calc.zp	373875d40f5d9bea0f55c6a5
+corpus/1/../../examples/calculator/calc_lr.zp	21df5c7296b8b2d69d428682
+corpus/1/../../examples/minilang/minilang.zp	eeaf537de038ab657bc67b8e
+corpus/1/../../examples/outline/outline.zp	238e019d3a48c5eaa7b3ebf3
 corpus/1/LR cut inside optional	08686329704ca242ff5a61fa
 corpus/1/Operators Rule explicit default action	4c868d821c064cc8b11e5dd8
 corpus/1/Operators Rule operand with a cut in the recovered body	0b7e63e06560d3449b03a9dc
@@ -548,38 +548,38 @@ corpus/1/terminal constructor predicate error	9a2d9df728f531e01c0a9d8f
 corpus/1/terminal constructor root	152d0ff1aee5db6bceffb3ea
 corpus/1/terminal constructor value error	2cfb4b6e104ab69a17a458ef
 corpus/1/terminal singleton union	f86d613ed3dc201c4d405726
-corpus/1/testdata/typed/calclr.pego	248af8484dd25242dece5dd7
-corpus/1/testdata/typed/direct_backtrack.pego	9cc5aeb67077b0c05194c965
-corpus/1/testdata/typed/direct_errors.pego	cd088deca89a8e064ee1bf05
-corpus/1/testdata/typed/direct_lists.pego	469520784fa6795294608cfe
-corpus/1/testdata/typed/direct_literals.pego	06b145ace3f4e931aeba4909
-corpus/1/testdata/typed/direct_names.pego	99b59e4eba7b3c83a220a0dd
-corpus/1/testdata/typed/element_scope_optional.pego	fa1a7ef4c9d53cbc4a7998c5
-corpus/1/testdata/typed/element_scope_plain.pego	6380399b3828bb0d8b590451
-corpus/1/testdata/typed/element_scope_recover.pego	a5d7be038d66728a6d57ec9b
-corpus/1/testdata/typed/errlist.pego	ae9f969cdf99b3529106ddb3
-corpus/1/testdata/typed/errlist2.pego	90909276151fa845689be769
-corpus/1/testdata/typed/fields.pego	9e67c625cd787fcef3eba2ca
-corpus/1/testdata/typed/mix.pego	4d8bdcf710485d7e2b9c6f59
-corpus/1/testdata/typed/mixf.pego	e704660fc4b3349f1cf2d86f
-corpus/1/testdata/typed/operators_rule1.pego	32687331aadeebf37b9d126f
-corpus/1/testdata/typed/operators_rule1f.pego	65e5d026ac7bbc399c753bfe
-corpus/1/testdata/typed/order.pego	ff6ff4cdb9f9761b2bc97482
-corpus/1/testdata/typed/proj1.pego	fe53226149b6165d3ea45367
-corpus/1/testdata/typed/proj2.pego	61d96879eb9f796be657802b
-corpus/1/testdata/typed/proj3.pego	ba5f358b77812edfbdf80c58
-corpus/1/testdata/typed/proj4.pego	a10171e14ea1719f4db963dd
-corpus/1/testdata/typed/proj5.pego	c70ce5b941aae6f9768038b6
-corpus/1/testdata/typed/proj6.pego	84af9f2a91b82223c2b90fda
-corpus/1/testdata/typed/proj7.pego	f19bc829bcdca5402db0f499
-corpus/1/testdata/typed/spanname.pego	2d62fcf3e204b3e396209915
-corpus/1/testdata/typed/splice_recursive_capture.pego	e5f4a62da61d75bb4e0bdcc1
-corpus/1/testdata/typed/splice_recursive_capture_action.pego	63c71ad39ee9032ec8bcb3ca
-corpus/1/testdata/typed/splice_recursive_choice.pego	04f5a8e829552675882846f7
-corpus/1/testdata/typed/splice_recursive_choice_in_seq.pego	3cdf39a28b92035392a0381f
-corpus/1/testdata/typed/splice_recursive_optional.pego	bc0744f6fd79cc1872e3a7f9
-corpus/1/testdata/typed/splice_recursive_repeat.pego	4b64934260caf5d27828f3d4
-corpus/1/testdata/typed/unif.pego	0bf8ee73e95a53b3f0dc1494
+corpus/1/testdata/typed/calclr.zp	248af8484dd25242dece5dd7
+corpus/1/testdata/typed/direct_backtrack.zp	9cc5aeb67077b0c05194c965
+corpus/1/testdata/typed/direct_errors.zp	cd088deca89a8e064ee1bf05
+corpus/1/testdata/typed/direct_lists.zp	469520784fa6795294608cfe
+corpus/1/testdata/typed/direct_literals.zp	06b145ace3f4e931aeba4909
+corpus/1/testdata/typed/direct_names.zp	99b59e4eba7b3c83a220a0dd
+corpus/1/testdata/typed/element_scope_optional.zp	fa1a7ef4c9d53cbc4a7998c5
+corpus/1/testdata/typed/element_scope_plain.zp	6380399b3828bb0d8b590451
+corpus/1/testdata/typed/element_scope_recover.zp	a5d7be038d66728a6d57ec9b
+corpus/1/testdata/typed/errlist.zp	ae9f969cdf99b3529106ddb3
+corpus/1/testdata/typed/errlist2.zp	90909276151fa845689be769
+corpus/1/testdata/typed/fields.zp	9e67c625cd787fcef3eba2ca
+corpus/1/testdata/typed/mix.zp	4d8bdcf710485d7e2b9c6f59
+corpus/1/testdata/typed/mixf.zp	e704660fc4b3349f1cf2d86f
+corpus/1/testdata/typed/operators_rule1.zp	32687331aadeebf37b9d126f
+corpus/1/testdata/typed/operators_rule1f.zp	65e5d026ac7bbc399c753bfe
+corpus/1/testdata/typed/order.zp	ff6ff4cdb9f9761b2bc97482
+corpus/1/testdata/typed/proj1.zp	fe53226149b6165d3ea45367
+corpus/1/testdata/typed/proj2.zp	61d96879eb9f796be657802b
+corpus/1/testdata/typed/proj3.zp	ba5f358b77812edfbdf80c58
+corpus/1/testdata/typed/proj4.zp	a10171e14ea1719f4db963dd
+corpus/1/testdata/typed/proj5.zp	c70ce5b941aae6f9768038b6
+corpus/1/testdata/typed/proj6.zp	84af9f2a91b82223c2b90fda
+corpus/1/testdata/typed/proj7.zp	f19bc829bcdca5402db0f499
+corpus/1/testdata/typed/spanname.zp	2d62fcf3e204b3e396209915
+corpus/1/testdata/typed/splice_recursive_capture.zp	e5f4a62da61d75bb4e0bdcc1
+corpus/1/testdata/typed/splice_recursive_capture_action.zp	63c71ad39ee9032ec8bcb3ca
+corpus/1/testdata/typed/splice_recursive_choice.zp	04f5a8e829552675882846f7
+corpus/1/testdata/typed/splice_recursive_choice_in_seq.zp	3cdf39a28b92035392a0381f
+corpus/1/testdata/typed/splice_recursive_optional.zp	bc0744f6fd79cc1872e3a7f9
+corpus/1/testdata/typed/splice_recursive_repeat.zp	4b64934260caf5d27828f3d4
+corpus/1/testdata/typed/unif.zp	0bf8ee73e95a53b3f0dc1494
 corpus/1/top-level cut in a called rule	41d6729d452298cf97ad710e
 corpus/1/transitive action variables	7497f7be265d1335ac8545f2
 corpus/1/tuple literal in struct fields	01302f23dee95a2fbd026128
@@ -714,7 +714,7 @@ grammars/0/json	b6090f77c8a9a14ff2342a8d
 grammars/0/python	8c626c10be1162831f388444
 grammars/0/typescript	ca627f090f8599bf55fccdb4
 grammars/0/xml	70e583b310077343cbaea1fe
-grammars/0/yaml	a3b6fb38a99f9d000b8214af
+grammars/0/yaml	9e09c924ad121efd13367dff
 grammars/1/cel	8d4e8f9d947636c3a6acd091
 grammars/1/csv	9c27aa02d6313b20826fff72
 grammars/1/cue	1b9ccb077964780f18b40ffd
@@ -724,4 +724,4 @@ grammars/1/json	b6090f77c8a9a14ff2342a8d
 grammars/1/python	8c626c10be1162831f388444
 grammars/1/typescript	ca627f090f8599bf55fccdb4
 grammars/1/xml	70e583b310077343cbaea1fe
-grammars/1/yaml	a3b6fb38a99f9d000b8214af
+grammars/1/yaml	9e09c924ad121efd13367dff

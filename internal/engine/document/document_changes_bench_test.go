@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/document"
+	"github.com/ornew/zeroparse/internal/engine/document"
 
-	"github.com/ornew/pego/internal/compile"
-	. "github.com/ornew/pego/internal/engine"
+	"github.com/ornew/zeroparse/internal/compile"
+	. "github.com/ornew/zeroparse/internal/engine"
 )
 
 // BenchmarkDocumentChangesSnapshotEdit compares identical same-length middle

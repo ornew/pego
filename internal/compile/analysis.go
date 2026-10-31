@@ -4,8 +4,8 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/grammaranalysis"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/grammaranalysis"
 )
 
 // Analysis is the result of static analysis across rules.

@@ -1,6 +1,6 @@
 # Actions
 
-PEGO has two executable action forms. A **Predicate Action** appears in braces
+ZeroParse has two executable action forms. A **Predicate Action** appears in braces
 where a Rule Expression atom is expected. It evaluates without consuming
 input or producing a value. A **Value Action** follows `=>` and computes a
 rule's value from the values produced by its grammar body. An ordinary rule may
@@ -16,15 +16,15 @@ A Predicate Action block may contain several statements; its semantics are
 defined in [Predicate Actions](predicates.md#predicate-actions).
 
 Value Action blocks (`=> { ... }`), whole-rule or inline, remain unsupported and
-are rejected during compilation; their statements do not execute. PEGO has no
+are rejected during compilation; their statements do not execute. ZeroParse has no
 rule-initialization action block.
 
-```pego
+```zp
 type Pair = { Left node[string]; Right node[string] }
 rule pair Pair = (l:. r:. => Pair{Left: $l, Right: $r})
 ```
 
-```pego
+```zp
 type KV = { Key node[string]; Op node[string]; Value node[string] }
 rule key_value KV = (k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic) => KV{Key: $k, Op: $op, Value: $v}
 ```
@@ -80,7 +80,7 @@ and with `rule a = _ => A` and `rule b = a => B`, the rule `b` is the same as
   `the inline action in rule r` (a failed action also names its number, as in
   `r (inline action 2)`).
 
-```pego
+```zp
 type Add = { Left Expr; Right node[string] }
 type Num = { Text node[string] }
 type Expr ~ Add | Num
@@ -142,7 +142,7 @@ value. Declarations, scope and rollback are specified in [Variables](predicates.
 Inside a lambda body, the lambda's parameters are variables too and are read
 the same way; see [Operators and Functions](#operators-and-functions).
 
-```pego
+```zp
 type Item = { Depth int; Name node[string] }
 var depth int
 rule item Item = {depth := 1} n:name => Item{Depth: depth, Name: $n}
@@ -159,7 +159,7 @@ from exactly one positional argument, converted as described in
 `[]T{value, ...}` constructs a list value whose element Type is explicitly `T`.
 These forms never stringify or filter values implicitly.
 
-```pego
+```zp
 type NameNode = { Name string }
 rule name NameNode = v1:[a-z]+ => NameNode{Name: text($v1)}
 
@@ -189,7 +189,7 @@ declared tuple Type of the same arity whose elements admit those Types, as in
 `rule pair (node[string], int) = a:"a" => ($a, 1)`. The value has no range, like
 a list value, and `x[i]` reads its element `i`.
 
-```pego
+```zp
 type Entry = { Key (int, string) }
 rule entry Entry = "a" => Entry{Key: (1, "a")}
 rule pair = a:"a" b:"b" => ($a, $b)
@@ -275,7 +275,7 @@ receiver. A captured sequence carries the captures inside it, so `$x.$y` for
 
 Field names begin with an uppercase letter, so `x.y` with any other name, except
 the `expected` and `message` fields of `missing`, is an
-error in PEGO source that asks for `x.$y`. A grammar in JSON or a compiled
+error in ZeroParse source that asks for `x.$y`. A grammar in JSON or a compiled
 grammar may read a capture with `x.y`, which reads the same capture as `x.$y` at
 run time. Its type check is looser: `x.y` on a join some of whose node types
 lack `y` has an optional type.
@@ -413,7 +413,7 @@ callback result type; the checker checks the callback against that widened
 type. If the callback result still does not fit after three widenings, the accumulator
 type does not converge and the call is a compile-time error; cast the callback result.
 
-```pego
+```zp
 foldl(0, $items, (sum, item) => sum + item.$value)
 ```
 
@@ -463,8 +463,8 @@ checker combines the element types of all list arguments.
 
 ## Default Values
 
-A parser compiled with **default values** (`pego.WithDefaultValue()`, `pego parse -default-value`,
-`pego compile -default-value`, or `pego gen -default-value` for a generated parser) ignores the value
+A parser compiled with **default values** (`zeroparse.WithDefaultValue()`, `zp parse -default-value`,
+`zp compile -default-value`, or `zp gen -default-value` for a generated parser) ignores the value
 actions of the grammar. Before compilation, every value action (`=>` on a rule, and the actions of the
 operands and operators of an [Operators Rule](operators-rule.md)) and the declared type of each rule
 are dropped, so each rule produces the default value of its expression, as described in

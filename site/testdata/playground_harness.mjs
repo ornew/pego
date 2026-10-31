@@ -62,7 +62,7 @@ export async function playground({ state, app, decode = decodeState, encode = en
   Object.defineProperty(location, "href", { get: () => "https://example.test/playground/" + (compiler === "tinygo" ? "?compiler=tinygo" : "") + location.hash });
   location.assign = (href) => { location.assigned = href; };
   el("pg-share").textContent = "Share";
-  class PegoClient {
+  class ZPClient {
     constructor(base, options) { clients.push({ base, options }); }
     async start() { return { module: "controlled", go: "controlled" }; }
     async call(method, req) {
@@ -76,7 +76,7 @@ export async function playground({ state, app, decode = decodeState, encode = en
   }
   const context = vm.createContext({
     ...highlighting, decodeState: decode, encodeState: encode, describeResult, fmtTime, TreeView,
-    PegoClient, siteRoot: () => "/", document, location, URL,
+    ZPClient, siteRoot: () => "/", document, location, URL,
     console: { ...console, warn: (...args) => warnings.push(args) },
     navigator: { clipboard: { writeText: async (text) => copies.push(text) } },
     window: { addEventListener: (name, fn) => { listeners[name] = fn; } },

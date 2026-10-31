@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/zeroparse"
 )
 
 func TestParsePrefixRuleSemantics(t *testing.T) {
@@ -20,12 +20,12 @@ rule recoveryThenFailure = ("a" #recover(skip="x")) "!"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
+	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+		for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
 			for _, recognize := range []bool{false, true} {
-				opts := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit)}
+				opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend), zeroparse.WithUnit(unit)}
 				if recognize {
-					opts = append(opts, pego.RecognizeOnly())
+					opts = append(opts, zeroparse.RecognizeOnly())
 				}
 				r, err := p.ParsePrefix("expr", "a+a+asuffix", opts...)
 				if err != nil || r.Consumed != 5 || r.ConsumedBytes != 5 {
@@ -43,7 +43,7 @@ rule recoveryThenFailure = ("a" #recover(skip="x")) "!"`, "main")
 					t.Fatalf("left-recursive prefix/reference: %v / %v", r.Node, node)
 				}
 				r, err = p.ParsePrefix("cut", "actail", opts...)
-				if err == nil || r != (pego.PrefixResult{}) {
+				if err == nil || r != (zeroparse.PrefixResult{}) {
 					t.Fatalf("cut failure: %+v %v", r, err)
 				}
 				r, err = p.ParsePrefix("nilaction", "atail", opts...)
@@ -51,9 +51,9 @@ rule recoveryThenFailure = ("a" #recover(skip="x")) "!"`, "main")
 					t.Fatalf("nil action: %+v %v", r, err)
 				}
 				r, err = p.ParsePrefix("recoveryThenFailure", "x?tail", opts...)
-				var syntax *pego.SyntaxError
-				var recovered pego.SyntaxErrors
-				if !errors.As(err, &syntax) || errors.As(err, &recovered) || r != (pego.PrefixResult{}) {
+				var syntax *zeroparse.SyntaxError
+				var recovered zeroparse.SyntaxErrors
+				if !errors.As(err, &syntax) || errors.As(err, &recovered) || r != (zeroparse.PrefixResult{}) {
 					t.Fatalf("unrecovered failure after recovery: %+v %v", r, err)
 				}
 			}
@@ -67,23 +67,23 @@ rule value = x:"é😀" "!" => $x`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, mode := range []pego.CompiledMode{pego.CompiledParse, pego.CompiledRecognize} {
+	for _, mode := range []zeroparse.CompiledMode{zeroparse.CompiledParse, zeroparse.CompiledRecognize} {
 		data, err := p.Marshal(mode)
 		if err != nil {
 			t.Fatal(err)
 		}
-		loaded, err := pego.LoadParser(data)
+		loaded, err := zeroparse.LoadParser(data)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, backend := range []pego.Backend{pego.Bytecode, pego.BytecodeIterative} {
+		for _, backend := range []zeroparse.Backend{zeroparse.Bytecode, zeroparse.BytecodeIterative} {
 			for _, recognize := range []bool{false, true} {
-				opts := []pego.ParseOption{pego.WithBackend(backend)}
+				opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend)}
 				if recognize {
-					opts = append(opts, pego.RecognizeOnly())
+					opts = append(opts, zeroparse.RecognizeOnly())
 				}
 				r, err := loaded.ParsePrefix("value", "é😀!tail", opts...)
-				if recognize != (mode == pego.CompiledRecognize) {
+				if recognize != (mode == zeroparse.CompiledRecognize) {
 					// Each mode refuses the operations of the other.
 					if err == nil || !strings.Contains(err.Error(), "the compiled grammar is in "+mode.String()+" mode") {
 						t.Fatalf("compiled %s mode %v/recognize=%v: %+v %v", mode, backend, recognize, r, err)
@@ -110,15 +110,15 @@ rule item = "é😀"`, "main")
 	}
 	var wg sync.WaitGroup
 	failures := make(chan error, 192)
-	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
 		for range 4 {
 			wg.Add(1)
-			go func(b pego.Backend) {
+			go func(b zeroparse.Backend) {
 				defer wg.Done()
 				for range 8 {
-					r, err := p.ParsePrefix("item", "é😀tail", pego.WithBackend(b), pego.WithTrace(func(e pego.TraceEvent) {
-						if e.Kind == pego.TraceEnter && e.Rule == "item" {
-							inner, innerErr := p.ParsePrefix("item", "é😀other", pego.WithBackend(b), pego.WithUnit(pego.Bytes))
+					r, err := p.ParsePrefix("item", "é😀tail", zeroparse.WithBackend(b), zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
+						if e.Kind == zeroparse.TraceEnter && e.Rule == "item" {
+							inner, innerErr := p.ParsePrefix("item", "é😀other", zeroparse.WithBackend(b), zeroparse.WithUnit(zeroparse.Bytes))
 							if innerErr != nil || inner.Consumed != 6 || inner.ConsumedBytes != 6 {
 								failures <- fmt.Errorf("nested: %+v %v", inner, innerErr)
 							}
@@ -149,22 +149,22 @@ func TestParsePrefixRejectsDiagnosticCallback(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
 		for _, recognize := range []bool{false, true} {
 			for _, start := range []string{"main", "undefined"} {
 				diagnosticCalls, traceCalls := 0, 0
-				opts := []pego.ParseOption{
-					pego.WithBackend(backend),
-					pego.WithContext(ctx),
-					pego.WithTrace(func(pego.TraceEvent) { traceCalls++ }),
-					pego.WithDiagnosticCallback(func(*pego.SyntaxError) error { diagnosticCalls++; return nil }),
+				opts := []zeroparse.ParseOption{
+					zeroparse.WithBackend(backend),
+					zeroparse.WithContext(ctx),
+					zeroparse.WithTrace(func(zeroparse.TraceEvent) { traceCalls++ }),
+					zeroparse.WithDiagnosticCallback(func(*zeroparse.SyntaxError) error { diagnosticCalls++; return nil }),
 				}
 				if recognize {
-					opts = append(opts, pego.RecognizeOnly())
+					opts = append(opts, zeroparse.RecognizeOnly())
 				}
 				_, referenceErr := parser.Parse("x;", opts...)
 				result, prefixErr := parser.ParsePrefix(start, "x;tail", opts...)
-				if referenceErr == nil || prefixErr == nil || prefixErr.Error() != referenceErr.Error() || errors.Is(prefixErr, context.Canceled) || result != (pego.PrefixResult{}) {
+				if referenceErr == nil || prefixErr == nil || prefixErr.Error() != referenceErr.Error() || errors.Is(prefixErr, context.Canceled) || result != (zeroparse.PrefixResult{}) {
 					t.Fatalf("%v/recognize=%v/start=%s: result=%+v error=%v; Parse error=%v", backend, recognize, start, result, prefixErr, referenceErr)
 				}
 				if diagnosticCalls != 0 || traceCalls != 0 {
@@ -172,12 +172,12 @@ func TestParsePrefixRejectsDiagnosticCallback(t *testing.T) {
 				}
 			}
 			// Disabling callback delivery preserves the recovered result/error API.
-			opts := []pego.ParseOption{pego.WithBackend(backend), pego.WithDiagnosticCallback(nil)}
+			opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend), zeroparse.WithDiagnosticCallback(nil)}
 			if recognize {
-				opts = append(opts, pego.RecognizeOnly())
+				opts = append(opts, zeroparse.RecognizeOnly())
 			}
 			result, prefixErr := parser.ParsePrefix("main", "x;tail", opts...)
-			var recovered pego.SyntaxErrors
+			var recovered zeroparse.SyntaxErrors
 			if !errors.As(prefixErr, &recovered) || len(recovered) != 1 || result.Consumed != 2 || result.ConsumedBytes != 2 {
 				t.Fatalf("nil callback: result=%+v error=%v", result, prefixErr)
 			}

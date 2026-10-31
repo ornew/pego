@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/ir/core"
-	"github.com/ornew/pego/internal/ir/flow"
+	"github.com/ornew/zeroparse/internal/ir/core"
+	"github.com/ornew/zeroparse/internal/ir/flow"
 )
 
 // valueFree makes a module of one value-free rule with the body, as the builder does: the

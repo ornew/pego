@@ -19,7 +19,7 @@ filter does not prove a narrower static Type: checking `x != nil` does not make
 a `[]*T` result assignable to `[]T`. A typed list constructor declares the
 element Type and applies ordinary assignability checks to every element.
 
-```pego
+```zp
 []Comment{$lineComment, $blockComment}
 []Comment{}
 [][]Comment{}

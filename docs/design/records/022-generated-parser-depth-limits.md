@@ -11,7 +11,7 @@ individual parsing invocation. Keep the existing default of 100,000 calls. The g
 parser's default; a positive per-call override replaces it for that invocation only. Preserve calls without options while moving Go/typed Go entry points to functional options; keep TypeScript's existing
 unit arguments and add options-aware entry points there.
 
-The generation API is the `MaxDepth` field of `gen.Go` and `gen.TypeScript`, and the CLI flag is `pego gen -max-depth n`.
+The generation API is the `MaxDepth` field of `gen.Go` and `gen.TypeScript`, and the CLI flag is `zp gen -max-depth n`.
 Generated Go uses `Parse(input, opts ...ParseOption)`, `WithMaxDepth(n)` and `WithUnit(unit)`; TypeScript exposes
 `ParseOptions` and `parseWithOptions`. The APIs and parser-local accounting described here are implemented.
 
@@ -55,7 +55,7 @@ files, err := gen.Go{Module: "example.com/parser", MaxDepth: 600_000}.Generate(g
 ```
 
 ```sh
-pego gen -g grammar.pego -module example.com/parser -max-depth 600000 -o parser
+zp gen -g grammar.zp -module example.com/parser -max-depth 600000 -o parser
 ```
 
 `GenOptions.MaxDepth` stores the option internally. Zero selects the existing default of 100,000; a positive value
@@ -154,7 +154,7 @@ these typed-return changes, all Go function-value consumers must use the new fun
 the generation guide/release documentation, along with the new functions' potential collisions with handwritten
 same-package declarations. Such handwritten declarations are outside the generator's input and must be renamed
 by the consumer; do not emit duplicate declarations or silently promise unconditional source compatibility.
-Serialized `.pegoc` files and engine parse options are unaffected. Ready-made parser regeneration updates generated
+Serialized `.zpc` files and engine parse options are unaffected. Ready-made parser regeneration updates generated
 APIs while retaining their current defaults and documented reference deviations.
 
 1. Add generation-option validation, the functional Go/options-aware TypeScript API and parser-local effective limit together.
@@ -295,7 +295,7 @@ Node/AST/recognition without options grows from 2,981,746 to 2,998,626 bytes
 sizes, whose additional benchmark controls would confound attribution.
 
 Reproduce the standalone controls with `TestGeneratedDepthBenchmarkWorkloads`
-and `PEGO_DEPTH_BENCH_DIR`, copying that test to the pinned baseline. Build
+and `ZP_DEPTH_BENCH_DIR`, copying that test to the pinned baseline. Build
 fixture binaries before measuring `BenchmarkDepthDirect` and
 `BenchmarkDepthOptions`; run `node ts/bench.mjs` separately. Routine raw
 results stay outside Git.

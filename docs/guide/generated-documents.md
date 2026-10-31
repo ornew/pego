@@ -1,6 +1,6 @@
 # Incremental Documents in Generated Go
 
-Generate with `pego gen -g grammar.pego -module example.com/parser -document -o parser`, or pass
+Generate with `zp gen -g grammar.zp -module example.com/parser -document -o parser`, or pass
 `Document: true` to `gen.Go`. This adds a mutable Node `Document` alongside the ordinary batch `Parse` and
 `ParseRule` functions. The engine's version of the same feature is described in
 [Incremental Parsing](incremental.md).
@@ -46,7 +46,7 @@ results; the copy can be modified freely, and aliases within it are preserved. E
 to its length, so appending to one result cannot write into another. Other grammars use the existing Node Document and
 convert its final result on each call; generic `Node` members may share the mutable Document graph, so call
 `Node.Clone` when a detached tree is needed. The conversion fallback applies to `any` and node results, struct fields
-requiring PEGO nodes, or actions and predicates that read struct fields.
+requiring ZeroParse nodes, or actions and predicates that read struct fields.
 
 ## Diagnostics, Limits and Combinations
 

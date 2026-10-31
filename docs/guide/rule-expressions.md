@@ -6,7 +6,7 @@ and reading keywords. Each section ends with the mistake that goes with it. What
 subject of [Shaping Trees](shaping-trees.md); the exact meaning of every expression is defined in
 [Rule Expressions](../../spec/language/parser-expressions.md).
 
-All examples run with `pego parse -g <file> -s <rule> -f sexpr -i <input>`.
+All examples run with `zp parse -g <file> -s <rule> -f sexpr -i <input>`.
 
 ## Ordered Choice
 
@@ -14,8 +14,8 @@ All examples run with `pego parse -g <file> -s <rule> -f sexpr -i <input>`.
 returns to try another one, even if the rest of the sequence then fails. This is the largest difference from a
 context-free grammar, where `<` and `<=` can be listed in any order.
 
-```pego
-// choice.pego
+```zp
+// choice.zp
 rule bad  = "<" / "<="
 rule good = "<=" / "<"
 @start(default)
@@ -25,17 +25,17 @@ rule m2 = good $$
 ```
 
 ```bash
-pego parse -g choice.pego -s m1 -f sexpr -i '<='
-pego parse -g choice.pego -s m2 -f sexpr -i '<='
+zp parse -g choice.zp -s m1 -f sexpr -i '<='
+zp parse -g choice.zp -s m2 -f sexpr -i '<='
 ```
 
 ```text
-pego: 1:2: syntax error: expected end of input
+zp: 1:2: syntax error: expected end of input
 ("<=")
 ```
 
 `bad` matches `<` and succeeds, so the `=` is left over. Put the longer alternative first, or the more specific one,
-whenever one alternative matches a prefix of another. `pego lint` finds such alternatives and reports them as
+whenever one alternative matches a prefix of another. `zp lint` finds such alternatives and reports them as
 shadowed (see [Linting Grammars](linting.md)).
 
 ## Repetition and Lookahead
@@ -43,32 +43,32 @@ shadowed (see [Linting Grammars](linting.md)).
 `a*` and `a+` take as many iterations as they can and never give any back. A sequence that needs the last
 iteration for itself therefore cannot work:
 
-```pego
-// greedy.pego
+```zp
+// greedy.zp
 @start
 rule x = [a-z]* [a-z] $$
 ```
 
 ```bash
-pego parse -g greedy.pego -s x -f sexpr -i 'abc'
+zp parse -g greedy.zp -s x -f sexpr -i 'abc'
 ```
 
 ```text
-pego: 1:4: syntax error: expected [a-z]
+zp: 1:4: syntax error: expected [a-z]
 ```
 
 `[a-z]*` consumes `abc`, and there is nothing left for `[a-z]`. State where the repetition ends instead. A negative
 lookahead `!a` succeeds without consuming input when `a` does not match, which makes "everything up to a marker" a
 repetition of "not the marker, then any character":
 
-```pego
-// until.pego
+```zp
+// until.zp
 @start
 rule b = (!"y" .)* "y" $$
 ```
 
 ```bash
-pego parse -g until.pego -s b -f sexpr -i 'abcy'
+zp parse -g until.zp -s b -f sexpr -i 'abcy'
 ```
 
 ```text
@@ -84,8 +84,8 @@ A choice commits to the first alternative that succeeds. A cut, `#cut`, commits 
 the other alternatives of the innermost enclosing choice are not tried. Use it where the start of an alternative
 already tells which construct is meant.
 
-```pego
-// cut.pego
+```zp
+// cut.zp
 rule nocut   = "if" ws "(" ws "x" ws ")" / "if" ws "x"
 rule withcut = "if" ws #cut "(" ws "x" ws ")" / "if" ws "x"
 @start(default)
@@ -96,13 +96,13 @@ rule ws = [ \t]*
 ```
 
 ```bash
-pego parse -g cut.pego -s m3 -f sexpr -i 'if x'
-pego parse -g cut.pego -s m4 -f sexpr -i 'if x'
+zp parse -g cut.zp -s m3 -f sexpr -i 'if x'
+zp parse -g cut.zp -s m4 -f sexpr -i 'if x'
 ```
 
 ```text
 (("if" [" "] "x"))
-pego: 1:4: syntax error: expected "(", [ \t]
+zp: 1:4: syntax error: expected "(", [ \t]
 ```
 
 Without the cut, `if x` falls through to the second alternative and parses as a different construct. With it,
@@ -117,8 +117,8 @@ rule matches its text and trailing white space, or that a `ws` rule is placed ex
 sequence. Whichever you choose, apply it everywhere, because the farthest-failure error report and the positions
 of nodes follow where white space is consumed.
 
-```pego
-// list.pego
+```zp
+// list.zp
 @start
 rule list = "[" ws (item (ws "," ws item)*)? ws "]" $$
 rule item = [0-9]+ #atomic
@@ -126,13 +126,13 @@ rule ws = [ \t]*
 ```
 
 ```bash
-pego parse -g list.pego -s list -f sexpr -i '[1, 2,3]'
-pego parse -g list.pego -s list -f sexpr -i '[1, 2,]'
+zp parse -g list.zp -s list -f sexpr -i '[1, 2,3]'
+zp parse -g list.zp -s list -f sexpr -i '[1, 2,]'
 ```
 
 ```text
 ("[" [] ("1" [([] "," [" "] "2") ([] "," [] "3")]) [] "]")
-pego: 1:7: syntax error: expected [ \t], [0-9]
+zp: 1:7: syntax error: expected [ \t], [0-9]
 ```
 
 Mark the rules that read a token as `#atomic` so that the token is one string node and not a list of characters, and
@@ -144,8 +144,8 @@ White space inside a tree is only noise for the program that reads it.
 A literal matches text, not words. `"in"` also matches the start of `index`, so a keyword followed by an identifier
 silently accepts a longer word:
 
-```pego
-// keyword.pego
+```zp
+// keyword.zp
 @start(default)
 rule kwbad  = "in" ws id $$
 @start
@@ -156,14 +156,14 @@ rule ws  = [ \t]*
 ```
 
 ```bash
-pego parse -g keyword.pego -s kwbad -f sexpr -i 'index'
-pego parse -g keyword.pego -s kwgood -f sexpr -i 'index'
-pego parse -g keyword.pego -s kwgood -f sexpr -i 'in index'
+zp parse -g keyword.zp -s kwbad -f sexpr -i 'index'
+zp parse -g keyword.zp -s kwgood -f sexpr -i 'index'
+zp parse -g keyword.zp -s kwgood -f sexpr -i 'in index'
 ```
 
 ```text
 ("in" [] "dex")
-pego: 1:1: syntax error
+zp: 1:1: syntax error
 ("in" [" "] "index")
 ```
 
@@ -173,7 +173,7 @@ rule must not match a keyword, so that `in` is not read as a name (`rule id = !k
 
 ## Writing for Good Errors
 
-PEGO reports the farthest failure of a parse with everything that was expected there. The shape of the grammar
+ZeroParse reports the farthest failure of a parse with everything that was expected there. The shape of the grammar
 decides how good that report is:
 
 - Fail as late as possible. A cut after the first distinguishing token keeps a later alternative from reporting a

@@ -60,7 +60,7 @@ func run(name string, src []byte) (r result) {
 }
 
 // The canonical tree is a line of s-expressions: (kind start end children...), with byte offsets.
-// Identical code in the module's tests prints the tree of the PEGO parser's result.
+// Identical code in the module's tests prints the tree of the ZeroParse parser's result.
 type dumper struct {
 	b *strings.Builder
 }

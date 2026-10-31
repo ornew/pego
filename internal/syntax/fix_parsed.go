@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // fixParsed rewrites the parts of src that need the grammar parsed: positional captures,
@@ -307,7 +307,7 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 			continue
 		}
 		if pr, _ := grammar.RuleOperators(rd.Expr); pr != nil {
-			return nil, nil, fmt.Errorf("%d:%d: rule %s of terminal type %s is an operators rule; give it an action before running pego fix", rd.Pos.Line, rd.Pos.Col, rd.Name, ref.Name)
+			return nil, nil, fmt.Errorf("%d:%d: rule %s of terminal type %s is an operators rule; give it an action before running zp fix", rd.Pos.Line, rd.Pos.Col, rd.Name, ref.Name)
 		}
 		taken := map[string]bool{}
 		captures := false

@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/ir/exec/core"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 // Generated Go parsers enter only start rules, by name or by default, with the interpreter's errors.

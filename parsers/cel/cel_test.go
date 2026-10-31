@@ -9,9 +9,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/internal/corpora/corporatest"
-	"github.com/ornew/pego/parsers/cel"
-	"github.com/ornew/pego/parsers/cel/types"
+	"github.com/ornew/zeroparse/internal/corpora/corporatest"
+	"github.com/ornew/zeroparse/parsers/cel"
+	"github.com/ornew/zeroparse/parsers/cel/types"
 )
 
 // textprotoExprs returns the value of each expr field in a file of the protobuf text format. A string value may be
@@ -167,7 +167,7 @@ func TestConformanceSuite(t *testing.T) {
 }
 
 // TestGolden checks the generated parser against the golden files of testdata, which the tests of
-// github.com/ornew/pego/parsers check every backend of the engine against.
+// github.com/ornew/zeroparse/parsers check every backend of the engine against.
 func TestGolden(t *testing.T) {
 	inputs, _ := filepath.Glob("testdata/*.txt")
 	if len(inputs) == 0 {

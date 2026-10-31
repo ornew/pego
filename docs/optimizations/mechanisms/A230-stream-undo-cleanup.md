@@ -18,8 +18,8 @@ stream API.
 
 ## Reference Control
 
-Build tag `pego_reference_stream_undo` keeps the former backing references.
-Combined `pego_reference_stream_storage` changes prefix and stack policy too; it
+Build tag `zp_reference_stream_undo` keeps the former backing references.
+Combined `zp_reference_stream_storage` changes prefix and stack policy too; it
 cannot attribute an undo-only effect.
 
 ## Evidence and Implementation

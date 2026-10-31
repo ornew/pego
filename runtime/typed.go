@@ -7,7 +7,7 @@ import (
 	"unsafe"
 )
 
-// The typed runtime, appended to generated parsers made with pego gen -types. It parses like the
+// The typed runtime, appended to generated parsers made with zp gen -types. It parses like the
 // runtime in runtime.go, but builds the values of the grammar's types directly, as Go values,
 // instead of Node trees: the value of an expression is an any holding a pointer to a struct
 // type, *TMatch (a string node), *TError (an error value), an int, string or bool, nil,

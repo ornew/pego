@@ -7,8 +7,8 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/ornew/pego"
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 func main() {
@@ -19,11 +19,11 @@ func main() {
 }
 
 func generate() error {
-	full, err := os.ReadFile("../../pego.pego")
+	full, err := os.ReadFile("../../zeroparse.zp")
 	if err != nil {
 		return err
 	}
-	g, err := pego.ParseGrammar(string(full))
+	g, err := zeroparse.ParseGrammar(string(full))
 	if err != nil {
 		return err
 	}

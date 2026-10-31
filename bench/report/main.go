@@ -31,7 +31,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ornew/pego/internal/ir/exec/core"
+	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
 func main() {
@@ -73,7 +73,7 @@ func run(in, dir, docPath, capture string, count int, node string) error {
 			return err
 		}
 		commit := describeCommit(root)
-		work, err := os.MkdirTemp("", "pego-report-")
+		work, err := os.MkdirTemp("", "zp-report-")
 		if err != nil {
 			return err
 		}
@@ -149,7 +149,7 @@ func loadResults(goPath string) (data, tsData, sizeData []byte, err error) {
 
 // repoRoot returns the root of the repository (the directory of the module's go.mod).
 func repoRoot() (string, error) {
-	out, err := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", "github.com/ornew/pego").Output()
+	out, err := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", "github.com/ornew/zeroparse").Output()
 	if err != nil {
 		return "", fmt.Errorf("finding the repository (run inside it): %w", err)
 	}

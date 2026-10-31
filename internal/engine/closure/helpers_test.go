@@ -3,7 +3,7 @@ package closure
 import (
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/zeroparse/internal/engine/core"
 )
 
 // catchFatal runs f and returns the error of the Fatal panic it raises, or nil.

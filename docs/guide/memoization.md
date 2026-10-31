@@ -1,10 +1,10 @@
 # Memoization
 
-PEGO memoizes rule results so that backtracking does not evaluate the same rule again and again at the same position. This guide explains
+ZeroParse memoizes rule results so that backtracking does not evaluate the same rule again and again at the same position. This guide explains
 what is memoized and when, and what that means for memory, streaming and incremental parsing. The same holds on every
 [backend](backends.md).
 
-PEGO parses with **packrat memoization**: the result of a rule at an input position is remembered, so the rule is
+ZeroParse parses with **packrat memoization**: the result of a rule at an input position is remembered, so the rule is
 evaluated at most twice at that position, however much backtracking the grammar does. It is on by default, **automatic, and has no public switch**. The engine decides per rule:
 
 - Rules that call no other rule, and rules referenced only once in the grammar, are not memoized in a normal parse,
@@ -31,7 +31,7 @@ What this means for you:
 - **Incremental parsing reuses the memo.** `Document` keeps it between edits, and memoizes the rules that a normal parse
   skips, so that more of a previous parse can be reused.
 - **Generated parsers memoize in the same way.** Memoization decisions are made by the same analysis and are saved in
-  `.pegoc` files.
+  `.zpc` files.
 - The design is in [003-packrat-parsing.md](../design/records/003-packrat-parsing.md), and the history of how the engine's
   speed was tuned (including the memo table) in [performance.md](../performance.md).
 

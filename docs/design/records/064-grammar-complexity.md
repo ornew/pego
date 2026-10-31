@@ -6,7 +6,7 @@
 
 ## Summary
 
-A PEGO parse does not always run in linear time. Packrat memoization bounds how often a rule body runs at a position,
+A ZeroParse parse does not always run in linear time. Packrat memoization bounds how often a rule body runs at a position,
 but parts of the language have a cost that the memo does not share, so a small grammar can take quadratic, cubic or
 exponential time, or build values of exponential size. This record defines what a parse costs, per construct. It
 proposes:
@@ -28,7 +28,7 @@ The remaining super-linear constructs are reported and bounded by the budget ins
 The runtime comment on deferred memoization says that evaluating a memoized rule at most twice per position keeps
 "parse time" linear (`internal/engine/core/runtime.go:490-495`). The bound on evaluations is correct. Linear time does not
 follow from it. Ford's linearity argument assumes that every nonterminal has a constant cost per position
-besides its calls, and that every repetition is desugared into a memoized right-recursive nonterminal. PEGO deviates in
+besides its calls, and that every repetition is desugared into a memoized right-recursive nonterminal. ZeroParse deviates in
 four ways:
 
 - Repetitions are loops inside a rule body ([Repetition](../../../spec/language/parser-expressions.md#repetition)). One
@@ -235,7 +235,7 @@ hint with a witness, not a proof that a slow input exists.
   asked, not at every compile. It assumes that the memo answers exactly the rules that every parse memoizes, and a test
   compares that assumption with the flags of the compiled rules, so the two cannot drift apart. Findings in hidden rules
   are reported in the rules that hold the inline actions.
-- `pego lint` reports the results through two checks:
+- `zp lint` reports the results through two checks:
   - `growing-variable`, a warning on by default: a binding of a `string` variable that joins the variable's own value at
     least twice (`s := s + s`), when the variable can hold a non-empty value there and the bound value reaches a later
     evaluation of the same binding. Growth by a bounded piece, such as `indent := indent + "  "`, is not reported, nor
@@ -243,7 +243,7 @@ hint with a witness, not a proof that a slow input exists.
     warning contract of [Severities](../../../spec/runtime/lint.md#severities). It needs only the bindings that the
     classifier collects, so a default lint run skips the rest of the classification.
   - `super-linear`, a hint at each cause of a `Poly(k)` or `Exp` verdict, with its witness path. A hint because the
-    slow input may not exist. It runs only when the classification is requested, with `pego lint -classify` or
+    slow input may not exist. It runs only when the classification is requested, with `zp lint -classify` or
     `lint.Config.Classify`, which also shows the verdict, the degree of a polynomial verdict and the first witnesses
     or reasons.
 - The `right-recursion` hint gains a caveat. Right recursion stays linear under memoization in batch parses (E6 control).
@@ -404,7 +404,7 @@ blow-ups. That leaves unmemoized re-entry and diverging state as the exponential
    folds make impossible.
 2. **`super-linear` is a hint, shown only on request.** The lint contract requires a warning to be certain, and a
    `Poly` or `Exp` verdict may be pessimistic. The finding carries the witness path. Because many grammars that work
-   well on real input are classified `Poly`, the hint and the verdict appear only with `pego lint -classify` or
+   well on real input are classified `Poly`, the hint and the verdict appear only with `zp lint -classify` or
    `lint.Config.Classify`, and a default lint run stays free of estimates. `growing-variable` is certain and stays on.
 3. **Run reuse is on by default.** Recording is deferred until a site restarts inside an earlier run, and an
    optimization control disables it, as the memo has. It is adopted only if the corpora and benchmark grammars, which

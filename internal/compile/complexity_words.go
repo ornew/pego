@@ -3,7 +3,7 @@ package compile
 import (
 	"slices"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // --- Exclusion by the leading text of a unit ---

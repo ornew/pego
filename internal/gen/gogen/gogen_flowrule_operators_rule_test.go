@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
@@ -20,7 +20,7 @@ func testGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	calculator, err := os.ReadFile("../../../examples/calculator/calc.pego")
+	calculator, err := os.ReadFile("../../../examples/calculator/calc.zp")
 	if err != nil {
 		t.Fatal(err)
 	}

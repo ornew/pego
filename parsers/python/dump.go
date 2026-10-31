@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/parsers/python/types"
+	"github.com/ornew/zeroparse/parsers/python/types"
 )
 
 // Dump returns the tree as CPython's ast.dump(tree) prints it (with its default arguments: field

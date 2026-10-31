@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // TestIgnoreCasePragmaReachesArguments checks that the pragma folds the literals of a recovery

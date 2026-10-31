@@ -3,17 +3,17 @@
 # Grammar Syntax
 
 This chapter collects the syntax of a grammar file in one place. The grammar
-below is written in PEGO itself and summarizes token structure and expression
+below is written in ZeroParse itself and summarizes token structure and expression
 forms. The chapters that define each construct remain normative for validation
 and meaning.
 
-The repository holds a full grammar of the language, `pego.pego`, which is the input
+The repository holds a full grammar of the language, `zeroparse.zp`, which is the input
 of the generated parser of grammar files. Its actions produce a typed source tree
 with comments, source forms, and recoverable error nodes. This tree is separate from
 the public `grammar.Grammar` AST.
 
 The grammar is checked by tests, which run both views on every
-`.pego` file of the repository and on every `pego` code block of the
+`.zp` file of the repository and on every `zp` code block of the
 documentation and require them to agree with the parser of the reference
 implementation on whether the text is a valid grammar.
 
@@ -23,14 +23,14 @@ This syntax view omits result types, Value Actions, captures, metadata attribute
 and recovery handling. Unnecessary grouping is removed while retaining
 parentheses required by precedence or source layout. Predicate Actions and matching pragmas remain, including
 the state that controls physical newlines. Generate the view with
-`pego fmt -syntax pego.pego` or `grammar.FormatSyntax(g)` in Go. This is a
+`zp fmt -syntax zeroparse.zp` or `grammar.FormatSyntax(g)` in Go. This is a
 readable projection: in other grammars, a predicate may depend on captures,
 constructed values or types that the simplified view omits.
 
-```pego
-// PEGO grammar syntax and typed source tree.
+```zp
+// ZeroParse grammar syntax and typed source tree.
 // Source forms are preserved before semantic validation and compilation.
-package pego
+package zeroparse
 
 // ml reports whether line breaks are allowed between tokens inside the enclosing delimiters.
 var ml bool

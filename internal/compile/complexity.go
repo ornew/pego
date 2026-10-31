@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // ComplexityClass is the class of the cost of a parse from a start rule (see "Classification" in

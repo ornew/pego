@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 func TestGeneratedGoBudgetControls(t *testing.T) {
@@ -59,7 +59,7 @@ rule predicate Word = t:(!("a"* "é") "a"* "b") #atomic => Word{Text: text($t)}`
 
 const generatedGoBudgetConsumer = `package PACKAGE
 
-import pegort "github.com/ornew/pego/runtime"
+import zprt "github.com/ornew/zeroparse/runtime"
 import("context";"errors";"fmt";"reflect";"strings";"sync";"testing";"time")
 
 type invocation struct{name string; call func(string,...ParseOption)(any,error)}
@@ -76,7 +76,7 @@ func TestControls(t *testing.T){
  expired,stop:=context.WithDeadline(context.Background(),time.Unix(0,0));defer stop()
  input:=strings.Repeat("a",300)+"é"
  for _,r:=range routes(){for _,unit:=range []PositionUnit{CodePoints,Bytes}{t.Run(r.name+string(rune('0'+unit)),func(t *testing.T){
-  calls:=0;option:=func(o *pegort.X_parseOptions){calls++;o.X_unit=unit}
+  calls:=0;option:=func(o *zprt.X_parseOptions){calls++;o.X_unit=unit}
   v,err:=r.call(input,option)
   if err!=nil || calls!=1 {t.Fatalf("baseline callbacks=%d err=%v",calls,err)}
   before:=v
@@ -122,14 +122,14 @@ func TestValidationAndOptions(t *testing.T){
  for _,r:=range routes(){
   _,err:=r.call("?",WithContext(ctx),WithMaxDepth(-1));if err==nil || !strings.Contains(err.Error(),"max depth"){t.Fatalf("configuration precedence: %v",err)}
   sentinel:=new(int)
-  func(){defer func(){if got:=recover();got!=sentinel{t.Fatalf("option panic %v",got)}}();r.call("?",func(*pegort.X_parseOptions){panic(sentinel)})}()
+  func(){defer func(){if got:=recover();got!=sentinel{t.Fatalf("option panic %v",got)}}();r.call("?",func(*zprt.X_parseOptions){panic(sentinel)})}()
  }
  for _,call:=range []func()error{func()error{_,e:=ParseRule("missing","?",WithContext(ctx));return e},func()error{_,e:=ParseRuleAST("missing","?",WithContext(ctx));return e}} {
   err:=call();if err==nil || errors.Is(err,context.Canceled) {t.Fatalf("name validation: %v",err)}
  }
  for _,r:=range routes(){
   calls:=0
-  option:=func(o *pegort.X_parseOptions){calls++;o.X_limits=Limits{Budget:100000}}
+  option:=func(o *zprt.X_parseOptions){calls++;o.X_limits=Limits{Budget:100000}}
   _,err:=r.call("é",WithContext(ctx),WithContext(context.Background()),WithLimits(Limits{Budget:1}),option)
   if err!=nil || calls!=1 {t.Fatalf("last effective options: %v, callbacks %d",err,calls)}
  }
@@ -156,29 +156,29 @@ func TestFatalNotRecovered(t *testing.T){
 }
 func TestStringAndMalformedTextBudget(t *testing.T){
  text:=strings.Repeat("a",300)+"é"
- p:=&pegort.Parser{Control:pegort.X_newBudgetControl(context.Background(),Limits{Budget:100000})}
- c:=&pegort.ActCtx{P:p}
+ p:=&zprt.Parser{Control:zprt.X_newBudgetControl(context.Background(),Limits{Budget:100000})}
+ c:=&zprt.ActCtx{P:p}
  for _,op:=range []string{"==","!=","<","<=",">",">=","+"}{
   got:=c.Binary(op,text,text)
-  want:=pegort.X_rtBinary(op,text,text)
+  want:=zprt.X_rtBinary(op,text,text)
   if !reflect.DeepEqual(got,want){t.Fatalf("string %s: %v want %v",op,got,want)}
  }
  if p.Control.X_budgetUsed()==0{t.Fatal("string spend not charged")}
- for _,invoke:=range []func(*pegort.Parser){
-  func(p *pegort.Parser){(&pegort.ActCtx{P:p}).Binary("==",text,text)},
-  func(p *pegort.Parser){(&pegort.ActCtx{P:p}).Binary("+",text,text)},
-  func(p *pegort.Parser){p.X_unitLen(text)},
+ for _,invoke:=range []func(*zprt.Parser){
+  func(p *zprt.Parser){(&zprt.ActCtx{P:p}).Binary("==",text,text)},
+  func(p *zprt.Parser){(&zprt.ActCtx{P:p}).Binary("+",text,text)},
+  func(p *zprt.Parser){p.X_unitLen(text)},
  }{
-  p:=&pegort.Parser{Control:pegort.X_newBudgetControl(context.Background(),Limits{Budget:127})}
-  func(){defer func(){f,ok:=recover().(pegort.X_fatal);if !ok || !errors.Is(f.X_err,ErrLimit){t.Fatal("string spend not bounded",f)}}();invoke(p)}()
+  p:=&zprt.Parser{Control:zprt.X_newBudgetControl(context.Background(),Limits{Budget:127})}
+  func(){defer func(){f,ok:=recover().(zprt.X_fatal);if !ok || !errors.Is(f.X_err,ErrLimit){t.Fatal("string spend not bounded",f)}}();invoke(p)}()
  }
  // Malformed-source normalization must account for both sizing and copying.
  runes:=[]rune(strings.Repeat("�",300))
- p=&pegort.Parser{In:runes,Control:pegort.X_newBudgetControl(context.Background(),Limits{Budget: 1200})}
+ p=&zprt.Parser{In:runes,Control:zprt.X_newBudgetControl(context.Background(),Limits{Budget: 1200})}
  if got:=p.Text(0,len(runes));got!=string(runes){t.Fatal("normalized text mismatch")}
  if p.Control.X_budgetUsed()!=1200{t.Fatalf("normalized counters: %+v",p.Control)}
- p=&pegort.Parser{In:runes,Control:pegort.X_newBudgetControl(context.Background(),Limits{Budget:1199})}
- func(){defer func(){f,ok:=recover().(pegort.X_fatal);if !ok || !errors.Is(f.X_err,ErrLimit){t.Fatal("normalized text unbounded",f)}}();p.Text(0,len(runes))}()
+ p=&zprt.Parser{In:runes,Control:zprt.X_newBudgetControl(context.Background(),Limits{Budget:1199})}
+ func(){defer func(){f,ok:=recover().(zprt.X_fatal);if !ok || !errors.Is(f.X_err,ErrLimit){t.Fatal("normalized text unbounded",f)}}();p.Text(0,len(runes))}()
 }
 
 func TestFailureDiagnosticsBounded(t *testing.T){
@@ -193,9 +193,9 @@ func TestFailureDiagnosticsBounded(t *testing.T){
 func TestLineDiagnosticReservations(t *testing.T){
  for _,unit:=range []PositionUnit{Bytes,CodePoints}{
   input:=strings.Repeat("é\n",300)
-  makeParser:=func(limit uint64)*pegort.Parser{
-   p:=&pegort.Parser{X_unit:unit,X_bs:input,In:[]rune(input)};p.X_n=len(p.In);if unit==Bytes{p.X_n=len(input)}
-   p.Control=pegort.X_newBudgetControl(context.Background(),Limits{Budget:limit})
+  makeParser:=func(limit uint64)*zprt.Parser{
+   p:=&zprt.Parser{X_unit:unit,X_bs:input,In:[]rune(input)};p.X_n=len(p.In);if unit==Bytes{p.X_n=len(input)}
+   p.Control=zprt.X_newBudgetControl(context.Background(),Limits{Budget:limit})
    return p
   }
   p:=makeParser(100000);e:=p.MakeError(p.X_n-1,nil)
@@ -205,7 +205,7 @@ func TestLineDiagnosticReservations(t *testing.T){
   p=makeParser(used)
   if e:=p.MakeError(p.X_n-1,nil);e.Line!=300{t.Fatal("exact diagnostic ceiling",e)}
   p=makeParser(used-1)
-  func(){defer func(){f,ok:=recover().(pegort.X_fatal);var exhausted *LimitError;if !ok || !errors.As(f.X_err,&exhausted) || exhausted.Kind!=LimitBudget{t.Error("one-short diagnostic unbounded",f)}}();p.MakeError(p.X_n-1,nil)}()
+  func(){defer func(){f,ok:=recover().(zprt.X_fatal);var exhausted *LimitError;if !ok || !errors.As(f.X_err,&exhausted) || exhausted.Kind!=LimitBudget{t.Error("one-short diagnostic unbounded",f)}}();p.MakeError(p.X_n-1,nil)}()
  }
 }
 
@@ -255,39 +255,39 @@ rule leaf Leaf = t:("é") #atomic => Leaf{Text: text($t)}`)
 
 const generatedGoConversionConsumer = `package PACKAGE
 
-import pegort "github.com/ornew/pego/runtime"
+import zprt "github.com/ornew/zeroparse/runtime"
 import("context";"errors";"reflect";"strings";"testing";"gentest/PACKAGE/types")
 func TestConversionVisits(t *testing.T){
  n,err:=Parse(strings.Repeat("é",100));if err!=nil{t.Fatal(err)}
- c:=pegort.X_newBudgetControl(context.Background(),Limits{Budget:100000})
+ c:=zprt.X_newBudgetControl(context.Background(),Limits{Budget:100000})
  a:=astConv{control:c};v:=a.toTypeBranch(n)
  if v==nil || len(v.Leaves)!=100{t.Fatal("conversion failed")}
  // Branch dispatch, field scan, list dispatch, each list edge, and for each leaf its dispatch
  // and the scan of its Text field.
  if c.X_budgetUsed()!=303{t.Fatalf("conversion spend: %d",c.X_budgetUsed())}
  for _,ceiling:=range []uint64{1,2,3,4,302}{
-  c:=pegort.X_newBudgetControl(context.Background(),Limits{Budget:ceiling})
-  func(){defer func(){f,ok:=recover().(pegort.X_fatal);var e *LimitError;if !ok || !errors.As(f.X_err,&e) || e.Kind!=LimitBudget || e.Used!=ceiling || e.Requested!=1{t.Fatalf("conversion ceiling %d interruption: %+v",ceiling,f)}}();(&astConv{control:c}).toTypeBranch(n)}()
+  c:=zprt.X_newBudgetControl(context.Background(),Limits{Budget:ceiling})
+  func(){defer func(){f,ok:=recover().(zprt.X_fatal);var e *LimitError;if !ok || !errors.As(f.X_err,&e) || e.Kind!=LimitBudget || e.Used!=ceiling || e.Requested!=1{t.Fatalf("conversion ceiling %d interruption: %+v",ceiling,f)}}();(&astConv{control:c}).toTypeBranch(n)}()
  }
 }
 func TestParseConversionSharesCounter(t *testing.T){
  input:=strings.Repeat("é",100)
  before:=uint64(0)
- conv:=func(n *Node,c *pegort.BudgetControl,parseErr error)*types.Branch{before=c.X_budgetUsed();v:=(&astConv{control:c}).toTypeBranch(n);if c.X_budgetUsed()!=before+303{t.Fatal("conversion counter changed independently")};return v}
- o:=pegort.X_parseOptions{X_expectations: true, X_maxDepth:pegoGrammar.X_maxDepth,X_limits:Limits{Budget:100000}}
- retained,err:=pegort.RunParseConverted(rules[0],input,o,conv)
+ conv:=func(n *Node,c *zprt.BudgetControl,parseErr error)*types.Branch{before=c.X_budgetUsed();v:=(&astConv{control:c}).toTypeBranch(n);if c.X_budgetUsed()!=before+303{t.Fatal("conversion counter changed independently")};return v}
+ o:=zprt.X_parseOptions{X_expectations: true, X_maxDepth:zpGrammar.X_maxDepth,X_limits:Limits{Budget:100000}}
+ retained,err:=zprt.RunParseConverted(rules[0],input,o,conv)
  if err!=nil || retained==nil{t.Fatal(err)}
  snapshot:=*retained.Leaves[0]
  total:=before+303
  for _,limit:=range []uint64{before+1,total-1,total}{
   o.X_limits.Budget=limit
-  got,err:=pegort.RunParseConverted(rules[0],input,o,func(n *Node,c *pegort.BudgetControl,parseErr error)*types.Branch{return (&astConv{control:c}).toTypeBranch(n)})
+  got,err:=zprt.RunParseConverted(rules[0],input,o,func(n *Node,c *zprt.BudgetControl,parseErr error)*types.Branch{return (&astConv{control:c}).toTypeBranch(n)})
   if limit==total {if err!=nil || len(got.Leaves)!=100{t.Fatal("exact conversion ceiling",err)}}else if got!=nil || !errors.Is(err,ErrLimit){t.Fatalf("partial conversion leaked at %d: %v %v",limit,got,err)}
  }
  if !reflect.DeepEqual(*retained.Leaves[0],snapshot){t.Fatal("earlier result was overwritten")}
  // Cancellation raised inside conversion is surfaced at the same outer boundary.
  ctx,cancel:=context.WithCancel(context.Background());o.SetContext(ctx);o.X_limits=Limits{}
- v,err:=pegort.RunParseConverted(rules[0],input,o,func(n *Node,c *pegort.BudgetControl,parseErr error)*types.Branch{cancel();c.Check();return (&astConv{control:c}).toTypeBranch(n)})
+ v,err:=zprt.RunParseConverted(rules[0],input,o,func(n *Node,c *zprt.BudgetControl,parseErr error)*types.Branch{cancel();c.Check();return (&astConv{control:c}).toTypeBranch(n)})
  if v!=nil || !errors.Is(err,context.Canceled){t.Fatalf("conversion cancellation: %v %v",v,err)}
  if _,err:=ParseAST(input);err!=nil{t.Fatal("retry",err)}
 }
@@ -414,14 +414,14 @@ rule letter Word = t:("é") #atomic => Word{Text: text($t)}`)
 
 const generatedGoNilPublicationConsumer = `package nilpublication
 
-import pegort "github.com/ornew/pego/runtime"
+import zprt "github.com/ornew/zeroparse/runtime"
 import("context";"errors";"reflect";"testing")
 func TestNilPublication(t *testing.T){
  original:=trules[0].Entry;defer func(){trules[0].Entry=original}()
  for _,named:=range []bool{false,true}{for _,ok:=range []bool{false,true}{
   ctx,cancel:=context.WithCancel(context.Background())
   // Cancel exactly at the last execution operation, with no guessed poll count.
-  trules[0].Entry=func(p *pegort.TParser)(any,bool){cancel();return nil,ok}
+  trules[0].Entry=func(p *zprt.TParser)(any,bool){cancel();return nil,ok}
   var v any;var err error
   if named{v,err=ParseRuleAST("main","",WithContext(ctx))}else{v,err=ParseAST("",WithContext(ctx))}
   if (v!=nil && !reflect.ValueOf(v).IsZero()) || !errors.Is(err,context.Canceled){t.Errorf("named=%v successful=%v value=%v err=%v",named,ok,v,err)}
@@ -429,7 +429,7 @@ func TestNilPublication(t *testing.T){
  for _,named:=range []bool{false,true}{
   ctx,cancel:=context.WithCancel(context.Background())
   established:=&LimitError{Kind:LimitBudget,Limit:1,Used:1,Requested:1}
-  trules[0].Entry=func(p *pegort.TParser)(any,bool){cancel();panic(pegort.X_fatal{X_err:established})}
+  trules[0].Entry=func(p *zprt.TParser)(any,bool){cancel();panic(zprt.X_fatal{X_err:established})}
   var err error
   if named{_,err=ParseRuleAST("main","",WithContext(ctx))}else{_,err=ParseAST("",WithContext(ctx))}
   if err!=established{t.Fatalf("established fatal was masked: %v",err)}
@@ -439,7 +439,7 @@ func TestNilPublication(t *testing.T){
  if v,err:=ParseAST("é");v==nil || v.Text!="é" || err!=nil{t.Fatalf("value retry: %v %v",v,err)}
 }
 
-type clonePhaseContext struct{context.Context;control *pegort.BudgetControl;marker any;calls int}
+type clonePhaseContext struct{context.Context;control *zprt.BudgetControl;marker any;calls int}
 func(c *clonePhaseContext)Done()<-chan struct{}{return make(chan struct{})}
 func(c *clonePhaseContext)Err()error{
  c.calls++
@@ -452,7 +452,7 @@ func TestRecoveredNilClonePublication(t *testing.T){
  for i:=range recovered{recovered[i]=&SyntaxError{Line:i+1,Col:1}}
  for _,named:=range []bool{false,true}{for _,panicMode:=range []bool{false,true}{
   ctx:=&clonePhaseContext{Context:context.Background()};if panicMode{ctx.marker=new(int)}
-  trules[0].Entry=func(p *pegort.TParser)(any,bool){ctx.control=p.Control;p.Recovered=recovered;return nil,true}
+  trules[0].Entry=func(p *zprt.TParser)(any,bool){ctx.control=p.Control;p.Recovered=recovered;return nil,true}
   call:=func()(any,error){if named{return ParseRuleAST("main","",WithContext(ctx))};return ParseAST("",WithContext(ctx))}
   if panicMode{func(){defer func(){if got:=recover();got!=ctx.marker{t.Errorf("clone panic missed or changed: %T",got)}}();call()}()}else{
    v,err:=call()

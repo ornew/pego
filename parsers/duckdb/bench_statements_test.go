@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/zeroparse/parsers/duckdb"
 )
 
 // BenchmarkStatements parses 2000 copies of a statement of each kind: the cost of each construct, and of the dispatch

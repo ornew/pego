@@ -3,7 +3,7 @@ package sample
 import (
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
+	"github.com/ornew/zeroparse/grammar"
 )
 
 // Kinds of generated values (see val).

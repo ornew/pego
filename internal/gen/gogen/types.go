@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/zeroparse/grammar"
+	"github.com/ornew/zeroparse/internal/compile"
+	"github.com/ornew/zeroparse/internal/gen"
 )
 
 // Typed values in generated parsers (GenOptions.Types).
@@ -45,7 +45,7 @@ type typedOutput struct {
 //
 // The source of the types package refers to the runtime by its package name and to the types by
 // their names; that of the parser package refers to the types of the grammar as types.Name, and the
-// names that only the types package declares (Error, TNode, Unit, TupleN, PegoHooks) unqualified,
+// names that only the types package declares (Error, TNode, Unit, TupleN, ZPHooks) unqualified,
 // which qualifyRuntime resolves.
 func (g *Generator) typedGo(start *compile.Rule, conv bool) (typedOutput, error) {
 	info := g.Prog.Typed
@@ -102,7 +102,7 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 		fmt.Fprintf(&entries, `%sfunc ParseAST(input string, opts ...ParseOption) (%s, error) {
  convert := func(n *Node, c *BudgetControl, err error) %s {
 %s%s }
- o, err := ResolveOptions(pegoGrammar, opts)
+ o, err := ResolveOptions(zpGrammar, opts)
  if err != nil { return convert(nil, nil, err), err }
  return RunParseConverted(rules[%d], input, o, convert)
 }
@@ -173,7 +173,7 @@ type StreamASTIterator struct{ pull *StreamPull[StreamValue] }
 // IterateAST returns an iterator over the typed elements that ParseStreamAST would pass to emit, parsing
 // only as far as each call to Next needs. Options are validated before it returns; r is first read by Next.
 func IterateAST(r io.Reader, opts ...ParseOption) (*StreamASTIterator, error) {
-	pull, err := IterateStream(pegoGrammar, opts, func(emit func(StreamValue) error) error { return ParseStreamAST(r, emit, opts...) })
+	pull, err := IterateStream(zpGrammar, opts, func(emit func(StreamValue) error) error { return ParseStreamAST(r, emit, opts...) })
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 		fmt.Fprintf(&named, "//\t%s: %s\n", r.Name, t.goType(ruleType(r)))
 	}
 	named.WriteString(`func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
-	o, err := ResolveOptions(pegoGrammar, opts)
+	o, err := ResolveOptions(zpGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +231,7 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 			fmt.Fprintf(&named, "\t\t\treturn %s\n\t\t})\n", result)
 		}
 	}
-	named.WriteString("\tdefault:\n\t\treturn nil, pegoGrammar.StartError(name)\n\t}\n}\n")
+	named.WriteString("\tdefault:\n\t\treturn nil, zpGrammar.StartError(name)\n\t}\n}\n")
 	units := append([]shakeUnit(nil), astHelperUnits...)
 	bootstrap := !g.disableTypedOutputBootstrap
 	// The default form of the chunk helpers is the runtime's (Chunk, Alloc, AllocSlice); only the
@@ -384,11 +384,11 @@ var RuntimeMethodNames = map[string]bool{
 
 // hooksName is the name of the variable of the types package that makes the values of the types
 // package from those the typed runtime builds, and back.
-const hooksName = "PegoHooks"
+const hooksName = "ZPHooks"
 
 // nodeTypesName is the name of the variable of the types package that holds the registered indexes
 // of the named node types.
-const nodeTypesName = "PegoNodeTypes"
+const nodeTypesName = "ZPNodeTypes"
 
 // checkTypesNames rejects a type of the grammar that has the name of a type the types package
 // declares for the typed values: TNode, the tuple types and Unit that the output uses, and the

@@ -10,7 +10,7 @@ Expose a deterministic, versioned description of grammar-declared types and infe
 
 ## Motivation
 
-PEGO parses declared `TypeDef` values in `grammar/ast.go`, checks and infers rule results internally, and generates typed Go and TypeScript results ([design 012](012-typed-values.md), [design 030](030-typed-typescript-values.md)). The public `pego.Node` representation also includes reserved CST kinds (`Match`, `Seq`, `List`, `Operator`, `Error`), captures, and scalar fields. A schema consumer cannot treat every Node as a declared AST type or infer a complete schema from observed parses. `pego.Parser` is the public compiled-grammar boundary; `engine.Program` and its inference structures are internal implementation details.
+ZeroParse parses declared `TypeDef` values in `grammar/ast.go`, checks and infers rule results internally, and generates typed Go and TypeScript results ([design 012](012-typed-values.md), [design 030](030-typed-typescript-values.md)). The public `zeroparse.Node` representation also includes reserved CST kinds (`Match`, `Seq`, `List`, `Operator`, `Error`), captures, and scalar fields. A schema consumer cannot treat every Node as a declared AST type or infer a complete schema from observed parses. `zeroparse.Parser` is the public compiled-grammar boundary; `engine.Program` and its inference structures are internal implementation details.
 
 ## Goals and Non-Goals
 
@@ -39,7 +39,7 @@ func (s *Output) Validate() error
 func (s *Output) UnmarshalJSON(data []byte) error
 func Compare(before, after *Output) (*Diff, error)
 
-// package pego
+// package zeroparse
 func (p *Parser) OutputSchema(opts ...SchemaOption) (*schema.Output, error)
 func WithAllSchemaRules() SchemaOption
 var ErrSchemaUnavailable error
@@ -57,7 +57,7 @@ envelope has this shape. This envelope-only illustration omits required rule
 and type entries and is not a valid complete schema:
 
 ```json
-{"format":"pego-output-schema","version":2,"start":"file","positionUnitIndependent":true,"types":[],"rules":[]}
+{"format":"zp-output-schema","version":2,"start":"file","positionUnitIndependent":true,"types":[],"rules":[]}
 ```
 
 `version` versions this serialized contract, not grammar semantics. A reader must reject an unsupported version or preserve it opaquely; it must not silently interpret a future format as version 2. The configured start rule is the default export root; an explicit method option may request all rules. Version 2 omits a grammar digest because canonical grammar identity is not defined. Consumers must use the supplied schema instance/content for validation and must not assume type names alone establish compatibility across grammars.
@@ -122,15 +122,15 @@ a change of that type.
 An alternative that was considered is a class by value set, with narrowing compatible. It would pass a schema that
 breaks the compilation of its consumers, so it was rejected.
 
-The exit status of `pego schema diff` does not depend on the class; a script reads the class from the output.
+The exit status of `zp schema diff` does not depend on the class; a script reads the class from the output.
 
 ## Implementation and Determinism
 
-Build the export from the checked grammar/type information behind `pego.Parser`, not generated source, reflection over an arbitrary result, or observed samples. Keep ordering explicit and encode recursive references by identity. Resolve schema options once in order; absent the all-rules option, use the configured start rule. Reject unresolved or unchecked internal shapes rather than emitting partial output. The tests check repeated exports and round trips, with semantic comparisons separate from exact-byte determinism. A future cross-grammar identity field requires a separately specified canonicalization and digest before it is added to the versioned format.
+Build the export from the checked grammar/type information behind `zeroparse.Parser`, not generated source, reflection over an arbitrary result, or observed samples. Keep ordering explicit and encode recursive references by identity. Resolve schema options once in order; absent the all-rules option, use the configured start rule. Reject unresolved or unchecked internal shapes rather than emitting partial output. The tests check repeated exports and round trips, with semantic comparisons separate from exact-byte determinism. A future cross-grammar identity field requires a separately specified canonicalization and digest before it is added to the versioned format.
 
 ## Persistence
 
-A compiled grammar holds only the bytecode of one mode ([Compiled Grammars](../../../spec/runtime/compiled-grammars.md)), so the schema is not persisted. A parser loaded from a compiled grammar returns an error matching `ErrSchemaUnavailable` that asks for the schema to be exported from the grammar source; a program that needs the schema next to a compiled grammar exports it with `pego schema` and ships the JSON file.
+A compiled grammar holds only the bytecode of one mode ([Compiled Grammars](../../../spec/runtime/compiled-grammars.md)), so the schema is not persisted. A parser loaded from a compiled grammar returns an error matching `ErrSchemaUnavailable` that asks for the schema to be exported from the grammar source; a program that needs the schema next to a compiled grammar exports it with `zp schema` and ships the JSON file.
 
 ## Compatibility and Backend Support
 

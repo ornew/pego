@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/zeroparse/internal/limits"
 )
 
 // catchFatal runs f and returns the error of the Fatal panic it raises, or nil.

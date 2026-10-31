@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gentest"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gen/gogen"
+	"github.com/ornew/zeroparse/internal/gentest"
+	"github.com/ornew/zeroparse/internal/syntax"
 )
 
 func TestKeptUnits(t *testing.T) {
@@ -174,7 +174,7 @@ func TestTypedUnreachedRulesRunLikeTheFullOutput(t *testing.T) {
 }
 
 func testTypedUnreachedRulesRunLikeTheFullOutput(t *testing.T) {
-	jsonSrc, err := os.ReadFile("../../../parsers/json/json.pego")
+	jsonSrc, err := os.ReadFile("../../../parsers/json/json.zp")
 	if err != nil {
 		t.Fatal(err)
 	}

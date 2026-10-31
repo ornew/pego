@@ -1,4 +1,4 @@
-//go:build !pego_snapshot_child_chunks_reference
+//go:build !zp_snapshot_child_chunks_reference
 
 package document
 

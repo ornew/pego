@@ -8,16 +8,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
 // Export standalone controls and raw measurements outside the repository.
 func TestExportGeneratedTSTraceBenchmarks(t *testing.T) {
 	t.Parallel()
-	dir := os.Getenv("PEGO_TS_TRACE_BENCH_DIR")
+	dir := os.Getenv("ZP_TS_TRACE_BENCH_DIR")
 	if dir == "" {
-		t.Skip("set PEGO_TS_TRACE_BENCH_DIR to export TypeScript trace controls")
+		t.Skip("set ZP_TS_TRACE_BENCH_DIR to export TypeScript trace controls")
 	}
 	write := func(name string, data []byte) {
 		t.Helper()
@@ -31,9 +31,9 @@ func TestExportGeneratedTSTraceBenchmarks(t *testing.T) {
 	}
 	manifest := map[string]int{}
 	for _, fixture := range []struct{ name, path, input string }{
-		{"json", "parsers/json/json.pego", "[" + strings.TrimSuffix(strings.Repeat(`{"name":"éclair","n":123,"ok":true},`, 64), ",") + "]"},
-		{"xml", "parsers/xml/xml.pego", "<root>" + strings.Repeat(`<item name="éclair">123</item>`, 64) + "</root>"},
-		{"calc", "examples/calculator/calc.pego", strings.TrimSuffix(strings.Repeat("1+2*3+", 32), "+")},
+		{"json", "parsers/json/json.zp", "[" + strings.TrimSuffix(strings.Repeat(`{"name":"éclair","n":123,"ok":true},`, 64), ",") + "]"},
+		{"xml", "parsers/xml/xml.zp", "<root>" + strings.Repeat(`<item name="éclair">123</item>`, 64) + "</root>"},
+		{"calc", "examples/calculator/calc.zp", strings.TrimSuffix(strings.Repeat("1+2*3+", 32), "+")},
 	} {
 		data, err := os.ReadFile(filepath.Join("../../..", fixture.path))
 		if err != nil {
@@ -84,8 +84,8 @@ func TestExportGeneratedTSTraceBenchmarks(t *testing.T) {
 const generatedTSTraceBenchmark = `import * as p from "./parser.ts";
 import {performance} from "node:perf_hooks";
 const input=INPUT;
-const duration=Number(process.env.PEGO_TRACE_BENCH_MS??200);
-const warm=Number(process.env.PEGO_TRACE_WARM_MS??100);
+const duration=Number(process.env.ZP_TRACE_BENCH_MS??200);
+const warm=Number(process.env.ZP_TRACE_WARM_MS??100);
 let sink,eventSink,ruleSink;
 const trace=e=>{eventSink=e.pos^e.end^e.evals;ruleSink=e.rule};
 const operations=["Parse","ParseRule","ParseAST","Recognize","ParseLegacy","ParseASTLegacy","RecognizeLegacy"];

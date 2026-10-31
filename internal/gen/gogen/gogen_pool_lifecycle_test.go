@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
-// PEGO_TYPED_POOL_DIR preserves this generated fixture for standalone heap and
+// ZP_TYPED_POOL_DIR preserves this generated fixture for standalone heap and
 // throughput measurements. Normal tests use an automatically removed directory.
 func TestGeneratedTypedPoolRetention(t *testing.T) {
 	t.Parallel()
@@ -35,7 +35,7 @@ rule repeated A = t:((x:"b") #repeat(2) #cut) => A{Text: text($t)}`)
 		if err != nil {
 			t.Fatal(err)
 		}
-		dir := os.Getenv("PEGO_TYPED_POOL_DIR")
+		dir := os.Getenv("ZP_TYPED_POOL_DIR")
 		if dir == "" {
 			dir = t.TempDir()
 		} else {
@@ -100,7 +100,7 @@ rule small A = ("b") #atomic`)
 const untypedPoolFixture = `package main
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -120,8 +120,8 @@ func TestUntypedPoolRetention(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			input := tc.prefix + "b"
-			p := &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}
-			p.X_setGrammar(pegoGrammar)
+			p := &zprt.Parser{MaxDepth: zpGrammar.X_maxDepth}
+			p.X_setGrammar(zpGrammar)
 			if tc.unit == Bytes {
 				p.X_unit, p.X_bs, p.X_n = Bytes, input, len(input)
 			} else {
@@ -182,7 +182,7 @@ func TestUntypedPoolRetention(t *testing.T) {
 const typedPoolFixture = `package poolfixture
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
 	"fmt"
 	"runtime"
 	"strings"
@@ -191,7 +191,7 @@ import (
 
 const generalCapture = false
 
-func checkTrail(t *testing.T, p *pegort.TParser) {
+func checkTrail(t *testing.T, p *zprt.TParser) {
 	t.Helper()
 	for i, u := range p.Trail[:cap(p.Trail)] {
 		if u.X_f != nil || u.X_old != nil || u.X_slot != 0 {
@@ -202,8 +202,8 @@ func checkTrail(t *testing.T, p *pegort.TParser) {
 
 func TestTypedPoolRules(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
-		p := &pegort.TParser{Parser: &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}}
-		v, err := p.X_run(trules[0], strings.Repeat("a", 2<<20)+"b", pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+		p := &zprt.TParser{Parser: &zprt.Parser{MaxDepth: zpGrammar.X_maxDepth}}
+		v, err := p.X_run(trules[0], strings.Repeat("a", 2<<20)+"b", zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth}, &tslabs{})
 		if err != nil || v.(*A).Text != "b" {
 			t.Fatalf("large parse: %v", err)
 		}
@@ -217,16 +217,16 @@ func TestTypedPoolRules(t *testing.T) {
 		if v.(*A).Text != "b" {
 			t.Fatal("returned value changed")
 		}
-		if _, err := p.X_run(trules[0], "", pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err == nil {
+		if _, err := p.X_run(trules[0], "", zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth}, &tslabs{}); err == nil {
 			t.Fatal("empty parse accepted")
 		}
 		p.X_recycle()
 		checkTrail(t, p)
-		if v, err := p.X_run(trules[0], "ab", pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "b" {
+		if v, err := p.X_run(trules[0], "ab", zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "b" {
 			t.Fatalf("small followup: %v", err)
 		}
 		p.X_recycle()
-		if v, err := p.X_run(trules[3], "bb", pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "bb" {
+		if v, err := p.X_run(trules[3], "bb", zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "bb" {
 			t.Fatalf("repeated capture: %v", err)
 		}
 		checkTrail(t, p)
@@ -235,8 +235,8 @@ func TestTypedPoolRules(t *testing.T) {
 }
 
 func TestTypedPoolUndoAndSaved(t *testing.T) {
-	p := &pegort.TParser{Parser: &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}}
-	f := &pegort.TCaptureFrame{Vals: []any{"before"}}
+	p := &zprt.TParser{Parser: &zprt.Parser{MaxDepth: zpGrammar.X_maxDepth}}
+	f := &zprt.TCaptureFrame{Vals: []any{"before"}}
 	p.Frame = f
 	m := p.Mark()
 	p.SetCapture(0, "outer")
@@ -258,7 +258,7 @@ func TestTypedPoolUndoAndSaved(t *testing.T) {
 	checkTrail(t, p)
 	// InvokePlain still creates trails for captures in repeated element frames.
 	p.SetCapture(0, "outer")
-	r := &pegort.TRule{Rule: &pegort.Rule{Novalue: true}, Body: func(p *pegort.TParser, _ int) (any, bool) {
+	r := &zprt.TRule{Rule: &zprt.Rule{Novalue: true}, Body: func(p *zprt.TParser, _ int) (any, bool) {
 		prev := p.Frame
 		p.Frame = p.NewFrame(1)
 		p.SetCapture(0, "changed")
@@ -289,9 +289,9 @@ func TestTypedPoolUndoAndSaved(t *testing.T) {
 
 // The parser is kept explicitly, so GC cannot hide references by emptying
 // sync.Pool. Returned terminals are dropped before measuring scratch retention.
-func retainedTypedParser(unit PositionUnit, n int) *pegort.TParser {
-	p := &pegort.TParser{Parser: &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}}
-	v, err := p.X_run(trules[0], strings.Repeat("a", n)+"b", pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+func retainedTypedParser(unit PositionUnit, n int) *zprt.TParser {
+	p := &zprt.TParser{Parser: &zprt.Parser{MaxDepth: zpGrammar.X_maxDepth}}
+	v, err := p.X_run(trules[0], strings.Repeat("a", n)+"b", zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth}, &tslabs{})
 	if err != nil || v.(*A).Text != "b" {
 		panic(err)
 	}

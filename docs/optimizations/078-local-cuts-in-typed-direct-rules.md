@@ -49,7 +49,7 @@ To regenerate both latest-generator controls and check that they return the
 same values and errors:
 
 ```sh
-export PEGO_TYPED_CUT_DIR=/tmp/pego-typed-cuts
+export ZP_TYPED_CUT_DIR=/tmp/zp-typed-cuts
 go test ./internal/gen/gogen -run '^TestGeneratedTypedCutWorkload$' -count=1
 ```
 
@@ -57,8 +57,8 @@ Build each fixture into its own benchmark binary:
 
 ```sh
 for variant in direct general; do
-  (cd "$PEGO_TYPED_CUT_DIR/$variant" && \
-    go test -c -o "$PEGO_TYPED_CUT_DIR/$variant.test" .)
+  (cd "$ZP_TYPED_CUT_DIR/$variant" && \
+    go test -c -o "$ZP_TYPED_CUT_DIR/$variant.test" .)
 done
 ```
 
@@ -71,16 +71,16 @@ for pair in 1 2 3 4 5; do
   else
     first=direct; second=general
   fi
-  "$PEGO_TYPED_CUT_DIR/$first.test" -test.run='^$' \
+  "$ZP_TYPED_CUT_DIR/$first.test" -test.run='^$' \
     -test.bench='^BenchmarkTypedCuts$' -test.benchtime=300ms -test.benchmem
-  "$PEGO_TYPED_CUT_DIR/$second.test" -test.run='^$' \
+  "$ZP_TYPED_CUT_DIR/$second.test" -test.run='^$' \
     -test.bench='^BenchmarkTypedCuts$' -test.benchtime=300ms -test.benchmem
 done
 ```
 
 The benchmark grammar has two cut-bearing alternatives for each typed row:
 
-```pego
+```zp
 type Row = { Key node[string]; Value node[string] }
 type Doc = { Rows []Row }
 rule main Doc = rows:row+ $$ => Doc{Rows: $rows}

@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/zeroparse/internal/gen"
+	"github.com/ornew/zeroparse/internal/gentest"
 )
 
-// PEGO_TYPED_LOCAL_LAYOUT_DIR preserves generated controls for benchmarks of
+// ZP_TYPED_LOCAL_LAYOUT_DIR preserves generated controls for benchmarks of
 // prebuilt binaries, independently of source generation and compilation.
 func TestGeneratedTypedLocalLayoutWorkloads(t *testing.T) {
 	t.Parallel()
@@ -20,7 +20,7 @@ func testGeneratedTypedLocalLayoutWorkloads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	dir := os.Getenv("PEGO_TYPED_LOCAL_LAYOUT_DIR")
+	dir := os.Getenv("ZP_TYPED_LOCAL_LAYOUT_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}
@@ -57,11 +57,11 @@ rule body Doc = (
 }
 
 func BenchmarkTypedLocalLayoutGeneration(b *testing.B) {
-	calculator, err := os.ReadFile("../../../examples/calculator/calc.pego")
+	calculator, err := os.ReadFile("../../../examples/calculator/calc.zp")
 	if err != nil {
 		b.Fatal(err)
 	}
-	typescript, err := os.ReadFile("../../../parsers/typescript/typescript.pego")
+	typescript, err := os.ReadFile("../../../parsers/typescript/typescript.zp")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func BenchmarkTypedLocalLayoutGeneration(b *testing.B) {
 const typedLocalLayoutWorkloadFixture = `package lrfixture
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	zprt "github.com/ornew/zeroparse/runtime"
     "encoding/json"
     "fmt"
     "strings"
@@ -124,12 +124,12 @@ func TestLocalLayoutWorkload(t *testing.T) {
         saved, err := ParseAST(localInput(3,false),WithUnit(unit))
         if !checkLocal(saved,err,3,false,unit) { t.Fatalf("saved value %v %v",saved,err) }
         before, _ := json.Marshal(saved)
-        p := &pegort.TParser{Parser:&pegort.Parser{}}
+        p := &zprt.TParser{Parser:&zprt.Parser{}}
         for _, n := range []int{1,128,1} {
             for _, rejected := range []bool{false,true} {
                 input := localInput(n,rejected)
-                value, err := p.X_run(trules[0],input,pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth},&tslabs{})
-                v := pegort.TAs[*Doc](value)
+                value, err := p.X_run(trules[0],input,zprt.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: zpGrammar.X_maxDepth},&tslabs{})
+                v := zprt.TAs[*Doc](value)
                 if !checkLocal(v,err,n,rejected,unit) { t.Fatalf("%d/%v: %v %v",n,rejected,v,err) }
                 data, _ := json.Marshal(struct { Value any; Error string }{v,fmt.Sprint(err)})
                 pooled, pooledErr := ParseAST(input,WithUnit(unit))
