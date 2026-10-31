@@ -165,7 +165,7 @@ All URLs in the pages are relative, so the output works at any path and from any
 A Cloudflare Worker with static assets (`wrangler.jsonc`) serves `site/dist`, which `sh site/build.sh` writes in a
 build with `GO_VERSION` set to the version in `go.mod`. The build also writes a `_headers` file with a
 Content-Security-Policy that allows only the site's own scripts, styles and data, plus
-`'wasm-unsafe-eval'` for compiling `zp.wasm`. The pages therefore have no inline scripts or styles (the test checks
+`'wasm-unsafe-eval'` for compiling `zp.wasm` and the Cloudflare Web Analytics beacon that Cloudflare injects. The pages therefore have no inline scripts or styles (the test checks
 this): the theme is applied by a small blocking script file, and Markdown tables use `align` attributes instead of
 `style`.
 

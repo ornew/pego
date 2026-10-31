@@ -154,7 +154,8 @@ The build writes two control files into `site/dist`; Workers reads them and does
 - `_headers` is [`site/static/_headers`](../site/static/_headers). It sets a strict `Content-Security-Policy`: the
   pages load scripts, styles and data only from the site itself, and need no inline scripts or styles;
   `'wasm-unsafe-eval'` allows compiling `zp.wasm`, and styles may be inline only because Mermaid sets them while it
-  renders a diagram. It also sets `X-Content-Type-Options` and `Referrer-Policy`. The WebAssembly binaries
+  renders a diagram. The one outside origin is Cloudflare Web Analytics, which Cloudflare injects into the pages: its
+  script from `https://static.cloudflareinsights.com` and its reports to `https://cloudflareinsights.com`. It also sets `X-Content-Type-Options` and `Referrer-Policy`. The WebAssembly binaries
   (`application/wasm`) and their hashed runtime scripts are cached for a year (`immutable`); the other files are
   revalidated on each visit, which is Workers' default.
 

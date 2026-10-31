@@ -194,7 +194,7 @@ func checkWorkerControlFiles(t *testing.T, out string) {
 	}
 	all := byPattern["/*"]
 	csp := all["Content-Security-Policy"]
-	for _, want := range []string{"default-src 'self'", "script-src 'self' 'wasm-unsafe-eval'", "style-src 'self' 'unsafe-inline'", "img-src 'self' data:", "connect-src 'self'", "worker-src 'self'", "object-src 'none'", "base-uri 'self'", "form-action 'none'", "frame-ancestors 'none'"} {
+	for _, want := range []string{"default-src 'self'", "script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com", "style-src 'self' 'unsafe-inline'", "img-src 'self' data:", "connect-src 'self' https://cloudflareinsights.com", "worker-src 'self'", "object-src 'none'", "base-uri 'self'", "form-action 'none'", "frame-ancestors 'none'"} {
 		if !strings.Contains(csp, want) {
 			t.Errorf("Content-Security-Policy lacks %q: %s", want, csp)
 		}
