@@ -15,7 +15,7 @@ func referenceInvalidate(d *typedDocumentState, start int) ([][]int32, map[int32
 	for pos, head := range d.slots[:len(kept)] {
 		for e := head; e != nil; e = e.next {
 			m, complete := d.meta[e]
-			if !complete || e.growing || m.provisional || m.examined > start {
+			if !complete || e.growing || m.reuse != reuseAfterEdits || m.examined > start {
 				continue
 			}
 			out := &tmemoEntry{}
@@ -73,7 +73,7 @@ func TestInvalidateMatchesCopyingReference(t *testing.T) {
 					switch r.Intn(5) {
 					case 0: // incomplete: no metadata
 					default:
-						d.meta[e] = typedDocumentMeta{examined: pos + r.Intn(6), provisional: r.Intn(8) == 0}
+						d.meta[e] = typedDocumentMeta{examined: pos + r.Intn(6), reuse: docReuse(r.Intn(8) / 7)}
 					}
 				}
 			}

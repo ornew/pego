@@ -74,6 +74,10 @@ func New(runner Runner, start string, back core.Backend, o core.ParseOptions, in
 // variable for tests.
 var maxEdits = 1 << 16
 
+// removeProvisional is false only in tests that check that their checks detect provisional
+// results reused by a later parse.
+var removeProvisional = true
+
 // ParseDefaults returns a copy of the construction options. Invocation counters
 // are separate from these defaults.
 func (d *Document) ParseDefaults() core.ParseOptions { return d.defaults }
@@ -210,6 +214,12 @@ func (d *Document) finishParse(p *core.Parser) {
 		// removing only entries marked growing is insufficient.
 		d.invalidateParseState()
 	} else {
+		// A provisional result depends on the order in which this parse evaluated the calls, so
+		// a later parse does not reuse it, even of the same text (see "Evaluations of Rules" in
+		// spec/runtime/parsing.md).
+		if removeProvisional {
+			d.memo.RemoveProvisional(p.ProvisionalEntries)
+		}
 		d.runs, d.resumed = p.Runs, p.Resumed
 		d.runGen = p.Gen
 	}

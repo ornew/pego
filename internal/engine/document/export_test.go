@@ -20,6 +20,13 @@ const (
 	SnapshotChildChunksEnabled = snapshotChildChunksEnabled
 )
 
+// KeepProvisional makes later parses of Documents reuse provisional results, which they must not,
+// and returns a function that restores removing them.
+func KeepProvisional() (restore func()) {
+	removeProvisional = false
+	return func() { removeProvisional = true }
+}
+
 // SetMaxEdits sets the bound of the edit log to n and returns a function that restores it.
 func SetMaxEdits(n int) (restore func()) {
 	old := maxEdits

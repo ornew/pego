@@ -281,7 +281,7 @@ func (d *documentState) editReuse(start, end int, replacement string) (int, erro
 	var kept memoTable
 	for pos := 0; pos < len(d.memo.slots) && pos < reuse; pos++ {
 		for e := d.memo.slots[pos]; e != nil; e = e.next {
-			if e.examined > reuse || e.growing || e.provisional {
+			if e.examined > reuse || e.growing || e.reuse != reuseAfterEdits {
 				continue
 			}
 			copyEntry := kept.alloc()
@@ -367,6 +367,7 @@ func DocumentParseConverted[T any](d *documentState, o parseOptions, convert fun
 			panic(x)
 		}
 		d.memo = p.memo
+		d.memo.removeParseOnly(p.docParseOnly)
 	}()
 	p.Control.Check()
 	v, ok := p.Call(d.root, 0)
@@ -387,6 +388,22 @@ func DocumentParseConverted[T any](d *documentState, o parseOptions, convert fun
 	res = convert(n, o.control, err)
 	p.Control.Check()
 	return res, err
+}
+
+// removeParseOnly removes from the table the entries of es that are in it: results that only the
+// parse that stored them reuses (reuseInParse).
+func (t *memoTable) removeParseOnly(es []memoPlace) {
+	for _, x := range es {
+		if x.pos >= len(t.slots) {
+			continue
+		}
+		for link := &t.slots[x.pos]; *link != nil; link = &(*link).next {
+			if *link == x.e {
+				*link = x.e.next
+				break
+			}
+		}
+	}
 }
 
 // publishDocumentError separates caller-owned diagnostics from private memo

@@ -153,6 +153,10 @@ type Parser struct {
 	// Completed dependent entries can come from an earlier, already closed head.
 	// Their dependencies are never discharged merely by finishing a new head.
 	MemoProvisionalUses int
+	// ProvisionalEntries are the memo entries this parse stored as provisional
+	// (MemoEntry.Provisional), which the Document removes when the parse ends
+	// (MemoTable.RemoveProvisional).
+	ProvisionalEntries []*MemoEntry
 	// Growths is the number of left recursions that grow. ReadDepth is the least depth
 	// (MemoEntry.Depth) of the growing results that the current call has read, 0 if it read an
 	// unstable result (MemoEntry.Unstable), or math.MaxInt if neither: the call read a result that
@@ -247,7 +251,8 @@ type MemoEntry struct {
 	// (Parser.Growths).
 	Depth int32
 	// Provisional reports that this result depends on a growing LR seed. It may be reused
-	// during this parse generation, but its input range alone cannot validate an edit.
+	// only during the parse that stored it: the result depends on the order in which that
+	// parse evaluated the calls, which a later parse, with or without edits, does not repeat.
 	Provisional bool
 	// Unstable reports that this is the result of a leader whose growth read the seed of another
 	// leader, or an unstable result, and that the leader can grow again at its position in this
@@ -669,6 +674,7 @@ func (p *Parser) CallEnd(r *Rule, st *CallState, v *value.Node, ok bool) (*value
 			// The completed intermediate result can outlive the seed it saw.
 			// Propagate that dependency even before a later memo hit imports it.
 			p.MemoProvisionalUses++
+			p.ProvisionalEntries = append(p.ProvisionalEntries, e)
 		}
 	}
 	p.ReadDepth = Min2(st.readDepth, p.ReadDepth)

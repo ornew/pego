@@ -192,3 +192,27 @@ func LeftRecursionMemberSeedCases() []Case {
 	}
 	return cases
 }
+
+// LeftRecursionMemberDocumentSeeds are the seeds of RandomCycleGrammar (without cuts) whose
+// parses store results that depend on the order in which the parse evaluated the calls: leaders
+// grow inside the growth of another leader and read its seed. A later Document parse that reused
+// such a result, without the growth it was computed in, gave another outcome than a parse from
+// scratch.
+var LeftRecursionMemberDocumentSeeds = []int64{117}
+
+// LeftRecursionMemberDocumentRecoveringSeeds are such seeds of RandomRecoveringCycleGrammar, whose
+// members also read leader results with recovered errors.
+var LeftRecursionMemberDocumentRecoveringSeeds = []int64{5077}
+
+// LeftRecursionMemberDocumentCases returns the grammars of LeftRecursionMemberDocumentSeeds and
+// LeftRecursionMemberDocumentRecoveringSeeds.
+func LeftRecursionMemberDocumentCases() []Case {
+	var cases []Case
+	for _, s := range LeftRecursionMemberDocumentSeeds {
+		cases = append(cases, RandomCycleGrammar(s, false))
+	}
+	for _, s := range LeftRecursionMemberDocumentRecoveringSeeds {
+		cases = append(cases, RandomRecoveringCycleGrammar(s))
+	}
+	return cases
+}

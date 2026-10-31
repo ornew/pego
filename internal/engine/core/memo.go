@@ -395,6 +395,30 @@ func (t *MemoTable) Splice(start, end, delta int, advance func(e *MemoEntry) boo
 	}
 }
 
+// RemoveProvisional removes from the table the entries of es that are still provisional and in
+// the table: es may also hold entries that were replaced, and retired or allocated again, since.
+func (t *MemoTable) RemoveProvisional(es []*MemoEntry) {
+	for _, e := range es {
+		if !e.Provisional {
+			continue
+		}
+		i := e.Pos - t.Base
+		if i >= t.Gap {
+			i += t.GapLen
+		}
+		if i < 0 || i >= len(t.Slots) {
+			continue
+		}
+		for link := &t.Slots[i]; *link != nil; link = &(*link).Next {
+			if *link == e {
+				*link = e.Next
+				t.Retire(e)
+				break
+			}
+		}
+	}
+}
+
 // Each passes every entry to f in position order.
 func (t *MemoTable) Each(f func(e *MemoEntry)) {
 	for _, head := range t.Slots {

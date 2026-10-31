@@ -43,8 +43,8 @@ Every other result is a function of the rule, the position and the variables, an
 own memoization. The engine, the generated Go runtime (untyped and typed) and the TypeScript runtime implement the
 same three rules. The compiled program marks the members (`Member` in the rule table, the `member` flag of
 disassembly and the `RuleMember` flag of generated Go), so the check of the second rule is one comparison.
-Documents keep their own rule: a result that depends on an unfinished growth is provisional and is not reused
-after an edit.
+Documents add a rule across parses: a result that depends on the order in which its parse evaluated the calls is
+reused only by that parse (see Correctness and Tradeoffs).
 
 In the example, `C` at the next position is reached from the growth of `A` at the earlier one, but outside the
 growth of `A` at the next position. It reads no seed, is stored by its first evaluation, and the second
@@ -59,7 +59,7 @@ there are depends only on the grammar.
 | Generated Go, ordinary and budget-controlled | Applied | `Call`, `callMemo` and `grow` of the runtime |
 | Generated typed Go | Applied | `TParser` call paths and `grow` |
 | Generated TypeScript | Applied | `callBody` and `grow` of the runtime |
-| Documents | Applied | Members are memoized under the same rules, and provisional results are not reused after an edit |
+| Documents | Applied | Members are memoized under the same rules; a result that depends on the order of evaluation is reused only by the parse that stored it |
 
 A member that is called from one place is still transient, so a grammar like the left-recursive calculator
 (`add`, `mul`) keeps its call code; its generated parsers only carry the member flag of those rules.
@@ -72,7 +72,9 @@ package, one per revision, ran interleaved for 10 rounds with `-benchtime=200ms 
 compared them. Tests: `TestLeftRecursionMemberMemoLinear`, `TestLeftRecursionMemberMemoMatchesNoMemo`,
 `TestLeftRecursionMemberMemoStale`, `TestLeftRecursionMemberMemoRandom`, `TestLeftRecursionMemberMemoRandomRecovering`,
 `TestGeneratedLeftRecursionMemberMemoLinear`, `TestGeneratedLeftRecursionMemberMemoStale`,
-`TestGeneratedTSLeftRecursionMemberMemoLinear`, `TestGeneratedTSLeftRecursionMemberMemoStale`.
+`TestGeneratedTSLeftRecursionMemberMemoLinear`, `TestGeneratedTSLeftRecursionMemberMemoStale`,
+`TestDocumentLeftRecursionMemberReparse`, `TestDocumentLeftRecursionMemberReparseRandom`,
+`TestGeneratedDocumentLeftRecursionMemberReparse` and their controls.
 
 ## Results
 
@@ -144,6 +146,27 @@ Rule leader read at two binding levels, and the grammar above. Removing any one 
 a leader's result when its growth ends, makes the test fail on some backend. A random search over 3,000 grammars
 whose items recover errors and call an Operators Rule member compares every engine backend with the grammar
 compiled without a memo.
+
+A Document parse can reuse the results of the parses before it. A result that read the growing result of a growth
+that was in progress when its call started is not stored, but the result of a leader whose growth read such a seed
+is stored, because the leader's growth ended within the call; so are the results that read it. Such a result
+depends on the order in which the parse evaluated the calls: when the parse reached it, the enclosing growth was at
+a given step. A later parse of the same text evaluates the calls from the start, without that growth, and reusing
+the result can give another outcome. Before members were memoized, the start rule read such results too, but its
+own result was stored, and a later parse without an edit reused it whole, so the inner results were never reached.
+Now the start rule's result is not stored when it read an unstable result, and the later parse reached them: on the
+seed grammars 117 of `RandomCycleGrammar` and 5077 of `RandomRecoveringCycleGrammar`, the second parse of an
+unchanged Document gave other syntax errors and another tree than the first. A Document therefore removes, when a
+parse ends, the results that depend on the order of evaluation: in the engine, the provisional results (those that
+read a seed of another growth, or a provisional result); in the generated runtimes, the results of leaders whose
+growth read a seed of an enclosing growth or an unstable result, and the results that read them. A later parse
+evaluates them again. Results of leaders whose growth read only their own seed do not depend on the order, and later
+parses reuse them as before: a second parse of an unchanged Document on the left-recursive calculator or on
+the member example evaluates no rule body. On the two seed grammars, the second parse evaluates as many bodies as
+the first. Tests parse Documents of the member grammars, the seed grammars and random cycle grammars twice without
+an edit and after deleting and inserting again each character, on every engine backend and with generated Go
+(untyped and typed, ordinary and budget-controlled), and compare each outcome with a parse from scratch. Their
+controls keep the results across parses and detect the difference on both seed grammars.
 
 Budget totals of the controlled form change only on the grammars of the corpus that have memoized members. The
 budget-controlled generated parser defers memoization to the second call of a rule at a position, and charges the

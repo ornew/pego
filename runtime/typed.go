@@ -1056,17 +1056,45 @@ type typedDocumentState struct {
 	owner *documentState
 	slots []*tmemoEntry
 	meta  map[*tmemoEntry]typedDocumentMeta
+	// parseOnly are the entries the current parse stored with reuseInParse, which are removed
+	// when it ends (removeParseOnly).
+	parseOnly []tmemoPlace
+}
+
+// tmemoPlace is a typed memo entry and its position.
+type tmemoPlace struct {
+	pos int
+	e   *tmemoEntry
+}
+
+// removeParseOnly removes the entries of the parse that only that parse reuses (reuseInParse) from
+// the memo and the metadata.
+func (d *typedDocumentState) removeParseOnly() {
+	for _, x := range d.parseOnly {
+		delete(d.meta, x.e)
+		if x.pos >= len(d.slots) {
+			continue
+		}
+		for link := &d.slots[x.pos]; *link != nil; link = &(*link).next {
+			if *link == x.e {
+				*link = x.e.next
+				break
+			}
+		}
+	}
+	clear(d.parseOnly)
+	d.parseOnly = d.parseOnly[:0]
 }
 
 type typedDocumentMeta struct {
-	examined    int
-	provisional bool
+	examined int
+	reuse    docReuse
 }
 
 // invalidate drops the memo entries that an edit at start can change, relinking the chains in place.
 // No parse runs during an edit (Document.parsing rejects it), and results hold values, not memo entries
 // or chains, so no TParser or result refers to the chains while they change. Entries whose examined frontier reaches
-// start, growing entries and provisional entries are dropped, as are all entries from start onward.
+// start, growing entries and entries that are not reused after edits (docReuse) are dropped, as are all entries from start onward.
 func (d *typedDocumentState) invalidate(start int) {
 	kept := min(start, len(d.slots))
 	for pos := kept; pos < len(d.slots); pos++ {
@@ -1079,7 +1107,7 @@ func (d *typedDocumentState) invalidate(start int) {
 		link := &d.slots[pos]
 		for e := *link; e != nil; e = *link {
 			m, complete := d.meta[e]
-			if complete && !e.growing && !m.provisional && m.examined <= start {
+			if complete && !e.growing && m.reuse == reuseAfterEdits && m.examined <= start {
 				link = &e.next
 				continue
 			}
@@ -1096,9 +1124,9 @@ func (d *typedDocumentState) invalidate(start int) {
 func (p *TParser) DocumentCall(r *TRule, min int, inv func(*TParser) (any, bool)) (any, bool) {
 	p.Spend()
 	start := p.Pos
-	oldHigh, oldProvisional := p.docHigh, p.docProvisional
-	p.docHigh, p.docProvisional = start+1, false
-	defer func() { p.docHigh = max(oldHigh, p.docHigh); p.docProvisional = oldProvisional || p.docProvisional }()
+	oldHigh, oldReuse := p.docHigh, p.docReuse
+	p.docHigh, p.docReuse = start+1, reuseAfterEdits
+	defer func() { p.docHigh = max(oldHigh, p.docHigh); p.docReuse = max(oldReuse, p.docReuse) }()
 	if !r.DocMemo {
 		rec := len(p.Recovered)
 		var v any
@@ -1121,7 +1149,10 @@ func (p *TParser) DocumentCall(r *TRule, min int, inv func(*TParser) (any, bool)
 		m := p.TypedDocument.meta[old]
 		p.documentTouch(m.examined)
 		p.readResult(old.growing, old.depth)
-		p.docProvisional = p.docProvisional || old.growing || m.provisional
+		p.docReuse = max(p.docReuse, m.reuse)
+		if old.growing {
+			p.docReuse = max(p.docReuse, reuseUntilEdit)
+		}
 		p.Document.stats.Reused++
 		p.Observation.memoHit()
 		if !old.growing {
@@ -1177,8 +1208,12 @@ func (p *TParser) DocumentCall(r *TRule, min int, inv func(*TParser) (any, bool)
 	e.far, e.expected = far, p.Keep(inner)
 	p.documentTouch(p.Pos + 1)
 	// A result that can change was not memoized, so it has no metadata.
+	p.docReuse = p.leaderReuse(r.Leader, fresh)
 	if r.Leader || fresh {
-		p.TypedDocument.meta[e] = typedDocumentMeta{examined: p.docHigh, provisional: p.docProvisional || r.Leader}
+		p.TypedDocument.meta[e] = typedDocumentMeta{examined: p.docHigh, reuse: p.docReuse}
+		if p.docReuse == reuseInParse {
+			p.TypedDocument.parseOnly = append(p.TypedDocument.parseOnly, tmemoPlace{start, e})
+		}
 	}
 	p.MergeExpected(far, inner)
 	if !ok {

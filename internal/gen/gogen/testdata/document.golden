@@ -7,7 +7,7 @@ corpus/0/../../examples/calculator/calc.pego	373875d40f5d9bea0f55c6a5
 corpus/0/../../examples/calculator/calc_lr.pego	21df5c7296b8b2d69d428682
 corpus/0/../../examples/minilang/minilang.pego	eeaf537de038ab657bc67b8e
 corpus/0/../../examples/outline/outline.pego	238e019d3a48c5eaa7b3ebf3
-corpus/0/LR cut inside optional	349ce2f0fb8eda1be5c47182
+corpus/0/LR cut inside optional	08686329704ca242ff5a61fa
 corpus/0/Operators Rule explicit default action	4c868d821c064cc8b11e5dd8
 corpus/0/Operators Rule operand with a cut in the recovered body	0b7e63e06560d3449b03a9dc
 corpus/0/Operators Rule operand with recovery	c029c32cf8b3fb5b872aedf9
@@ -123,7 +123,7 @@ corpus/0/leader with captures	4d1c7b07c3dff4cacc2c80f3
 corpus/0/leader with memoized callers	d84722e81714b9e8d20cd3e7
 corpus/0/leader wrapped in a recovery	d2045bd683c7548a1224516e
 corpus/0/left recursion	3c719f6ab4de0f31d7a5bca6
-corpus/0/left recursion in recovery skip	ab02d53ffb3eedd7df504d4d
+corpus/0/left recursion in recovery skip	2935b924d625e430d23434f8
 corpus/0/len of nodes and strings	80f0fdeb1d67571cd51f92f0
 corpus/0/line choice of rules	fccd6bd02931384f62d1f88f
 corpus/0/line choice with captures and skip	0089529c14881f5df4078538
@@ -136,13 +136,13 @@ corpus/0/literal text predicate dispatch	c714ba3dc69a01630102ca8a
 corpus/0/literal text variable alias control	8153af6c9cfafeae5e8dbfb5
 corpus/0/long expected lists	c5bbc36746be8cf67f5bd5ee
 corpus/0/long inferred chain	94c279f703f3f3d9abb78ac8
-corpus/0/member reached from two call sites	ca401856110dd8497fcd66ce
-corpus/0/members in a deeper cycle	b2bb8b2a1db0212fdaeb0285
-corpus/0/members that read two leaders	25ce0932c5e7c2b300d8ca63
+corpus/0/member reached from two call sites	0a94e4ced102b4fbb5a27571
+corpus/0/members in a deeper cycle	ac2d5ebab517d2b77b626b8b
+corpus/0/members that read two leaders	d79931bd08032f069288fffb
 corpus/0/memo entries are keyed by the variables the rule reads	ad9f9cf2fd79437066ed79ed
 corpus/0/memo keyed by variables	ee09f143ffb61330d000e0ac
 corpus/0/memoized rule with a cut called at one position	9a236a2506f8c8004c652503
-corpus/0/mutual leaders	42780a72ddfd62a9dcd3bea0
+corpus/0/mutual leaders	8056a334807f7fc7f351d223
 corpus/0/named node type run-time conversions	59b3ad469c352a9cd2b9c0c5
 corpus/0/named node types	1d80b382eab5509259afe1be
 corpus/0/negative lookahead	73b0856596a712074e60a605
@@ -358,7 +358,7 @@ corpus/1/../../examples/calculator/calc.pego	373875d40f5d9bea0f55c6a5
 corpus/1/../../examples/calculator/calc_lr.pego	21df5c7296b8b2d69d428682
 corpus/1/../../examples/minilang/minilang.pego	eeaf537de038ab657bc67b8e
 corpus/1/../../examples/outline/outline.pego	238e019d3a48c5eaa7b3ebf3
-corpus/1/LR cut inside optional	349ce2f0fb8eda1be5c47182
+corpus/1/LR cut inside optional	08686329704ca242ff5a61fa
 corpus/1/Operators Rule explicit default action	4c868d821c064cc8b11e5dd8
 corpus/1/Operators Rule operand with a cut in the recovered body	0b7e63e06560d3449b03a9dc
 corpus/1/Operators Rule operand with recovery	c029c32cf8b3fb5b872aedf9
@@ -474,7 +474,7 @@ corpus/1/leader with captures	4d1c7b07c3dff4cacc2c80f3
 corpus/1/leader with memoized callers	d84722e81714b9e8d20cd3e7
 corpus/1/leader wrapped in a recovery	d2045bd683c7548a1224516e
 corpus/1/left recursion	3c719f6ab4de0f31d7a5bca6
-corpus/1/left recursion in recovery skip	ab02d53ffb3eedd7df504d4d
+corpus/1/left recursion in recovery skip	2935b924d625e430d23434f8
 corpus/1/len of nodes and strings	80f0fdeb1d67571cd51f92f0
 corpus/1/line choice of rules	fccd6bd02931384f62d1f88f
 corpus/1/line choice with captures and skip	0089529c14881f5df4078538
@@ -487,13 +487,13 @@ corpus/1/literal text predicate dispatch	c714ba3dc69a01630102ca8a
 corpus/1/literal text variable alias control	8153af6c9cfafeae5e8dbfb5
 corpus/1/long expected lists	c5bbc36746be8cf67f5bd5ee
 corpus/1/long inferred chain	94c279f703f3f3d9abb78ac8
-corpus/1/member reached from two call sites	ca401856110dd8497fcd66ce
-corpus/1/members in a deeper cycle	b2bb8b2a1db0212fdaeb0285
-corpus/1/members that read two leaders	25ce0932c5e7c2b300d8ca63
+corpus/1/member reached from two call sites	0a94e4ced102b4fbb5a27571
+corpus/1/members in a deeper cycle	ac2d5ebab517d2b77b626b8b
+corpus/1/members that read two leaders	d79931bd08032f069288fffb
 corpus/1/memo entries are keyed by the variables the rule reads	ad9f9cf2fd79437066ed79ed
 corpus/1/memo keyed by variables	ee09f143ffb61330d000e0ac
 corpus/1/memoized rule with a cut called at one position	9a236a2506f8c8004c652503
-corpus/1/mutual leaders	42780a72ddfd62a9dcd3bea0
+corpus/1/mutual leaders	8056a334807f7fc7f351d223
 corpus/1/named node type run-time conversions	59b3ad469c352a9cd2b9c0c5
 corpus/1/named node types	1d80b382eab5509259afe1be
 corpus/1/negative lookahead	73b0856596a712074e60a605

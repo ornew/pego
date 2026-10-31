@@ -96,6 +96,7 @@ func TypedDocumentParse[T any](d *Document, root *TRule, o parseOptions, a budge
 	}
 	err = typedDocumentError(parseErr, o.control)
 	cache.slots = p.memoSlots
+	cache.removeParseOnly()
 	completed = true
 	return res, err
 }

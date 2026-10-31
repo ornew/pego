@@ -1373,9 +1373,12 @@ type Parser struct {
 	// SourceInfo is g.SourceInfo, read where values are made.
 	sourceInfo bool
 	// Document is set only by the private incremental runner.
-	Document       *documentState
-	docHigh        int  // exclusive upper bound examined by the active rule call
-	docProvisional bool // active call observed an unresolved LR result
+	Document *documentState
+	docHigh  int      // exclusive upper bound examined by the active rule call
+	docReuse docReuse // the reuse that the results the active call read allow (docReuse)
+	// docParseOnly are the memo entries this Document parse stored with reuseInParse, which the
+	// Document removes when the parse ends (memoTable.removeParseOnly).
+	docParseOnly []memoPlace
 	// growths is the number of left recursions that grow, and seedPos the position of the
 	// innermost one. readDepth is the least depth (memoEntry.depth) of the growing results that the
 	// current call has read, 0 if it read an unstable result, or math.MaxInt if neither (see
@@ -1707,8 +1710,8 @@ type memoEntry struct {
 	// growing marks a provisional result of a growing left-recursive call. Lookups match it
 	// whatever the variable values of the call: every call of the rule at the position and
 	// level reads it while the rule grows there.
-	growing     bool
-	provisional bool // a completed result observed a provisional LR seed
+	growing bool
+	reuse   docReuse // which later Document parses may reuse the result
 	// depth is, for a growing result, the number of left recursions that grow, its own included
 	// (Parser.growths). For a final result it is 0, or unstableResult for the result of a leader
 	// whose growth read the seed of another leader, or an unstable result, when the leader can
@@ -1717,6 +1720,28 @@ type memoEntry struct {
 	// can read other results and have another one, so a result that reads it is not memoized (see
 	// readResult). One field keeps the entry at 128 bytes.
 	depth int32
+}
+
+// docReuse tells which later Document parses may reuse a memoized result. A result allows at most
+// the reuse of the results it read; the levels are ordered by how much they restrict reuse.
+type docReuse uint8
+
+const (
+	// reuseAfterEdits: a later parse reuses the result while no edit reaches the input it examined.
+	reuseAfterEdits docReuse = iota
+	// reuseUntilEdit: the result read the seed of a growing left recursion, so its examined
+	// frontier is not reliable; it is reused until the next edit.
+	reuseUntilEdit
+	// reuseInParse: the result depends on the order in which its parse evaluated the calls (the
+	// growth of a leader that read the seed of another leader, or an unstable result); a later
+	// parse, of the same text or not, does not repeat that order, so only this parse reuses it.
+	reuseInParse
+)
+
+// memoPlace is a memo entry and its position.
+type memoPlace struct {
+	pos int
+	e   *memoEntry
 }
 
 // unstableResult is the depth of an unstable final result (memoEntry.depth).
@@ -2575,7 +2600,7 @@ func (p *Parser) ExaminedEnd(enclosing int) (int, bool) {
 	}
 	x := p.docHigh
 	p.docHigh = max(enclosing, x)
-	if p.docProvisional {
+	if p.docReuse != reuseAfterEdits {
 		x = max(x, p.Pos)
 	}
 	return x, true
@@ -2613,11 +2638,11 @@ func (p *Parser) callBody(r *Rule, min int) (*Node, bool) {
 // callDocument is callBody in a Document parse, which memoizes the rules that
 // the Document reuses and records how far each call examined the input.
 func (p *Parser) callDocument(r *Rule, min int) (*Node, bool) {
-	oldHigh, oldProvisional := p.docHigh, p.docProvisional
-	p.docHigh, p.docProvisional = p.Pos+1, false
+	oldHigh, oldReuse := p.docHigh, p.docReuse
+	p.docHigh, p.docReuse = p.Pos+1, reuseAfterEdits
 	defer func() {
 		p.docHigh = max(oldHigh, p.docHigh)
-		p.docProvisional = oldProvisional || p.docProvisional
+		p.docReuse = max(oldReuse, p.docReuse)
 	}()
 	if !r.DocMemo {
 		return p.callUnmemoized(r, min)
@@ -2650,7 +2675,10 @@ func (p *Parser) callMemo(r *Rule, min int) (*Node, bool) {
 		p.readResult(e.growing, e.depth)
 		if p.Document != nil {
 			p.documentTouch(e.examined)
-			p.docProvisional = p.docProvisional || e.growing || e.provisional
+			p.docReuse = max(p.docReuse, e.reuse)
+			if e.growing {
+				p.docReuse = max(p.docReuse, reuseUntilEdit)
+			}
 			p.Document.stats.Reused++
 		}
 		p.Observation.memoHit()
@@ -2693,19 +2721,39 @@ func (p *Parser) callMemo(r *Rule, min int) (*Node, bool) {
 			p.memoPut(r.Id, start, min, env, e)
 		}
 	}
+	settled := p.readDepth > depth
 	p.leaveCall(read)
 	far, inner := p.Unisolate(m)
 	e.far, e.expected = far, p.Keep(inner)
 	if p.Document != nil {
 		p.documentTouch(p.Pos + 1)
 		e.examined = p.docHigh
-		e.provisional = p.docProvisional || r.Leader
+		p.docReuse = p.leaderReuse(r.Leader, settled)
+		e.reuse = p.docReuse
+		if e.reuse == reuseInParse && (r.Leader || settled) {
+			p.docParseOnly = append(p.docParseOnly, memoPlace{start, e})
+		}
 	}
 	p.MergeExpected(far, inner)
 	if !ok {
 		p.Pos = start
 	}
 	return v, ok
+}
+
+// leaderReuse returns the reuse that the result of the current Document call allows, given the
+// reuse of the results it read (docReuse). The result of a leader is not reused after an edit, and
+// is reused only in this parse when its growth read a result that can still change (settled is
+// false: the seed of a growth that began before the call, or an unstable result), because a later
+// parse evaluates it without that growth.
+func (p *Parser) leaderReuse(leader, settled bool) docReuse {
+	switch {
+	case !leader:
+		return p.docReuse
+	case !settled:
+		return reuseInParse
+	}
+	return max(p.docReuse, reuseUntilEdit)
 }
 
 // readResult records that the current call read a memoized result of the depth: a growing one,
