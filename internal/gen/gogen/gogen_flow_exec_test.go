@@ -38,13 +38,13 @@ func execGenerate(src string, opts gen.GenOptions, exec bool) (string, map[strin
 }
 
 // execModes are the generator options under which the Exec IR switch routes the rules of the
-// tables (want) that print in the ordinary form: the modes of TestFlowPrintsTypedRules without
-// budget controls or a Document, and those of the Node runtime alone. A stream mode runs the grammars
+// tables (want): the modes of TestFlowPrintsTypedRules without a Document, and those of the Node
+// runtime alone, in the ordinary form and with budget controls. A stream mode runs the grammars
 // with a #stream repetition (streamCases), too few for counts by table.
 var execModes = func() []execMode {
 	var modes []execMode
 	for _, m := range flowModes {
-		if !m.opts.BudgetControls && !m.opts.Document {
+		if !m.opts.Document {
 			want := []string{"trules"}
 			if m.opts.Recognize {
 				want = append(want, "recRules")
@@ -60,6 +60,10 @@ var execModes = func() []execMode {
 		execMode{"source info", gen.GenOptions{SourceInfo: true}, []string{"rules"}},
 		execMode{"default value", gen.GenOptions{DefaultValue: true}, []string{"rules"}},
 		execMode{"observable nodes", gen.GenOptions{Observability: true}, []string{"rules"}},
+		execMode{"controlled nodes", gen.GenOptions{BudgetControls: true}, []string{"rules"}},
+		execMode{"controlled nodes recognizer", gen.GenOptions{Recognize: true, BudgetControls: true}, []string{"rules", "recRules"}},
+		execMode{"controlled stream", gen.GenOptions{Stream: true, BudgetControls: true}, nil},
+		execMode{"controlled observable nodes", gen.GenOptions{Observability: true, BudgetControls: true}, []string{"rules"}},
 	)
 }()
 
@@ -70,8 +74,8 @@ type execMode struct {
 }
 
 // TestExecRoutePrintsTheSame checks that every corpus grammar generates the same code with the
-// functions that the Exec IR switch routes printed from Exec IR as from Flow IR, in the modes that
-// print rules in the ordinary form (execModes), and that the switch routes the rules of each table
+// functions that the Exec IR switch routes printed from Exec IR as from Flow IR, in the modes
+// without a Document (execModes), and that the switch routes the rules of each table
 // that the mode prints.
 func TestExecRoutePrintsTheSame(t *testing.T) {
 	t.Parallel()
