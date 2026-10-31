@@ -19,16 +19,16 @@ import (
 
 // Go rules printed from Exec IR.
 //
-// With the Exec IR switch on (core.Enabled), the rules of every table of a parser without a
-// Document (the typed table, the Node table and the recognizer, and the stream body), in the
-// ordinary form and with budget controls, are lowered from Flow IR to Exec IR (lower.Flow) and
+// With the Exec IR switch on (core.Enabled), the rules of every table (the typed table, the Node
+// table and the recognizer, and the stream body), in the ordinary form, with budget controls and
+// with a Document, are lowered from Flow IR to Exec IR (lower.Flow) and
 // printed by the Go backend of Exec IR (execgo.Body), which prints the compositions of the runtime
 // too. The primitives of Flow IR are transitional operations there, which the flow printer prints as
 // it prints them from Flow IR. The printed code is the same as from Flow IR.
 
 // execRoute reports whether the functions of the current table print from Exec IR.
 func (g *Generator) execRoute() bool {
-	return (core.Enabled || g.hooks.ExecRoute) && !g.Document
+	return core.Enabled || g.hooks.ExecRoute
 }
 
 // execBody prints the body of the Flow IR function f from Exec IR with the flow printer p, for a

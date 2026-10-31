@@ -52,19 +52,17 @@ func execGenerateCounted(src string, opts gen.GenOptions, exec bool) (string, ma
 }
 
 // execModes are the generator options under which the Exec IR switch routes the rules of the
-// tables (want): the modes of TestFlowPrintsTypedRules without a Document, and those of the Node
-// runtime alone, in the ordinary form and with budget controls. A stream mode runs the grammars
-// with a #stream repetition (streamCases), too few for counts by table.
+// tables (want): the modes of TestFlowPrintsTypedRules, and those of the Node runtime alone, in the
+// ordinary form and with budget controls, with and without a Document. A stream mode runs the
+// grammars with a #stream repetition (streamCases), too few for counts by table.
 var execModes = func() []execMode {
 	var modes []execMode
 	for _, m := range flowModes {
-		if !m.opts.Document {
-			want := []string{"trules"}
-			if m.opts.Recognize {
-				want = append(want, "recRules")
-			}
-			modes = append(modes, execMode{m.name, m.opts, want})
+		want := []string{"trules"}
+		if m.opts.Recognize {
+			want = append(want, "recRules")
 		}
+		modes = append(modes, execMode{m.name, m.opts, want})
 	}
 	return append(modes,
 		execMode{"nodes", gen.GenOptions{}, []string{"rules"}},
@@ -78,6 +76,11 @@ var execModes = func() []execMode {
 		execMode{"controlled nodes recognizer", gen.GenOptions{Recognize: true, BudgetControls: true}, []string{"rules", "recRules"}},
 		execMode{"controlled stream", gen.GenOptions{Stream: true, BudgetControls: true}, nil},
 		execMode{"controlled observable nodes", gen.GenOptions{Observability: true, BudgetControls: true}, []string{"rules"}},
+		execMode{"nodes Document", gen.GenOptions{Document: true}, []string{"rules"}},
+		execMode{"recognizer Document", gen.GenOptions{Recognize: true, Document: true}, []string{"rules", "recRules"}},
+		execMode{"observable nodes Document", gen.GenOptions{Observability: true, Document: true}, []string{"rules"}},
+		execMode{"controlled nodes Document", gen.GenOptions{BudgetControls: true, Document: true}, []string{"rules"}},
+		execMode{"Document stream", gen.GenOptions{Types: true, Document: true, Stream: true}, nil},
 	)
 }()
 
@@ -88,8 +91,8 @@ type execMode struct {
 }
 
 // TestExecRoutePrintsTheSame checks that every corpus grammar generates the same code with the
-// functions that the Exec IR switch routes printed from Exec IR as from Flow IR, in the modes
-// without a Document (execModes), and that the switch routes the rules of each table
+// functions that the Exec IR switch routes printed from Exec IR as from Flow IR, in the modes of
+// execModes, and that the switch routes the rules of each table
 // that the mode prints.
 func TestExecRoutePrintsTheSame(t *testing.T) {
 	t.Parallel()
