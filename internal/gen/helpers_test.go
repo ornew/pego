@@ -88,12 +88,16 @@ func compileForGenerator(g *grammar.Grammar, opts compile.Options) (*compile.Pro
 }
 
 func TestMain(m *testing.M) {
-	// Tests build generated programs in fresh temporary directories. Without -trimpath their
-	// build cache entries depend on the directory and are never reused, so every run would add
-	// tens of gigabytes of builds to the cache. Commands that set GOFLAGS add it themselves.
-	// -mod=mod lets the temporary modules that replace this module resolve it without a go.sum.
+	// Tests build generated programs in fresh temporary directories, with a build cache private
+	// to the test process (SetGoCache) so that their builds, which no later run reuses, do not
+	// accumulate in the shared cache. -trimpath makes the entries independent of the directory,
+	// so the tests of the package share the builds of the standard library and of this module;
+	// commands that set GOFLAGS add it themselves. -mod=mod lets the temporary modules that
+	// replace this module resolve it without a go.sum.
 	gentest.SetGoFlags()
+	removeGoCache := gentest.SetGoCache()
 	code := m.Run()
+	removeGoCache()
 	if names := gentest.UnwrappedFixtureTests(); len(names) > 0 {
 		fmt.Fprintf(os.Stderr, "FAIL: tests build generated fixtures without choosing their form: %s\nWrap the test body in gentest.EachMode, or call gentest.NeedsBudgetControls, or pin the form with gentest.PinOrdinary\n", strings.Join(names, ", "))
 		code = 1

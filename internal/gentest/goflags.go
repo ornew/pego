@@ -20,6 +20,20 @@ func SetGoFlags() {
 	os.Setenv("GOFLAGS", core.GoFlags(strings.TrimSpace(os.Getenv("GOFLAGS")+" -trimpath -mod=mod")))
 }
 
+// SetGoCache points the build cache of the go commands that the test process runs at a fresh
+// temporary directory and returns a function that removes it. Every test builds a different
+// generated program, so the shared build cache would only accumulate entries that are never reused;
+// a cache private to the test process still shares the builds of the standard library and of this
+// module among the tests of a package.
+func SetGoCache() (remove func()) {
+	dir, err := os.MkdirTemp("", "pego-gocache-")
+	if err != nil {
+		panic(err)
+	}
+	os.Setenv("GOCACHE", dir)
+	return func() { os.RemoveAll(dir) }
+}
+
 // CheckRuntimeTag fails the test unless a go command that inherits the environment of the test
 // compiles the runtime with the printed compositions (runtime/call_exec.go) exactly when the Exec IR
 // switch is on in the test binary, so that a run with the switch does not test generated parsers
