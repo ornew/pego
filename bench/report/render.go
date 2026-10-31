@@ -312,6 +312,8 @@ func renderAll(root string, data, tsData, sizeData []byte) ([]byte, error) {
 				return "Bytecode (recursive)"
 			case "iterative":
 				return "Bytecode (iterative)"
+			case "generated":
+				return "Generated Go"
 			}
 			return b
 		},

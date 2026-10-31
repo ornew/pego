@@ -102,6 +102,9 @@ Memory per recognition (bytes allocated / number of allocations):
 {{- range $backends}}
 | {{backendName .}} | {{t (printf "Incremental/%s/document" .)}} | {{mem (printf "Incremental/%s/document" .)}} | {{t (printf "Incremental/%s/fresh" .)}} | {{mem (printf "Incremental/%s/fresh" .)}} |
 {{- end}}
+{{- if has "Incremental/generated/document"}}
+| {{backendName "generated"}} | {{t "Incremental/generated/document"}} | {{mem "Incremental/generated/document"}} | {{t "Incremental/generated/fresh"}} | {{mem "Incremental/generated/fresh"}} |
+{{- end}}
 
 ### Incremental Parsing of a Long Document (CSV, 50,000 Records, One-Character Edit Followed by a Parse)
 
@@ -110,6 +113,9 @@ Memory per recognition (bytes allocated / number of allocations):
 {{- range $backends}}
 | {{backendName .}} | {{t (printf "IncrementalLong/%s" .)}} | {{mem (printf "IncrementalLong/%s" .)}} |
 {{- end}}
+{{- if has "IncrementalLong/generated"}}
+| {{backendName "generated"}} | {{t "IncrementalLong/generated"}} | {{mem "IncrementalLong/generated"}} |
+{{- end}}
 
 ### Streaming (CSV, 50,000 Rows, {{size "Stream/closure"}})
 
@@ -117,6 +123,9 @@ Memory per recognition (bytes allocated / number of allocations):
 |:--|--:|--:|--:|
 {{- range $backends}}
 | {{backendName .}} | {{t (printf "Stream/%s" .)}} | {{mbs (printf "Stream/%s" .)}} | {{mem (printf "Stream/%s" .)}} |
+{{- end}}
+{{- if has "Stream/generated"}}
+| {{backendName "generated"}} | {{t "Stream/generated"}} | {{mbs "Stream/generated"}} | {{mem "Stream/generated"}} |
 {{- end}}
 | `encoding/csv` (`Read` loop) | {{t "Stream/encoding_csv"}} | {{mbs "Stream/encoding_csv"}} | {{mem "Stream/encoding_csv"}} |
 

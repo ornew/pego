@@ -49,6 +49,43 @@ func TestMissingBenchmark(t *testing.T) {
 	}
 }
 
+// TestRenderGeneratedDocumentAndStreamRows checks that the incremental and streaming tables gain a
+// generated Go row when the results include the generated benchmarks, and omit it otherwise.
+func TestRenderGeneratedDocumentAndStreamRows(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join(root, "bench", "results.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	const row = "\n| Generated Go | "
+	without, err := render(root, data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(without), row) {
+		t.Fatalf("rendered %q without generated results", row)
+	}
+	lines := strings.Split(string(data), "\n")
+	for _, l := range lines {
+		for from, to := range map[string]string{
+			"BenchmarkIncremental/closure/document-": "BenchmarkIncremental/generated/document-",
+			"BenchmarkIncremental/closure/fresh-":    "BenchmarkIncremental/generated/fresh-",
+			"BenchmarkIncrementalLong/closure-":      "BenchmarkIncrementalLong/generated-",
+			"BenchmarkStream/closure-":               "BenchmarkStream/generated-",
+		} {
+			if strings.HasPrefix(l, from) {
+				lines = append(lines, to+strings.TrimPrefix(l, from))
+			}
+		}
+	}
+	with, err := render(root, []byte(strings.Join(lines, "\n")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := strings.Count(string(with), row); n != 3 {
+		t.Errorf("rendered %d generated Go rows, want 3 (incremental, long incremental, streaming)", n)
+	}
+}
+
 func TestParseResults(t *testing.T) {
 	r, err := parseResults([]byte(`# date: 2026-01-02
 # commit: abc
