@@ -6,9 +6,9 @@
 
 Never write a parser again.
 
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENCE) [![Go Reference](https://pkg.go.dev/badge/github.com/ornew/pego.svg)](https://pkg.go.dev/github.com/ornew/pego) [![Go](https://img.shields.io/badge/go-1.27.1+-00ADD8?logo=go&logoColor=white)](go.mod) [![Netlify Status](https://api.netlify.com/api/v1/badges/29040d97-0646-4829-8871-188310aec03a/deploy-status)](https://app.netlify.com/projects/pego-go/deploys)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENCE) [![Go Reference](https://pkg.go.dev/badge/github.com/ornew/pego.svg)](https://pkg.go.dev/github.com/ornew/pego) [![Go](https://img.shields.io/badge/go-1.27.1+-00ADD8?logo=go&logoColor=white)](go.mod)
 
-[Website](https://pego.ornew.net/) · [Playground](https://pego.ornew.net/playground/) · [Quick start](docs/tutorial/getting-started.md) · [Guides](docs/guide/README.md) · [Specification](spec/README.md) · [Examples](examples/)
+[Website](https://zeroparse.dev/) · [Playground](https://zeroparse.dev/playground/) · [Quick start](docs/tutorial/getting-started.md) · [Guides](docs/guide/README.md) · [Specification](spec/README.md) · [Examples](examples/)
 
 </div>
 

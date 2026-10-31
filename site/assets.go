@@ -43,9 +43,20 @@ type assetBytes struct {
 var digestPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
 var legacyWasmPattern = regexp.MustCompile(`data-wasm="(?:\.\./)?playground/(wasm/pego-[0-9a-f]{16}\.wasm)"`)
 
+// productionSite is the canonical origin of the published site; site/config.json names the same
+// origin as siteURL.
+const productionSite = "https://zeroparse.dev"
+
+// productionBranch is the branch that Workers Builds deploys to the production site.
+const productionBranch = "main"
+
+// deploymentURLs returns the defaults of -previous-site and -deploy-url. Only a Workers Builds run
+// of the production branch retains the published playground assets, from the production site.
+// Workers Builds knows no immutable URL for a deploy before it is published, so there is no
+// default deploy URL. Local builds and builds of other branches default to neither.
 func deploymentURLs(getenv func(string) string) (previous, deploy string) {
-	if getenv("NETLIFY") == "true" && getenv("CONTEXT") == "production" && getenv("NETLIFY_PREVIEW_SERVER") != "true" {
-		return getenv("URL"), getenv("DEPLOY_URL")
+	if getenv("WORKERS_CI") == "1" && getenv("WORKERS_CI_BRANCH") == productionBranch {
+		return productionSite, ""
 	}
 	return "", ""
 }

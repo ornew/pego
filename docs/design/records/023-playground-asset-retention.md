@@ -10,7 +10,7 @@ Pages identify the parser by a content-hashed WASM URL. Replacing a static deplo
 an older page has not loaded its parser yet. Retaining the WASM alone also leaves a Go-version compatibility gap:
 the worker's `wasm_exec.js` must match the compiler/runtime that produced the binary.
 
-The site builder clears its output and Netlify builds can start without a previous local output or build cache.
+The site builder clears its output and Workers Builds can start without a previous local output or build cache.
 Retention must obtain the published assets independently of that local state, keep storage bounded, and preserve
 the new parser selection.
 
@@ -38,9 +38,10 @@ the manifest at the production alias, then downloads its current assets from tha
 alias change between those downloads from mixing deploys. A local/manual build without that flag downloads from the
 specified site root; the caller must keep it stable during the build.
 
-The CLI defaults these flags from [Netlify's build environment variables](https://docs.netlify.com/build/configure-builds/environment-variables/)
-only when `NETLIFY=true`, `CONTEXT=production` and this is not a Preview Server: `URL` for the previous site and
-`DEPLOY_URL` for the new immutable source. Local builds and deploy/branch previews default to neither flag. Explicit
+The CLI defaults `-previous-site` to `https://zeroparse.dev` only in a Workers Builds run of the production branch
+(`WORKERS_CI=1` and `WORKERS_CI_BRANCH=main`). Workers Builds knows no immutable URL for a deployment before it is
+published, so `-deploy-url` has no default there and the next build reads the manifest and the assets from the
+production site root. Local builds and builds of other branches default to neither flag. Explicit
 flags override the defaults, including an empty `-previous-site` for a deliberate reset.
 
 ### Asset Format and Worker Behavior
@@ -81,7 +82,7 @@ the immutable source and both digests. A build failure does not promote any cach
   before deployment; success-hook persistence and concurrent-build ordering would need separate deployment evidence.
 - **Redirect all old hashes to the current binary.** Breaks content identity and can mix incompatible runtime/API versions.
 - **Archive every historical deploy or bundle.** Provides a longer window but needs a storage/lifetime policy beyond one
-  preceding pair. Netlify deploy permalinks remain usable without copying all generations to the production alias.
+  preceding pair. Cloudflare version preview URLs remain usable without copying all generations to the production site.
 
 ## Testing
 
@@ -93,7 +94,7 @@ WASM; the playground smoke suite checks the parser API separately.
 
 Local deployment simulation starts from a pre-manifest built site, replaces its output at the same origin, and checks
 both parser generations and the real browser worker. This proves the builder/worker interaction; it does not substitute
-for observing Netlify's deployment status.
+for observing the deployment status in the Cloudflare dashboard.
 
 ## Performance and Results
 
@@ -146,7 +147,7 @@ archived, so a breaking application/protocol change still needs its own compatib
 Production activation uses two publications. First publish the dual-capable
 builder with Go-only mode; this creates a rollback target that can read the
 optional TinyGo manifest fields while retaining the ordinary Go pair. Only then
-enable the production Netlify context to install the pinned Linux x86_64
+enable the production build to install the pinned Linux x86_64
 toolchains and build in dual mode. Preview and branch contexts remain Go-only.
 The repository keeps this production context disabled until the owner selects
 this staged rollout or the reset alternative.

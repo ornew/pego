@@ -415,7 +415,7 @@ func selectWasmBuild(toolchain, output string) (wasmBuildSpec, error) {
 }
 
 // buildWasm builds the playground's WebAssembly binary into dir/wasm, named after a hash of its
-// content so that it can be cached forever (see netlify.toml), and copies the matching runtime
+// content so that it can be cached forever (see site/static/_headers), and copies the matching runtime
 // support (wasm_exec.js) into dir. It returns the path of the binary relative to dir.
 func buildWasm(repo, dir, toolchain string) (string, error) {
 	abs, err := filepath.Abs(dir)

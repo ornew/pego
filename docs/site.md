@@ -28,8 +28,8 @@ and validation are handled by Nanosite. The project-specific flags are:
 | `-wasm` | `true` | Build the playground's WebAssembly binary. Without it, the pages are built but the playground cannot run |
 | `-wasm-mode` | `go` | `go` builds the standard Playground binary; `dual` builds both Go and TinyGo binaries. Dual mode requires TinyGo and Binaryen's `wasm-opt` on `PATH`; the TinyGo distribution does not include `wasm-opt`, so install Binaryen separately. The build fails if either tool is missing or compilation fails; there is no automatic fallback |
 | `-check` | `true` | Fail if a page links to a missing page, file or anchor |
-| `-previous-site` | Empty locally; production `URL` on Netlify | Import the published current WASM/runtime pair to retain it for one deploy; requires `-wasm` |
-| `-deploy-url` | Empty locally; production `DEPLOY_URL` on Netlify | Record this immutable deploy root for the next build's asset downloads |
+| `-previous-site` | Empty locally; `https://zeroparse.dev` in Workers Builds of `main` | Import the published current WASM/runtime pair to retain it for one deploy; requires `-wasm` |
+| `-deploy-url` | Empty | Record this immutable deploy root for the next build's asset downloads |
 | `-serve` | | After building, serve the output at this address |
 | `-github`, `-ref` | `https://github.com/ornew/pego`, `main` | Where links to source files point |
 
@@ -57,22 +57,22 @@ Nothing is copied by hand, so the site cannot drift from the repository: rebuild
 The pages need no external resources (no CDN, fonts or analytics), have light and dark themes (following the system
 until the switch in the header is used), and work on phone screens.
 
-## Deploying on Netlify
+## Deploying on Cloudflare Workers
 
-Production builds download the currently published WASM and its matching Go runtime before generating the new site.
-The output retains at most the new pair and one previous pair per compiler; deploy/branch previews do not import production assets
+Production builds (Workers Builds of the `main` branch) download the currently published WASM and its matching Go runtime before generating the new site.
+The output retains at most the new pair and one previous pair per compiler; builds of other branches do not import production assets
 automatically. A page from the preceding deploy can therefore start its old parser after publication. The worker reads
 `assets.json` and imports the matching hashed runtime. Generations outside that window must reload.
 
 Dual mode is opt-in: `site/build.sh -wasm-mode=dual` requires a compatible
 TinyGo installation and Binaryen's `wasm-opt` executable on `PATH`. The
 regular site builds use `go` mode. `site/install-playground-toolchains.sh`
-provides the pinned, no-root Linux x86_64 setup for Netlify: TinyGo 0.43.0 and
+provides the pinned, no-root Linux x86_64 setup for a build environment: TinyGo 0.43.0 and
 Binaryen 131 are downloaded from their official releases, SHA-256 verified,
-stored as archives under `NETLIFY_CACHE_DIR` when that variable is available,
-and extracted into a temporary directory for that build. Archive persistence
-depends on the selected Netlify build image caching that path; otherwise the
-script downloads them again. It rejects other operating systems and architectures
+stored as archives under `PLAYGROUND_TOOLCHAIN_CACHE_DIR` (default
+`$TMPDIR/pego-toolchain-cache`), and extracted into a temporary directory for
+that build. Archive persistence depends on the build environment keeping that
+path between builds; otherwise the script downloads them again. It rejects other operating systems and architectures
 and fails on any missing tool, unexpected version, or checksum mismatch. In a
 dual build, the Playground defaults to Go and offers
 TinyGo under Options; the choice is carried by `?compiler=tinygo` in shared links. A TinyGo link
@@ -80,7 +80,7 @@ opened on a Go-only build reports that TinyGo is unavailable. Before enabling du
 production, first deploy the updated builder with Go-only mode, then enable the
 production build command `sh site/install-playground-toolchains.sh`. This staged
 rollout leaves a Go-only deployment whose builder understands dual manifests
-available for rollback. The current `netlify.toml` deliberately remains Go-only
+available for rollback. The production build command deliberately remains Go-only
 until the owner selects this rollout or a retention-reset policy.
 The manifest keeps its version-one `current` and `previous` fields for Go, with optional
 `tinygoCurrent` and `tinygoPrevious` pairs. Older workers can still select Go. An older site builder
@@ -93,28 +93,71 @@ means pages from those generations must reload. Do not point an older builder
 at a dual manifest without that reset.
 
 The first upgrade from a pre-manifest site reads its playground HTML and stable runtime. Later builds fetch from the
-immutable deploy URL recorded in the manifest. Missing or invalid published assets fail the build; a genuinely missing
+site root, or from the immutable deploy URL when the manifest records one. Missing or invalid published assets fail the build; a genuinely missing
 playground initializes a first deployment. Keep production publication sequential. Rollbacks and manually promoted
 previews need `-previous-site` set to the deployment being replaced; retention does not coordinate concurrent promotions.
 To deliberately reset retention, pass `-previous-site ''`. See [the asset-retention design](design/records/023-playground-asset-retention.md)
 for the format, bounds and bootstrap limitations.
 
-[`netlify.toml`](../netlify.toml) at the root of the repository configures Netlify: the default build command is
-`sh site/build.sh`, the publish directory is `site/dist`, and `GO_VERSION` selects the Go version of `go.mod`. Once the staged Go-only builder has been published, the production context can use `sh site/install-playground-toolchains.sh`; preview and branch builds remain on the default Go-only command. Connecting the repository to a Netlify site is enough to deploy it; each build runs the link check, so a broken link fails the
-deploy instead of publishing it. The official site, [pego.ornew.net](https://pego.ornew.net/), is deployed this way.
+The official site, [zeroparse.dev](https://zeroparse.dev/), is a Cloudflare Worker with static assets and no Worker
+script. [`wrangler.jsonc`](../wrangler.jsonc) at the root of the repository names the Worker (`zeroparse-site`) and its
+assets directory, `site/dist`, the output of the site build; each build runs the link check, so a broken link fails
+the deploy instead of publishing it. Cloudflare serves directory index files with a trailing slash
+(`html_handling` is `auto-trailing-slash`); the site emits no `404.html`, so unknown paths get Cloudflare's plain 404
+response (`not_found_handling` is `none`).
 
-HTTPS requests to `pego-go.netlify.app` receive a permanent `301` redirect to
-`https://pego.ornew.net`, preserving the path and query parameters. HTTP requests
-first follow Netlify's HTTPS upgrade, then the canonical-domain redirect.
-The forced, host-specific rules also redirect published files and leave deploy
-preview hosts available. These rules take effect when Netlify deploys the
-updated configuration; the local preview server does not apply them.
+### Workers Builds Settings
 
-The configuration also sets a strict `Content-Security-Policy`: the pages load scripts, styles and data only from the
-site itself, and need no inline scripts or styles; `'wasm-unsafe-eval'` allows compiling `pego.wasm`, and styles may
-be inline only because Mermaid sets them while it renders a diagram. The
-WebAssembly binaries and their hashed runtime scripts are cached for a year (`immutable`); the other files are
-revalidated on each visit, Netlify's default.
+Connect the Worker to the Git repository in the Cloudflare dashboard (Workers & Pages, the `zeroparse-site` Worker,
+Settings, Builds) with these values:
+
+| Setting | Value |
+|:--|:--|
+| Git repository | `ornew/zeroparse` |
+| Production branch | `main` |
+| Build command | `sh site/build.sh` |
+| Deploy command | `npx wrangler deploy` |
+| Build variable | `GO_VERSION` = `1.27.1` (the `go` directive of `go.mod` and `site/go.mod`) |
+| Custom domain | `zeroparse.dev` (Settings, Domains & Routes) |
+
+The build image has Node, so `npx` fetches Wrangler on demand. The non-production branch deploy command is
+`npx wrangler versions upload`, which publishes a preview version without changing production. Builds of the
+production branch import the published playground assets from `https://zeroparse.dev`, as described above. Once the
+staged Go-only builder has been published, the production build command can be
+`sh site/install-playground-toolchains.sh`.
+
+### Deploying Manually
+
+Build the site, then deploy the directory that `wrangler.jsonc` names (Node 20 or later; `npx` fetches Wrangler and
+`wrangler login` or `CLOUDFLARE_API_TOKEN` authenticates):
+
+```bash
+sh site/build.sh
+npx wrangler deploy --dry-run   # validate the configuration and the assets without publishing
+npx wrangler deploy
+```
+
+A local build imports no earlier playground assets (`-previous-site` is empty), so use it for the first deployment,
+before `https://zeroparse.dev` serves anything. For a later manual deployment, pass the published site explicitly,
+`sh site/build.sh -previous-site https://zeroparse.dev`, so that pages open in browsers keep a working parser.
+
+### Redirects and Headers
+
+The build writes two control files into `site/dist`; Workers reads them and does not serve them.
+
+- `_redirects` is generated by Nanosite from `redirects` in `site/config.json`: permanent `301` redirects from the
+  former locations of the specification and the design records. Each line is a static redirect and uses one of the
+  codes Workers supports. Workers applies redirects before it looks for an asset, so a redirect rule must name only
+  paths where no page exists.
+- `_headers` is [`site/static/_headers`](../site/static/_headers). It sets a strict `Content-Security-Policy`: the
+  pages load scripts, styles and data only from the site itself, and need no inline scripts or styles;
+  `'wasm-unsafe-eval'` allows compiling `pego.wasm`, and styles may be inline only because Mermaid sets them while it
+  renders a diagram. It also sets `X-Content-Type-Options` and `Referrer-Policy`. The WebAssembly binaries
+  (`application/wasm`) and their hashed runtime scripts are cached for a year (`immutable`); the other files are
+  revalidated on each visit, which is Workers' default.
+
+Workers limits `_headers` to 100 rules and 2,000 characters per line, and `_redirects` to 2,000 static and 100 dynamic
+rules. The local preview server (`-serve`) applies neither file; `npx wrangler dev` does.
 
 Diagrams are written as `mermaid` fences. Only pages that contain one load `assets/mermaid.js`, which loads the pinned
 Mermaid build vendored in `assets/vendor/` (the policy allows no remote scripts), renders each diagram once per color

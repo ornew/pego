@@ -1,0 +1,21 @@
+# Response headers of the published site, applied by Cloudflare Workers static assets; the file
+# itself is not served. Redirects are in the generated _redirects file.
+
+# 'wasm-unsafe-eval' lets the playground compile the WebAssembly binary; nothing else is loaded from
+# elsewhere or run inline. 'unsafe-inline' for styles is needed by Mermaid, which builds diagram
+# SVG with inline styles while rendering (site/static/assets/mermaid.js); no page uses inline
+# styles itself (site tests enforce it), and scripts stay restricted to this site.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# The WebAssembly binary is named after a hash of its content (site/build.go), so a name never refers
+# to other content and browsers can keep it for a year without asking again. Matching runtime scripts
+# are content-hashed too; pages, application scripts and assets.json revalidate on each visit.
+/playground/wasm/*
+  Content-Type: application/wasm
+  Cache-Control: public, max-age=31536000, immutable
+
+/playground/runtime/*
+  Cache-Control: public, max-age=31536000, immutable

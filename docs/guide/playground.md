@@ -1,6 +1,6 @@
 # The Playground
 
-The [PEGO playground](https://pego.ornew.net/playground/) lets you write a grammar, type an input and inspect the tree as you edit. Everything runs in your browser: PEGO is compiled to WebAssembly, so grammar text and input are not sent to a server.
+The [PEGO playground](https://zeroparse.dev/playground/) lets you write a grammar, type an input and inspect the tree as you edit. Everything runs in your browser: PEGO is compiled to WebAssembly, so grammar text and input are not sent to a server.
 
 This guide covers the playground's controls, shared links, limits and WebAssembly API.
 

@@ -140,7 +140,7 @@ a `]`, which no entry starts with.
 
 `pego lsp` runs a language server for `.pego` files with diagnostics, formatting, navigation, hover, rename, completion
 and semantic highlighting; the [Editor Support](../guide/editor-support.md) guide shows how to set it up in VS Code, Neovim,
-Helix and Emacs. The [playground](https://pego.ornew.net/playground/) runs PEGO in the browser: write a grammar, type
+Helix and Emacs. The [playground](https://zeroparse.dev/playground/) runs PEGO in the browser: write a grammar, type
 input and see the tree or the error immediately, and share the state through the address.
 
 ## Next Steps

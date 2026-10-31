@@ -34,7 +34,7 @@ func TestToolchainBootstrapRejectsUnsupportedArchitectureBeforeDownload(t *testi
 	cmd.Env = append(os.Environ(),
 		"PATH="+binDir+":"+os.Getenv("PATH"),
 		"TMPDIR="+tempDir,
-		"NETLIFY_CACHE_DIR="+cacheDir,
+		"PLAYGROUND_TOOLCHAIN_CACHE_DIR="+cacheDir,
 		"CURL_MARKER="+marker,
 	)
 	out, err := cmd.CombinedOutput()
@@ -65,7 +65,7 @@ func TestToolchainBootstrapStopsOnChecksumMismatchBeforeExtraction(t *testing.T)
 	cmd.Env = append(os.Environ(),
 		"PATH="+binDir+":"+os.Getenv("PATH"),
 		"TMPDIR="+tempDir,
-		"NETLIFY_CACHE_DIR="+cacheDir,
+		"PLAYGROUND_TOOLCHAIN_CACHE_DIR="+cacheDir,
 		"TAR_MARKER="+tarMarker,
 	)
 	out, err := cmd.CombinedOutput()

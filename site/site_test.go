@@ -45,6 +45,9 @@ func TestBuild(t *testing.T) {
 	}
 	t.Logf("%d pages, %d files, %d bytes", st.Pages, st.Files, st.Bytes)
 
+	// The Worker reads its headers and redirects from the output.
+	checkWorkerControlFiles(t, out)
+
 	// Every Markdown document has a page.
 	policy, err := render.ReadSourcePolicy("..")
 	if err != nil {
@@ -112,7 +115,7 @@ func TestBuild(t *testing.T) {
 		t.Errorf("vendored Mermaid is not published: %v", err)
 	}
 
-	// No page needs 'unsafe-inline' in the Content-Security-Policy of netlify.toml.
+	// No page needs 'unsafe-inline' in the Content-Security-Policy of site/static/_headers.
 	err = filepath.WalkDir(out, func(p string, d fs.DirEntry, err error) error {
 		if err != nil || filepath.Ext(p) != ".html" {
 			return err

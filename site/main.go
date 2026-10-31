@@ -27,7 +27,7 @@ func main() {
 	flag.BoolVar(&cfg.Check, "check", true, "fail if a generated page links to a missing page or anchor")
 	flag.StringVar(&cfg.GitHub, "github", "https://github.com/ornew/pego", "repository URL for links to source files")
 	flag.StringVar(&cfg.Ref, "ref", "main", "branch or tag for links to source files")
-	flag.StringVar(&cfg.PreviousSite, "previous-site", previous, "retain the current WASM/runtime pair from this published site URL (automatic for Netlify production)")
+	flag.StringVar(&cfg.PreviousSite, "previous-site", previous, "retain the current WASM/runtime pair from this published site URL (automatic for Workers Builds of the production branch)")
 	flag.StringVar(&cfg.DeployURL, "deploy-url", deploy, "immutable URL of this deploy, for fetching its assets on the next production build")
 	serve := flag.String("serve", "", "after building, serve the site at this address (for example localhost:8080)")
 	flag.Parse()

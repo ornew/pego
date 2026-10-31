@@ -11,7 +11,7 @@ A grammar that matches `hello world`, the tree it produces, and a Go program tha
 ## Before You Start
 
 You need Go 1.27 or later. No other dependencies are required. To try a grammar before installing anything, use the
-[playground](https://pego.ornew.net/playground/), which runs PEGO in your browser.
+[playground](https://zeroparse.dev/playground/), which runs PEGO in your browser.
 
 ## Install
 

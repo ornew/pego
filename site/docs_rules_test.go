@@ -40,7 +40,7 @@ var (
 	htmlHrefRe     = regexp.MustCompile(`(?i)\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>` + "`" + `]+))`)
 	fenceOpenRe    = regexp.MustCompile("^\\s*(`{3,}|~{3,})")
 	githubBlobRe   = regexp.MustCompile(`(?i)^https://github\.com/ornew/pego/(?:blob|tree)/[^/]+/(.*)$`)
-	siteURLRe      = regexp.MustCompile(`(?i)^https?://pego\.ornew\.net(/[^?#]*)?`)
+	siteURLRe      = regexp.MustCompile(`(?i)^https?://zeroparse\.dev(/[^?#]*)?`)
 	urlSchemeRe    = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 	opaqueSchemeRe = regexp.MustCompile(`(?i)^(?:mailto|tel|sms|data|javascript|urn):`)
 	listItemRe     = regexp.MustCompile(`^\s*(?:[-*+]|\d{1,9}[.)])(?:\s|$)`)
@@ -435,8 +435,8 @@ func TestLinkAllowed(t *testing.T) {
 		{"docs/guide/a.md", "b%20c.md", "docs/guide/b c.md"},
 		{"docs/guide/a.md", "../tutorial/", "docs/tutorial"},
 		{"docs/guide/a.md", "../cookbook", "docs/cookbook"},
-		{"docs/guide/a.md", "https://pego.ornew.net/docs/tutorial/getting-started/", "docs/tutorial/getting-started"},
-		{"spec/a.md", "https://pego.ornew.net/", "README.md"},
+		{"docs/guide/a.md", "https://zeroparse.dev/docs/tutorial/getting-started/", "docs/tutorial/getting-started"},
+		{"spec/a.md", "https://zeroparse.dev/", "README.md"},
 		{"spec/a.md", "<../examples/x y.pego>", "examples/x y.pego"},
 	} {
 		if got, ok := linkTarget(c.rel, c.dest); !ok || got != c.want {
@@ -502,7 +502,7 @@ func TestDirectoryAndSiteLinkKinds(t *testing.T) {
 func TestDocumentDestinations(t *testing.T) {
 	lines := []string{
 		"[a](x.md) and [b](<y z.md>) and [c](f(1).md \"title\") and [d]( spaced.md )",
-		"see <https://pego.ornew.net/docs/guide/> and <a href=\"../tutorial/x.md\">t</a> and <a href=bare.md>u</a>",
+		"see <https://zeroparse.dev/docs/guide/> and <a href=\"../tutorial/x.md\">t</a> and <a href=bare.md>u</a>",
 		"inline `[no](bad.md)` and ``[no](bad2.md) with ` inside`` then [yes](ok.md)",
 		"a stray ` backtick before [kept](stray.md) in a paragraph",
 		"",
@@ -549,7 +549,7 @@ func TestDocumentDestinations(t *testing.T) {
 	for _, d := range documentDestinations(doc) {
 		got = append(got, d.dest)
 	}
-	want := []string{"x.md", "y z.md", "f(1).md", "spaced.md", "https://pego.ornew.net/docs/guide/", "../tutorial/x.md", "bare.md", "ok.md", "stray.md", "after.md", "<r s.md>", "next-line.md", "end.md", "row1.md", "row2.md", "item1.md", "item2.md", "after-code.md", "foo:bar.md", "mailto:a@b.c", "https://example.com/x.md"}
+	want := []string{"x.md", "y z.md", "f(1).md", "spaced.md", "https://zeroparse.dev/docs/guide/", "../tutorial/x.md", "bare.md", "ok.md", "stray.md", "after.md", "<r s.md>", "next-line.md", "end.md", "row1.md", "row2.md", "item1.md", "item2.md", "after-code.md", "foo:bar.md", "mailto:a@b.c", "https://example.com/x.md"}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Errorf("destinations = %q, want %q", got, want)
 	}

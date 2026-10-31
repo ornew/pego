@@ -78,8 +78,8 @@ In the commands below, `vX.Y.Z` is the version being released, and the module pa
      path and document that names it;
    - regenerate the generated files with `go generate ./parsers ./bench`;
    - run the full suite, as in step 4;
-   - update the site (`repository` in `site/config.json`) and the Netlify configuration (the repository that the
-     Netlify site builds from);
+   - update the site (`repository` in `site/config.json`) and the Workers Builds Git source (the repository that the
+     Cloudflare Worker builds from, see [website maintenance](site.md));
    - enable private vulnerability reporting for the new repository, so that the route in
      [SECURITY.md](../SECURITY.md) works;
    - commit the change to `main`.

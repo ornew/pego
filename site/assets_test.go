@@ -212,21 +212,23 @@ func TestRetentionFailurePreservesOutput(t *testing.T) {
 }
 
 func TestDeploymentURLs(t *testing.T) {
-	for _, ctx := range []string{"production", "deploy-preview", "branch-deploy", "dev"} {
-		env := map[string]string{"NETLIFY": "true", "CONTEXT": ctx, "URL": "https://production.test", "DEPLOY_URL": "https://immutable.test", "DEPLOY_PRIME_URL": "https://preview.test"}
-		get := func(k string) string { return env[k] }
-		previous, deploy := deploymentURLs(get)
-		if ctx == "production" {
-			if previous != env["URL"] || deploy != env["DEPLOY_URL"] {
-				t.Fatal("wrong production URLs")
+	for _, tc := range []struct {
+		name   string
+		env    map[string]string
+		wantOK bool
+	}{
+		{"production branch", map[string]string{"WORKERS_CI": "1", "WORKERS_CI_BRANCH": "main"}, true},
+		{"other branch", map[string]string{"WORKERS_CI": "1", "WORKERS_CI_BRANCH": "feat/x"}, false},
+		{"not Workers Builds", map[string]string{"WORKERS_CI_BRANCH": "main"}, false},
+		{"empty branch", map[string]string{"WORKERS_CI": "1"}, false},
+	} {
+		previous, deploy := deploymentURLs(func(k string) string { return tc.env[k] })
+		if tc.wantOK {
+			if previous != productionSite || deploy != "" {
+				t.Fatalf("%s: got previous %q deploy %q", tc.name, previous, deploy)
 			}
 		} else if previous != "" || deploy != "" {
-			t.Fatal("preview inherited production retention")
-		}
-		env["NETLIFY_PREVIEW_SERVER"] = "true"
-		previous, deploy = deploymentURLs(get)
-		if previous != "" || deploy != "" {
-			t.Fatal("preview server inherited production retention")
+			t.Fatalf("%s: inherited production retention", tc.name)
 		}
 	}
 	if a, b := deploymentURLs(func(string) string { return "" }); a != "" || b != "" {

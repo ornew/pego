@@ -1,0 +1,16 @@
+// Cloudflare Worker with static assets that serves https://zeroparse.dev. There is no Worker
+// script: Cloudflare serves the files that `sh site/build.sh` writes. See docs/site.md.
+{
+  "name": "zeroparse-site",
+  // Pins the Workers runtime behavior to the date this configuration was written.
+  "compatibility_date": "2026-10-30",
+  "assets": {
+    // The output directory of the site build.
+    "directory": "./site/dist",
+    // Pages are directory index files (docs/guide/index.html), so requests get a trailing slash.
+    // This is the default, written out because the site's links and redirects depend on it.
+    "html_handling": "auto-trailing-slash",
+    // The site emits no 404.html page, so a missing path gets Cloudflare's plain 404 response.
+    "not_found_handling": "none"
+  }
+}
