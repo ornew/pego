@@ -115,6 +115,57 @@ func TestBuild(t *testing.T) {
 		t.Errorf("vendored Mermaid is not published: %v", err)
 	}
 
+	// Formulas are rendered by Nanosite's built-in math support. Only pages with a formula link its
+	// loader and stylesheet, and the KaTeX files they name are published with the site.
+	withMath := 0
+	err = filepath.WalkDir(out, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || filepath.Ext(p) != ".html" {
+			return err
+		}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		formula := strings.Contains(string(data), `class="math math-`)
+		loader := strings.Contains(string(data), `assets/math/math.js"`)
+		style := strings.Contains(string(data), `assets/math/katex.min.css"`)
+		if formula {
+			withMath++
+		}
+		if formula != loader || formula != style {
+			t.Errorf("%s: formula %v, loader %v, stylesheet %v", p, formula, loader, style)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if withMath == 0 {
+		t.Error("no page has a formula; documentation-style.md shows one")
+	}
+	mathDir := filepath.Join(out, "assets", "math")
+	css, err := os.ReadFile(filepath.Join(mathDir, "katex.min.css"))
+	if err != nil {
+		t.Fatalf("KaTeX stylesheet is not published: %v", err)
+	}
+	fonts := regexp.MustCompile(`url\(fonts/([^)]+\.woff2)\)`).FindAllSubmatch(css, -1)
+	if len(fonts) == 0 {
+		t.Error("the KaTeX stylesheet names no WOFF2 font")
+	}
+	for _, f := range fonts {
+		if _, err := os.Stat(filepath.Join(mathDir, "fonts", string(f[1]))); err != nil {
+			t.Errorf("KaTeX font %s is not published: %v", f[1], err)
+		}
+	}
+	for _, name := range []string{"math.js", "katex.min.js", "LICENSE"} {
+		if _, err := os.Stat(filepath.Join(mathDir, name)); err != nil {
+			t.Errorf("%s is not published: %v", name, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(out, "assets", "vendor", "katex-0.19.1")); !os.IsNotExist(err) {
+		t.Errorf("the retired vendored KaTeX directory is still published: %v", err)
+	}
+
 	// No page needs 'unsafe-inline' in the Content-Security-Policy of site/static/_headers.
 	err = filepath.WalkDir(out, func(p string, d fs.DirEntry, err error) error {
 		if err != nil || filepath.Ext(p) != ".html" {

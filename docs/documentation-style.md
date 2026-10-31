@@ -115,6 +115,14 @@ Every example is run, and its output is pasted from that run. An example that a 
     C -- no --> E[Diagnostics]
   ```
 
+- Write a formula as TeX between dollar signs, as in $x_i$ in a sentence; that is inline math. A paragraph that begins
+  and ends with `$$`, with each delimiter alone on its line, is display math, and so is a `math` fence. Write `\$` for
+  a dollar sign in prose. Only pages that contain a formula load the renderer, which Nanosite publishes with the site.
+
+  $$
+  \sum_{i=1}^{n} i = \frac{n(n+1)}{2}
+  $$
+
 - Put a command and its output in separate blocks, the command first, with no `$` prompt, so a reader can copy the
   command. `TestNoCommandPrompts` enforces this.
 - Write a complete `package main` program when the program is the point, and statement fragments otherwise, never half a

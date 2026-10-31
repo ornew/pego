@@ -10,6 +10,7 @@
 <link rel="icon" href="{{.URL "assets/favicon.svg"}}" type="image/svg+xml">
 <link rel="stylesheet" href="{{.URL "assets/site.css"}}">
 {{range .Page.Styles}}<link rel="stylesheet" href="{{$.URL .}}">
+{{end}}{{range .ViewStyles}}<link rel="stylesheet" href="{{.}}">
 {{end}}</head>
 <body class="kind-{{.Page.Kind}}">
 <a class="skip" href="#main">Skip to content</a>
@@ -101,5 +102,6 @@
 </footer>{{end}}
 <script type="module" src="{{.URL "assets/site.js"}}"></script>
 {{range .Page.Scripts}}<script type="module" src="{{$.URL .}}"></script>
+{{end}}{{range .ViewScripts}}<script defer src="{{.}}"></script>
 {{end}}</body>
 </html>

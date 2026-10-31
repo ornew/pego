@@ -32,7 +32,8 @@
     "alerts": true,
     "headingLinks": true,
     "headingIDs": "github",
-    "alignAttributes": true
+    "alignAttributes": true,
+    "math": true
   },
   "searchIndex": {
     "path": "search-index.json",

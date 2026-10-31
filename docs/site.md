@@ -171,6 +171,14 @@ Mermaid build vendored in `assets/vendor/` (the policy allows no remote scripts)
 theme and shows the matching image; the fence text remains where scripts do not run. To upgrade Mermaid, replace the
 vendored file and its name, and update the version in `assets/mermaid.js`.
 
+Formulas use the delimiters of GitHub's renderer, so one source reads the same on both: `$x$` is inline math, a
+paragraph that begins and ends with `$$` is display math, and a `math` fence is display math too. The
+[documentation style](documentation-style.md#examples) shows an example. Nanosite renders them with its built-in math
+support, enabled by `"math": true` in the `markdown` object of `site/config.json`. Only pages that contain a formula
+load the KaTeX 0.19.1 renderer, which Nanosite publishes under `assets/math/` with its stylesheet, fonts and license; a
+formula that KaTeX rejects keeps its source. The delimiter rules and the deviations from GitHub are specified in
+Nanosite's Markdown math chapter, `spec/markdown-math.md`. To upgrade KaTeX, update the Nanosite version in `site/go.mod`.
+
 
 ## Tests
 

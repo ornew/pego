@@ -270,7 +270,7 @@ func Build(cfg Config) (Stats, error) {
 		if s.tinygoWasm != "" {
 			tinygoWasm = relURL(p.URL, s.tinygoWasm)
 		}
-		return layoutData{Site: s, Page: p, Root: relURL(p.URL, ""), Sections: secs, Prev: lookup(v.Previous), Next: lookup(v.Next), GitHub: cfg.GitHub, Wasm: relURL(p.URL, s.wasm), TinyGoWasm: tinygoWasm}, nil
+		return layoutData{Site: s, Page: p, Root: relURL(p.URL, ""), Sections: secs, Prev: lookup(v.Previous), Next: lookup(v.Next), GitHub: cfg.GitHub, Wasm: relURL(p.URL, s.wasm), TinyGoWasm: tinygoWasm, ViewStyles: v.Styles, ViewScripts: v.Scripts}, nil
 	}
 	if cfg.Check {
 		ext.Validate = func(stage string) error {
