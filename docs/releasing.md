@@ -60,7 +60,7 @@ package, and `-runtime import`, which makes the consumer depend on the ZeroParse
 with Go 1.27.1 or later; no lower version is promised.
 
 **Recording `zp` as a tool raises the module's `go` line to 1.27.1.** `go get -tool github.com/ornew/zeroparse/cmd/zp`
-(`github.com/zeroparse-lang/zeroparse/cmd/zp` once the repository has moved; see [Tagging a Release](#tagging-a-release)) adds
+(`zeroparse.dev/zp/cmd/zp` once the repository has moved; see [Tagging a Release](#tagging-a-release)) adds
 the ZeroParse module as a dependency, and because that module requires Go 1.27.1, the `go` command raises the consumer
 module's `go` line to match (`go: upgraded go 1.23 => 1.27.1`). This is expected: the generated code needs the same
 version.
@@ -68,13 +68,15 @@ version.
 ## Tagging a Release
 
 In the commands below, `vX.Y.Z` is the version being released, and the module path is the one in force at the time:
-`github.com/zeroparse-lang/zeroparse` once the repository has moved (step 2).
+`zeroparse.dev/zp` once the repository has moved (step 2).
 
 1. Check that the release items of the [project strategy](strategy.md#wedge-and-sequencing) are done.
-2. For the first release only, move the repository to the `zeroparse-lang` GitHub organization:
-   - transfer the repository from `github.com/ornew/zeroparse` to `github.com/zeroparse-lang/zeroparse`, and point the `origin`
+2. For the first release only, move the repository to the `zeroparse` GitHub organization:
+   - transfer the repository from `github.com/ornew/zeroparse` to `github.com/zeroparse/zeroparse`, and point the `origin`
      remote of each checkout at the new address;
-   - change the module path to `github.com/zeroparse-lang/zeroparse` in every `go.mod` of the repository and in every import
+   - serve `go-import` and `go-source` meta tags at `https://zeroparse.dev/zp` that point at
+     `github.com/zeroparse/zeroparse`, so that the vanity module path resolves;
+   - change the module path to `zeroparse.dev/zp` in every `go.mod` of the repository and in every import
      path and document that names it;
    - regenerate the generated files with `go generate ./parsers ./bench`;
    - run the full suite, as in step 4;
@@ -122,7 +124,7 @@ In the commands below, `vX.Y.Z` is the version being released, and the module pa
 10. Ask the Go module proxy for the new version, so that `go get` and pkg.go.dev see it:
 
     ```bash
-    GOPROXY=https://proxy.golang.org go list -m github.com/zeroparse-lang/zeroparse@vX.Y.Z
+    GOPROXY=https://proxy.golang.org go list -m zeroparse.dev/zp@vX.Y.Z
     ```
 
 11. Publish the release notes on the GitHub release of the tag.
