@@ -187,9 +187,11 @@ func TestLintClassify(t *testing.T) {
 		t.Errorf("unknown: %v\n%s", err, out)
 	}
 	// Of more reasons, the first three are shown.
-	out, err = runCLI(t, "", "lint", "-g", "../../examples/minilang/minilang.pego", "-classify")
+	more := writeFile(t, "m.pego", "@start\nrule main = c d $$\nrule a = c \"+\" / \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n"+
+		"rule b = d \"+\" / \"n\"\nrule d = \"(\" d \")\" \"y\" / \"(\" d \")\" \"z\" / b\n")
+	out, err = runCLI(t, "", "lint", "-g", more, "-classify")
 	if err != nil || strings.Count(out, "\treason: ") != 3 || !regexp.MustCompile(`\n\t\.\.\. and \d+ more\n$`).MatchString(out) {
-		t.Errorf("minilang: %v\n%s", err, out)
+		t.Errorf("more reasons: %v\n%s", err, out)
 	}
 
 	// An exponential class has no degree, even with polynomial witnesses; with super-linear

@@ -1067,8 +1067,8 @@ func rests(ls []lead) []*cont {
 }
 
 // committing reports whether, after the shared calls are removed, the first characters of the
-// unit paths and of each continuation are disjoint. It returns the first continuation that is
-// not.
+// unit paths and of each continuation are disjoint, or the word with which the unit begins
+// excludes the continuation. It returns the first continuation that is neither.
 func (k *classifier) committing(self []*cont, conts []contSpec, cycle int) (bool, string) {
 	for _, cs := range conts {
 		keep := k.keepFor(cycle, cs.growth)
@@ -1079,7 +1079,7 @@ func (k *classifier) committing(self []*cont, conts []contSpec, cycle int) (bool
 		}
 		fu := k.firstPaths(u, nil)
 		fc := k.firstPaths(c, k.followFor(cycle, cs.growth))
-		if fu.intersects(fc) {
+		if fu.intersects(fc) && !k.excludedByWord(u, c, keep) {
 			return false, cs.what
 		}
 	}

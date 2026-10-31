@@ -571,6 +571,32 @@ The conditions below use these terms.
   the shared calls is then bounded by the other conditions, as for a unit
   without a scanning source, and the continuation pays for the shared calls
   no more than the unit paid, so a restart repeats no scan.
+  A unit is also committing for a continuation that its **word excludes**. The
+  word of a unit is a prefix with which every path of the unit begins after
+  the shared calls, through groups, captures, `#atomic`, actions, choices and
+  calls of rules that read no variable and have no level restriction: a
+  case-sensitive literal `w` that is not empty, followed by a negative
+  lookahead `!Y`, where `Y` is a character class or a call of a rule whose
+  body is one, such as `"let" !idchar`. The word excludes the continuation
+  when every path of the continuation, at the same position, fails without
+  consuming input, examines nothing more, or evaluates a negative lookahead
+  `!K` that is proven to fail, after nothing but expressions that cannot
+  examine the first character of `w` and can match without consuming input.
+  `!K` is proven to fail when `K` is a sequence of a choice of case-sensitive
+  literals that are not empty, or one such literal, and a negative lookahead
+  of a character class with the same characters as `Y`, reached through
+  groups, captures, `#atomic` and calls of rules that read no variable and
+  have no level restriction, with no predicate, other lookahead, cut,
+  `#recover`, action or level restriction in it, and `w` is one of the
+  literals and no earlier literal of the choice is a prefix of `w` or begins
+  with `w`. Such a `K` does not depend on how the parser reaches it. A unit
+  that fails within its word examines no more of the input than the word and
+  the character after it. A unit that matches its word has seen `w` followed
+  by a character outside `Y`, or by the end of the input, so the choice of `K`
+  selects `w`, `K` matches, and every path of the continuation fails at a cost
+  that the grammar bounds. So `ident = !keyword [a-z]+`, with
+  `keyword = ("if" / "let") !idchar`, is excluded at the start of a unit that
+  begins with `"let" !idchar`.
 
 A grammar's cost from a start rule is at most proportional to n, times a
 constant that depends only on the grammar, when every rule that the start rule

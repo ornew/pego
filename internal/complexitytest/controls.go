@@ -131,6 +131,42 @@ func Controls() []Control {
 			Sizes:  double(250), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
 		},
 		{
+			Name: "Keyword excluded by a negative lookahead, safe", Family: "word exclusion", Positive: true,
+			Source: "rule main = (s / \" \")* $$\nrule s = kw (\" \" / \"let\")* \"q\" / id\nrule kw = \"let\" !c\nrule c = [a-z]\nrule id = !key c+\nrule key = (\"if\" / \"let\") !c\n",
+			Input:  func(n int) string { return rep("ab let q ", n) },
+			Sizes:  double(200), ShortSizes: double(100), Order: Linear, Class: ClassLinear,
+		},
+		{
+			Name: "Keyword lookahead reading a variable", Family: "word exclusion",
+			Source: "var v string\nrule main = (s / \" \")* $$\nrule s = kw (\" \" / \"let\")* \"q\" / id\nrule kw = \"let\" !c\nrule c = [a-z]\nrule id = !key c+\nrule key = (\"if\" / \"let\") !c {v != \"\"}\n",
+			Input:  func(n int) string { return rep("let ", n) },
+			Sizes:  double(200), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
+		},
+		{
+			Name: "Keyword lookahead with a nested lookahead", Family: "word exclusion",
+			Source: "rule main = (s / \" \")* $$\nrule s = kw (\" \" / \"let\")* \"q\" / id\nrule kw = \"let\" !c\nrule c = [a-z]\nrule id = !key c+\nrule key = (\"if\" / \"let\" !\" \") !c\n",
+			Input:  func(n int) string { return rep("let ", n) },
+			Sizes:  double(200), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
+		},
+		{
+			Name: "Keyword lookahead under a level restriction", Family: "word exclusion",
+			Source: "rule main = (s / \" \")* $$\nrule s = kw (\" \" / \"let\")* \"q\" / id\nrule kw = \"let\" !c\nrule c = [a-z]\nrule id = !key c+\nrule key = level(ops, tight) !c\nrule ops = #operators {\n    operand \"le\"\n    level loose { postfix \"t\" }\n    level tight { postfix \"!\" }\n}\n",
+			Input:  func(n int) string { return rep("let ", n) },
+			Sizes:  double(200), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
+		},
+		{
+			Name: "Keyword lookahead with a shorter earlier keyword", Family: "word exclusion",
+			Source: "rule main = (s / \" \")* $$\nrule s = kw (\" \" / \"let\")* \"q\" / id\nrule kw = \"let\" !c\nrule c = [a-z]\nrule id = !key c+\nrule key = (\"le\" / \"let\") !c\n",
+			Input:  func(n int) string { return rep("let ", n) },
+			Sizes:  double(200), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
+		},
+		{
+			Name: "Keyword lookahead with a wider character set", Family: "word exclusion",
+			Source: "rule main = (s / \" \")* $$\nrule s = kw [a-z ]* \"q\" / id\nrule kw = \"let\" ![a-m]\nrule c = [a-z]\nrule id = !key c+\nrule key = (\"if\" / \"let\") !c\n",
+			Input:  func(n int) string { return rep("letz ", n) },
+			Sizes:  double(200), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
+		},
+		{
 			Name: "E2 cycle members behind a leader, safe", Family: "E2", Positive: true,
 			Source: "rule main = c $$\nrule a = \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n",
 			Input:  parens, Sizes: double(64), ShortSizes: double(32), Order: Linear, Class: ClassLinear,
