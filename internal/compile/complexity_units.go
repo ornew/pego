@@ -420,7 +420,7 @@ func (k *classifier) walkOperators(pr *grammar.OperatorsRule, c wctx) {
 	withSkip := func(e grammar.Expr, more ...grammar.Expr) *cont {
 		items := []grammar.Expr{}
 		if pr.Skip != nil {
-			items = append(items, pr.Skip)
+			items = append(items, k.skipItem(pr))
 		}
 		return &cont{items: append(append(items, e), more...)}
 	}
@@ -616,7 +616,7 @@ func (k *classifier) opsAfter(rule string) charset {
 			if op.Kind == grammar.Prefix {
 				continue
 			}
-			items := []grammar.Expr{pr.Skip, op.Expr}
+			items := []grammar.Expr{k.skipItem(pr), op.Expr}
 			if op.Kind == grammar.Infix {
 				items = append(items, &grammar.Ref{Name: rule, Level: rhsLevel})
 			}
@@ -887,6 +887,10 @@ func (k *classifier) leads(paths []*cont, keep func(*site) bool, only *string, s
 				if k.shareable(e) && seen != nil {
 					seen[e.Name] = true
 				}
+				if pr := k.operatorsBody(e.Name); pr != nil {
+					k.operatorsLeads(pr, e.Name, visit)
+					return
+				}
 				p = rest.then(k.byName[e.Name].Expr)
 			default:
 				out = append(out, lead{})
@@ -926,11 +930,63 @@ func (k *classifier) opsLeads(rule string, visit func(*cont)) {
 			if op.Kind == grammar.Prefix {
 				continue
 			}
-			items := []grammar.Expr{pr.Skip, op.Expr}
+			items := []grammar.Expr{k.skipItem(pr), op.Expr}
 			if op.Kind == grammar.Infix {
 				items = append(items, &grammar.Ref{Name: rule, Level: rhsLevel})
 			}
 			visit(&cont{items: items, next: end})
+		}
+	}
+}
+
+// operatorsBody returns the Operators Rule that is the body of rule, alone or under attributes
+// that change neither what it evaluates first nor where the parser continues after it fails, or
+// nil.
+func (k *classifier) operatorsBody(rule string) *grammar.OperatorsRule {
+	body := ungroup(k.byName[rule].Expr)
+	if a, ok := body.(*grammar.Attributed); ok {
+		if recoverSkip(a) != nil || hasPragma(a, "missing") {
+			return nil
+		}
+		body = ungroup(a.Expr)
+	}
+	pr, _ := body.(*grammar.OperatorsRule)
+	return pr
+}
+
+// skipItem is the skip of pr as an item of a path. The rule evaluates its skip before each operand
+// and operator part, and continues at the same position when the skip does not match, so a skip
+// that can match nothing stands for itself, and the first call that it evaluates is a call that the
+// path evaluates first; any other skip is optional.
+func (k *classifier) skipItem(pr *grammar.OperatorsRule) grammar.Expr {
+	if pr.Skip == nil || k.nullable(pr.Skip) {
+		return pr.Skip
+	}
+	return &grammar.Optional{Expr: pr.Skip}
+}
+
+// operatorsLeads continues a path into the body of rule, the Operators Rule pr. The rule begins
+// with its skip, then an operand or a prefix operator part, so a skip that is a shareable call is
+// what every path through it evaluates first. After its operand the rule tries its operator
+// parts, then continues as after its calls: the path continues at the end of the rule body, which
+// includes the path that called it.
+func (k *classifier) operatorsLeads(pr *grammar.OperatorsRule, rule string, visit func(*cont)) {
+	end := &cont{end: endOps, rule: rule}
+	start := func(e grammar.Expr, more ...grammar.Expr) {
+		items := []grammar.Expr{}
+		if pr.Skip != nil {
+			items = append(items, k.skipItem(pr))
+		}
+		visit(&cont{items: append(append(items, e), more...), next: end})
+	}
+	for _, o := range pr.Operands {
+		start(o.Expr)
+	}
+	for _, l := range pr.Levels {
+		for _, op := range l.Operators {
+			if op.Kind == grammar.Prefix {
+				start(op.Expr, &grammar.Ref{Name: rule, Level: rhsLevel})
+			}
 		}
 	}
 }

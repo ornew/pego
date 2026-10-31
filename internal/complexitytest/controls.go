@@ -119,6 +119,18 @@ func Controls() []Control {
 			Sizes:  double(250), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
 		},
 		{
+			Name: "Operators Rule skip shared with the follow, safe", Family: "shared skip", Positive: true,
+			Source: "rule main = s* $$\nrule s = \"r\" e? ws \";\"\nrule e = #operators {\n    skip ws\n    operand \"x\"\n    level add { infix left \"+\" }\n}\nrule ws = \" \"*\n",
+			Input:  func(n int) string { return rep("r x + x ;", n) },
+			Sizes:  double(250), ShortSizes: double(100), Order: Linear, Class: ClassLinear,
+		},
+		{
+			Name: "Operators Rule skip shared, restarted", Family: "shared skip",
+			Source: "rule main = (e \"q\" / ws \"x\")* $$\nrule e = #operators {\n    skip ws\n    operand \"x\"\n    level add { infix left \"\" }\n}\nrule ws = \" \"*\n",
+			Input:  func(n int) string { return rep("x", n) },
+			Sizes:  double(250), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
+		},
+		{
 			Name: "E2 cycle members behind a leader, safe", Family: "E2", Positive: true,
 			Source: "rule main = c $$\nrule a = \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n",
 			Input:  parens, Sizes: double(64), ShortSizes: double(32), Order: Linear, Class: ClassLinear,

@@ -549,7 +549,12 @@ The conditions below use these terms.
   has the same result in both: the memo answers it the second time, or the
   rule repeats only its own scan, so the continuation pays for it at most what
   the unit paid. Calls of one rule with different level restrictions, such as
-  `e` and `level(e, hi)`, are different calls with different results. A call
+  `e` and `level(e, hi)`, are different calls with different results. An
+  Operators Rule evaluates its `skip` before anything else at its start,
+  before an operand or a prefix operator part, and continues at the same
+  position when the `skip` does not match, so the call that its `skip`
+  evaluates first is a call that a rule whose body is the Operators Rule
+  evaluates first. A call
   of any other rule is not shared, because evaluating its body again also
   evaluates again the units inside it, at every level of a recursion.
 - A unit is **committing** when, for each of its continuations, the first
