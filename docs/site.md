@@ -120,8 +120,9 @@ Settings, Builds) with these values:
 | Build variable | `GO_VERSION` = `1.27.1` (the `go` directive of `go.mod` and `site/go.mod`) |
 | Custom domain | `zeroparse.dev` (Settings, Domains & Routes) |
 
-The build image has Node, so `npx` fetches Wrangler on demand. The non-production branch deploy command is
-`npx wrangler versions upload`, which publishes a preview version without changing production. Builds of the
+The build image has Node, so `npx` fetches Wrangler on demand. With preview builds enabled, branches other than
+the production branch run the preview command, which defaults to `npx wrangler preview`; it creates or updates a
+Preview without changing production. Builds of the
 production branch import the published playground assets from `https://zeroparse.dev`, as described above. Once the
 staged Go-only builder has been published, the production build command can be
 `sh site/install-playground-toolchains.sh`.
