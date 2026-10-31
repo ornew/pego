@@ -169,9 +169,9 @@ type ruleExtra struct {
 var rulesSpec = [...]ruleSpec{
 	{"main", &sh22, 0, 0, 1, 0},
 	{"expr", &sh23, rt.RuleLeader | rt.RuleRec, 0, 0, 0},
-	{"add", &sh24, rt.RuleRec, 0, 2, 0},
+	{"add", &sh24, rt.RuleMember | rt.RuleRec, 0, 2, 0},
 	{"term", &sh23, rt.RuleLeader | rt.RuleRec, 0, 0, 0},
-	{"mul", &sh24, rt.RuleRec, 0, 2, 0},
+	{"mul", &sh24, rt.RuleMember | rt.RuleRec, 0, 2, 0},
 	{"unary", &sh23, rt.RuleMemo | rt.RuleRec, 1, 0, 0},
 	{"neg", &sh25, rt.RuleRec, 0, 3, 0},
 	{"power", &sh23, rt.RuleRec, 0, 0, 0},
@@ -198,9 +198,9 @@ var rulesExtras = [...]ruleExtra{
 var recRulesSpec = [...]ruleSpec{
 	{"main", &sh22, rt.RuleNovalue, 0, 0, 0},
 	{"expr", &sh23, rt.RuleLeader | rt.RuleNovalue | rt.RuleRec, 0, 0, 0},
-	{"add", &sh24, rt.RuleNovalue | rt.RuleRec, 0, 0, 0},
+	{"add", &sh24, rt.RuleMember | rt.RuleNovalue | rt.RuleRec, 0, 0, 0},
 	{"term", &sh23, rt.RuleLeader | rt.RuleNovalue | rt.RuleRec, 0, 0, 0},
-	{"mul", &sh24, rt.RuleNovalue | rt.RuleRec, 0, 0, 0},
+	{"mul", &sh24, rt.RuleMember | rt.RuleNovalue | rt.RuleRec, 0, 0, 0},
 	{"unary", &sh23, rt.RuleMemo | rt.RuleNovalue | rt.RuleRec, 1, 0, 0},
 	{"neg", &sh25, rt.RuleNovalue | rt.RuleRec, 0, 0, 0},
 	{"power", &sh23, rt.RuleNovalue | rt.RuleRec, 0, 0, 0},

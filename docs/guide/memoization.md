@@ -12,14 +12,16 @@ evaluated at most twice at that position, however much backtracking the grammar 
 - Other rules are memoized at a position from their second call there: most rules are called only once per position,
   and an entry that is never reused only costs memory. A rule whose calls do repeat is memoized from the first call
   for the rest of the parse.
-- Rules in a left-recursive cycle are not memoized one by one; only the cycle's leader, the rule that grows the seed, is.
+- Rules in a left-recursive cycle are memoized like other rules, except while the cycle's leader, the rule that grows
+  the seed, grows at their position: there they are evaluated again at each step of the growth, and a result that read
+  the growing result is not stored, because it depends on the step that produced it.
 - Rules that read [variables](../../spec/language/predicates.md#interaction-with-memoization) are memoized per combination of
   those variables' values, so memoization never changes the result; it only changes the cost.
 
 What this means for you:
 
 - **Parse time is not guaranteed to be linear.** Memoization bounds the re-evaluation of rule calls. It does not bound
-  a repetition that is run again after backtracking, the growth of a left-recursive rule, or a rule whose result
+  a repetition that is run again after backtracking, the growth of a left-recursive rule at every position, or a rule whose result
   depends on variables with many distinct values; these can take more than linear time on some inputs. [Time and
   Memory](../../spec/runtime/parsing.md#time-and-memory) defines the classes of growth, with example grammars, and
   the conditions under which cost is linear.

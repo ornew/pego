@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
 	"slices"
 	"testing"
 
@@ -63,6 +64,8 @@ func TestBudgetDiagnosticRecoveredCopies(t *testing.T) {
 				case "memo snapshot":
 					p.Pos = 1
 					p.Recovered = append(p.Recovered, records...)
+					// As CallBegin leaves it: the body read no growing result.
+					p.ReadDepth = math.MaxInt
 					steps += 2 // atomic memo put after the snapshot
 					run = func() { p.CallEnd(r, &core.CallState{Key: key, Rec: 1}, retained, true) }
 					completed = func() { assertSnapshot(p.Memo.Slots[0].Errs) }

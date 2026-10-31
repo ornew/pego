@@ -151,6 +151,24 @@ func goTarget(typed bool) *execgo.Target {
 			return fmt.Sprintf("%s.growing = false\n%s.silent = %s", a[0], a[0], a[1])
 		case "obs.memoHit":
 			return "p.Observation.memoHit()"
+		case "lr.stale":
+			return fmt.Sprintf("p.memberStale(%s.Member, %s)", a[0], a[1])
+		case "lr.read":
+			return fmt.Sprintf("p.readResult(%s.growing, %s.depth)", a[0], a[0])
+		case "lr.depth":
+			return "p.growths"
+		case "lr.enter":
+			return "p.enterCall()"
+		case "lr.leave":
+			return "p.leaveCall(" + a[0] + ")"
+		case "lr.changeable":
+			return "p.readDepth <= " + a[0]
+		case "lr.end":
+			return "p.growths--\np.seedPos = " + a[0]
+		case "memo.mark":
+			return a[0] + ".depth = int32(p.growths)"
+		case "memo.settle":
+			return fmt.Sprintf("%s.depth = finalDepth(p.readDepth, p.growths, %s.silent || len(%s.errs) > 0)", a[0], a[0], a[0])
 		}
 		panic("core: no Go implementation of " + c.Callee)
 	}
@@ -167,6 +185,8 @@ func goTarget(typed bool) *execgo.Target {
 				s += "\n" + dst[1] + op + dst[0] + " != nil"
 			}
 			return s, true
+		case "lr.begin":
+			return fmt.Sprintf("%s%sp.seedPos\np.growths++\np.seedPos = %s", dst[0], op, a[0]), true
 		case "memo.store", "memo.seed", "memo.reseed":
 			e := dst[0]
 			var fields string

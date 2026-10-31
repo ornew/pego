@@ -1723,6 +1723,44 @@ grammar	lean,lean observable,lean boxed	"long inferred chain"
 term	64	-1	new-in-order
 grammar	controlled	"long inferred chain"
 term	64	-1	new
+grammar	lean,lean observable,controlled,lean boxed	"member reached from two call sites"
+guard	1	1	0	0	0	""	48
+guard	1	4	1	0	0	"\"n\""	157
+guard	2	1	1	0	0	"\"(\""	188
+guard	2	11	0	0	0	""	48
+guard	2	6	1	0	0	"\"(\""	188
+grammar	lean,lean observable,controlled,lean boxed	"members in a deeper cycle"
+guard	1	1	0	0	0	""	48
+guard	1	4	1	0	0	"\"n\""	157
+guard	2	1	1	0	0	"\"(\""	188
+guard	2	11	0	0	0	""	48
+guard	2	6	1	0	0	"\"(\""	188
+guard	3	1	1	0	0	"\"[\""	229
+guard	3	11	0	0	0	""	48
+guard	3	6	1	0	0	"\"[\""	229
+guard	4	1	1	0	0	"\"{\""	172
+guard	4	11	0	0	0	""	48
+guard	4	6	1	0	0	"\"{\""	172
+grammar	lean,lean observable,lean boxed	"members that read two leaders"
+guard	1	1	0	0	0	""	48
+guard	1	5	0	0	0	""	48
+guard	2	1	0	0	0	""	48
+guard	2	4	0	0	0	""	48
+guard	2	7	0	0	0	""	48
+guard	3	1	0	0	0	""	48
+guard	3	5	0	0	0	""	48
+guard	4	1	1	0	1	"[0-9]"	130
+guard	4	2	1	0	0	"\"(\""	188
+grammar	controlled	"members that read two leaders"
+guard	1	1	0	0	0	""	48
+guard	1	5	0	0	0	""	48
+guard	2	1	0	0	0	""	48
+guard	2	4	0	0	0	""	48
+guard	2	7	0	0	0	""	48
+guard	3	1	0	0	0	""	48
+guard	3	5	0	0	0	""	48
+guard	4	1	1	0	0	"[0-9]"	130
+guard	4	2	1	0	0	"\"(\""	188
 grammar	lean,lean observable,controlled,lean boxed	"memo entries are keyed by the variables the rule reads"
 guard	0	1	0	0	0	""	48
 guard	0	2	0	0	0	""	48

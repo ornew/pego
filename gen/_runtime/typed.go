@@ -409,6 +409,7 @@ const (
 	RuleDocMemo
 	RuleSplice
 	RuleRec
+	RuleMember
 )
 
 // RuleExtra holds the fields of the Rule with the Id that are rarely set.
@@ -452,6 +453,7 @@ func NewRules[S ~struct {
 		}
 		r.Memo, r.Leader, r.Novalue = s.Flags&RuleMemo != 0, s.Flags&RuleLeader != 0, s.Flags&RuleNovalue != 0
 		r.DocMemo, r.Splice, r.Rec = s.Flags&RuleDocMemo != 0, s.Flags&RuleSplice != 0, s.Flags&RuleRec != 0
+		r.Member = s.Flags&RuleMember != 0
 		r.Scope, r.Vars = strs[s.Scope], strs[s.Vars]
 	}
 	for _, extra := range extras {
@@ -951,7 +953,8 @@ type tmemoEntry struct {
 	min      int32
 	ok       bool
 	silent   bool
-	growing  bool // matched whatever the variable values, as in memoEntry
+	growing  bool  // matched whatever the variable values, as in memoEntry
+	depth    int32 // as in memoEntry
 }
 
 func (p *TParser) memoGet(rule, pos, min int, env []any) *tmemoEntry {
@@ -1114,9 +1117,10 @@ func (p *TParser) DocumentCall(r *TRule, min int, inv func(*TParser) (any, bool)
 	}
 	env := p.memoEnv(r.Rule)
 	old := p.memoGet(r.Id, start, min, env)
-	if old != nil && (old.growing || (!old.silent || p.Silent > 0) && (len(old.errs) == 0 || old.silent == (p.Silent > 0))) {
+	if old != nil && !p.memberStale(r.Member, start) && (old.growing || (!old.silent || p.Silent > 0) && (len(old.errs) == 0 || old.silent == (p.Silent > 0))) {
 		m := p.TypedDocument.meta[old]
 		p.documentTouch(m.examined)
+		p.readResult(old.growing, old.depth)
 		p.docProvisional = p.docProvisional || old.growing || m.provisional
 		p.Document.stats.Reused++
 		p.Observation.memoHit()
@@ -1130,17 +1134,18 @@ func (p *TParser) DocumentCall(r *TRule, min int, inv func(*TParser) (any, bool)
 		p.Recovered = p.copyErrors(p.Recovered, old.errs)
 		return old.val, true
 	}
-	// A context-incompatible entry may be replaced. Do not keep it alive through
-	// stale metadata once its memo chain no longer refers to it.
-	if old != nil {
-		delete(p.TypedDocument.meta, old)
-	}
 	rec := len(p.Recovered)
+	depth, read := p.growths, p.enterCall()
 	m := p.Isolate(start)
 	var v any
 	var ok bool
 	var e *tmemoEntry
 	if r.Leader {
+		// An entry that is not reused is replaced. Do not keep it alive through stale metadata
+		// once its memo chain no longer refers to it.
+		if old != nil {
+			delete(p.TypedDocument.meta, old)
+		}
 		v, ok = p.grow(r, min, env)
 		e = p.memoGet(r.Id, start, min, env)
 	} else {
@@ -1153,14 +1158,28 @@ func (p *TParser) DocumentCall(r *TRule, min int, inv func(*TParser) (any, bool)
 		if !ok {
 			p.Recovered = p.Recovered[:rec]
 		}
-		e = p.memoSlab.one()
-		*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0, errs: p.copyErrors(nil, p.Recovered[rec:])}
-		p.memoPut(r.Id, start, min, env, e)
+		if p.readDepth <= depth {
+			// A result that can change (readResult) is not memoized; an entry that is not reused
+			// stays with its metadata.
+			e = &tmemoEntry{}
+		} else {
+			if old != nil {
+				delete(p.TypedDocument.meta, old)
+			}
+			e = p.memoSlab.one()
+			*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0, errs: p.copyErrors(nil, p.Recovered[rec:])}
+			p.memoPut(r.Id, start, min, env, e)
+		}
 	}
+	fresh := p.readDepth > depth
+	p.leaveCall(read)
 	far, inner := p.Unisolate(m)
 	e.far, e.expected = far, p.Keep(inner)
 	p.documentTouch(p.Pos + 1)
-	p.TypedDocument.meta[e] = typedDocumentMeta{examined: p.docHigh, provisional: p.docProvisional || r.Leader}
+	// A result that can change was not memoized, so it has no metadata.
+	if r.Leader || fresh {
+		p.TypedDocument.meta[e] = typedDocumentMeta{examined: p.docHigh, provisional: p.docProvisional || r.Leader}
+	}
 	p.MergeExpected(far, inner)
 	if !ok {
 		p.Pos = start

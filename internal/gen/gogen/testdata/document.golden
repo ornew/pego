@@ -136,6 +136,9 @@ corpus/0/literal text predicate dispatch	c714ba3dc69a01630102ca8a
 corpus/0/literal text variable alias control	8153af6c9cfafeae5e8dbfb5
 corpus/0/long expected lists	c5bbc36746be8cf67f5bd5ee
 corpus/0/long inferred chain	94c279f703f3f3d9abb78ac8
+corpus/0/member reached from two call sites	ca401856110dd8497fcd66ce
+corpus/0/members in a deeper cycle	b2bb8b2a1db0212fdaeb0285
+corpus/0/members that read two leaders	25ce0932c5e7c2b300d8ca63
 corpus/0/memo entries are keyed by the variables the rule reads	ad9f9cf2fd79437066ed79ed
 corpus/0/memo keyed by variables	ee09f143ffb61330d000e0ac
 corpus/0/memoized rule with a cut called at one position	9a236a2506f8c8004c652503
@@ -484,6 +487,9 @@ corpus/1/literal text predicate dispatch	c714ba3dc69a01630102ca8a
 corpus/1/literal text variable alias control	8153af6c9cfafeae5e8dbfb5
 corpus/1/long expected lists	c5bbc36746be8cf67f5bd5ee
 corpus/1/long inferred chain	94c279f703f3f3d9abb78ac8
+corpus/1/member reached from two call sites	ca401856110dd8497fcd66ce
+corpus/1/members in a deeper cycle	b2bb8b2a1db0212fdaeb0285
+corpus/1/members that read two leaders	25ce0932c5e7c2b300d8ca63
 corpus/1/memo entries are keyed by the variables the rule reads	ad9f9cf2fd79437066ed79ed
 corpus/1/memo keyed by variables	ee09f143ffb61330d000e0ac
 corpus/1/memoized rule with a cut called at one position	9a236a2506f8c8004c652503

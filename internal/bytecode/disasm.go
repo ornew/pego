@@ -69,7 +69,7 @@ func (m *Module) Disassemble() string {
 		for _, f := range []struct {
 			on   bool
 			name string
-		}{{r.Memo, "memo"}, {r.Leader, "leader"}, {r.Positional, "positional"}, {r.NoValue, "novalue"}, {r.Transient, "transient"}, {r.Rec, "rec"}, {r.Splice, "splice"}} {
+		}{{r.Memo, "memo"}, {r.Leader, "leader"}, {r.Member, "member"}, {r.Positional, "positional"}, {r.NoValue, "novalue"}, {r.Transient, "transient"}, {r.Rec, "rec"}, {r.Splice, "splice"}} {
 			if f.on {
 				flags = append(flags, f.name)
 			}

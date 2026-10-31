@@ -304,6 +304,21 @@ rule a = a "x" / "n"`, []string{"n;", "nx;n;", "nxx;nx;", "n", "nx;nxy;", "n;;",
 		{"leader choice with several operators", `rule main = e $$
 rule e = e "+" t / e "-" t / e "|" t / t
 rule t = [0-9]+ #atomic`, []string{"1", "1+2-3|4", "1+2-", "1|", "12+34-5", "+1", "1+2+3-4+5", "1*2", ""}},
+		// Members of a cycle that are not its leader: a member reached from two call sites at one position, alone and
+		// with a deeper cycle of members, with inputs that match, fail after a seed and fail inside the nesting.
+		{"member reached from two call sites", `rule main = a $$
+rule a = c "+" / "n"
+rule c = "(" c ")" "y" / "(" c ")" "z" / a`, []string{"n", "n+", "(n)z+", "(n)y+", "((n)z)y+", "((n)y)z+n", "(n)x", "((n)z+", "(n+", "((((n)z)z)y)y+", "()z", ""}},
+		{"members in a deeper cycle", `rule main = a $$
+rule a = c "+" / "n"
+rule c = "(" c ")" "y" / "(" c ")" "z" / d
+rule d = "[" d "]" "y" / "[" d "]" "z" / e
+rule e = "{" e "}" "y" / "{" e "}" "z" / a`, []string{"n", "n+", "(n)z+", "[n]y+", "{n}z+", "({n}z)y+", "([{n}y]z)z+", "([{n}y]z)z+n", "[(n)z]y+", "({n)z+", "([n]z", ""}},
+		{"members that read two leaders", `rule main = e $$
+rule e = e "+" m / m
+rule m = t "!" / t "?" / t
+rule t = t "*" f / f
+rule f = [0-9] / "(" e ")"`, []string{"1+2*3", "1!+2?", "(1+2)!*3", "1*2!+3*4?", "1+", "(1+2!", "1!?", "((1!)?)+2", ""}},
 		// Recovery in the shapes that the bodies of rules take: a statement list whose skip can consume nothing, a
 		// recovery after a cut, a recovery of a leader, and nested recoveries, with inputs that recover, fail to
 		// skip, make no progress and fail after a recovered error.

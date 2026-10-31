@@ -102,6 +102,26 @@ var tsTarget = &exects.Target{
 			return fmt.Sprintf("%s.growing = false;\n%s.silent = %s", a[0], a[0], a[1])
 		case "obs.memoHit":
 			return "this.observation?.memoHit()"
+		case "memo.detached":
+			return "newEntry(undefined, false, 0, false, false, noErrs)"
+		case "lr.stale":
+			return fmt.Sprintf("this.memberStale(%s.member, %s)", a[0], a[1])
+		case "lr.read":
+			return "this.readResult(" + a[0] + ")"
+		case "lr.depth":
+			return "this.growths"
+		case "lr.enter":
+			return "this.enterCall()"
+		case "lr.leave":
+			return "this.leaveCall(" + a[0] + ")"
+		case "lr.changeable":
+			return "this.readDepth <= " + a[0]
+		case "lr.end":
+			return "this.growths--;\nthis.seedPos = " + a[0]
+		case "memo.mark":
+			return a[0] + ".depth = this.growths"
+		case "memo.settle":
+			return fmt.Sprintf("%s.unstable = this.readDepth <= this.growths && (%s.silent || %s.errs.length > 0)", a[0], a[0], a[0])
 		}
 		panic("core: no TypeScript implementation of " + c.Callee)
 	},
@@ -129,6 +149,8 @@ var tsTarget = &exects.Target{
 			return entry(dst[0], "undefined", "false", a[1], "false", "true", "noErrs"), true
 		case "memo.reseed":
 			return entry(dst[0], a[5], "true", a[4], "false", "true", a[6]), true
+		case "lr.begin":
+			return fmt.Sprintf("%s = this.seedPos;\nthis.growths++;\nthis.seedPos = %s;", lhs(dst[0]), a[0]), true
 		case "rec.add":
 			return fmt.Sprintf("for (const x of %s) {\n  this.spend();\n  this.recovered.push(x);\n}", a[0]), true
 		case "exp.isolate":

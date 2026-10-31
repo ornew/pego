@@ -29,7 +29,8 @@ type Control struct {
 	// Positive marks a control that is linear and guards against a classifier or runtime that
 	// reports growth where there is none.
 	Positive bool
-	// BecomesLinear marks a negative control that a planned runtime change makes linear; see
+	// BecomesLinear marks a negative control that the memoization of left-recursion cycle members
+	// makes linear in measurement, while its class stays one without a claim of linear cost; see
 	// Controls.
 	BecomesLinear bool
 }
@@ -37,9 +38,9 @@ type Control struct {
 // Cap is the budget that stops an exponential control. It keeps the exponential cases short.
 const Cap = 20_000_000
 
-// becomesLinearLanded switches the controls marked BecomesLinear to their linear order once the
-// runtime memoizes left-recursion cycle members. Flip it to true with that change.
-const becomesLinearLanded = false
+// becomesLinearLanded switches the controls marked BecomesLinear to their linear order: the
+// runtime memoizes left-recursion cycle members.
+const becomesLinearLanded = true
 
 // parens is the input of E2 and E3: n open parentheses, "n", then n closing ones, each followed
 // by "z".
@@ -48,8 +49,9 @@ func parens(n int) string { return rep("(", n) + "n" + rep(")z", n) }
 func double(n int) []int { return []int{n, 2 * n, 4 * n} }
 
 // Controls returns the controls table. The negative controls record growth that the engine has
-// today: when a planned change makes one linear, its entry moves to the linear set by hand. E2
-// moves with the becomesLinearLanded switch; E1, E7, E8 and E9 move when repetition runs are
+// today: when a planned change makes one linear, its entry moves to the linear set by hand. The
+// negative E2 control is linear in measurement through the becomesLinearLanded switch, with a
+// class that claims no linear cost; E1, E7, E8 and E9 move when repetition runs are
 // reused in batch parses; E6 and E10 stay quadratic. The rebinding variants of E6 are positive
 // controls: a binding after the left call adds no growth, and the restart in E6 is the negative
 // control. Each source is a grammar from the measured families of the
@@ -152,7 +154,10 @@ func Controls() []Control {
 	}
 	for i := range cs {
 		if cs[i].BecomesLinear && becomesLinearLanded {
-			cs[i].Order, cs[i].Capped, cs[i].Class, cs[i].Positive = Linear, false, ClassLinear, true
+			// The growth becomes linear, but the classifier counts cycle members as not memoized,
+			// since they are memoized only outside the growths they read: its class stays the one
+			// it reports, which claims no linear cost, so the control is not positive.
+			cs[i].Order, cs[i].Capped = Linear, false
 			// A series of a linear control needs sizes where fixed cost no longer dominates: the
 			// slopes of the E2 positive control are 0.98 and 0.99 from 64 and 0.97 and 0.98 from 32.
 			cs[i].Sizes, cs[i].ShortSizes = double(64), double(32)

@@ -92,7 +92,7 @@ func (prog *Program) Recognizer() (*Program, error) {
 		}
 		flags := make([]compile.RuleFlags, len(prog.RuleList))
 		for i, r := range prog.RuleList {
-			flags[i] = compile.RuleFlags{Memo: r.Memo, Leader: r.Leader, Positional: r.Positional, Twin: r.TwinOK}
+			flags[i] = compile.RuleFlags{Memo: r.Memo, Leader: r.Leader, Member: r.Member, Positional: r.Positional, Twin: r.TwinOK}
 		}
 		prog.rec, prog.recErr = build(prog.SourceGrammar(), compile.Options{Recognize: true, Recognizer: true, SourceInfo: prog.RecordsSourceInfo, DefaultValue: prog.MakesDefaultValue}, flags)
 	})

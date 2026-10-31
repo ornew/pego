@@ -31,7 +31,8 @@ func (p *Parser) Call(r *Rule, min int) (*Node, bool) {
 	env := p.memoEnv(r)
 	// See the engine's callBegin: entries with recovered errors are reused only in the same kind of
 	// context (inside or outside a lookahead) they were computed in.
-	if e := p.memoGet(r.Id, start, min, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
+	if e := p.memoGet(r.Id, start, min, env); e != nil && !p.memberStale(r.Member, start) && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
+		p.readResult(e.growing, e.depth)
 		if !e.growing {
 			p.MergeExpected(e.far, e.expected)
 		}
@@ -43,6 +44,7 @@ func (p *Parser) Call(r *Rule, min int) (*Node, bool) {
 		return e.node, true
 	}
 	rec := len(p.Recovered)
+	depth, read := p.growths, p.enterCall()
 	// The memoized result includes the expectations recorded in this call.
 	m := p.Isolate(start)
 	var v *Node
@@ -61,11 +63,18 @@ func (p *Parser) Call(r *Rule, min int) (*Node, bool) {
 		if !ok {
 			p.Recovered = p.Recovered[:rec]
 		}
-		e = p.memo.alloc()
-		*e = memoEntry{node: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
-			errs: p.copyErrors(nil, p.Recovered[rec:])}
-		p.memoPut(r.Id, start, min, env, e)
+		if p.readDepth <= depth {
+			// The result read the seed of a growth that began before the call, or an unstable
+			// result, so it can change and is not memoized (readResult).
+			e = &memoEntry{}
+		} else {
+			e = p.memo.alloc()
+			*e = memoEntry{node: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
+				errs: p.copyErrors(nil, p.Recovered[rec:])}
+			p.memoPut(r.Id, start, min, env, e)
+		}
 	}
+	p.leaveCall(read)
 	far, inner := p.Unisolate(m)
 	e.far, e.expected = far, p.Keep(inner)
 	p.MergeExpected(far, inner)
@@ -83,6 +92,10 @@ func (p *Parser) grow(r *Rule, min int, env []any) (*Node, bool) {
 	best := p.memo.alloc()
 	*best = memoEntry{end: start, growing: true}
 	p.memoPut(r.Id, start, min, env, best)
+	prevPos, read := p.seedPos, p.enterCall()
+	p.growths++
+	p.seedPos = start
+	best.depth = int32(p.growths)
 	for {
 		p.Spend()
 		v, ok := p.invoke(r, min)
@@ -90,13 +103,18 @@ func (p *Parser) grow(r *Rule, min int, env []any) (*Node, bool) {
 			break
 		}
 		best = p.memo.alloc()
-		*best = memoEntry{node: v, ok: true, end: p.Pos, growing: true, errs: p.copyErrors(nil, p.Recovered[rec:])}
+		*best = memoEntry{node: v, ok: true, end: p.Pos, growing: true, depth: int32(p.growths), errs: p.copyErrors(nil, p.Recovered[rec:])}
 		p.memoPut(r.Id, start, min, env, best)
 		p.Pos = start
 		p.Recovered = p.Recovered[:rec]
 	}
 	best.growing = false
 	best.silent = p.Silent > 0
+	// The growth has read its seed for the last time: those reads are resolved.
+	p.growths--
+	p.seedPos = prevPos
+	best.depth = finalDepth(p.readDepth, p.growths, best.silent || len(best.errs) > 0)
+	p.leaveCall(read)
 	p.Pos = best.end
 	p.Recovered = p.copyErrors(p.Recovered[:rec], best.errs)
 	return best.node, best.ok
@@ -122,8 +140,9 @@ func (p *TParser) callBody(r *TRule, min int) (any, bool) {
 		return v, ok
 	}
 	env := p.memoEnv(r.Rule)
-	if e := p.memoGet(r.Id, start, min, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
+	if e := p.memoGet(r.Id, start, min, env); e != nil && !p.memberStale(r.Member, start) && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
 		p.Observation.memoHit()
+		p.readResult(e.growing, e.depth)
 		if !e.growing {
 			p.MergeExpected(e.far, e.expected)
 		}
@@ -135,6 +154,7 @@ func (p *TParser) callBody(r *TRule, min int) (any, bool) {
 		return e.val, true
 	}
 	rec := len(p.Recovered)
+	depth, read := p.growths, p.enterCall()
 	m := p.Isolate(start)
 	var v any
 	var ok bool
@@ -147,11 +167,16 @@ func (p *TParser) callBody(r *TRule, min int) (any, bool) {
 		if !ok {
 			p.Recovered = p.Recovered[:rec]
 		}
-		e = p.memoSlab.one()
-		*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
-			errs: p.copyErrors(nil, p.Recovered[rec:])}
-		p.memoPut(r.Id, start, min, env, e)
+		if p.readDepth <= depth {
+			e = &tmemoEntry{} // a result that can change is not memoized (readResult)
+		} else {
+			e = p.memoSlab.one()
+			*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
+				errs: p.copyErrors(nil, p.Recovered[rec:])}
+			p.memoPut(r.Id, start, min, env, e)
+		}
 	}
+	p.leaveCall(read)
 	far, inner := p.Unisolate(m)
 	e.far, e.expected = far, p.Keep(inner)
 	p.MergeExpected(far, inner)
@@ -169,8 +194,9 @@ func (p *TParser) CallMemo(r *TRule, inv func(*TParser) (any, bool)) (any, bool)
 	}
 	start := p.Pos
 	env := p.memoEnv(r.Rule)
-	if e := p.memoGet(r.Id, start, 0, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
+	if e := p.memoGet(r.Id, start, 0, env); e != nil && !p.memberStale(r.Member, start) && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
 		p.Observation.memoHit()
+		p.readResult(e.growing, e.depth)
 		if !e.growing {
 			p.MergeExpected(e.far, e.expected)
 		}
@@ -182,15 +208,22 @@ func (p *TParser) CallMemo(r *TRule, inv func(*TParser) (any, bool)) (any, bool)
 		return e.val, true
 	}
 	rec := len(p.Recovered)
+	depth, read := p.growths, p.enterCall()
 	m := p.Isolate(start)
 	v, ok := inv(p)
 	if !ok {
 		p.Recovered = p.Recovered[:rec]
 	}
-	e := p.memoSlab.one()
-	*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
-		errs: p.copyErrors(nil, p.Recovered[rec:])}
-	p.memoPut(r.Id, start, 0, env, e)
+	var e *tmemoEntry
+	if p.readDepth <= depth {
+		e = &tmemoEntry{} // a result that can change is not memoized (readResult)
+	} else {
+		e = p.memoSlab.one()
+		*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
+			errs: p.copyErrors(nil, p.Recovered[rec:])}
+		p.memoPut(r.Id, start, 0, env, e)
+	}
+	p.leaveCall(read)
 	far, inner := p.Unisolate(m)
 	e.far, e.expected = far, p.Keep(inner)
 	p.MergeExpected(far, inner)
@@ -206,6 +239,10 @@ func (p *TParser) grow(r *TRule, min int, env []any) (any, bool) {
 	best := p.memoSlab.one()
 	*best = tmemoEntry{end: start, growing: true}
 	p.memoPut(r.Id, start, min, env, best)
+	prevPos, read := p.seedPos, p.enterCall()
+	p.growths++
+	p.seedPos = start
+	best.depth = int32(p.growths)
 	for {
 		p.Spend()
 		v, ok := p.invoke(r, min)
@@ -213,13 +250,17 @@ func (p *TParser) grow(r *TRule, min int, env []any) (any, bool) {
 			break
 		}
 		best = p.memoSlab.one()
-		*best = tmemoEntry{val: v, ok: true, end: p.Pos, growing: true, errs: p.copyErrors(nil, p.Recovered[rec:])}
+		*best = tmemoEntry{val: v, ok: true, end: p.Pos, growing: true, depth: int32(p.growths), errs: p.copyErrors(nil, p.Recovered[rec:])}
 		p.memoPut(r.Id, start, min, env, best)
 		p.Pos = start
 		p.Recovered = p.Recovered[:rec]
 	}
 	best.growing = false
 	best.silent = p.Silent > 0
+	p.growths--
+	p.seedPos = prevPos
+	best.depth = finalDepth(p.readDepth, p.growths, best.silent || len(best.errs) > 0)
+	p.leaveCall(read)
 	p.Pos = best.end
 	p.Recovered = p.copyErrors(p.Recovered[:rec], best.errs)
 	return best.val, best.ok

@@ -576,6 +576,9 @@ func (g *Generator) rules() {
 		if r.Rec {
 			fmt.Fprintf(init, "%s.rec = true;\n", g.ruleVar(r))
 		}
+		if r.Member {
+			fmt.Fprintf(init, "%s.member = true;\n", g.ruleVar(r))
+		}
 		if w := r.WhereName(); w != r.Name {
 			fmt.Fprintf(init, "%s.where = %s;\n", g.ruleVar(r), TsString(w))
 		}

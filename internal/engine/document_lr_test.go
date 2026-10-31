@@ -91,7 +91,7 @@ func TestDocumentSeedDependencyCompletion(t *testing.T) {
 			t.Fatal("outer completion failed to resolve own seeds or changed repetition tracking")
 		}
 	})
-	t.Run("fresh intermediate dependency survives completion", func(t *testing.T) {
+	t.Run("fresh intermediate dependency is not stored", func(t *testing.T) {
 		p := &core.Parser{Memo: core.NewMemoTable(), MemoAll: true}
 		head, helper := &core.Rule{ID: 1, Leader: true}, &core.Rule{ID: 2}
 		headCall, _, _, _ := p.CallBegin(head, 0)
@@ -102,15 +102,14 @@ func TestDocumentSeedDependencyCompletion(t *testing.T) {
 		}
 		p.CallBegin(head, 0) // The fresh helper reads the active seed.
 		p.CallEnd(helper, &helperCall, nil, false)
-		e, _ := p.Memo.Get(helperCall.Key)
-		if !e.Provisional {
-			t.Fatal("fresh intermediate dependency was not recorded")
+		if e, found := p.Memo.Get(helperCall.Key); found {
+			t.Fatalf("a result that read the growing seed was stored: %+v", e)
 		}
 		v, ok := p.GrowEnd(head, &growth)
 		p.CallEnd(head, &headCall, v, ok)
-		e, _ = p.Memo.Get(headCall.Key)
-		if !e.Provisional || p.MemoProvisionalUses == 0 {
-			t.Fatal("head completion discharged the fresh helper dependency")
+		e, _ := p.Memo.Get(headCall.Key)
+		if e.Provisional || p.MemoProvisionalUses != 0 {
+			t.Fatal("head completion depends on a helper result that was never stored")
 		}
 	})
 }

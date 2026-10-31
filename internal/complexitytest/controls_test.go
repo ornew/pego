@@ -69,8 +69,8 @@ func TestControlsTable(t *testing.T) {
 		if c.Positive && c.Order != Linear {
 			t.Errorf("%s: a positive control is linear, got %v", c.Name, c.Order)
 		}
-		if c.BecomesLinear && c.Positive == (c.Order != Linear) {
-			t.Errorf("%s: BecomesLinear and Positive disagree with the order %v", c.Name, c.Order)
+		if c.BecomesLinear && becomesLinearLanded != (c.Order == Linear) {
+			t.Errorf("%s: BecomesLinear disagrees with the order %v", c.Name, c.Order)
 		}
 		if len(c.Sizes) != 3 || len(c.ShortSizes) != 3 {
 			t.Errorf("%s: a series has three sizes", c.Name)

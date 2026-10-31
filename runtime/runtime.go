@@ -877,9 +877,11 @@ type Rule struct {
 	Leader bool
 	// Rec means the rule is on a cycle of calls: its entries count against the nesting limit.
 	Rec bool
-	// DocMemo means Documents memoize the rule, transient or not. It is false
-	// for the other rules of a left-recursive cycle, whose results depend on
-	// the leader's growing seed, as in the engine.
+	// Member is a rule of a left-recursive cycle other than its leader: while a leader grows at a
+	// position, its results there are evaluated again (see memberStale).
+	Member bool
+	// DocMemo means Documents memoize the rule, transient or not, as the engine does for a leader
+	// and for a rule marked for memoization.
 	DocMemo bool
 	// Seen is the rule's index among the memoized rules whose memoization is deferred to the
 	// second call at a position (FirstCall), or -1.
@@ -1374,10 +1376,15 @@ type Parser struct {
 	Document       *documentState
 	docHigh        int  // exclusive upper bound examined by the active rule call
 	docProvisional bool // active call observed an unresolved LR result
-	unit           PositionUnit
-	In             []rune // code points (CodePoints)
-	bs             string // the input (Bytes)
-	n              int    // input length in units
+	// growths is the number of left recursions that grow, and seedPos the position of the
+	// innermost one. readDepth is the least depth (memoEntry.depth) of the growing results that the
+	// current call has read, 0 if it read an unstable result, or math.MaxInt if neither (see
+	// readResult).
+	growths, seedPos, readDepth int
+	unit                        PositionUnit
+	In                          []rune // code points (CodePoints)
+	bs                          string // the input (Bytes)
+	n                           int    // input length in units
 	// src and offs give token text without copying in CodePoints mode: offs[i] is the byte offset
 	// of code point i (len(in)+1 entries). offs is nil for invalid UTF-8, whose text is built
 	// from in so that U+FFFD replacement stays the same.
@@ -1702,6 +1709,28 @@ type memoEntry struct {
 	// level reads it while the rule grows there.
 	growing     bool
 	provisional bool // a completed result observed a provisional LR seed
+	// depth is, for a growing result, the number of left recursions that grow, its own included
+	// (Parser.growths). For a final result it is 0, or unstableResult for the result of a leader
+	// whose growth read the seed of another leader, or an unstable result, when the leader can
+	// grow again at its position in this parse: the result is reused only inside lookaheads
+	// (silent) or only in one kind of context (it has recovered errors). Growing again, the leader
+	// can read other results and have another one, so a result that reads it is not memoized (see
+	// readResult). One field keeps the entry at 128 bytes.
+	depth int32
+}
+
+// unstableResult is the depth of an unstable final result (memoEntry.depth).
+const unstableResult = -1
+
+// finalDepth returns the depth of the final result of a leader after its growth: unstableResult
+// if the growth read a result that can still change (read, the least depth it read, is at most
+// growths, the number of growths that enclose it) and the result is reused in one kind of context
+// only (oneContext: it is silent or has recovered errors), 0 otherwise.
+func finalDepth(read, growths int, oneContext bool) int32 {
+	if oneContext && read <= growths {
+		return unstableResult
+	}
+	return 0
 }
 
 // get returns the entry for the rule, position, level and variable values, or the growing entry
@@ -2617,7 +2646,8 @@ func (p *Parser) callMemo(r *Rule, min int) (*Node, bool) {
 	env := p.memoEnv(r)
 	// See the engine's callBegin: entries with recovered errors are reused only in the same kind of
 	// context (inside or outside a lookahead) they were computed in.
-	if e := p.memoGet(r.Id, start, min, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
+	if e := p.memoGet(r.Id, start, min, env); e != nil && !p.memberStale(r.Member, start) && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
+		p.readResult(e.growing, e.depth)
 		if p.Document != nil {
 			p.documentTouch(e.examined)
 			p.docProvisional = p.docProvisional || e.growing || e.provisional
@@ -2635,6 +2665,7 @@ func (p *Parser) callMemo(r *Rule, min int) (*Node, bool) {
 		return e.node, true
 	}
 	rec := len(p.Recovered)
+	depth, read := p.growths, p.enterCall()
 	// The memoized result includes the expectations recorded in this call.
 	m := p.Isolate(start)
 	var v *Node
@@ -2653,11 +2684,16 @@ func (p *Parser) callMemo(r *Rule, min int) (*Node, bool) {
 		if !ok {
 			p.Recovered = p.Recovered[:rec]
 		}
-		e = p.memo.alloc()
-		*e = memoEntry{node: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
-			errs: p.copyErrors(nil, p.Recovered[rec:])}
-		p.memoPut(r.Id, start, min, env, e)
+		if p.readDepth <= depth {
+			e = &memoEntry{} // see Call: a result that can change is not memoized
+		} else {
+			e = p.memo.alloc()
+			*e = memoEntry{node: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
+				errs: p.copyErrors(nil, p.Recovered[rec:])}
+			p.memoPut(r.Id, start, min, env, e)
+		}
 	}
+	p.leaveCall(read)
 	far, inner := p.Unisolate(m)
 	e.far, e.expected = far, p.Keep(inner)
 	if p.Document != nil {
@@ -2670,6 +2706,40 @@ func (p *Parser) callMemo(r *Rule, min int) (*Node, bool) {
 		p.Pos = start
 	}
 	return v, ok
+}
+
+// readResult records that the current call reused a memoized result of the depth: a growing one,
+// or an unstable one (unstableResult). A call that read the seed of a growth that began before it,
+// or an unstable result, is not memoized: its result can change. The seeds of growths that began
+// and ended within the call have their final values.
+func (p *Parser) readResult(growing bool, depth int32) {
+	if growing {
+		p.readDepth = min(p.readDepth, int(depth))
+	} else if depth == unstableResult {
+		p.readDepth = 0
+	}
+}
+
+// enterCall starts tracking the reads of a memoized call (readResult) and returns the state to
+// restore with leaveCall.
+func (p *Parser) enterCall() int {
+	read := p.readDepth
+	p.readDepth = math.MaxInt
+	return read
+}
+
+// leaveCall ends tracking the reads of a call, which also count as reads of the call that made it.
+func (p *Parser) leaveCall(read int) {
+	p.readDepth = min(read, p.readDepth)
+}
+
+// memberStale reports whether a memoized result at pos of a rule that is a member of a cycle
+// (member) must be evaluated again instead of reused: while a leader grows at pos, the result may
+// have read an earlier result of the leader there, which the growth is replacing step by step.
+// Only calls at pos read the seed of a growth at pos, and a growth that is not the innermost one
+// started at a position no later than the innermost one, so the innermost growth tells.
+func (p *Parser) memberStale(member bool, pos int) bool {
+	return member && p.growths != 0 && p.seedPos == pos
 }
 
 // invoke evaluates the body of r and makes the rule's value.

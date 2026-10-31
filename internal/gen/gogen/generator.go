@@ -680,6 +680,9 @@ func (g *Generator) rules() {
 			if r.Leader {
 				flags = append(flags, "RuleLeader")
 			}
+			if r.Member {
+				flags = append(flags, "RuleMember")
+			}
 			if r.Novalue {
 				flags = append(flags, "RuleNovalue")
 			}

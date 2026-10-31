@@ -101,9 +101,11 @@ type RuleInfo struct {
 	Action int // start of the action's expression code (-1 if none)
 	// NodeType is the named node type the rule's value is converted to (string table index, -1 if
 	// none).
-	NodeType      int
-	Memo          bool
-	Leader        bool
+	NodeType int
+	Memo     bool
+	Leader   bool
+	// Member reports that the rule belongs to a left-recursion cycle and is not its leader.
+	Member        bool
 	Positional    bool
 	OperatorsRule int // OperatorsRule table index (-1 if none)
 	// NoValue reports that this is a value-free twin, called from places where the value is
@@ -392,4 +394,4 @@ func (o Op) String() string {
 // ISAVersion is the instruction set of the value model, the only one supported. Earlier
 // versions built the previous syntax trees, so their files are not loaded and need to be
 // compiled again.
-const ISAVersion = 28
+const ISAVersion = 29

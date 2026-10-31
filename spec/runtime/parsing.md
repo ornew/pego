@@ -350,12 +350,35 @@ exceptions.
   ordinary parse. It is evaluated as often as its calls are evaluated. A
   call with a level restriction, `level(e, name)`, is a call of `e`; the
   parse of a right operand inside an Operators Rule is not a call.
-- A rule of a left-recursion cycle is not memoized, except its leaders, the
-  rules that grow (see [Conditions for Linear Cost](#conditions-for-linear-cost)).
-  It is evaluated at every call, and again at every step of the growth.
+- While a rule grows at a position, a call there of a rule of a
+  left-recursion cycle other than its leaders, the rules that grow (see
+  [Conditions for Linear Cost](#conditions-for-linear-cost)), evaluates the
+  rule's body instead of reusing a memoized result, which may have read an
+  earlier result of the growing rule. The growth that started last decides:
+  the calls inside it are at its position or later.
+- A result that read the growing result of a growth already in progress when
+  the call started is not memoized, because it depends on the step of that
+  growth. The results of growths that started and ended within the call are
+  final, and reading them does not prevent memoization.
+- A growing rule can grow again at its position in one parse, and then have
+  another result, when its growth read the growing result of an enclosing
+  growth and its result was computed inside a lookahead or recovered errors,
+  so that a call in the other kind of context, outside or inside a lookahead,
+  does not reuse it. A result that read such a result, directly or through the
+  rules it called, is not memoized either, at any position.
 - A growing rule evaluates its body once for each step of the growth, and the
   number of steps is at most two more than the length of the input it
   consumes.
+
+Every other result of a rule of a left-recursion cycle is memoized like that of
+any rule. Within one step of a growth at a position, the calls of the rules of
+the cycle at that position are evaluated again, and their number depends only
+on the grammar. Calls at a later position finish their own growth, outside the
+growth at the earlier position, and are memoized. A result that is not
+memoized because it read the result of a rule that can grow again is evaluated
+again at each call, together with the calls that enclose it; condition 5 of
+[Conditions for Linear Cost](#conditions-for-linear-cost) excludes such
+results.
 
 ### Expressions That Repeat Cost
 
@@ -384,7 +407,7 @@ describes the worst input of each length.
 | Linear | At most proportional to n | `main = (A / "a")* $$; A = "a" "c"` | `a` repeated n times |
 | Linear given an environment bound | Proportional to n times the number of combinations of variable values that occur at one position and the size of the strings they hold | A rule that reads `indent`, bound from the length of a captured run of spaces | Lines of increasing indentation |
 | Polynomial of degree k | Proportional to n^k on its worst inputs | `main = (A / "a")* $$; A = "a"* "c"` (k = 2) | `a` repeated n times |
-| Exponential | Can double when n grows by a constant | `main = C $$; A = C "+" / "n"; C = "(" C ")" "y" / "(" C ")" "z" / A` | `(` n times, `n`, then `)z` n times |
+| Exponential | Can double when n grows by a constant | `var v string`; `R = "(" {v := v + "0"} R ")" "y" / "(" {v := v + "1"} R ")" "z" / "n" {len(v) >= 0}` | `(` n times, `n`, then `)z` n times |
 
 The following grammars have the class shown on the inputs shown.
 
@@ -396,17 +419,16 @@ The following grammars have the class shown on the inputs shown.
 | `main = ("a" !Rest)* "a"* $$; Rest = "a"* "c"` | `a` n times | Degree 2 | The lookahead scans to the end of the input at every position |
 | `main = (X / "a")* $$; X = (Y #recover(skip=[a]+)) "c"; Y = "b"` | `a` n times | Degree 2 | The skip consumes the rest of the input, `"c"` then fails, and the recovery is abandoned |
 | `main = (A / "a")* $$; A = (B / "a")* "c"; B = "a"* "d"` | `a` n times | Degree 3 | A repetition that can restart inside another one that can restart |
-| `main = C $$; A = C "+" / "n"; C = "(" C ")" "y" / "(" C ")" "z" / A` | `(` n times, `n`, `)z` n times | Exponential | `A` and `C` form a left-recursion cycle grown at `A`, so `C` is not memoized and each `C` evaluates the next one twice |
+| `main = C $$; A = C "+" / "n"; C = "(" C ")" "y" / "(" C ")" "z" / A` | `(` n times, `n`, `)z` n times | Linear | `A` and `C` form a left-recursion cycle grown at `A`. The result of `C` at a position outside the growth of `A` there is memoized, so the two calls of `C` at the next position share it |
 | `var v string`; `R = "(" {v := v + "0"} R ")" "y" / "(" {v := v + "1"} R ")" "z" / "n" {len(v) >= 0}` | As above | Exponential | The two calls of `R` at a position see different values of `v`, so neither reuses the other's result |
 | `main = xs:"x"* => len(foldl("a", $xs, (acc, x) => acc + acc))` | `x` n times | Linear evaluations, exponential value size | The accumulator doubles for each element |
 
-The same grammars with `A = "n"`, or with the bindings `{v := "0"}` and
-`{v := "1"}`, grow linearly. The classification reports the second of them as
-linear given an environment bound, since it counts `len(v)` as copying all of
-`v`, whose size only the values of the variables bound. The
-[classification](#classification) reports the first exponential grammar as
-unknown, not exponential: its cause is a growth restarted inside a recursion of
-rule calls, which the classifier does not bound.
+The variable grammar with the bindings `{v := "0"}` and `{v := "1"}` grows
+linearly. The classification reports it as linear given an environment bound,
+since it counts `len(v)` as copying all of `v`, whose size only the values of
+the variables bound. The [classification](#classification) reports the
+left-recursive grammar as unknown, not linear: its cause is a growth restarted
+inside a recursion of rule calls, which the classifier does not bound.
 
 ### Conditions for Linear Cost
 
@@ -437,8 +459,10 @@ The conditions below use these terms.
   cycle that passes through none becomes one, so a cycle can have several. A
   call of a leader grows it at the position of the call, and a left call of a
   leader at that position reads the seed that the growth has reached. A call
-  of another rule of the cycle evaluates its body without the memo, and its
-  left calls reach a leader, which grows there. Condition 3 covers what each
+  of another rule of the cycle evaluates its body, unless it reuses a memoized
+  result outside a growth at its position (see
+  [Evaluations of Rules](#evaluations-of-rules)), and its left calls reach a
+  leader, which grows there. Condition 3 covers what each
   step of the growth evaluates again, and the first step of a growing unit and
   condition 3 are checked with the leaders as the rules that grow.
 - A **scanning source** is one of the following: a repetition without an upper
@@ -601,6 +625,9 @@ necessary.
    in a repetition: it copies nothing from outside the lambda that is not
    bounded in size by a constant of the grammar. A copying operation that
    copies the value of a variable is linear given an environment bound.
+5. **Left recursion in lookaheads and recoveries.** No rule grows inside a
+   lookahead, or recovers an error while it grows, at a position where another
+   rule grows and while its growth reads the growing result of that rule.
 
 ### Classification
 

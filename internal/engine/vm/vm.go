@@ -156,7 +156,7 @@ func buildVMProgram(m *bytecode.Module, bodies vmBodies) *Program {
 		ri := &m.Rules[i]
 		r := &core.Rule{
 			ID: i, Name: m.Strings[ri.Name], Scope: vm.scope(ri.Scope),
-			Memo: ri.Memo, Leader: ri.Leader, Positional: ri.Positional, Novalue: ri.NoValue, Transient: ri.Transient, Rec: ri.Rec, Splice: ri.Splice, Vars: vm.names(ri.Vars),
+			Memo: ri.Memo, Leader: ri.Leader, Member: ri.Member, Positional: ri.Positional, Novalue: ri.NoValue, Transient: ri.Transient, Rec: ri.Rec, Splice: ri.Splice, Vars: vm.names(ri.Vars),
 		}
 		if ri.Where >= 0 {
 			r.Where = m.Strings[ri.Where]

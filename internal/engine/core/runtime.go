@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 
@@ -152,8 +153,16 @@ type Parser struct {
 	// Completed dependent entries can come from an earlier, already closed head.
 	// Their dependencies are never discharged merely by finishing a new head.
 	MemoProvisionalUses int
-	ActiveSeed          *MemoEntry
-	Resumed             int // elements reused by ResumeRepeat (for tests)
+	// Growths is the number of left recursions that grow. ReadDepth is the least depth
+	// (MemoEntry.Depth) of the growing results that the current call has read, 0 if it read an
+	// unstable result (MemoEntry.Unstable), or math.MaxInt if neither: the call read a result that
+	// can still change if ReadDepth is at most the Growths at its start (CallEnd).
+	Growths, ReadDepth int
+	// ActiveSeed is the growing result of the innermost left recursion that grows, at SeedPos, or
+	// nil.
+	ActiveSeed *MemoEntry
+	SeedPos    int
+	Resumed    int // elements reused by ResumeRepeat (for tests)
 	// Scratch holds the pooled buffers the parser uses (AcquirePooledParser), or nil.
 	Scratch *scratch
 	// NodeChunks counts the node chunks allocated since the last splitChunks.
@@ -234,9 +243,18 @@ type MemoEntry struct {
 	missingSilent bool // insertion-disabled lookahead seed key
 	// Growing reports that this is a provisional result while a left recursion is growing.
 	Growing bool
+	// Depth is, for a growing result, the number of left recursions that grow, its own included
+	// (Parser.Growths).
+	Depth int32
 	// Provisional reports that this result depends on a growing LR seed. It may be reused
 	// during this parse generation, but its input range alone cannot validate an edit.
 	Provisional bool
+	// Unstable reports that this is the result of a leader whose growth read the seed of another
+	// leader, or an unstable result, and that the leader can grow again at its position in this
+	// parse, because the result is reused only inside lookaheads (silent) or only in one kind of
+	// context (it has recovered errors). Growing again, the leader can read other results and
+	// have another one, so a result that reads it is not memoized (CallEnd).
+	Unstable bool
 	// Positional reports that the result depends on position values (.Start, .End). It cannot
 	// be shifted past an edit.
 	Positional bool
@@ -544,6 +562,7 @@ type CallState struct {
 	exp                 ExpMark
 	memoSeedUses        int
 	memoProvisionalUses int
+	growths, readDepth  int
 }
 
 // CallBegin starts a memoized call (the caller has decided to memoize it: memoizes and not
@@ -570,6 +589,12 @@ func (p *Parser) CallBegin(r *Rule, min int) (st CallState, v *value.Node, ok, h
 			found = false // an edit since invalidated it
 		}
 	}
+	// While a leader grows at this position, the result of a member of a cycle is evaluated again
+	// instead of reused: it may have read an earlier result of the leader there, which the growth
+	// is replacing step by step (see "Evaluations of Rules" in spec/runtime/parsing.md).
+	if found && r.Member && p.ActiveSeed != nil && p.SeedPos == key.Pos && !e.Growing {
+		found = false
+	}
 	if found && (p.Missing == nil || !r.Missing || e.Growing) && (e.Growing || (!e.silent || p.Silent > 0) && (len(e.Errs) == 0 || e.silent == (p.Silent > 0))) {
 		p.touch(e.Examined)
 		p.lw = Min2(p.lw, e.From)
@@ -585,6 +610,11 @@ func (p *Parser) CallBegin(r *Rule, min int) (st CallState, v *value.Node, ok, h
 				p.MemoProvisionalUses++
 			}
 		}
+		if e.Growing {
+			p.ReadDepth = Min2(p.ReadDepth, int(e.Depth))
+		} else if e.Unstable {
+			p.ReadDepth = 0
+		}
 		if e.shifted {
 			p.moveResult(e)
 		}
@@ -599,8 +629,9 @@ func (p *Parser) CallBegin(r *Rule, min int) (st CallState, v *value.Node, ok, h
 		}
 		return st, e.Node, true, true
 	}
-	st = CallState{Key: key, start: p.Pos, savedHW: p.Hw, savedLW: p.lw, Rec: len(p.Recovered), missing: p.missingMark(), memoSeedUses: p.MemoSeedUses, memoProvisionalUses: p.MemoProvisionalUses}
+	st = CallState{Key: key, start: p.Pos, savedHW: p.Hw, savedLW: p.lw, Rec: len(p.Recovered), missing: p.missingMark(), memoSeedUses: p.MemoSeedUses, memoProvisionalUses: p.MemoProvisionalUses, growths: p.Growths, readDepth: p.ReadDepth}
 	p.Hw, p.lw = st.start, st.start
+	p.ReadDepth = math.MaxInt
 	// A result stored in the memo also includes the expectations recorded in this call.
 	st.exp = p.Isolate(st.start)
 	return st, nil, false, false
@@ -619,14 +650,24 @@ func (p *Parser) CallEnd(r *Rule, st *CallState, v *value.Node, ok bool) (*value
 				p.ResetMissing(st.missing)
 			}
 		}
-		e = p.Memo.Alloc()
-		*e = MemoEntry{Node: v, Ok: ok, End: p.Pos, Examined: p.Hw, From: p.lw, silent: p.Silent > 0, Gen: p.Gen, Vgen: p.Gen,
-			Positional: r.Positional, Errs: AppendSpend(p, []*SyntaxError(nil), p.Recovered[st.Rec:])}
-		p.MemoPut(st.Key, e)
+		// A result that read the seed of a growth that began before the call depends on the
+		// seed's current value, so it is not stored: the next growth step evaluates the call
+		// again against the new seed. Nor is a result that read an unstable result, whose leader
+		// may grow again with another result. The seeds of growths that began and ended within
+		// the call have their final values.
+		if p.ReadDepth > st.growths {
+			e = p.Memo.Alloc()
+			*e = MemoEntry{Node: v, Ok: ok, End: p.Pos, Examined: p.Hw, From: p.lw, silent: p.Silent > 0, Gen: p.Gen, Vgen: p.Gen,
+				Positional: r.Positional, Errs: AppendSpend(p, []*SyntaxError(nil), p.Recovered[st.Rec:])}
+			p.MemoPut(st.Key, e)
+		}
 	}
 	far, inner := p.Unisolate(st.exp)
 	if e != nil {
 		e.Far, e.Expected = far, p.Keep(inner)
+		if r.Leader {
+			e.Unstable = p.ReadDepth <= st.growths && (e.silent || len(e.Errs) > 0)
+		}
 		e.Provisional = p.MemoAll && (p.MemoSeedUses != st.memoSeedUses || p.MemoProvisionalUses != st.memoProvisionalUses)
 		if e.Provisional {
 			// The completed intermediate result can outlive the seed it saw.
@@ -634,6 +675,7 @@ func (p *Parser) CallEnd(r *Rule, st *CallState, v *value.Node, ok bool) (*value
 			p.MemoProvisionalUses++
 		}
 	}
+	p.ReadDepth = Min2(st.readDepth, p.ReadDepth)
 	p.MergeExpected(far, inner)
 	p.Hw = max(st.savedHW, p.Hw)
 	p.lw = Min2(st.savedLW, p.lw)
@@ -652,6 +694,7 @@ type GrowState struct {
 	Best         *MemoEntry
 	memoSeedUses int
 	prevSeed     *MemoEntry
+	prevSeedPos  int
 }
 
 // GrowBegin places a failure in the memo as the growing result and prepares the first body
@@ -661,13 +704,15 @@ func (p *Parser) GrowBegin(key MemoKey) GrowState {
 	// One budget unit before each evaluation of the body, the seed's included; it is charged before
 	// the memo changes, so that a parse stopped by the budget publishes nothing.
 	p.Spend()
-	g := GrowState{Key: key, start: p.Pos, Rec: len(p.Recovered), missing: p.missingMark(), memoSeedUses: p.MemoSeedUses, prevSeed: p.ActiveSeed}
+	g := GrowState{Key: key, start: p.Pos, Rec: len(p.Recovered), missing: p.missingMark(), memoSeedUses: p.MemoSeedUses, prevSeed: p.ActiveSeed, prevSeedPos: p.SeedPos}
 	g.Best = p.Memo.Alloc()
 	*g.Best = MemoEntry{Ok: false, End: g.start, Examined: g.start, From: g.start, Growing: true, Gen: p.Gen, Vgen: p.Gen}
 	if p.Missing != nil {
 		p.RecordMissingSeed(g.Best, g.missing)
 	}
-	p.ActiveSeed = g.Best
+	p.Growths++
+	g.Best.Depth = int32(p.Growths)
+	p.ActiveSeed, p.SeedPos = g.Best, g.start
 	p.MemoPut(key, g.Best)
 	return g
 }
@@ -680,7 +725,7 @@ func (p *Parser) GrowStep(g *GrowState, v *value.Node, ok bool) bool {
 	}
 	p.Spend()
 	g.Best = p.Memo.Alloc()
-	*g.Best = MemoEntry{Node: v, Ok: true, End: p.Pos, Examined: p.Hw, From: p.lw, Growing: true, Gen: p.Gen, Vgen: p.Gen, Errs: AppendSpend(p, []*SyntaxError(nil), p.Recovered[g.Rec:])}
+	*g.Best = MemoEntry{Node: v, Ok: true, End: p.Pos, Examined: p.Hw, From: p.lw, Growing: true, Depth: int32(p.Growths), Gen: p.Gen, Vgen: p.Gen, Errs: AppendSpend(p, []*SyntaxError(nil), p.Recovered[g.Rec:])}
 	if p.Missing != nil {
 		p.RecordMissingSeed(g.Best, g.missing)
 	}
@@ -700,7 +745,8 @@ func (p *Parser) GrowEnd(r *Rule, g *GrowState) (*value.Node, bool) {
 	// reads are resolved. Reads of another growing head or completed
 	// dependent calls remain in memoProvisionalUses and cannot be discharged.
 	p.MemoSeedUses = g.memoSeedUses
-	p.ActiveSeed = g.prevSeed
+	p.ActiveSeed, p.SeedPos = g.prevSeed, g.prevSeedPos
+	p.Growths--
 	best := g.Best
 	best.Growing = false
 	best.silent = p.Silent > 0

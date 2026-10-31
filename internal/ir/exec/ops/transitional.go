@@ -13,6 +13,8 @@ const (
 	Call = "call"
 	// Obs is the observation of a parse.
 	Obs = "observe"
+	// Growth is the left-recursion growths in progress and the reads of the current call.
+	Growth = "growth"
 )
 
 // Names of the handle types of the transitional operations.
@@ -43,6 +45,8 @@ func Transitional(m *exec.Module) {
 	m.AddComponent(Call, `The call bookkeeping of the target outside the call protocol: the tracked path of
 Documents and observation, and the work charged per call.`)
 	m.AddComponent(Obs, `The observation of a parse.`)
+	m.AddComponent(Growth, `The left-recursion growths in progress, the position of the innermost one, and
+the least depth of the growing or unstable results that the current call has read.`)
 
 	rule := m.AddHandle(Rule, Rules, "A rule's descriptor.")
 	body := m.AddHandle(Body, Rules, "The invocation of a rule's body that a generated call passes.")
@@ -149,8 +153,45 @@ farthest position of the ended record and its expectations.`})
 		Contract: `Returns the entry that a finished growth left under the key, or the null entry when a
 stream commit pruned it.`,
 		Requires: `A growth under the key has just finished; outside streams it left its entry.`})
-	add(&exec.Op{Name: "memo.detached", Component: Memo, Results: []exec.Type{entry}, Features: []string{Stream},
+	add(&exec.Op{Name: "memo.detached", Component: Memo, Results: []exec.Type{entry},
 		Contract: `Returns a new entry under no key, which no lookup finds.`})
+
+	add(&exec.Op{Name: "lr.stale", Component: Growth, Params: []exec.Param{exec.P("r", rule), exec.P("pos", exec.TInt)},
+		Results: []exec.Type{exec.TBool}, Reads: []string{Growth, Rules},
+		Contract: `Reports whether the result of the rule at pos is evaluated again instead of reused: the rule
+is a member of a left-recursive cycle, other than its leader, and the innermost growth is at pos.`})
+	add(&exec.Op{Name: "lr.read", Component: Growth, Params: entryArg, Reads: []string{Growth, Memo}, Writes: []string{Growth},
+		Contract: `Records that the current call read the result of entry e: the depth of a growing entry, or
+zero for an unstable one, lowers the least depth read.`})
+	add(&exec.Op{Name: "lr.depth", Component: Growth, Results: []exec.Type{exec.TInt}, Reads: []string{Growth},
+		Contract: `Returns the number of growths in progress.`})
+	add(&exec.Op{Name: "lr.enter", Component: Growth, Results: []exec.Type{exec.TInt}, Reads: []string{Growth},
+		Writes: []string{Growth},
+		Contract: `Starts tracking the reads of a call: returns the least depth read so far, for lr.leave, and
+resets it to none.`})
+	add(&exec.Op{Name: "lr.leave", Component: Growth, Params: []exec.Param{exec.P("read", exec.TInt)},
+		Reads: []string{Growth}, Writes: []string{Growth},
+		Contract: `Ends tracking the reads of a call, which also count as reads of the call that made it: the
+least depth read becomes at most read.`})
+	add(&exec.Op{Name: "lr.changeable", Component: Growth, Params: []exec.Param{exec.P("depth", exec.TInt)},
+		Results: []exec.Type{exec.TBool}, Reads: []string{Growth},
+		Contract: `Reports whether the result of a call that began with depth growths in progress can change:
+it read the seed of one of them or an unstable result, so it is not memoized.`})
+	add(&exec.Op{Name: "lr.begin", Component: Growth, Params: []exec.Param{exec.P("pos", exec.TInt)},
+		Results: []exec.Type{exec.TInt}, Reads: []string{Growth}, Writes: []string{Growth},
+		Contract: `Starts a growth at pos: it becomes the innermost growth. Returns the position of the
+enclosing innermost growth, for lr.end.`})
+	add(&exec.Op{Name: "lr.end", Component: Growth, Params: []exec.Param{exec.P("prev", exec.TInt)},
+		Reads: []string{Growth}, Writes: []string{Growth},
+		Contract: `Ends the innermost growth and restores prev as the position of the innermost growth.`,
+		Requires: `prev is the result of the matching lr.begin.`})
+	add(&exec.Op{Name: "memo.mark", Component: Memo, Params: entryArg, Reads: []string{Growth}, Writes: []string{Memo},
+		Contract: `Records in the growing entry e the number of growths in progress, its depth.`})
+	add(&exec.Op{Name: "memo.settle", Component: Memo, Params: entryArg, Reads: []string{Growth, Memo}, Writes: []string{Memo},
+		Contract: `Marks the entry e of a growth that has just ended unstable if the growth read the seed of an
+enclosing growth or an unstable result and the entry is reused in one kind of context only: it is
+silent or has recovered errors.`,
+		Requires: `e was finished by memo.finishSeed, and lr.end has ended its growth.`})
 
 	add(&exec.Op{Name: "obs.memoHit", Component: Obs, Writes: []string{Obs}, Features: []string{Observe},
 		Contract: `Counts a reuse of a memo entry in the observation, if the parse is observed.`})

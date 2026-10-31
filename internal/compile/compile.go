@@ -122,6 +122,9 @@ type Rule struct {
 	Memo       bool
 	Missing    bool // this rule or a callee contains #missing
 	Leader     bool
+	// Member reports that the rule belongs to a left-recursion cycle and is not its leader: its
+	// results may read the growing seed of a leader at their own position.
+	Member bool
 	// Stream reports that the top level of the rule body has a #stream repetition.
 	Stream bool
 	// Positional reports that the result may depend on position values (analysis.positional).
@@ -261,7 +264,7 @@ func (c *Compiler) errorf(pos grammar.Pos, format string, args ...any) {
 // RuleFlags are rule properties determined by static analysis. They are saved in compiled
 // grammars so loading can skip the analysis.
 type RuleFlags struct {
-	Memo, Leader, Positional bool
+	Memo, Leader, Member, Positional bool
 	// Twin reports that the rule has a value-free twin (Rule.Twin).
 	Twin bool
 }
@@ -434,11 +437,14 @@ func CompileProgram[M any](g *grammar.Grammar, opts Options, flags []RuleFlags, 
 		control.poll()
 		twin := false
 		if flags != nil {
-			r.Memo, r.Leader, r.Positional, twin = flags[i].Memo, flags[i].Leader, flags[i].Positional, flags[i].Twin
+			r.Memo, r.Leader, r.Member, r.Positional, twin = flags[i].Memo, flags[i].Leader, flags[i].Member, flags[i].Positional, flags[i].Twin
 		} else {
 			r.Leader = c.an.leaders[r.Name]
+			r.Member = c.an.cyclic[r.Name] && !r.Leader
 			r.Positional = c.an.positional[r.Name]
-			r.Memo = !opts.DisableMemo && !c.an.cyclic[r.Name]
+			// Leaders are always memoized (Leader); the other members of a cycle memoize the results
+			// that read no growing seed.
+			r.Memo = !opts.DisableMemo && !r.Leader
 		}
 		r.Transient = transient[r.Name]
 		r.Rec = recursive[r.Name] != nil

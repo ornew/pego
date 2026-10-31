@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"testing"
 
@@ -21,10 +22,10 @@ import (
 // trule is a rule of the model: its flags and its scripted body, which runs at the position of the
 // machine and returns the value and success of the body.
 type trule struct {
-	id                   int64
-	memo, leader, defer_ bool
-	body                 func(m *machine) (any, bool)
-	runs                 int // the evaluations of the body
+	id                           int64
+	memo, leader, member, defer_ bool
+	body                         func(m *machine) (any, bool)
+	runs                         int // the evaluations of the body
 }
 
 // record is an expectation record of the model: the farthest position and the expectations there.
@@ -46,10 +47,15 @@ type machine struct {
 	// pruned makes memo.grown find no entry, as after a stream commit.
 	pruned                 bool
 	spends, steps, memoHit int
+	// growths, seedPos and readDepth are the growth state (ops.Growth); depth holds the depth of each
+	// growing entry (memo.mark), and of an unstable entry 0 (memo.settle).
+	growths, seedPos, readDepth int64
+	depth                       map[*ref.Entry]int64
 }
 
 func newMachine() *machine {
-	return &machine{Model: ref.New(ref.Config{Rules: 4, MaxDepth: 100}), exps: map[*ref.Entry]record{}}
+	return &machine{Model: ref.New(ref.Config{Rules: 4, MaxDepth: 100}), exps: map[*ref.Entry]record{},
+		readDepth: math.MaxInt64, depth: map[*ref.Entry]int64{}}
 }
 
 func (m *machine) UseRegisters(regs map[string]any) { m.regs = regs }
@@ -78,6 +84,19 @@ func (m *machine) merge(far int64, exps []string) {
 			m.cur.exps = append(m.cur.exps, e)
 		}
 	}
+}
+
+func (m *machine) growing(e *ref.Entry) bool {
+	return m.Model.Call(&exec.Op{Name: "memo.growing"}, []any{e})[0].(bool)
+}
+
+func (m *machine) entrySilent(e *ref.Entry) bool {
+	return m.Model.Call(&exec.Op{Name: "memo.silent"}, []any{e})[0].(bool)
+}
+
+func (m *machine) noErrs(e *ref.Entry) bool {
+	errs, _ := m.Model.Call(&exec.Op{Name: "memo.errs"}, []any{e})[0].([]string)
+	return len(errs) == 0
 }
 
 func entryOf(x any) *ref.Entry {
@@ -169,6 +188,44 @@ func (m *machine) Call(o *exec.Op, args []any) []any {
 		return []any{&ref.Entry{}}
 	case "obs.memoHit":
 		m.memoHit++
+		return nil
+	case "lr.stale":
+		return []any{args[0].(*trule).member && m.growths != 0 && m.seedPos == args[1].(int64)}
+	case "lr.read":
+		e := entryOf(args[0])
+		if d, ok := m.depth[e]; ok && (d == 0 || m.growing(e)) {
+			m.readDepth = min(m.readDepth, d)
+		}
+		return nil
+	case "lr.depth":
+		return []any{m.growths}
+	case "lr.enter":
+		read := m.readDepth
+		m.readDepth = math.MaxInt64
+		return []any{read}
+	case "lr.leave":
+		m.readDepth = min(m.readDepth, args[0].(int64))
+		return nil
+	case "lr.changeable":
+		return []any{m.readDepth <= args[0].(int64)}
+	case "lr.begin":
+		prev := m.seedPos
+		m.growths++
+		m.seedPos = args[0].(int64)
+		return []any{prev}
+	case "lr.end":
+		m.growths--
+		m.seedPos = args[0].(int64)
+		return nil
+	case "memo.mark":
+		m.depth[entryOf(args[0])] = m.growths
+		return nil
+	case "memo.settle":
+		e := entryOf(args[0])
+		delete(m.depth, e)
+		if m.readDepth <= m.growths && (m.entrySilent(e) || !m.noErrs(e)) {
+			m.depth[e] = 0
+		}
 		return nil
 	}
 	return m.Model.Call(o, args)
@@ -380,6 +437,62 @@ func TestGrowth(t *testing.T) {
 					t.Errorf("%d evaluations and %d growth steps, want 3 and 3", r.runs, m.steps)
 				}
 			})
+		}
+	}
+}
+
+// TestGrowthMemberReads checks the memoization of a member of a left-recursive cycle: while the
+// leader grows at the position, the member is evaluated at every step and its results, which read
+// the growing seed, are not stored; after the growth its result reads only the final result of the
+// leader and is stored, so the next call reuses it.
+func TestGrowthMemberReads(t *testing.T) {
+	mod := Build()
+	f := composition(t, mod, "call")
+	m := newMachine()
+	// call runs a nested call of r from a body, at the position of the machine.
+	call := func(m *machine, r *trule) (any, bool) {
+		saved := m.regs
+		v, ok := callAt(t, mod, m, f, r, m.pos())
+		pos := m.pos()
+		m.regs = saved
+		m.setPos(pos)
+		return v, ok
+	}
+	// The cycle is L = M "x" / "a" with M = L, where "x" matches while L ends before 3.
+	var leader, member *trule
+	leader = &trule{id: 2, memo: true, leader: true, body: func(m *machine) (any, bool) {
+		start := m.pos()
+		if _, ok := call(m, member); ok {
+			if m.pos() >= 3 {
+				return nil, false
+			}
+			m.advance(1)
+			return "x", true
+		}
+		m.setPos(start)
+		m.advance(1)
+		return "a", true
+	}}
+	member = &trule{id: 1, memo: true, member: true, body: func(m *machine) (any, bool) {
+		return call(m, leader)
+	}}
+	if _, ok := callAt(t, mod, m, f, leader, 0); !ok || m.pos() != 3 {
+		t.Fatalf("leader %v at %d, want a match to 3", ok, m.pos())
+	}
+	if member.runs != 4 {
+		t.Errorf("member evaluated %d times in the growth, want 4: once per step", member.runs)
+	}
+	// The reads of the seed count in the caller, where the growth is over: they keep nothing from
+	// memoization at the depth of the caller.
+	if m.growths != 0 || m.readDepth <= m.growths {
+		t.Errorf("growth state %d, %d after the call, want no growth and no unresolved read", m.growths, m.readDepth)
+	}
+	for i, want := range []int{5, 5} {
+		if _, ok := callAt(t, mod, m, f, member, 0); !ok || m.pos() != 3 {
+			t.Fatalf("member %v at %d, want a match to 3", ok, m.pos())
+		}
+		if member.runs != want {
+			t.Errorf("call %d after the growth: member evaluated %d times in all, want %d", i, member.runs, want)
 		}
 	}
 }

@@ -26,7 +26,9 @@ var complexityMemoSources = []string{
 
 // TestComplexityMemoPolicy checks that the rules the classifier assumes the memo answers are the
 // rules that every parse memoizes: a leader, or a rule that is memoized, not transient and not
-// subject to missing tokens (Parser.Memoizes under every option).
+// subject to missing tokens (Parser.Memoizes under every option). A member of a left-recursion
+// cycle is memoized only outside the growths it reads, so the classifier counts it as not
+// memoized.
 func TestComplexityMemoPolicy(t *testing.T) {
 	srcs := map[string]string{}
 	for i, src := range complexityMemoSources {
@@ -61,10 +63,10 @@ func TestComplexityMemoPolicy(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, r := range prog.RuleList {
-				always := r.Leader || r.Memo && !r.Transient && !r.Missing
+				always := r.Leader || r.Memo && !r.Transient && !r.Missing && !r.Member
 				if c.Memoized[r.Name] != always {
-					t.Errorf("rule %s: classifier assumes memoized=%v, compiled rule memoizes in every parse=%v (Leader %v Memo %v Transient %v Missing %v)",
-						r.Name, c.Memoized[r.Name], always, r.Leader, r.Memo, r.Transient, r.Missing)
+					t.Errorf("rule %s: classifier assumes memoized=%v, compiled rule memoizes in every parse=%v (Leader %v Member %v Memo %v Transient %v Missing %v)",
+						r.Name, c.Memoized[r.Name], always, r.Leader, r.Member, r.Memo, r.Transient, r.Missing)
 				}
 			}
 			for n := range c.Memoized {

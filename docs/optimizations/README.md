@@ -67,6 +67,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [R140](mechanisms/R140-share-document-snapshot-child-runs.md) | Share immutable child-run backing between exact Document snapshot records | Document snapshot child-run backing; immutable records only | ✓ | ✓ | ✓ | — | — | — | Default | pego_snapshot_child_chunks_reference |
 | [R150](mechanisms/R150-cache-snapshot-child-run-descriptors.md) | Cache immutable child-run descriptors in SnapshotNode records | Document snapshot record access; caches immutable child-run descriptors | ✓ | ✓ | ✓ | — | — | — | Default | No cache-off control; reference retains this cache |
 | [R160](mechanisms/R160-relative-snapshot-position-overlays.md) | Store per-version relative positions over shared snapshot records | Private Document snapshot comparison; no matching-path change | Private off | Private off | Private off | — | — | — | Private off | `pego_snapshot_position_overlays` |
+| [R170](mechanisms/R170-left-recursion-member-memo.md) | Memoize left-recursion cycle members except results that read a growing seed | All six; Documents store no seed-dependent result | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | `DisableMemo` disables all memoization |
 
 ### A — Allocation and Retention
 
@@ -267,6 +268,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [127. The depth limit counts recursion](127-depth-counted-by-recursion.md)
 - [128. Indexed variable environments](128-indexed-variable-environments.md)
 - [129. Expected-token sets are recorded on request](129-opt-in-expectations.md)
+- [130. Memoizing the members of left-recursion cycles](130-memoizing-members-of-left-recursion-cycles.md)
 - [131. Length of a node from its range](131-length-of-a-node-from-its-range.md)
 
 ## Experiments That Did Not Pay Off

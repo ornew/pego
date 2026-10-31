@@ -265,7 +265,9 @@ func newClassifier(g *grammar.Grammar, rules []*grammar.RuleDef, start string, c
 }
 
 // memoizedRules returns the rules whose results every parse memoizes: the leaders of
-// left-recursion cycles, and the rules that are neither on a cycle nor transient. A rule that
+// left-recursion cycles, and the rules that are neither on a cycle nor transient. Another rule of a
+// cycle is memoized only outside the growths whose seeds it reads, so it counts as not memoized. A
+// rule that
 // contains #missing, directly or through its callees, is not memoized when missing tokens are
 // enabled, so it counts as not memoized unless it is a leader.
 func memoizedRules(rules []*grammar.RuleDef, an *Analysis, control *Control) map[string]bool {

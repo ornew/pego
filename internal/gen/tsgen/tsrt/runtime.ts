@@ -903,6 +903,9 @@ export interface Rule {
   leader: boolean;
   // rec means the rule is on a cycle of calls: its entries count against the nesting limit.
   rec: boolean;
+  // member is a rule of a left-recursive cycle other than its leader: while a leader grows at a
+  // position, its results there are evaluated again (see memberStale).
+  member: boolean;
   // seen is the rule's index among the memoized rules whose memoization is deferred to the second
   // call at a position (firstCall), or -1.
   seen: number;
@@ -972,6 +975,7 @@ export function mkRule(
     memo,
     leader,
     rec: false,
+    member: false,
     seen,
     operatorsRule: null,
     novalue,
@@ -1503,10 +1507,19 @@ export interface MemoEntry {
   // growing marks a provisional result of a growing left-recursive call. memoGet matches it
   // whatever the variable values of the call.
   growing: boolean;
+  // unstable marks the result of a leader whose growth read the seed of another leader, or an
+  // unstable result, when the leader can grow again at its position in this parse: the result
+  // is reused only inside lookaheads (silent) or only in one kind of context (it has recovered
+  // errors). Growing again, the leader can read other results and have another one, so a result
+  // that reads it is not memoized (see readResult).
+  unstable: boolean;
+  // depth is, for a growing result, the number of left recursions that grow, its own included
+  // (Parser.growths).
+  depth: number;
 }
 
 export function newEntry(node: R, ok: boolean, end: number, silent: boolean, growing: boolean, errs: SyntaxError[]): MemoEntry {
-  return { node, errs, expected: noExp, next: null, env: null, end, far: 0, rule: 0, min: 0, ok, silent, growing };
+  return { node, errs, expected: noExp, next: null, env: null, end, far: 0, rule: 0, min: 0, ok, silent, growing, unstable: false, depth: 0 };
 }
 
 export const noExp: number[] = [];
@@ -1595,6 +1608,13 @@ export class Parser {
 
   // silent is positive inside lookaheads, where expectations are not recorded.
   silent = 0;
+  // growths is the number of left recursions that grow, and seedPos the position of the
+  // innermost one. readDepth is the least depth (MemoEntry.depth) of the growing results that the
+  // current call has read, 0 if it read an unstable result, or Infinity if neither (see
+  // readResult).
+  growths = 0;
+  seedPos = 0;
+  readDepth = Infinity;
   farthest = 0;
   // expectations makes expect record expectations (ParseOptions.expectations). Without it a record
   // holds at most expFar.
@@ -2338,9 +2358,11 @@ export class Parser {
     const e = this.memoGet(r.id, start, min, env);
     if (
       e !== null &&
+      !this.memberStale(r.member, start) &&
       (e.growing || ((!e.silent || this.silent > 0) && (e.errs.length === 0 || e.silent === this.silent > 0)))
     ) {
       this.observation?.memoHit();
+      this.readResult(e);
       if (!e.growing) {
         this.mergeKept(e.far, e.expected);
       }
@@ -2355,6 +2377,8 @@ export class Parser {
       return e.node;
     }
     const rec = this.recovered.length;
+    const depth = this.growths;
+    const read = this.enterCall();
     // The memoized result includes the expectations recorded in this call.
     const mFar = this.farthest;
     const mBase = this.expBase;
@@ -2370,16 +2394,23 @@ export class Parser {
       if (v === undefined) {
         this.recovered.length = rec;
       }
-      entry = newEntry(
-        v,
-        v !== undefined,
-        this.pos,
-        this.silent > 0,
-        false,
-        this.recovered.length > rec ? (this.control === null ? this.recovered.slice(rec) : copyErrorsSpend(this.recovered, rec, this.recovered.length, this.control)) : noErrs,
-      );
-      this.memoPut(r.id, start, min, env, entry);
+      if (this.readDepth <= depth) {
+        // A result that read the seed of a growth that began before the call, or an unstable
+        // result, can change and is not memoized (see readResult).
+        entry = newEntry(undefined, false, 0, false, false, noErrs);
+      } else {
+        entry = newEntry(
+          v,
+          v !== undefined,
+          this.pos,
+          this.silent > 0,
+          false,
+          this.recovered.length > rec ? (this.control === null ? this.recovered.slice(rec) : copyErrorsSpend(this.recovered, rec, this.recovered.length, this.control)) : noErrs,
+        );
+        this.memoPut(r.id, start, min, env, entry);
+      }
     }
+    this.leaveCall(read);
     // Unisolate: the inner record is exp[from:to].
     const far = this.farthest;
     const from = this.expBase;
@@ -2396,6 +2427,40 @@ export class Parser {
     return v;
   }
 
+  // readResult records that the current call reused the memoized result e: a growing one, or an
+  // unstable one. A call that read the seed of a growth that began before it, or an unstable
+  // result, is not memoized: its result can change. The seeds of growths that began and ended
+  // within the call have their final values.
+  readResult(e: MemoEntry): void {
+    if (e.growing) {
+      this.readDepth = Math.min(this.readDepth, e.depth);
+    } else if (e.unstable) {
+      this.readDepth = 0;
+    }
+  }
+
+  // enterCall starts tracking the reads of a memoized call (readResult) and returns the state to
+  // restore with leaveCall.
+  enterCall(): number {
+    const read = this.readDepth;
+    this.readDepth = Infinity;
+    return read;
+  }
+
+  // leaveCall ends tracking the reads of a call, which also count as reads of the call that made it.
+  leaveCall(read: number): void {
+    this.readDepth = Math.min(read, this.readDepth);
+  }
+
+  // memberStale reports whether a memoized result at pos of a rule that is a member of a cycle
+  // (member) must be evaluated again instead of reused: while a leader grows at pos, the result may
+  // have read an earlier result of the leader there, which the growth is replacing step by step.
+  // Only calls at pos read the seed of a growth at pos, and a growth that is not the innermost one
+  // started at a position no later than the innermost one, so the innermost growth tells.
+  memberStale(member: boolean, pos: number): boolean {
+    return member && this.growths !== 0 && this.seedPos === pos;
+  }
+
   // grow grows the seed of a left-recursive leader: it memoizes a failure, then evaluates the
   // body again while the match gets longer, and keeps the last longer result.
   grow(r: Rule, min: number, env: Value[] | null): R {
@@ -2403,6 +2468,11 @@ export class Parser {
     const rec = this.recovered.length;
     let best = newEntry(undefined, false, start, false, true, noErrs);
     this.memoPut(r.id, start, min, env, best);
+    const read = this.enterCall();
+    const prevPos = this.seedPos;
+    this.growths++;
+    this.seedPos = start;
+    best.depth = this.growths;
     for (;;) {
       this.spend();
       const v = this.invoke(r, min);
@@ -2410,12 +2480,18 @@ export class Parser {
         break;
       }
       best = newEntry(v, true, this.pos, false, true, this.recovered.length > rec ? (this.control === null ? this.recovered.slice(rec) : copyErrorsSpend(this.recovered, rec, this.recovered.length, this.control)) : noErrs);
+      best.depth = this.growths;
       this.memoPut(r.id, start, min, env, best);
       this.pos = start;
       this.recovered.length = rec;
     }
     best.growing = false;
     best.silent = this.silent > 0;
+    // The growth has read its seed for the last time: those reads are resolved.
+    this.growths--;
+    this.seedPos = prevPos;
+    best.unstable = this.readDepth <= this.growths && (best.silent || best.errs.length > 0);
+    this.leaveCall(read);
     this.pos = best.end;
     this.recovered.length = rec;
     for (const x of best.errs) {

@@ -40,6 +40,10 @@ component call
 component observe
   // The observation of a parse.
 
+component growth
+  // The left-recursion growths in progress, the position of the innermost one, and
+  // the least depth of the growing or unstable results that the current call has read.
+
 register pos int
   // The position of the parse in the input.
 
@@ -469,10 +473,98 @@ transitional op memo.grown(rule int, pos int, level int, key Values) Entry
 
 transitional op memo.detached() Entry
   component memo
-  features stream
   cost <= 0
   contract:
     // Returns a new entry under no key, which no lookup finds.
+
+transitional op lr.stale(r Rule, pos int) bool
+  component growth
+  reads growth, rules
+  cost <= 0
+  contract:
+    // Reports whether the result of the rule at pos is evaluated again instead of reused: the rule
+    // is a member of a left-recursive cycle, other than its leader, and the innermost growth is at pos.
+
+transitional op lr.read(e Entry)
+  component growth
+  reads growth, memo
+  writes growth
+  cost <= 0
+  contract:
+    // Records that the current call read the result of entry e: the depth of a growing entry, or
+    // zero for an unstable one, lowers the least depth read.
+
+transitional op lr.depth() int
+  component growth
+  reads growth
+  cost <= 0
+  contract:
+    // Returns the number of growths in progress.
+
+transitional op lr.enter() int
+  component growth
+  reads growth
+  writes growth
+  cost <= 0
+  contract:
+    // Starts tracking the reads of a call: returns the least depth read so far, for lr.leave, and
+    // resets it to none.
+
+transitional op lr.leave(read int)
+  component growth
+  reads growth
+  writes growth
+  cost <= 0
+  contract:
+    // Ends tracking the reads of a call, which also count as reads of the call that made it: the
+    // least depth read becomes at most read.
+
+transitional op lr.changeable(depth int) bool
+  component growth
+  reads growth
+  cost <= 0
+  contract:
+    // Reports whether the result of a call that began with depth growths in progress can change:
+    // it read the seed of one of them or an unstable result, so it is not memoized.
+
+transitional op lr.begin(pos int) int
+  component growth
+  reads growth
+  writes growth
+  cost <= 0
+  contract:
+    // Starts a growth at pos: it becomes the innermost growth. Returns the position of the
+    // enclosing innermost growth, for lr.end.
+
+transitional op lr.end(prev int)
+  component growth
+  reads growth
+  writes growth
+  cost <= 0
+  contract:
+    // Ends the innermost growth and restores prev as the position of the innermost growth.
+  requires:
+    // prev is the result of the matching lr.begin.
+
+transitional op memo.mark(e Entry)
+  component memo
+  reads growth
+  writes memo
+  cost <= 0
+  contract:
+    // Records in the growing entry e the number of growths in progress, its depth.
+
+transitional op memo.settle(e Entry)
+  component memo
+  reads growth, memo
+  writes memo
+  cost <= 0
+  contract:
+    // Marks the entry e of a growth that has just ended unstable if the growth read the seed of an
+    // enclosing growth or an unstable result and the entry is reused in one kind of context only: it is
+    // silent or has recovered errors.
+  requires:
+    // e was finished by memo.finishSeed, and lr.end has ended its growth.
 
 transitional op obs.memoHit()
   component observe

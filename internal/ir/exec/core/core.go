@@ -39,16 +39,19 @@ func Build() *Module {
 	}
 	// reuse returns the result of the entry stored for the call at start, if it may be reused: a
 	// growing entry always (the left-recursion guard); otherwise one computed in a silent context
-	// only in one, and one with recovered errors only in the kind of context it was computed in.
+	// only in one, and one with recovered errors only in the kind of context it was computed in. A
+	// member of a cycle is evaluated again at the position of the innermost growth. Otherwise it
+	// starts tracking the reads of the call.
 	reuse := func(b *Builder, level Expr) {
 		b.Let("env", C("env.memoKey", r))
 		b.LetN([]string{"e", "found"}, C("memo.lookup", id, L("start"), level, L("env")))
 		e := L("e")
-		reusable := And(L("found"), Bin("||", C("memo.growing", e),
+		reusable := And(And(L("found"), Not(C("lr.stale", r, L("start")))), Bin("||", C("memo.growing", e),
 			And(Bin("||", Not(C("memo.silent", e)), silent),
 				Bin("||", C("rec.none", C("memo.errs", e)), Eq(C("memo.silent", e), silent)))))
 		b.If(reusable, func(b *Builder) {
 			b.If(F(ops.Observe), func(b *Builder) { b.Do("obs.memoHit") })
+			b.Do("lr.read", e)
 			b.If(Not(C("memo.growing", e)), func(b *Builder) {
 				b.Do("exp.mergeKept", C("memo.far", e), C("memo.expected", e))
 			})
@@ -57,18 +60,27 @@ func Build() *Module {
 			b.Do("rec.add", C("memo.errs", e))
 			b.Return(C("memo.value", e), BoolC(true))
 		})
-		// The memoized result includes the expectations recorded in this call.
 		b.Let("rec", C("rec.mark"))
+		b.Let("depth", C("lr.depth"))
+		b.Let("read", C("lr.enter"))
+		// The memoized result includes the expectations recorded in this call.
 		b.Let("m", C("exp.isolate", L("start")))
 	}
-	// store records the result of an evaluated body.
+	// store records the result of an evaluated body, unless it read the seed of a growth that began
+	// before the call or an unstable result, so that it can change.
 	store := func(b *Builder, level Expr) {
 		b.If(Not(L("ok")), func(b *Builder) { b.Do("rec.truncate", L("rec")) })
-		b.SetN([]Place{{Name: "entry"}}, C("memo.store", id, L("start"), level, L("env"), L("ok"), R(ops.Pos), silent,
-			L("v"), C("rec.since", L("rec"))))
+		b.IfElse(C("lr.changeable", L("depth")), func(b *Builder) {
+			b.Set("entry", C("memo.detached"))
+		}, func(b *Builder) {
+			b.SetN([]Place{{Name: "entry"}}, C("memo.store", id, L("start"), level, L("env"), L("ok"), R(ops.Pos), silent,
+				L("v"), C("rec.since", L("rec"))))
+		})
 	}
-	// finish keeps the expectations of the call with its entry and returns the result.
+	// finish ends tracking the reads of the call, keeps the expectations of the call with its entry
+	// and returns the result.
 	finish := func(b *Builder) {
+		b.Do("lr.leave", L("read"))
 		b.LetN([]string{"far", "inner"}, C("exp.unisolate", L("m")))
 		b.Do("memo.setExpected", L("entry"), L("far"), C("exp.keep", L("inner")))
 		b.Do("exp.merge", L("far"), L("inner"))
@@ -132,6 +144,9 @@ the rule is called at the position again, or its memoization is no longer deferr
 			b.Let("start", R(ops.Pos))
 			b.Let("rec", C("rec.mark"))
 			b.Let("best", C("memo.seed", id, L("start"), L("min"), L("env")))
+			b.Let("read", C("lr.enter"))
+			b.Let("prev", C("lr.begin", L("start")))
+			b.Do("memo.mark", L("best"))
 			b.Loop("l", func(b *Builder) {
 				b.Do("call.growStep")
 				b.LetN([]string{"v", "ok"}, C("rule.invoke", r, L("min")))
@@ -140,11 +155,16 @@ the rule is called at the position again, or its memoization is no longer deferr
 					b.Break("l")
 				})
 				b.Set("best", C("memo.reseed", id, L("start"), L("min"), L("env"), R(ops.Pos), L("v"), C("rec.since", L("rec"))))
+				b.Do("memo.mark", L("best"))
 				b.SetReg(ops.Pos, L("start"))
 				b.Do("rec.truncate", L("rec"))
 			})
 			best := L("best")
 			b.Do("memo.finishSeed", best, silent)
+			// The growth has read its seed for the last time: those reads are resolved.
+			b.Do("lr.end", L("prev"))
+			b.Do("memo.settle", best)
+			b.Do("lr.leave", L("read"))
 			b.SetReg(ops.Pos, C("memo.end", best))
 			b.Do("rec.truncate", L("rec"))
 			b.Do("rec.add", C("memo.errs", best))

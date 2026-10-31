@@ -135,7 +135,7 @@ func (prog *Program) prepareControlledProgram(b Backend, c *core.BudgetControl) 
 	prog.budgetOnce.Do(func() {
 		flags := make([]compile.RuleFlags, len(prog.RuleList))
 		for i, r := range prog.RuleList {
-			flags[i] = compile.RuleFlags{Memo: r.Memo, Leader: r.Leader, Positional: r.Positional, Twin: r.TwinOK}
+			flags[i] = compile.RuleFlags{Memo: r.Memo, Leader: r.Leader, Member: r.Member, Positional: r.Positional, Twin: r.TwinOK}
 		}
 		// The grammar as written: lowering its inline actions again names them in messages as
 		// the program that was compiled first does.
