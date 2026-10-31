@@ -1,52 +1,59 @@
 package compile
 
 import (
-	"strings"
-	"unicode/utf8"
+	"slices"
 
 	"github.com/ornew/pego/grammar"
 )
 
-// --- Exclusion by a negative lookahead ---
+// --- Exclusion by the leading text of a unit ---
 
-// word is the prefix with which every path of a unit begins: the case-sensitive literal text
-// followed by a negative lookahead of one character that is not in chars, as a keyword
-// "let" !idchar is.
+// word is the text with which a path of a unit begins: a case-sensitive literal, optionally
+// followed by a negative lookahead of one character class, as a keyword "let" !idchar is. After
+// the unit matches its word, the input at its start is the text followed, when after is set, by a
+// character that is not in after or by the end of the input.
 type word struct {
-	text  string
-	chars charset
+	text  []rune
+	after charset
+	// bounded reports whether after is known.
+	bounded bool
 }
 
-// wordBudget bounds the steps of one search for a word or through a continuation.
+// wordBudget bounds the steps of one search for words or through a continuation.
 const wordBudget = leadBudget
 
 // excludedByWord reports whether every path of the continuation c is excluded at the start of the
-// unit u by a word with which u begins. After u matches its word w followed by a character c that
-// is not in the set of the word, or by the end of the input, each path of the continuation fails
-// at bounded cost: it fails on the first character of w, or it evaluates a negative lookahead of
-// a rule K that is proven to match w followed by such a character. If u fails within its word,
-// it examined bounded input. Either way the continuation repeats no scan of u.
+// unit u by the words with which the paths of u begin. A unit that fails within a word examines
+// no more than the word and the character after it. After the unit matches a word, the input at
+// its start begins with that word, and each path of the continuation fails at a cost that the
+// word bounds: it fails on the text of the word, or it evaluates a negative lookahead of a rule
+// that is proven to match there. Either way the continuation repeats no scan of u.
 func (k *classifier) excludedByWord(u, c []*cont, keep func(*site) bool) bool {
-	w, ok := k.unitWord(u)
+	words, ok := k.unitWords(u)
 	if !ok {
 		return false
 	}
-	return k.wordExcludes(c, w, keep)
+	for _, w := range words {
+		if !k.wordExcludes(c, w, keep) {
+			return false
+		}
+	}
+	return true
 }
 
-// unitWord returns the word with which every path of u begins, if all begin with the same one.
-// It looks only through expressions that evaluate their content first, and through calls of rules
-// that read no variable.
-func (k *classifier) unitWord(u []*cont) (word, bool) {
+// unitWords returns the word with which each path of u begins. It looks only through
+// expressions that evaluate their content first, and through calls of rules that read no variable
+// and have no level restriction.
+func (k *classifier) unitWords(u []*cont) ([]word, bool) {
 	budget := wordBudget
-	var found *word
+	var words []word
 	ok := true
 	var visit func(p *cont)
 	visit = func(p *cont) {
 		for ok {
 			k.control.poll()
 			budget--
-			if budget < 0 || p == nil {
+			if budget < 0 || p == nil || len(words) > leadMax {
 				ok = false
 				return
 			}
@@ -84,12 +91,13 @@ func (k *classifier) unitWord(u []*cont) (word, bool) {
 				}
 				p = rest.then(k.byName[e.Name].Expr)
 			case *grammar.Literal:
-				w, good := k.wordAfter(e, rest)
-				if !good || found != nil && (found.text != w.text || !found.chars.equal(w.chars)) {
+				if e.Value == "" || e.IgnoreCase {
 					ok = false
 					return
 				}
-				found = &w
+				w := word{text: []rune(e.Value)}
+				w.after, w.bounded = k.notAfter(rest)
+				words = append(words, w)
 				return
 			default:
 				ok = false
@@ -100,22 +108,15 @@ func (k *classifier) unitWord(u []*cont) (word, bool) {
 	for _, p := range u {
 		visit(p)
 	}
-	if !ok || found == nil {
-		return word{}, false
-	}
-	return *found, true
+	return words, ok && len(words) > 0
 }
 
-// wordAfter returns the word of the literal l when the path rest evaluates, before anything else,
-// a negative lookahead of one character.
-func (k *classifier) wordAfter(l *grammar.Literal, rest *cont) (word, bool) {
-	if l.Value == "" || l.IgnoreCase {
-		return word{}, false
-	}
-	p := rest
+// notAfter returns the characters of a negative lookahead of one character class that the path p
+// evaluates before anything else, if it does.
+func (k *classifier) notAfter(p *cont) (charset, bool) {
 	for range wordBudget {
 		if p == nil {
-			return word{}, false
+			return nil, false
 		}
 		if len(p.items) == 0 {
 			p = p.next
@@ -127,16 +128,12 @@ func (k *classifier) wordAfter(l *grammar.Literal, rest *cont) (word, bool) {
 		case *grammar.Seq:
 			p = p.rest().then(e.Items...)
 		case *grammar.Not:
-			chars, ok := k.oneChar(e.Expr)
-			if !ok {
-				return word{}, false
-			}
-			return word{text: l.Value, chars: chars}, true
+			return k.oneChar(e.Expr)
 		default:
-			return word{}, false
+			return nil, false
 		}
 	}
-	return word{}, false
+	return nil, false
 }
 
 // oneChar returns the characters of e when e is a character class or a call of a rule whose body
@@ -162,16 +159,21 @@ func (k *classifier) plainRef(r *grammar.Ref) bool {
 	return r.Level == "" && k.byName[r.Name] != nil && len(k.vars[r.Name]) == 0
 }
 
+// wordKey is a rule end that a path of a continuation reaches at a position in a word.
+type wordKey struct {
+	endKey
+	at int
+}
+
 // wordExcludes reports whether every path of the continuation fails at bounded cost at a position
-// where the input begins with the word w.
+// where the input begins with the word w. A path reads the text of w as it consumes it; past the
+// text, nothing is known and the path is not excluded.
 func (k *classifier) wordExcludes(paths []*cont, w word, keep func(*site) bool) bool {
 	budget := wordBudget
-	r, _ := utf8.DecodeRuneInString(w.text)
-	head := charOf(r)
 	live := false
-	ended := map[endKey]bool{}
-	var visit func(p *cont)
-	visit = func(p *cont) {
+	ended := map[wordKey]bool{}
+	var visit func(p *cont, at int)
+	visit = func(p *cont, at int) {
 		for !live {
 			k.control.poll()
 			budget--
@@ -189,18 +191,19 @@ func (k *classifier) wordExcludes(paths []*cont, w word, keep func(*site) bool) 
 					continue
 				}
 				if p.end != endNone {
-					key := endKey{p.end, p.rule}
+					key := wordKey{endKey{p.end, p.rule}, at}
 					if ended[key] {
 						return
 					}
 					ended[key] = true
 				}
+				next := func(c *cont) { visit(c, at) }
 				switch p.end {
 				case endOps:
-					k.opsLeads(p.rule, visit)
-					k.endLeads(p.rule, keep, visit)
+					k.opsLeads(p.rule, next)
+					k.endLeads(p.rule, keep, next)
 				case endRule:
-					k.endLeads(p.rule, keep, visit)
+					k.endLeads(p.rule, keep, next)
 				}
 				return
 			}
@@ -210,9 +213,15 @@ func (k *classifier) wordExcludes(paths []*cont, w word, keep func(*site) bool) 
 				p = rest
 				continue
 			}
-			// An item that cannot examine the first character of w neither consumes input here nor
-			// examines more than that character: it fails, or it continues at the same position.
-			if !k.first(it).intersects(head) {
+			if at == len(w.text) {
+				// Past the text nothing is known.
+				live = true
+				return
+			}
+			// An item that cannot examine the next character of the text neither consumes input
+			// here nor examines more than that character: it fails, or it continues at the same
+			// position.
+			if !k.first(it).intersects(charOf(w.text[at])) {
 				if !k.nullable(it) {
 					return
 				}
@@ -242,33 +251,54 @@ func (k *classifier) wordExcludes(paths []*cont, w word, keep func(*site) bool) 
 				p = rest.then(e.Expr)
 			case *grammar.Choice:
 				for _, alt := range e.Alts {
-					visit(rest.then(alt))
+					visit(rest.then(alt), at)
 				}
 				return
 			case *grammar.Optional:
-				visit(rest.then(e.Expr))
-				visit(rest)
+				visit(rest.then(e.Expr), at)
+				visit(rest, at)
 				return
+			case *grammar.Repeat:
+				if e.Max == 0 {
+					p = rest
+					continue
+				}
+				again := &grammar.Repeat{SourceInfo: e.SourceInfo, Expr: e.Expr, Min: 0, Max: -1}
+				visit(rest.then(e.Expr, again), at)
+				if e.Min == 0 {
+					visit(rest, at)
+				}
+				return
+			case *grammar.CharClass, *grammar.Any:
+				// The item matches the character of the text, which first has shown.
+				p, at = rest, at+1
 			case *grammar.Literal:
-				// A literal that differs from w within their common length fails on it.
-				if !e.IgnoreCase && !strings.HasPrefix(w.text, e.Value) && !strings.HasPrefix(e.Value, w.text) {
+				n, ok := matchText(e, w.text[at:])
+				switch {
+				case !ok:
+					return
+				case n < 0:
+					live = true
 					return
 				}
-				live = true
-				return
+				p, at = rest, at+n
 			case *grammar.Not:
-				if k.provenWord(e.Expr, w) {
+				switch k.matchesWord(e.Expr, w, at) {
+				case wordMatches:
+					return
+				case wordFails:
+					p = rest
+				default:
+					live = true
 					return
 				}
-				live = true
-				return
 			case *grammar.Ref:
 				if !k.plainRef(e) {
 					live = true
 					return
 				}
 				if pr := k.operatorsBody(e.Name); pr != nil {
-					k.operatorsLeads(pr, e.Name, visit)
+					k.operatorsLeads(pr, e.Name, func(c *cont) { visit(c, at) })
 					return
 				}
 				p = rest.then(k.byName[e.Name].Expr)
@@ -279,65 +309,104 @@ func (k *classifier) wordExcludes(paths []*cont, w word, keep func(*site) bool) 
 		}
 	}
 	for _, p := range paths {
-		visit(p)
+		visit(p, 0)
 	}
 	return !live
 }
 
-// provenWord reports whether the rule body or expression K matches wherever the input begins with
-// the word w followed by a character outside its set or by the end of the input. K must be a
-// sequence of a choice of case-sensitive literals and a negative lookahead of the same characters
-// as the word, through calls of rules that read no variable, with nothing else that can depend on
-// how the parser reached it: no predicate, other lookahead, cut, recovery or level restriction.
-// The choice must reach w: no earlier literal of it may be a prefix of w or begin with w, so that
-// the choice selects w itself.
-func (k *classifier) provenWord(e grammar.Expr, w word) bool {
+// matchText matches the literal l at the start of text. It returns the length that l matches and
+// true, false when l fails within text, or -1 and true when the text ends before l does.
+func matchText(l *grammar.Literal, text []rune) (int, bool) {
+	if l.IgnoreCase {
+		return -1, true
+	}
+	lit := []rune(l.Value)
+	n := min(len(lit), len(text))
+	if !slices.Equal(lit[:n], text[:n]) {
+		return 0, false
+	}
+	if len(lit) > len(text) {
+		return -1, true
+	}
+	return len(lit), true
+}
+
+// wordOutcome is what is known of an expression at a position in a word.
+type wordOutcome uint8
+
+const (
+	wordUnknown wordOutcome = iota
+	wordMatches
+	wordFails
+)
+
+// matchesWord evaluates the expression K at position at in the word w. K must be a choice of
+// case-sensitive literals that are not empty, or one such literal, optionally followed by a
+// negative lookahead of a character class, through groups, captures, #atomic and calls of rules
+// that read no variable and have no level restriction, with nothing else that can depend on how
+// the parser reached it: no predicate, other lookahead, cut, recovery, action or level
+// restriction. The literals are tried in order against the text; a lookahead after the text
+// is known only when it has the characters that cannot follow the word.
+func (k *classifier) matchesWord(e grammar.Expr, w word, at int) wordOutcome {
 	e, ok := k.wordBody(e)
 	if !ok {
-		return false
+		return wordUnknown
 	}
-	s, ok := e.(*grammar.Seq)
-	if !ok || len(s.Items) != 2 {
-		return false
+	var not charset
+	hasNot := false
+	if s, ok := e.(*grammar.Seq); ok {
+		if len(s.Items) != 2 {
+			return wordUnknown
+		}
+		n, ok := ungroup(s.Items[1]).(*grammar.Not)
+		if !ok {
+			return wordUnknown
+		}
+		if not, ok = k.oneChar(n.Expr); !ok {
+			return wordUnknown
+		}
+		hasNot = true
+		if e, ok = k.wordBody(s.Items[0]); !ok {
+			return wordUnknown
+		}
 	}
-	not, ok := ungroup(s.Items[1]).(*grammar.Not)
-	if !ok {
-		return false
+	alts := []grammar.Expr{e}
+	if c, ok := e.(*grammar.Choice); ok {
+		alts = c.Alts
 	}
-	chars, ok := k.oneChar(not.Expr)
-	if !ok || !chars.equal(w.chars) {
-		return false
-	}
-	alts, ok := k.wordBody(s.Items[0])
-	if !ok {
-		return false
-	}
-	var lits []grammar.Expr
-	if c, ok := alts.(*grammar.Choice); ok {
-		lits = c.Alts
-	} else {
-		lits = []grammar.Expr{alts}
-	}
-	for _, alt := range lits {
+	text := w.text[at:]
+	for _, alt := range alts {
 		alt, ok := k.wordBody(alt)
 		if !ok {
-			return false
+			return wordUnknown
 		}
 		l, ok := alt.(*grammar.Literal)
 		if !ok || l.Value == "" || l.IgnoreCase {
-			return false
+			return wordUnknown
 		}
-		if l.Value == w.text {
-			return true
+		n, ok := matchText(l, text)
+		switch {
+		case !ok:
+			continue
+		case n < 0:
+			return wordUnknown
+		case !hasNot:
+			return wordMatches
+		case n < len(text):
+			if not.intersects(charOf(text[n])) {
+				return wordFails
+			}
+			return wordMatches
+		case w.bounded && not.equal(w.after):
+			return wordMatches
 		}
-		if strings.HasPrefix(w.text, l.Value) || strings.HasPrefix(l.Value, w.text) {
-			return false
-		}
+		return wordUnknown
 	}
-	return false
+	return wordFails
 }
 
-// wordBody returns e through groups, captures and calls of rules that read no variable.
+// wordBody returns e through groups, captures, #atomic and calls of rules that read no variable
+// and have no level restriction.
 func (k *classifier) wordBody(e grammar.Expr) (grammar.Expr, bool) {
 	for range len(k.rules) + 1 {
 		switch x := e.(type) {

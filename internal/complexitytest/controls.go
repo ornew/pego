@@ -167,6 +167,30 @@ func Controls() []Control {
 			Sizes:  double(200), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
 		},
 		{
+			Name: "Operator part excluded by the text it consumes, safe", Family: "word exclusion", Positive: true,
+			Source: "rule main = (e (\"=\" !\"=\" e)? \";\")* $$\nrule e = #operators {\n    operand \"x\"\n    operand \"(\" e \")\"\n    level { infix none \"==\" }\n}\n",
+			Input:  func(n int) string { return rep("x==(", n) + "x" + rep(")", n) + "=x;" },
+			Sizes:  double(64), ShortSizes: double(32), Order: Linear, Class: ClassLinear,
+		},
+		{
+			Name: "Literal excluded by the text it shares, safe", Family: "word exclusion", Positive: true,
+			Source: "rule main = (s / \" \" / \"x\")* $$\nrule s = \"==\" (\" \" / \"=\")* \"q\" / \"=\" !\"=\" \"x\"\n",
+			Input:  func(n int) string { return rep("== q =x ", n) },
+			Sizes:  double(200), ShortSizes: double(100), Order: Linear, Class: ClassLinear,
+		},
+		{
+			Name: "Literal lookahead that the text does not match", Family: "word exclusion",
+			Source: "rule main = (s / \" \")* $$\nrule s = \"==\" (\" \" / \"=\")* \"q\" / \"=\" !\"y\" \"=\"\n",
+			Input:  func(n int) string { return rep("== ", n) },
+			Sizes:  double(200), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
+		},
+		{
+			Name: "Literal lookahead longer than the text", Family: "word exclusion",
+			Source: "rule main = (s / \" \")* $$\nrule s = \"==\" (\" \" / \"=\")* \"q\" / \"=\" !\"==\" \"=\"\n",
+			Input:  func(n int) string { return rep("== ", n) },
+			Sizes:  double(200), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
+		},
+		{
 			Name: "E2 cycle members behind a leader, safe", Family: "E2", Positive: true,
 			Source: "rule main = c $$\nrule a = \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n",
 			Input:  parens, Sizes: double(64), ShortSizes: double(32), Order: Linear, Class: ClassLinear,
