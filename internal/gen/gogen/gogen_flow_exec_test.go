@@ -14,16 +14,26 @@ import (
 // with the functions that the Exec IR switch routes printed from Exec IR if exec, and returns the
 // number of those functions by table, or reports false if the generator rejects the grammar.
 func execGenerate(src string, opts gen.GenOptions, exec bool) (string, map[string]int, bool) {
+	out, n, _, ok := execGenerateCounted(src, opts, exec)
+	return out, n, ok
+}
+
+// execGenerateCounted is execGenerate that also returns the functions that the generators counted
+// as printed from Exec IR (Generator.ExecFuncs) less the rules and framed functions that they
+// printed (Generator.FlowRules and FlowFrames): zero on the Exec IR route, where every printed
+// function is printed from Exec IR once.
+func execGenerateCounted(src string, opts gen.GenOptions, exec bool) (string, map[string]int, int, bool) {
 	g, err := parseTest(src)
 	if err != nil {
-		return "", nil, false
+		return "", nil, 0, false
 	}
 	var last *gogen.Generator
-	h := &gogen.Hooks{ExecRoute: exec, Generator: func(x *gogen.Generator) { last = x }}
+	var all []*gogen.Generator
+	h := &gogen.Hooks{ExecRoute: exec, Generator: func(x *gogen.Generator) { last = x; all = append(all, x) }}
 	opts.Module, opts.KeepComments = "example.com/p", true
 	files, err := gogen.GenerateParser(g, compileForGenerator, opts, h)
 	if err != nil {
-		return "", nil, false
+		return "", nil, 0, false
 	}
 	var b strings.Builder
 	for _, f := range files {
@@ -34,7 +44,11 @@ func execGenerate(src string, opts gen.GenOptions, exec bool) (string, map[strin
 	if last != nil {
 		n = last.ExecTables
 	}
-	return b.String(), n, true
+	extra := 0
+	for _, x := range all {
+		extra += x.ExecFuncs - x.FlowRules - x.FlowFrames
+	}
+	return b.String(), n, extra, true
 }
 
 // execModes are the generator options under which the Exec IR switch routes the rules of the
@@ -94,10 +108,13 @@ func TestExecRoutePrintsTheSame(t *testing.T) {
 				if !ok {
 					continue
 				}
-				got, n, ok := execGenerate(gc.Src, mode.opts, true)
+				got, n, extra, ok := execGenerateCounted(gc.Src, mode.opts, true)
 				if !ok {
 					t.Errorf("%s: rejected from Exec IR", gc.Name)
 					continue
+				}
+				if extra != 0 {
+					t.Errorf("%s: %d more functions counted as printed from Exec IR than printed", gc.Name, extra)
 				}
 				compared++
 				for table, k := range n {

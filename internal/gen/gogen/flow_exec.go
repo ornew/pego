@@ -31,24 +31,36 @@ func (g *Generator) execRoute() bool {
 	return (core.Enabled || g.hooks.ExecRoute) && !g.Document
 }
 
-// execBody prints the body of the Flow IR function f from Exec IR with the flow printer p.
+// execBody prints the body of the Flow IR function f from Exec IR with the flow printer p, for a
+// function that is printed whatever its body: it checks the variables (execVars) and counts the
+// function (execCount).
 func (p *flowPrinter) execBody(f *flow.Func) execgo.BodyResult {
+	l, res := p.execPrint(f)
+	p.execVars(l, &res)
+	p.execCount()
+	return res
+}
+
+// execPrint lowers the Flow IR function f to Exec IR and prints its body with the flow printer p.
+func (p *flowPrinter) execPrint(f *flow.Func) (*lower.Lowered, execgo.BodyResult) {
 	l, err := lower.Flow(f)
 	if err != nil {
 		panic(fmt.Errorf("rule %s of table %s: %w", f.Name, p.g.Table, err))
 	}
-	res := execgo.Body(l.Module, l.Func, p.execTarget(), l.Vars)
-	p.g.ExecFuncs++
-	if p.g.ExecTables == nil {
-		p.g.ExecTables = map[string]int{}
-	}
-	p.g.ExecTables[p.g.Table]++
+	return l, execgo.Body(l.Module, l.Func, p.execTarget(), l.Vars)
+}
+
+// execVars checks the variables of the printed body res of the lowered function l, as flowVarsErr
+// does from Flow IR: a variable that the body names but that is not declared is an internal error
+// (Generator.FlowErr). Hooks.FlowVarsMutant and Hooks.FlowVarsMutantUses instead leave variables
+// undeclared, without the check.
+func (p *flowPrinter) execVars(l *lower.Lowered, res *execgo.BodyResult) {
 	if p.g.hooks.FlowVarsMutant {
 		// The locals that the body names stay undeclared.
 		for _, v := range l.Vars {
 			res.Stores.Dead[v] = true
 		}
-		return res
+		return
 	}
 	if p.g.hooks.FlowVarsMutantUses {
 		// The locals that only the values of assignments read stay undeclared.
@@ -58,7 +70,7 @@ func (p *flowPrinter) execBody(f *flow.Func) execgo.BodyResult {
 				res.Stores.Dead[v] = true
 			}
 		}
-		return res
+		return
 	}
 	if p.g.FlowErr == nil {
 		for _, id := range freeIdents(res.Text) {
@@ -68,7 +80,15 @@ func (p *flowPrinter) execBody(f *flow.Func) execgo.BodyResult {
 			}
 		}
 	}
-	return res
+}
+
+// execCount counts a function printed from Exec IR that the generated code includes.
+func (p *flowPrinter) execCount() {
+	p.g.ExecFuncs++
+	if p.g.ExecTables == nil {
+		p.g.ExecTables = map[string]int{}
+	}
+	p.g.ExecTables[p.g.Table]++
 }
 
 // otherReads returns the locals that the statements of b other than assignments read, whatever
@@ -234,22 +254,29 @@ func (g *Generator) execFlatRule(p *flowPrinter, f *flow.Func) *flatRule {
 
 // execRecRule prints the local function f of a rule of the Node runtime from Exec IR as a flat rule,
 // or returns nil where flowRecRule does: if the printed function reads its start or its context, or
-// a variable has a type that untypedGoType cannot name.
+// a variable has a type that untypedGoType cannot name. It checks the variables at the point where
+// flowRecRule does, between the two refusals, and counts only a rule it prints.
 func (g *Generator) execRecRule(p *flowPrinter, f *flow.Func) *flatRule {
-	res := p.execBody(f)
+	l, res := p.execPrint(f)
 	st := res.Stores
 	read := func(v *flow.Var) bool { return v != nil && st.Named[v.Name] }
 	if read(f.Start) || read(f.Ctx) {
 		return nil
 	}
-	out := &flatRule{fail: res.Exited, succeed: res.End}
-	var unread []string
-	for _, v := range f.Vars {
+	p.execVars(l, &res)
+	types := make([]string, len(f.Vars))
+	for i, v := range f.Vars {
 		t, ok := untypedGoType(v.Type)
 		if !ok {
 			return nil
 		}
-		out.vars = append(out.vars, dvar{v.Name, t})
+		types[i] = t
+	}
+	p.execCount()
+	out := &flatRule{fail: res.Exited, succeed: res.End}
+	var unread []string
+	for i, v := range f.Vars {
+		out.vars = append(out.vars, dvar{v.Name, types[i]})
 		switch {
 		case st.Dead[v.Name]:
 			out.markVar(v.Name, true)
