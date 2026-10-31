@@ -12,3 +12,13 @@ func TestSavedConstructLabelKeepsMeasurements(t *testing.T) {
 		t.Fatalf("changed saved measurements: %+v", r)
 	}
 }
+
+func TestSavedCompiledGrammarLabelMapsToCurrentName(t *testing.T) {
+	r, err := parseResults([]byte("# commit: original\nBenchmarkPrepare/json/pegoc/parse/bytecode-8 1 123 ns/op 456 B/op 7 allocs/op 2198 file-bytes\n")) // keep-old-name: a label as saved before the rename
+	if err != nil {
+		t.Fatal(err)
+	}
+	if value := r.bench["Prepare/json/zpc/parse/bytecode"]; value == nil || value.ns != 123 || len(r.order) != 1 {
+		t.Fatalf("saved compiled-grammar label not mapped: %+v", r)
+	}
+}

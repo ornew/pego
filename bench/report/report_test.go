@@ -194,7 +194,7 @@ func TestRenderAcceptsConsistentSingleRunRows(t *testing.T) {
 		}
 		fields := strings.Fields(line)
 		name := procsSuffix.ReplaceAllString(strings.TrimPrefix(fields[0], "Benchmark"), "")
-		name = strings.ReplaceAll(name, "/Arith_Pratt/", "/Arith_OperatorsRule/")
+		name = savedLabel(name)
 		if seen[name] {
 			continue
 		}

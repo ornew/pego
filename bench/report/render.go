@@ -35,6 +35,18 @@ type results struct {
 
 var procsSuffix = regexp.MustCompile(`-\d+$`)
 
+// savedLabel maps a benchmark name recorded in a saved results file to its current name. Saved
+// measurements retain their recorded names; the unchanged arithmetic workload is rendered under its
+// current construct name.
+//
+// The compiled-grammar label is mapped only because the saved raw results predate the rename of the
+// compiled-grammar extension (the sub-benchmark name is the extension, now "zpc"). The next results capture
+// records the new name, and the second mapping is then removed.
+func savedLabel(name string) string {
+	name = strings.ReplaceAll(name, "/Arith_Pratt/", "/Arith_OperatorsRule/")
+	return strings.ReplaceAll(name, "/pegoc/", "/zpc/") // keep-old-name: saved raw results predate the rename
+}
+
 // parseResults reads the output of runBenchmarks.
 func parseResults(data []byte) (*results, error) { return parseBenchLines(data, true) }
 
@@ -66,9 +78,7 @@ func parseBenchLines(data []byte, benchmem bool) (*results, error) {
 				return nil, fmt.Errorf("benchmark line %q: invalid iteration count %q", line, f[1])
 			}
 			name := procsSuffix.ReplaceAllString(strings.TrimPrefix(f[0], "Benchmark"), "")
-			// Saved measurements retain their recorded names; render their
-			// unchanged arithmetic workload under its current construct name.
-			name = strings.ReplaceAll(name, "/Arith_Pratt/", "/Arith_OperatorsRule/")
+			name = savedLabel(name)
 			vals := map[string]float64{}
 			for i := 2; i+1 < len(f); i += 2 {
 				v, err := strconv.ParseFloat(f[i], 64)
