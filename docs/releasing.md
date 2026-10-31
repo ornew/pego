@@ -72,10 +72,11 @@ In the commands below, `vX.Y.Z` is the version being released, and the module pa
 
 1. Check that the release items of the [project strategy](strategy.md#wedge-and-sequencing) are done.
 2. For the first release only, move the repository to the `zeroparse` GitHub organization:
-   - transfer the repository from `github.com/ornew/zeroparse` to `github.com/zeroparse/zeroparse`, and point the `origin`
+   - transfer the repository from `github.com/ornew/zeroparse` to `github.com/zeroparse/zp`, and point the `origin`
      remote of each checkout at the new address;
-   - serve `go-import` and `go-source` meta tags at `https://zeroparse.dev/zp` that point at
-     `github.com/zeroparse/zeroparse`, so that the vanity module path resolves;
+   - serve `go-import` and `go-source` meta tags from the site so that `zeroparse.dev/X` resolves to
+     `github.com/zeroparse/X` for every repository of the organization;
+   - rename the root package from `zeroparse` to `zp`, so that it matches the last element of the module path;
    - change the module path to `zeroparse.dev/zp` in every `go.mod` of the repository and in every import
      path and document that names it;
    - regenerate the generated files with `go generate ./parsers ./bench`;
