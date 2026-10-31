@@ -11,7 +11,7 @@ func (p *Parser) AdvanceEntry(e *MemoEntry, edits []DocEdit) bool {
 	if !BudgetControlsEnabled || p.Control == nil {
 		return AdvanceEntry(e, edits)
 	}
-	if e.Growing || e.Provisional && e.Vgen != uint32(len(edits)) {
+	if e.Growing {
 		return false
 	}
 	from, examined, shift, shifted := e.From, e.Examined, 0, e.shifted
@@ -129,7 +129,7 @@ func (p *Parser) ClearMovementSpend() {
 // The entry is changed only if it is still valid: one that is not may be looked up again (when a
 // parse is aborted before the entry is replaced).
 func AdvanceEntry(e *MemoEntry, edits []DocEdit) bool {
-	if e.Growing || e.Provisional && e.Vgen != uint32(len(edits)) {
+	if e.Growing {
 		return false
 	}
 	from, examined, shift, shifted := e.From, e.Examined, 0, e.shifted

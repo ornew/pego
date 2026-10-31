@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -36,8 +37,10 @@ func TestDocumentSeedDependencyCompletion(t *testing.T) {
 		if e.Provisional != imported || p.Provisional != 1 || p.MemoSeedUses != 0 {
 			t.Fatalf("imported=%v: provisional=%v, seed uses=%d, repetition uses=%d", imported, e.Provisional, p.MemoSeedUses, p.Provisional)
 		}
-		if valid := core.AdvanceEntry(e, []core.DocEdit{{Start: 10, End: 10, Delta: 1}}); valid == imported {
-			t.Fatalf("imported=%v: entry validity after an unrelated edit=%v", imported, valid)
+		// A provisional entry is collected for removal when the parse ends, so no later parse
+		// reuses it, with or without edits.
+		if collected := slices.Contains(p.ProvisionalEntries, e); collected != imported {
+			t.Fatalf("imported=%v: entry collected for removal=%v", imported, collected)
 		}
 	}
 	t.Run("nested head retains outer dependency", func(t *testing.T) {
