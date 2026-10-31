@@ -1,0 +1,25 @@
+# xml: polynomial (degree 3), 5 witnesses, 9 reasons
+
+## ws-option (4) -> F97
+75:19 main: the option at 75:19 in rule main contains the repetition [ \t\r\n]* at 254:11 in rule ws and is not committing against what follows the option xml_decl?
+84:30 xml_decl: the option at 84:30 in rule xml_decl contains the repetition [ \t\r\n]+ at 253:10 in rule s and is not committing against what follows the option encoding_decl?
+84:48 xml_decl: the option at 84:48 in rule xml_decl contains the repetition [ \t\r\n]+ at 253:10 in rule s and is not committing against what follows the option sd_decl?
+115:26 doctype: the option at 115:26 in rule doctype contains the repetition [ \t\r\n]+ at 253:10 in rule s and is not committing against what follows the option (s x:external_id)?
+
+## pi-copy (1) -> F100
+79:21 misc_list: an iteration of the repetition at 79:21 in rule misc_list contains the copying operation text($t) at 107:18 in rule pi and is not committing against what follows the repetition (-ws m:misc)*
+
+## nested (4) -> F100
+142:61 content_spec: the alternative at 142:61 in rule content_spec is not committing against the later alternative sequence at 142:70 in rule content_spec, and units that are not committing are nested in it without bound through a recursion of rule calls
+157:36 cp: the alternative at 157:36 in rule cp is not committing against the later alternative sequence at 157:45 in rule cp, and units that are not committing are nested in it without bound through a recursion of rule calls
+220:16 content: an iteration of the repetition at 220:16 in rule content is not committing against what follows the repetition content_item*, and units that are not committing are nested in it without bound through a recursion of rule calls
+224:32 markup: the alternative at 224:32 in rule markup is not committing against the later alternative comment at 224:54 in rule markup, and units that are not committing are nested in it without bound through a recursion of rule calls
+
+## name-scan (4) -> F97
+246:5 name: the cost can grow as n^2: after an iteration of the repetition at 165:29 in rule attlist_decl fails, what follows the repetition (-s d:att_def)* can start again inside the input that the repetition [a-zA-Z0-9_:.\-·À-ÖØ-öø-ͽͿ-\u... at 246:5 in rule name examined; this repeats in the repetition (-ws d:decl)* at 121:22 in rule int_subset
+246:5 name: the cost can grow as n^2: after an iteration of the repetition at 210:19 in rule element fails, what follows the repetition (-s a:attribute)* can start again inside the input that the repetition [a-zA-Z0-9_:.\-·À-ÖØ-öø-ͽͿ-\u... at 246:5 in rule name examined; this repeats in the recursion of rule element
+246:5 name: the cost can grow as n^3: after the option at 189:59 in rule ge_decl fails, what follows the option (s "NDATA" s nd:name)? can start again inside the input that the repetition [a-zA-Z0-9_:.\-·À-ÖØ-öø-ͽͿ-\u... at 246:5 in rule name examined; it is evaluated again inside the alternative at 187:31 in rule entity_decl; this repeats in the repetition (-ws d:decl)* at 121:22 in rule int_subset
+253:10 s: the cost can grow as n^2: after the option at 203:62 in rule public_notation fails, what follows the option (s l:system_literal)? can start again inside the input that the repetition [ \t\r\n]+ at 253:10 in rule s examined; this repeats in the repetition (-ws d:decl)* at 121:22 in rule int_subset
+
+## mixed (1) -> F97
+147:25 mixed: the cost can grow as n^2: after the alternative at 142:53 in rule content_spec fails, the later alternative choice at 142:61 in rule content_spec can start again inside the input that the repetition (-ws -"|" -ws n:name)* at 147:25 in rule mixed examined; this repeats in the repetition (-ws d:decl)* at 121:22 in rule int_subset

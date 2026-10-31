@@ -1,0 +1,29 @@
+# cel: polynomial (degree 4), 8 witnesses, 12 reasons
+
+## number-tokens (3) -> F97
+142:26 int_plain: the cost can grow as n^3: after the alternative at 92:71 in rule primary fails, the later alternative double at 92:83 in rule primary can start again inside the input that the repetition [0-9]+ at 142:26 in rule int_plain examined; it is evaluated again inside the alternative at 92:61 in rule primary; this repeats in the recursion of rule primary
+144:33 double: the cost can grow as n^4: after the alternative at 144:33 in rule double fails, the later alternative [0-9]+ exponent at 144:63 in rule double can start again inside the input that the repetition [0-9]+ at 144:33 in rule double examined; it is evaluated again inside the alternative at 92:174 in rule primary; it is evaluated again inside the alternative at 92:166 in rule primary; this repeats in the recursion of rule primary
+146:28 uint: the cost can grow as n^3: after the alternative at 92:92 in rule primary fails, the later alternative int at 92:99 in rule primary can start again inside the input that the repetition [0-9a-fA-F]+ at 146:28 in rule uint examined; it is evaluated again inside the alternative at 92:61 in rule primary; this repeats in the recursion of rule primary
+
+## string-tokens (2) -> F97
+155:26 raw_body: the cost can grow as n^2: after the alternative at 92:106 in rule primary fails, the later alternative &"." v:(double / message / call / ident) at 92:123 in rule primary can start again inside the input that the repetition (!"\"\"\"" .)* at 155:26 in rule raw_body examined; this repeats in the recursion of rule primary
+155:26 raw_body: the cost can grow as n^2: after the alternative at 92:19 in rule primary fails, the later alternative message at 92:30 in rule primary can start again inside the input that the repetition (!"\"\"\"" .)* at 155:26 in rule raw_body examined; this repeats in the recursion of rule primary
+
+## names-and-space (3) -> F97
+123:27 message: the cost can grow as n^2: after the lookahead at 123:5 in rule message fails, what follows the lookahead &(("." ws)? [A-Za-z_] [A-Za-z0-9_]* (... can start again inside the input that the repetition [A-Za-z0-9_]* at 123:27 in rule message examined; this repeats in the recursion of rule message
+188:36 name: the cost can grow as n^2: after the operator part at 79:17 in rule member fails, the operator part "." ws f:name_plain ws "(" ws as:args... at 80:17 in rule member can start again inside the input that the repetition [A-Za-z0-9_.\-/ ]+ at 188:36 in rule name examined; this repeats in the recursion of rule member
+192:11 ws: the cost can grow as n^2: after the alternative at 92:40 in rule primary fails, the later alternative call at 92:53 in rule primary can start again inside the input that the repetition [ \t\r\n\u{c}]* at 192:11 in rule ws examined; this repeats in the recursion of rule primary
+
+## nested (12) -> F100
+59:24 expr: the operator part at 59:24 in rule expr is not committing against what follows the Operators Rule, and units that are not committing are nested in it without bound through a recursion of rule calls
+66:19 unary: the alternative at 66:19 in rule unary is not committing against the later alternative neg_unary at 66:40 in rule unary, and units that are not committing are nested in it without bound through a recursion of rule calls
+80:17 member: the operator part at 80:17 in rule member is not committing against the operator part "." ws q:"?"? ws f:name at 79:17 in rule member, and units that are not committing are nested in it without bound through a recursion of rule calls
+92:5 primary: the alternative at 92:5 in rule primary is not committing against the later alternative &[0-9] v:(int_plain / double / uint /... at 92:61 in rule primary, and units that are not committing are nested in it without bound through a recursion of rule calls
+92:30 primary: the alternative at 92:30 in rule primary is not committing against the later alternative ident_only at 92:40 in rule primary, and units that are not committing are nested in it without bound through a recursion of rule calls
+92:123 primary: the alternative at 92:123 in rule primary is not committing against the later alternative &"-" v:(double / int) at 92:166 in rule primary, and units that are not committing are nested in it without bound through a recursion of rule calls
+92:140 primary: the alternative at 92:140 in rule primary is not committing against the later alternative call at 92:150 in rule primary, and units that are not committing are nested in it without bound through a recursion of rule calls
+108:31 list: the option at 108:31 in rule list is not committing against what follows the option elems?, and units that are not committing are nested in it without bound through a recursion of rule calls
+109:30 elems: an iteration of the repetition at 109:30 in rule elems is not committing against what follows the repetition (-ws -"," -ws x:elem)*, and units that are not committing are nested in it without bound through a recursion of rule calls
+113:29 map: the option at 113:29 in rule map is not committing against what follows the option entries?, and units that are not committing are nested in it without bound through a recursion of rule calls
+114:33 entries: an iteration of the repetition at 114:33 in rule entries is not committing against what follows the repetition (-ws -"," -ws x:entry)*, and units that are not committing are nested in it without bound through a recursion of rule calls
+127:32 fields: an iteration of the repetition at 127:32 in rule fields is not committing against what follows the repetition (-ws -"," -ws x:field)*, and units that are not committing are nested in it without bound through a recursion of rule calls

@@ -252,7 +252,26 @@ const (
 // point counts as a cost of at least the cap, so its slope is a lower bound and only Exp can
 // follow from it. A series that fits no band is Unknown.
 func Classify(s Series) Order {
-	sl := s.Slopes()
+	return classifySlopes(s.Slopes(), s)
+}
+
+// ClassifyLengths is Classify for a series whose inputs have the given lengths, which need not
+// double: each slope is the growth exponent of the cost against the growth of the length.
+func ClassifyLengths(s Series, lengths []int) Order {
+	return classifySlopes(s.LengthSlopes(lengths), s)
+}
+
+// LengthSlopes returns the growth exponents of the cost between consecutive inputs of the given
+// lengths: log(cost ratio) / log(length ratio).
+func (s Series) LengthSlopes(lengths []int) []float64 {
+	var out []float64
+	for i := 1; i < len(s.Costs); i++ {
+		out = append(out, math.Log(float64(s.Costs[i].Steps)/float64(max(s.Costs[i-1].Steps, 1)))/math.Log(float64(lengths[i])/float64(lengths[i-1])))
+	}
+	return out
+}
+
+func classifySlopes(sl []float64, s Series) Order {
 	if len(sl) < 2 {
 		return Unknown
 	}

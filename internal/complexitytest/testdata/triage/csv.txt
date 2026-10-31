@@ -1,0 +1,4 @@
+# csv: polynomial (degree 3), 1 witnesses, 0 reasons
+
+## quoted-field (1) -> F97
+29:10 field: the cost can grow as n^3: after the alternative at 29:5 in rule field fails, the later alternative [^,"\r\n]* ("\r" &[^\n] [^,"\r\n]*)* at 30:7 in rule field can start again inside the input that the repetition [^"]* at 29:10 in rule field examined; it is evaluated again inside an iteration of the repetition at 21:26 in rule record; this repeats in the repetition record* at 16:34 in rule main

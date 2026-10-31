@@ -1,0 +1,9 @@
+# outline: polynomial (degree 3), 2 witnesses, 2 reasons
+
+## blank-lines (2) -> F97
+36:14 blank: the cost can grow as n^2: after an iteration of the repetition at 22:18 in rule block fails, what follows the repetition blank* can start again inside the input that the repetition [ \t]* at 36:14 in rule blank examined; this repeats in the repetition (blank* i:item)+ at 22:17 in rule block
+36:14 blank: the cost can grow as n^3: after an iteration of the repetition at 31:19 in rule children fails, what follows the repetition blank* can start again inside the input that the repetition [ \t]* at 36:14 in rule blank examined; it is evaluated again inside the lookahead at 31:17 in rule children; this repeats in the recursion of rule children
+
+## nested (2) -> F100
+22:17 block: an iteration of the repetition at 22:17 in rule block is not committing against what follows the repetition (blank* i:item)+, and units that are not committing are nested in it without bound through a recursion of rule calls
+26:51 item: the option at 26:51 in rule item is not committing against what follows the option children?, and units that are not committing are nested in it without bound through a recursion of rule calls
