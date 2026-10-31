@@ -131,6 +131,12 @@ func Controls() []Control {
 			Sizes:  double(250), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
 		},
 		{
+			Name: "Operators Rule skip that must consume input, optional", Family: "shared skip",
+			Source: "rule main = (e \"(\")* $$\nrule e = #operators {\n    skip \" \"+\n    operand \"y\"\n    level { postfix \"(\" [^;]* \";\" }\n}\n",
+			Input:  func(n int) string { return rep("y(", n) },
+			Sizes:  double(200), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
+		},
+		{
 			Name: "Keyword excluded by a negative lookahead, safe", Family: "word exclusion", Positive: true,
 			Source: "rule main = (s / \" \")* $$\nrule s = kw (\" \" / \"let\")* \"q\" / id\nrule kw = \"let\" !c\nrule c = [a-z]\nrule id = !key c+\nrule key = (\"if\" / \"let\") !c\n",
 			Input:  func(n int) string { return rep("ab let q ", n) },

@@ -554,7 +554,12 @@ The conditions below use these terms.
   before an operand or a prefix operator part, and continues at the same
   position when the `skip` does not match, so the call that its `skip`
   evaluates first is a call that a rule whose body is the Operators Rule
-  evaluates first. A call
+  evaluates first. This holds for a body that is the Operators Rule alone or
+  under attributes other than `#recover` and `#missing`, which change what
+  the parser does when the body fails. Because the parser continues when the
+  `skip` does not match, a `skip` that cannot match without consuming input is
+  optional wherever it is tried, before an operand or an operator part, and
+  the first characters there include those of what follows it. A call
   of any other rule is not shared, because evaluating its body again also
   evaluates again the units inside it, at every level of a recursion.
 - A unit is **committing** when, for each of its continuations, the first
