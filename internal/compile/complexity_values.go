@@ -99,8 +99,8 @@ var scalarOps = map[string]bool{"==": true, "!=": true, "<": true, "<=": true, "
 	"-": true, "*": true, "/": true, "%": true, "&&": true, "||": true}
 
 // copyFuncs are the built-in functions that build a value in proportion to its size. list builds
-// one element for each argument, which is bounded by the grammar. len examines its operand, which
-// for a string is charged per character; it is counted for a list too.
+// one element for each argument, which is bounded by the grammar. len examines a string value per
+// character; the length of a node or a list is constant time.
 var copyFuncs = map[string]bool{"text": true, "concat": true, "map": true, "filter": true, "len": true}
 
 func (k *classifier) walkTerm(t grammar.Term, tc termCtx) {
@@ -171,10 +171,15 @@ func (k *classifier) walkTerm(t grammar.Term, tc termCtx) {
 		}
 		switch {
 		case t.Func == "len":
-			// len builds an int, but examines all of its operand.
+			// len builds an int, but examines all of a string value.
 			var size content
 			for _, a := range t.Args {
-				size.add(k.sizeOf(a, tc, textSize))
+				if k.mayBeString(a) {
+					size.add(k.sizeOf(a, tc, textSize))
+				}
+			}
+			if k.types == nil && !size.bounded() {
+				k.stringLen = true
 			}
 			k.copied(t, termPosOf(t), tc, size)
 		case copyFuncs[t.Func]:
@@ -183,6 +188,44 @@ func (k *classifier) walkTerm(t grammar.Term, tc termCtx) {
 	case *grammar.Lambda:
 		k.walkTerm(t.Body, tc)
 	}
+}
+
+// mayBeString reports whether the value of t may be a string value rather than a node, a list or
+// a tuple. Without the type of t it may.
+func (k *classifier) mayBeString(t grammar.Term) bool {
+	if k.types == nil {
+		return true
+	}
+	ty, ok := k.types.Terms[t]
+	return !ok || k.stringIn(ty, map[string]bool{})
+}
+
+// stringIn reports whether a value of type t may be a string value, reading the value types of
+// the rules that t refers to once each. An unknown type may.
+func (k *classifier) stringIn(t Ty, seen map[string]bool) bool {
+	switch t := t.(type) {
+	case NodeTy, ListTy, TupleTy:
+		return false
+	case OptTy:
+		return k.stringIn(t.Elem, seen)
+	case JoinTy:
+		for _, a := range t.Alts {
+			if k.stringIn(a, seen) {
+				return true
+			}
+		}
+		return false
+	case RuleTy:
+		if seen[t.Name] {
+			return false
+		}
+		seen[t.Name] = true
+		r, ok := k.types.Rules[t.Name]
+		return !ok || k.stringIn(r, seen)
+	case BasicTy:
+		return t == TyString || t == TyTop || t == TyAny
+	}
+	return true
 }
 
 // lambdaCtx returns the context of the body of the lambda that is argument i of call.

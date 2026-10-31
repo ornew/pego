@@ -119,8 +119,12 @@ func TestClassifyComplexity(t *testing.T) {
 		// A comparison examines no more than one of its operands.
 		{"comparison of a recursive element with itself", "rule main = l $$\nrule l []string = (\"(\" x:l \")\" {$x[0] == $x[0]} => $x) / (t:[a-z]+ => list(text($t)))\n", ClassPoly, 2},
 		// len examines all of a string or a list.
-		{"len of a failing unit", "rule main = (x:e #atomic {len($x) > 0} \"q\" / \"x\")* $$\nrule e = \"x\" e / \"x\"\n", ClassPoly, 2},
-		{"len of a recursive capture", "rule main = r $$\nrule r = x:(\"a\" r / \"\") #atomic {len($x) >= 0}\n", ClassPoly, 2},
+		{"len of a failing unit", "rule main = (v \"q\" / \"x\")* $$\nrule v = x:e #atomic {len($x.Value) > 0}\nrule e = \"x\" e / \"x\"\n", ClassPoly, 2},
+		{"len of a recursive capture", "rule main = r $$\nrule r = x:(\"a\" r / \"\") #atomic {len($x.Value) >= 0}\n", ClassPoly, 2},
+		// The length of a node is its range, which len reads in constant time.
+		{"len of the node of a failing unit", "rule main = (x:e #atomic {len($x) > 0} \"q\" / \"x\")* $$\nrule e = \"x\" e / \"x\"\n", ClassLinear, 0},
+		{"len of the node of a recursive capture", "rule main = r $$\nrule r = x:(\"a\" r / \"\") #atomic {len($x) >= 0}\n", ClassLinear, 0},
+		{"len of a list node of a recursive capture", "rule main = r $$\nrule r = x:(\"a\" r)? {len($x) >= 0}\n", ClassLinear, 0},
 		{"nil test of a recursive capture", "rule main = r $$\nrule r = x:(\"a\" r / \"\") #atomic {$x != nil}\n", ClassLinear, 0},
 		// A repetition ends at its first empty iteration, so it can fail after scanning even
 		// when its expression always succeeds.

@@ -95,7 +95,15 @@ func ClassifyComplexity(g *grammar.Grammar, start string, control *Control) (*Co
 	if err != nil {
 		return nil, err
 	}
-	return k.classify().written(names), nil
+	c := k.classify()
+	if k.stringLen {
+		// Only the types tell whether the operand of len is a string value; the classification
+		// without them stands when no len counted its operand, or when g does not compile.
+		if typed, typedNames := prepareTypedClassifier(g, start, control); typed != nil {
+			c, names = typed.classify(), typedNames
+		}
+	}
+	return c.written(names), nil
 }
 
 // GrowingBindings returns the Growing member of the classification of g from start, without the
@@ -108,6 +116,24 @@ func GrowingBindings(g *grammar.Grammar, start string, control *Control) ([]Grow
 	k.collect()
 	c := &Complexity{Growing: k.growingBindings()}
 	return c.written(names).Growing, nil
+}
+
+// prepareTypedClassifier is prepareClassifier with the value types of the terms of g, which tell
+// a node from a string value. It compiles g, without building matchers, for them, and returns nil
+// if g does not compile.
+func prepareTypedClassifier(g *grammar.Grammar, start string, control *Control) (*classifier, InlineNames) {
+	control.check()
+	names := InlineNames{}
+	prog, err := CompileProgram(g, Options{}, nil, names, control, func(*Compiler) ExprBuilder[struct{}] { return NoExprs{} })
+	if err != nil {
+		return nil, nil
+	}
+	if start == "" {
+		start = prog.DefaultStartRule
+	}
+	k := newClassifier(prog.Grammar, control.rules(prog.Grammar), start, control)
+	k.types = prog.ValueRecord()
+	return k, names
 }
 
 // prepareClassifier lowers and normalizes g as the compiler does and returns a classifier of it
@@ -168,6 +194,10 @@ type classifier struct {
 	byName  map[string]*grammar.RuleDef
 	start   string
 	an      *Analysis
+	types   *ValueRecord // the value types of the terms, or nil if they are unknown
+	// stringLen reports that a len counted its operand, without its type, as a string value of
+	// unbounded size.
+	stringLen bool
 
 	reach     map[string]bool // rules that the start rule reaches
 	calls     map[string][]string

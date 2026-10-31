@@ -390,6 +390,13 @@ returns the length in the selected position unit. For a string node, it
 returns the length of matched text in that unit. For a tuple or list node or a
 list value, it returns the number of elements. For `nil`, it returns `0`.
 
+The length of a node takes constant time: the matched text of a string node is
+the input of its range, so its length is the end of the range minus its start,
+which are already in the position unit. The length of a string value takes
+time in proportion to the string where the unit differs from the encoding of
+the string: in code points on every backend, and in bytes in TypeScript, whose
+strings are UTF-16. In bytes in Go, it takes constant time.
+
 #### `text`
 
 `text(x)` accepts a string, node or `nil` and returns `string`. It returns a

@@ -404,15 +404,18 @@ The conditions below use these terms.
   whose cost the classifier counts in proportion to the size of the values it
   builds or examines: joining strings, taking the text of a capture,
   converting a value to a string, building a list with `list`, `concat`, `map`
-  or `filter`, taking the length of a string or a list with `len`, and
-  comparing two strings. The size of a string is its number of characters,
+  or `filter`, taking the length of a string value with `len`, and comparing
+  two strings. The size of a string is its number of characters,
   and the size of a list its number of elements; the elements themselves are
   shared, not copied. So `list` copies one element for each argument, which
   the grammar bounds; `concat`, `map` and `filter` copy the elements of the
   lists they read, and the list of a repetition has one element for each
-  iteration; `len` is counted as copying all of its operand, whatever the
-  position unit, a conservative reading, since the engine can take some lengths
-  in constant time; and a comparison examines no more than the shorter string,
+  iteration; `len` of a string value is counted as copying all of it, whatever
+  the position unit, a conservative reading, since the engine can take some of
+  these lengths in constant time, while `len` of a node or a list is not
+  counted, since it takes constant time; the classifier tells a string value
+  from a node by the types of the checker, and counts an operand whose type it
+  does not know as a string value; and a comparison examines no more than the shorter string,
   so it is counted as copying only one of its operands, and comparing with a
   literal costs a constant.
 - A **left call** is a call of a rule of a left-recursion cycle, in the body
