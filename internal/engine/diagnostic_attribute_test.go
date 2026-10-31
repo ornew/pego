@@ -29,7 +29,7 @@ func TestDiagnosticAttribute(t *testing.T) {
 		fails("aac", `1:3: syntax error: expected "a", "b"`),
 	)
 	check(t, `rule main = ("a" @diagnostic(name="first") / "b")`,
-		fails("c", `1:1: syntax error: expected "b", first`),
+		fails("c", `1:1: syntax error: expected first, "b"`),
 	)
 	check(t, `rule main = ("a" @error(message="explicit") @diagnostic(name="ordinary"))`,
 		fails("b", `1:1: explicit`),

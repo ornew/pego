@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 )
 
@@ -25,12 +24,13 @@ func (p *Parser) equalExpected(a, b []ExpID) bool {
 	return true
 }
 
-// sortExpected sorts a newly constructed, parser-owned diagnostic. Comparisons
-// and explicit moves are bounded; allocation and GC remain nonpreemptible.
+// sortExpected sorts a newly constructed, parser-owned diagnostic in the order of
+// compareExpected. Comparisons and explicit moves are bounded; allocation and GC
+// remain nonpreemptible.
 // Published or memoized errors must never be passed to this helper.
 func (p *Parser) sortExpected(values []string) {
 	if !BudgetControlsEnabled || p.Control == nil {
-		sort.Strings(values)
+		sortExpectedEntries(values)
 		return
 	}
 	if len(values) < 2 {
@@ -43,7 +43,10 @@ func (p *Parser) sortExpected(values []string) {
 			hi := mid + min(width, len(values)-mid)
 			i, j, k := lo, mid, lo
 			for i < mid && j < hi {
-				order := p.CompareText(src[i], src[j])
+				order := expectedKind(src[i]) - expectedKind(src[j])
+				if order == 0 {
+					order = p.CompareText(src[i], src[j])
+				}
 				p.Spend()
 				if order <= 0 {
 					dst[k] = src[i]
@@ -79,13 +82,18 @@ func (p *Parser) RecoveryErrorText(e *SyntaxError) string {
 		return e.Error()
 	}
 	prefix := fmt.Sprintf("%d:%d: ", e.Line, e.Col) // bounded integer formatting
-	intro, sep := "", "; "
+	intro, sep, tail := "", "; ", ""
 	parts := e.Messages
 	if len(parts) == 0 {
-		parts, sep = e.Expected, ", "
+		var rest int
+		parts, rest = expectedShown(e.Expected)
+		sep = ", "
 		intro = "syntax error"
 		if len(parts) > 0 {
 			intro += ": expected "
+		}
+		if rest > 0 {
+			tail = expectedTail(rest) // bounded integer formatting
 		}
 	}
 	size := checkedDiagnosticSize(len(prefix), len(intro))
@@ -96,6 +104,7 @@ func (p *Parser) RecoveryErrorText(e *SyntaxError) string {
 		}
 		size = checkedDiagnosticSize(size, len(part))
 	}
+	size = checkedDiagnosticSize(size, len(tail))
 	var out strings.Builder
 	out.Grow(size)
 	p.writeDiagnosticText(&out, prefix)
@@ -107,6 +116,7 @@ func (p *Parser) RecoveryErrorText(e *SyntaxError) string {
 		}
 		p.writeDiagnosticText(&out, part)
 	}
+	p.writeDiagnosticText(&out, tail)
 	return out.String()
 }
 

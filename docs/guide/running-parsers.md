@@ -202,7 +202,7 @@ prefix, the parse fails with `end of input` among the expected items at the firs
 
 ```go
 _, err = keyParser.Parse("abc=1")
-fmt.Println(err) // 1:4: syntax error: expected [a-zあ-ん], end of input
+fmt.Println(err) // 1:4: syntax error: expected end of input, [a-zあ-ん]
 ```
 
 To accept a named rule's prefix and get its consumed code-point and byte lengths, use

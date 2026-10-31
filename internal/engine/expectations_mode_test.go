@@ -3,10 +3,12 @@ package engine
 import (
 	"errors"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -142,6 +144,56 @@ func TestExpectationsOffMissingTokenMessage(t *testing.T) {
 			}
 			if !on && strings.Contains(got, "expected") {
 				t.Errorf("recognize=%v expectations=%v: %q lists an expectation", recognize, on, got)
+			}
+		}
+	}
+}
+
+// longExpectedGrammar fails after its first character with ten expected entries ("t"), eleven
+// ("e") and fifteen ("w"), of every kind, and recovers from eleven ("r").
+const longExpectedGrammar = `rule main = "t" ten $$ / "e" eleven $$ / "w" wide $$ / "r" (eleven ";") #recover(skip=[^;]* ";") $$
+rule ten = "a" / "b" / "c" / "d" / "e" / "f" / "g" / [0-9] / [x-z] / $
+rule eleven = ten / "h"
+rule wide = eleven / ^ "q" / "é" / "😀" / [A-Z]`
+
+// A syntax error lists its expected entries as names, then literals, then classes, and its
+// message shows the first ten of them; Expected keeps all of them.
+func TestLongExpectedLists(t *testing.T) {
+	t.Parallel()
+	prog := mustCompile(t, longExpectedGrammar)
+	ten := []string{"end of line", `"a"`, `"b"`, `"c"`, `"d"`, `"e"`, `"f"`, `"g"`, "[0-9]", "[x-z]"}
+	eleven := []string{"end of line", `"a"`, `"b"`, `"c"`, `"d"`, `"e"`, `"f"`, `"g"`, `"h"`, "[0-9]", "[x-z]"}
+	wide := []string{"beginning of line", "end of line", `"a"`, `"b"`, `"c"`, `"d"`, `"e"`, `"f"`, `"g"`, `"h"`, `"é"`, `"😀"`, "[0-9]", "[A-Z]", "[x-z]"}
+	for _, c := range []struct {
+		input    string
+		expected []string
+		message  string
+	}{
+		{"t!", ten, `1:2: syntax error: expected end of line, "a", "b", "c", "d", "e", "f", "g", [0-9], [x-z]`},
+		{"e!", eleven, `1:2: syntax error: expected end of line, "a", "b", "c", "d", "e", "f", "g", "h", [0-9], ... and 1 more`},
+		{"w!", wide, `1:2: syntax error: expected beginning of line, end of line, "a", "b", "c", "d", "e", "f", "g", "h", ... and 5 more`},
+		{"r!;", eleven, `1:2: syntax error: expected end of line, "a", "b", "c", "d", "e", "f", "g", "h", [0-9], ... and 1 more`},
+	} {
+		for _, b := range expectationBackends {
+			// A budget limit sorts and formats under budget controls, with the same result.
+			for _, l := range []limits.Limits{{}, {Budget: 1 << 50}} {
+				n, err := prog.ParseWith("main", c.input, ParseOptions{Backend: b, Expectations: true, Limits: l})
+				var se *SyntaxError
+				var list SyntaxErrors
+				if errors.As(err, &list) && len(list) == 1 {
+					se = list[0]
+					if text := gentest.ResultJSON(n, nil); !strings.Contains(text, strconv.Quote(c.message)) {
+						t.Errorf("%q %v %v: recovered tree lacks the message: %s", c.input, b, l, text)
+					}
+				} else if !errors.As(err, &se) {
+					t.Fatalf("%q %v %v: %v", c.input, b, l, err)
+				}
+				if se.Error() != c.message {
+					t.Errorf("%q %v %v: message\n got %s\nwant %s", c.input, b, l, se.Error(), c.message)
+				}
+				if strings.Join(se.Expected, "|") != strings.Join(c.expected, "|") {
+					t.Errorf("%q %v %v: Expected %q, want %q", c.input, b, l, se.Expected, c.expected)
+				}
 			}
 		}
 	}

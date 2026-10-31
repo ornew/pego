@@ -818,9 +818,12 @@ func writeScalar(b *strings.Builder, v any) {
 
 // SyntaxError reports that the input does not match the grammar.
 type SyntaxError struct {
-	Pos      int
-	Line     int
-	Col      int
+	Pos  int
+	Line int
+	Col  int
+	// Expected lists every entry that was expected at Pos: names, then
+	// literals, then classes, each in byte order. Message shows at most the
+	// first ten of them.
 	Expected []string
 	Messages []string
 }
@@ -834,10 +837,7 @@ func (e *SyntaxError) Message() string {
 	if len(e.Messages) > 0 {
 		return strings.Join(e.Messages, "; ")
 	}
-	if len(e.Expected) > 0 {
-		return "syntax error: expected " + strings.Join(e.Expected, ", ")
-	}
-	return "syntax error"
+	return expectedMessage(e.Expected)
 }
 
 // SyntaxErrors lists the syntax errors recovered from with #recover.
@@ -2492,7 +2492,7 @@ func (p *Parser) MakeError(pos int, expected []ExpID) *SyntaxError {
 			e.Expected = append(e.Expected, p.g.Descs[x])
 		}
 	}
-	sort.Strings(e.Expected)
+	sortExpectedEntries(e.Expected)
 	if p.Stream != nil {
 		e.Line, e.Col = p.streamLineCol(pos)
 		return e

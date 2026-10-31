@@ -413,7 +413,7 @@ n.end).join("")`.
 
 Strings in actions behave as Go strings do: `+` concatenates, `<` and the other comparisons order by code point (Go's
 byte order of UTF-8, not JavaScript's UTF-16 order), and `len` counts code points or UTF-8 bytes. Expected tokens in
-error messages are sorted in the same order.
+error messages are in the same order as in Go.
 
 ## Values of Actions
 

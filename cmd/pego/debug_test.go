@@ -205,7 +205,7 @@ Calls that recorded what was expected at 2:3 (innermost first):
 	// Calls that matched can record expectations after their match; each call shows only the
 	// expectations it recorded itself. The start rule's $$ expects the end of input.
 	out, err = runCLI(t, "", "explain", "-g", g, "-i", "a=1 !", "-backend", "bytecode-iterative")
-	want = `1:5: syntax error: expected [ \n], [a-z], end of input
+	want = `1:5: syntax error: expected end of input, [ \n], [a-z]
 
 Calls that recorded what was expected at 1:5 (innermost first):
 
@@ -227,7 +227,7 @@ Calls that recorded what was expected at 1:5 (innermost first):
 rule main = pair+
 rule pair = [a-z] #atomic "=" [0-9] #atomic`)
 	out, err = runCLI(t, "", "explain", "-g", unanchored, "-i", "a=1!")
-	want = `1:4: syntax error: expected [a-z], end of input
+	want = `1:4: syntax error: expected end of input, [a-z]
 
 Calls that recorded what was expected at 1:4 (innermost first):
 

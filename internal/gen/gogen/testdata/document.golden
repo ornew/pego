@@ -3,39 +3,39 @@
 # Rewrite with: go test ./internal/gen/gogen -run Document -update
 # A run checks every entry of its scope: an entry that is missing, stale or different fails. -update replaces the
 # entries of the scope, drops stale ones and logs a summary per case. Review the diff: it is a regression freeze.
-corpus/0/../../examples/calculator/calc.pego	b8923a3c62110889f0d4b38b
-corpus/0/../../examples/calculator/calc_lr.pego	247d34f774291d3314097440
-corpus/0/../../examples/minilang/minilang.pego	e42130959236dbb5047f79fd
+corpus/0/../../examples/calculator/calc.pego	373875d40f5d9bea0f55c6a5
+corpus/0/../../examples/calculator/calc_lr.pego	21df5c7296b8b2d69d428682
+corpus/0/../../examples/minilang/minilang.pego	eeaf537de038ab657bc67b8e
 corpus/0/../../examples/outline/outline.pego	238e019d3a48c5eaa7b3ebf3
-corpus/0/LR cut inside optional	9344f20792681d828e175147
-corpus/0/Operators Rule explicit default action	6ab06394db14f9615cb7c7a1
-corpus/0/Operators Rule operand with a cut in the recovered body	ae8a48b66d66a8bdd8945120
-corpus/0/Operators Rule operand with recovery	0562fbc0ad22fb704eed5fa9
-corpus/0/Operators Rule operator action on scalar operands	019e3da4b5fdb61e58b395ab
-corpus/0/OperatorsRule prefix-part cuts	0bc6d2dac72422f0f84e94ea
-corpus/0/a cast binding in an Operators Rule operand	7d8a56048c1b6080746a11da
+corpus/0/LR cut inside optional	349ce2f0fb8eda1be5c47182
+corpus/0/Operators Rule explicit default action	4c868d821c064cc8b11e5dd8
+corpus/0/Operators Rule operand with a cut in the recovered body	0b7e63e06560d3449b03a9dc
+corpus/0/Operators Rule operand with recovery	c029c32cf8b3fb5b872aedf9
+corpus/0/Operators Rule operator action on scalar operands	fa4541fa5988b5040de7e77c
+corpus/0/OperatorsRule prefix-part cuts	890a5fc3188577c235a311a9
+corpus/0/a cast binding in an Operators Rule operand	f598d16bafb3117f6c572a9f
 corpus/0/a failed cast in a binding backtracks	ca871e28eb3f3cc27be3166d
-corpus/0/action environments	c59147dc8dd9c8aba318c014
-corpus/0/alias constructors	473e28e850b9edde32a46351
-corpus/0/alias singleton unions	9f55938bc422ae9ad1d2b759
-corpus/0/alias terminal	61662f4873c86fa9063ac4ac
-corpus/0/alias terminal action	b4eb6dbbfd3a8d966480a5ca
-corpus/0/alias terminals in structs	2a63adf9c84eb9f14d698b18
-corpus/0/anchors and classes	1aaf4c2c46caed0696361065
-corpus/0/any-character lookahead	2444aa4c7eb36f8e4070bcf8
-corpus/0/arith	bc2a41a777a9111cf36f04f0
-corpus/0/ast	a4396996397b70408be462b9
+corpus/0/action environments	fab257b37bd47b13f87f4792
+corpus/0/alias constructors	9df19ce7ceefc8949610de56
+corpus/0/alias singleton unions	b9f911fb4e72e02711cebb57
+corpus/0/alias terminal	f86d613ed3dc201c4d405726
+corpus/0/alias terminal action	e20eeae1a5e0dab1dbf45734
+corpus/0/alias terminals in structs	195490b51304cea43cedf34d
+corpus/0/anchors and classes	a3be26cb2f0769908a2ba31e
+corpus/0/any-character lookahead	1243b5d3f50b577288fbb241
+corpus/0/arith	90d03338fc98934d9ce1e6d3
+corpus/0/ast	272f48cadd6cafd35378ed1e
 corpus/0/attribute shape/diagnostic in a field	9c17fbca3cff111e0131cbaa
 corpus/0/attribute shape/diagnostic in a repetition	7f89e2e692d082942ffe5026
-corpus/0/attribute shape/diagnostic in an alternative	7c90bac51bd4fd71ae73af45
-corpus/0/attribute shape/diagnostic in an optional	93e3b35fad2cdf3ff6099869
+corpus/0/attribute shape/diagnostic in an alternative	1f81f7c5da4f8ec611a3c49e
+corpus/0/attribute shape/diagnostic in an optional	cbb6702b67f433b23a98155d
 corpus/0/attribute shape/diagnostic over lookahead seq	05fbe6bc1f9ad4540b7e1a04
-corpus/0/attribute shape/diagnostic over seq with predicates	1d3a19ecf51e9a3a6b89c207
+corpus/0/attribute shape/diagnostic over seq with predicates	ead95c7091c0028a4974811e
 corpus/0/attribute shape/diagnostic over splice body	4059252571698f54ca3b2cec
 corpus/0/attribute shape/diagnostic over splice call	4059252571698f54ca3b2cec
 corpus/0/attribute shape/error over seq	42bf907f997fc1d54bfd0c94
 corpus/0/attribute shape/plain over lookahead seq	3739a86bc4104d06e4e784c3
-corpus/0/attribute shape/plain over seq with predicates	9090cda218d09c2c1816fd7e
+corpus/0/attribute shape/plain over seq with predicates	100d6626e51257fade0776b6
 corpus/0/binding absent after rollback	ed27f1af1640dddd4feb4514
 corpus/0/binding choice rollback	1eb6392797b50e91b3313874
 corpus/0/binding negative lookahead rollback	b9f5b3a02fcc0a30ee482c90
@@ -43,56 +43,56 @@ corpus/0/binding positive lookahead effects	0b239b5d13d3c4d766bfffd3
 corpus/0/binding rule scope	c94f15f8d5eb4564f99088e6
 corpus/0/bindings of a cast value	751172423258189b177e7c8d
 corpus/0/case-insensitive literal alternatives	ab3447ed31b8166b98866f80
-corpus/0/class lookahead	e8fe72b699715fc6a669bcf8
+corpus/0/class lookahead	3b69c1f5f045e1cd26cf5a13
 corpus/0/cut and lookahead	830670d870e03c0f5c833acd
-corpus/0/cut before a call of an Operators Rule	1fd82dd37ade655b43561fd2
-corpus/0/cut in a recovered body before later alternatives	ef09a4117e1c90400dec0441
-corpus/0/cut in a rule called from a negative lookahead	7d693bcd5cba095115391785
-corpus/0/cut in an inner alternative of a nested choice	67e0b780ab5bdab56da9933d
-corpus/0/cut in recovery skip	e2db4481c29aefa0f2e2efda
+corpus/0/cut before a call of an Operators Rule	3301ebeea171464ea464e6f1
+corpus/0/cut in a recovered body before later alternatives	85b5c36aa0cefec7faebce13
+corpus/0/cut in a rule called from a negative lookahead	14e7f796d25425f91b873931
+corpus/0/cut in an inner alternative of a nested choice	be5381b5df050afe108a8cb0
+corpus/0/cut in recovery skip	928d9bcb216d52893dbb5be6
 corpus/0/cut in the skip of a recovery	050f3e1a241138ba5d034532
-corpus/0/cut inside a positive lookahead	7852cc8b803857acec209113
+corpus/0/cut inside a positive lookahead	36b3bd571f8d58a447668327
 corpus/0/cut with captures and a projected repetition	d19f9f3a1c8a6f103abddf21
-corpus/0/cuts in every scope	482ed09cea8f3b9f99faedf1
+corpus/0/cuts in every scope	0bc261aeb86ab584934b3e32
 corpus/0/declared variable initial values	1485abb90f8d9b9ee96ae111
 corpus/0/declared variables are part of the memo key	381651ccafe84e1b99ab6b70
-corpus/0/diagnostic attr	15ff5b097377fc5f439b38b7
-corpus/0/direct value-free decoding and anchors	9b639640e99ab094f8bb121f
-corpus/0/direct value-free fallback calls	7a176edd79218dbef4bb17cc
-corpus/0/direct value-free rollback	cd784a021189c6d7ccbd3fb6
-corpus/0/empty operand and infix	d22cb99bf5324c5d94257867
-corpus/0/empty prefix and postfix	da305d83c625c159f441d0e3
+corpus/0/diagnostic attr	d35f94b90c454496fbee0a4e
+corpus/0/direct value-free decoding and anchors	566f0c22db92695b68dbc91d
+corpus/0/direct value-free fallback calls	95980b66e52f23d2f645d9f8
+corpus/0/direct value-free rollback	9a5f052999e4c95714a9cf65
+corpus/0/empty operand and infix	9a28de39b395f43716c9b640
+corpus/0/empty prefix and postfix	249b6c7d97d679c07677b366
 corpus/0/error attr	fc0277e9eba09791012705a5
 corpus/0/error node as a capture value	b670c8493f5feb0e3aaa0c99
-corpus/0/error node in a capture group	78228e85ecea7073911ae0de
-corpus/0/error node in a projected repetition	80d7ee9aef110e0dea3ae3a4
-corpus/0/fold and lists	fd0373282bef327288737183
-corpus/0/framed choice of rules	0388de3a6ed17946347b269e
-corpus/0/guarded repetition of rules	a9d67d7b1ad0c38bd2ce2924
-corpus/0/hidden leader behind an optional prefix	a5f7241182705ca7e9073539
+corpus/0/error node in a capture group	33a03016ddb64aab2cb943b9
+corpus/0/error node in a projected repetition	a0b33620a90fe24743187474
+corpus/0/fold and lists	dd9b7e1ebaf51432ad01ec08
+corpus/0/framed choice of rules	f7849974ca115708ad4faa06
+corpus/0/guarded repetition of rules	f6d85ef63b19a0c28b795e04
+corpus/0/hidden leader behind an optional prefix	c5dd921923fd94add705256c
 corpus/0/hidden rule: captured call	50a8437bef0834a0d4957ce3
 corpus/0/hidden rule: choice	524a19d14fe7ab2ee0e47f94
 corpus/0/hidden rule: cut	702b9c38998bd551707b4a8f
 corpus/0/hidden rule: hidden captures	73561ef1f71055b2a866c15b
 corpus/0/hidden rule: in a choice	394ef6770c64e94bc67e4465
-corpus/0/hidden rule: in a repetition body	f8a8845fd49ab4f402306a68
-corpus/0/hidden rule: left recursion	88a35ef6715a99a9c2e4e0f4
+corpus/0/hidden rule: in a repetition body	2a2a4452846038428e0e783f
+corpus/0/hidden rule: left recursion	bbc0f95caa76ef053ac9d97b
 corpus/0/hidden rule: lookahead in body	a6c7229b9651b2499df4cb6b
 corpus/0/hidden rule: nested	aa46616ff363f3f54c453edc
 corpus/0/hidden rule: no value	3bada20ce83d43dee737c284
 corpus/0/hidden rule: one element	a0f135a29152884ec1549ca0
 corpus/0/hidden rule: optional	ddb98e48b2cbb9652487a072
 corpus/0/hidden rule: optional recursion	c18df675a4cebf91538e8b20
-corpus/0/hidden rule: recovery	615b07f95ccea52095c1bd47
+corpus/0/hidden rule: recovery	1a1486bb3c618e3b30a9ec74
 corpus/0/hidden rule: repetition	781aa328378978f5e6108b45
-corpus/0/hidden rule: right recursion	d6570efcb1d1739f2662dc9f
+corpus/0/hidden rule: right recursion	d75aec785aee4fe2d648316f
 corpus/0/hidden rule: sequence	f3225bdb9c4af86758ab815d
 corpus/0/hidden rule: used twice	1960e232febd1055ac13068b
 corpus/0/hidden rule: whole body	7d1d31b4e748da62919476d5
 corpus/0/ignorecase group	68f2c3c5f7b69f85974fbc6b
-corpus/0/incremental	49e2e839e264bf1704a89201
-corpus/0/indent	086582f2471c45d31f6fd106
-corpus/0/indirect leader cycle	9c001f8215020fb833e2cf33
+corpus/0/incremental	132bcb153fa8a5d0fd5b3b1c
+corpus/0/indent	c174c54f20b55c39dfdd10a3
+corpus/0/indirect leader cycle	0a0e9dff64b58bd788e5dee2
 corpus/0/initial values key the memo like bound ones	f6245cb02d7590fe67f34afa
 corpus/0/inline action: action error	cd67c1ebdd148915a8ab98cb
 corpus/0/inline action: captures of the enclosing rule after	6d0f377b2bfc0b2e662b91b3
@@ -100,123 +100,124 @@ corpus/0/inline action: choice	58f22009f8d8dee2d14b9ea0
 corpus/0/inline action: choice of inline actions	492d56682ad32152186f8328
 corpus/0/inline action: cut	d4e05df604f1375bbbaaa634
 corpus/0/inline action: default action	80c94506fb5a6f95544aacfa
-corpus/0/inline action: left recursion	3f2394eeb564b92d779d58c4
+corpus/0/inline action: left recursion	871d3755cf65e95bd0f7bfac
 corpus/0/inline action: nested	09ba2b4c15419c4ad4de0208
 corpus/0/inline action: nested in a whole rule	100039ea36846e16514de5da
-corpus/0/inline action: operators rule operand	8db1fb0ce194a5b73ab0b62b
+corpus/0/inline action: operators rule operand	f46155bdfbc7c96e705b195b
 corpus/0/inline action: optional	41558ae03840ef2cf8325799
 corpus/0/inline action: outer capture stays	9ec5b10e7299a5297034179f
-corpus/0/inline action: recover argument	f187261e3df5607418dd549d
-corpus/0/inline action: recovery	9acaf9f50dd915026aefa870
-corpus/0/inline action: recovery inside	7a8bea9ccd073470b3e11b6d
+corpus/0/inline action: recover argument	b85aa37645fddb4b9329a129
+corpus/0/inline action: recovery	b0e4bf70899805b173c7d3de
+corpus/0/inline action: recovery inside	bc2b217d7bcbef4b0f105416
 corpus/0/inline action: repetition	e44c6744ddaafed05e090788
 corpus/0/inline action: sequence	32237992fadf8c8a7bd342ea
-corpus/0/inline action: stream	cf562db62b885ba29f1ae9d4
+corpus/0/inline action: stream	dcb83f639dad49dfdb9e0c73
 corpus/0/inline action: whole rule	ef419fcd34570af182c95ea3
-corpus/0/integer boundaries	75203709b0540daae536580d
-corpus/0/leader behind lookahead prefixes	5ca09836612dd05a57866bec
-corpus/0/leader choice with several operators	b3a6a6de2056a66c10f63aff
-corpus/0/leader in a repetition	7744947b256d01f7480fd5e0
+corpus/0/integer boundaries	329e125c1dcbbb309db4850f
+corpus/0/leader behind lookahead prefixes	6ef1f623e8b01a57216fafd1
+corpus/0/leader choice with several operators	ac0ce3b2b7601fcf6d8ba6c3
+corpus/0/leader in a repetition	d9cedc18b8e286d56e442049
 corpus/0/leader in lookaheads	924d42db51bd8e1261f5980c
-corpus/0/leader with a cut	cd41e3ba830a5d00f441dc45
-corpus/0/leader with captures	87dcf847811991215abd44ea
-corpus/0/leader with memoized callers	59fb2e933beaa7779b6820e6
-corpus/0/leader wrapped in a recovery	73a9e9d51064c5696651e923
-corpus/0/left recursion	244240a280a12d04b8d3aee7
+corpus/0/leader with a cut	18967f99df204ffb13a4531c
+corpus/0/leader with captures	4d1c7b07c3dff4cacc2c80f3
+corpus/0/leader with memoized callers	d84722e81714b9e8d20cd3e7
+corpus/0/leader wrapped in a recovery	d2045bd683c7548a1224516e
+corpus/0/left recursion	3c719f6ab4de0f31d7a5bca6
 corpus/0/left recursion in recovery skip	ab02d53ffb3eedd7df504d4d
 corpus/0/len of nodes and strings	80f0fdeb1d67571cd51f92f0
-corpus/0/line choice of rules	b66247574685415fcec6550b
-corpus/0/line choice with captures and skip	41b07121290efbf3f6ab1129
+corpus/0/line choice of rules	fccd6bd02931384f62d1f88f
+corpus/0/line choice with captures and skip	0089529c14881f5df4078538
 corpus/0/literal text different captures control	d3cb6074324c6ae8b8c40c00
-corpus/0/literal text missing capture	d1ec3e293c0577514f4c033f
-corpus/0/literal text mixed control	01be2a5fa807a7df68667667
-corpus/0/literal text negation control	b4fe941e4e1f8f216d63459c
-corpus/0/literal text predicate controls	96d086e38c05ac08d9a54b85
+corpus/0/literal text missing capture	e6a5135c870a18345b380152
+corpus/0/literal text mixed control	39937a8c175a222fc8b60cda
+corpus/0/literal text negation control	d2ea97f34e9a9f522429abec
+corpus/0/literal text predicate controls	5ef67c244515e13cc9f234e5
 corpus/0/literal text predicate dispatch	c714ba3dc69a01630102ca8a
-corpus/0/literal text variable alias control	4ab706347d5cf3b649643703
+corpus/0/literal text variable alias control	8153af6c9cfafeae5e8dbfb5
+corpus/0/long expected lists	c5bbc36746be8cf67f5bd5ee
 corpus/0/long inferred chain	94c279f703f3f3d9abb78ac8
 corpus/0/memo entries are keyed by the variables the rule reads	ad9f9cf2fd79437066ed79ed
 corpus/0/memo keyed by variables	ee09f143ffb61330d000e0ac
 corpus/0/memoized rule with a cut called at one position	9a236a2506f8c8004c652503
-corpus/0/mutual leaders	b3ce315ace18578b3192e257
-corpus/0/named node type run-time conversions	2a098f6ece1e89166f075c17
-corpus/0/named node types	506d8e0ffe9c3f45af95f3c8
-corpus/0/negative lookahead	cc3fdf259886a80f4cf867c1
+corpus/0/mutual leaders	42780a72ddfd62a9dcd3bea0
+corpus/0/named node type run-time conversions	59b3ad469c352a9cd2b9c0c5
+corpus/0/named node types	1d80b382eab5509259afe1be
+corpus/0/negative lookahead	73b0856596a712074e60a605
 corpus/0/nested captured repetitions	77311f70f14139afe0e56e4f
-corpus/0/nested left recursion	abc5a0bede2bdf602dd08b23
-corpus/0/nested recoveries	7d3840acf489750044771c79
-corpus/0/nil OperatorsRule action	d8b8de586997593d5eae787f
-corpus/0/nil allocating action	13c343076a90f66890664141
+corpus/0/nested left recursion	3dca42bc8fd3b2aa7f35e0ac
+corpus/0/nested recoveries	5e1629f0029547b3cd0702cc
+corpus/0/nil OperatorsRule action	4680c805b8eb73e28b308232
+corpus/0/nil allocating action	d6d7a753849a94c8515a8d0c
 corpus/0/node/direct_expectations	efe3d1966fb6bdc602297505
 corpus/0/node/direct_memo_action	78f9633f5f5b9171478ba07f
-corpus/0/node/direct_nested_frames	b38e3a5bac4a6e101c8764d1
-corpus/0/nullable minimum repetitions	68695a67ee0ec7e42f9825e9
-corpus/0/operatorsRule infix action variables	0b1eec06cfaacbb382450a1b
-corpus/0/operatorsRule operand action	1c0027fa50f5f1d4ff78405b
-corpus/0/operatorsRule operand action and captures	acdc00c452ee9926cf4b6a6b
-corpus/0/operatorsRule operand action prefix	f623e9fdd03fa50d2926141e
-corpus/0/operatorsRule operand action variables	a190d62d6e07e104ed69fdd6
-corpus/0/operatorsRule operand reading a capture of a repetition	5ce7a3c6b4f6458cc7b2ff6b
-corpus/0/operatorsRule operand rule call with scalar result	4dedb60d8de09c0c87369ce7
-corpus/0/operatorsRule postfix action variables	1a83a4ee0d8f6616481286d4
-corpus/0/operatorsRule prefix action variables	b13fcf0be782829f22bbeb52
-corpus/0/operatorsRule scalar operand actions and typed results	f1ee2a38b9251625a0a59fca
-corpus/0/operatorsRule scalar results of operators	a25128a1484ae8d1c461faea
+corpus/0/node/direct_nested_frames	26effb9345aa8a7a64375b5b
+corpus/0/nullable minimum repetitions	436a93482022506884954596
+corpus/0/operatorsRule infix action variables	d6d9175830a259b335ce589d
+corpus/0/operatorsRule operand action	bf9c810e90acebdcae9e97f5
+corpus/0/operatorsRule operand action and captures	8063452c5a4d75180a1aa440
+corpus/0/operatorsRule operand action prefix	4c932d63914a1a444996207d
+corpus/0/operatorsRule operand action variables	e9d93648e479472cab07432e
+corpus/0/operatorsRule operand reading a capture of a repetition	0c087c455aa823dc0dc3f581
+corpus/0/operatorsRule operand rule call with scalar result	36f4e8381d0822f1d70f8058
+corpus/0/operatorsRule postfix action variables	bae2d35fc787f967b7ad7097
+corpus/0/operatorsRule prefix action variables	033d40d448c6226cb037a6b7
+corpus/0/operatorsRule scalar operand actions and typed results	7830bddb4d5776508282a16a
+corpus/0/operatorsRule scalar results of operators	b73e4f8ee24948e0f015732c
 corpus/0/optional with a cut followed by input	d84f0d666cee44000d4e5bce
-corpus/0/outlined keywords	1264c8934f8fd831d283ea9f
-corpus/0/positive lookahead	96ec681cb91cfed8bc4a109b
-corpus/0/projected and indexed repetition	1e8416bcff40d170c772ca60
+corpus/0/outlined keywords	cd915b027210f915505273aa
+corpus/0/positive lookahead	59d65b24d828958bffb0700d
+corpus/0/projected and indexed repetition	2fff57fbebf3459e95373f08
 corpus/0/projected repetition clears its frame	6ac6f0622b34fff24c632491
 corpus/0/recognizer action over a projected repetition	c3fbe7ca5fb4c970292a99ef
 corpus/0/records	c041a1a9b5736c51a2d62ddf
-corpus/0/recover	eaaed7ee292085136982a2e1
-corpus/0/recovery after a cut	34668e16fc9c70d40d3f8c83
-corpus/0/recovery in a statement list	dd33d3a7cb89695045bae86c
-corpus/0/recovery inside a leader body	35b595c8c9e25dd693afb1b8
-corpus/0/recovery of a leader	31b7fbb04456394dfb2ca394
-corpus/0/recovery under a lookahead	22b1cfb92cc44a92b891cb99
-corpus/0/recovery under a negative lookahead	b39f0bc39f0ec640047a1e98
-corpus/0/recovery whose skip fails after consuming	80e832843a312ad417194675
-corpus/0/recovery with a far failing choice	b2daeba1754ef7593f163847
-corpus/0/recovery with a zero-consumption skip	fd1ff4ec3af14754a6ba4944
-corpus/0/restricted OperatorsRule prefix memo	5f896802992e457461c7d76f
-corpus/0/restricted OperatorsRule prefixes	67348aa3ebcbe417534ddd32
-corpus/0/rule action variables	a190d62d6e07e104ed69fdd6
-corpus/0/runtime error	4e51b601b0d5311426b34e92
-corpus/0/scans	0837db30e9052f75300fcbc3
-corpus/0/sequence lookahead	0fc852446b26e0115aee52cf
-corpus/0/sibling alternatives starting with a leader	5723d0969dae8552e69747a8
-corpus/0/stream capture recognition	484713b32c75e7112c97642b
-corpus/0/stream element recovery	4e766975e6d6573df08a8d12
+corpus/0/recover	31099d4146a75fd0835bfd1a
+corpus/0/recovery after a cut	a22bdeaa085100d581fbdd6d
+corpus/0/recovery in a statement list	0bbbed59e4cc7a5336e8a694
+corpus/0/recovery inside a leader body	456ee82b8d0de0a33c3b0d21
+corpus/0/recovery of a leader	cdf20d6b37dd218ee0f1c27d
+corpus/0/recovery under a lookahead	3b02b0628cb2ef435f783141
+corpus/0/recovery under a negative lookahead	3a9c5b34d795b8e704971ea4
+corpus/0/recovery whose skip fails after consuming	dc4d4b4ae2a7f45c9e64025f
+corpus/0/recovery with a far failing choice	733863d68587ffe99ba714e5
+corpus/0/recovery with a zero-consumption skip	e595edac867adda6443304e8
+corpus/0/restricted OperatorsRule prefix memo	75c19155c3fa4a40eff2fc0b
+corpus/0/restricted OperatorsRule prefixes	bab9bb75f59b940688694500
+corpus/0/rule action variables	e9d93648e479472cab07432e
+corpus/0/runtime error	340ba39fbdd39bdee2bcdfb6
+corpus/0/scans	b3b9f074f70cab592ea99a45
+corpus/0/sequence lookahead	8597040e475a1d60e31b6d37
+corpus/0/sibling alternatives starting with a leader	b1f26c56ddf8f99ae9302a22
+corpus/0/stream capture recognition	0ee5c23c64b4a654222f2ac5
+corpus/0/stream element recovery	fad69b33800664081219ef4e
 corpus/0/stream empty capture recognition	abc7de8870c1681b447f81bd
 corpus/0/terminal constructor predicate error	9a2d9df728f531e01c0a9d8f
 corpus/0/terminal constructor root	152d0ff1aee5db6bceffb3ea
 corpus/0/terminal constructor value error	2cfb4b6e104ab69a17a458ef
-corpus/0/terminal singleton union	61662f4873c86fa9063ac4ac
-corpus/0/testdata/typed/calclr.pego	f274b02b57aabc17f553a332
-corpus/0/testdata/typed/direct_backtrack.pego	e40c7f950e1172609e203ac9
-corpus/0/testdata/typed/direct_errors.pego	630838be632ed4cc452c74b0
+corpus/0/terminal singleton union	f86d613ed3dc201c4d405726
+corpus/0/testdata/typed/calclr.pego	248af8484dd25242dece5dd7
+corpus/0/testdata/typed/direct_backtrack.pego	9cc5aeb67077b0c05194c965
+corpus/0/testdata/typed/direct_errors.pego	cd088deca89a8e064ee1bf05
 corpus/0/testdata/typed/direct_lists.pego	469520784fa6795294608cfe
-corpus/0/testdata/typed/direct_literals.pego	f16aff99be99bd2b53e62e4c
+corpus/0/testdata/typed/direct_literals.pego	06b145ace3f4e931aeba4909
 corpus/0/testdata/typed/direct_names.pego	99b59e4eba7b3c83a220a0dd
 corpus/0/testdata/typed/element_scope_optional.pego	fa1a7ef4c9d53cbc4a7998c5
 corpus/0/testdata/typed/element_scope_plain.pego	6380399b3828bb0d8b590451
 corpus/0/testdata/typed/element_scope_recover.pego	a5d7be038d66728a6d57ec9b
 corpus/0/testdata/typed/errlist.pego	ae9f969cdf99b3529106ddb3
-corpus/0/testdata/typed/errlist2.pego	0cff3f87b4491a2cc69cdec1
-corpus/0/testdata/typed/fields.pego	8ddf11f4d3475c5381116024
-corpus/0/testdata/typed/mix.pego	f727467a45dbb14a3a882d06
-corpus/0/testdata/typed/mixf.pego	dd0deef54864d94b954400bd
-corpus/0/testdata/typed/operators_rule1.pego	e406a919da607bb35c550ca9
-corpus/0/testdata/typed/operators_rule1f.pego	f700d0b158adef4f6288406d
+corpus/0/testdata/typed/errlist2.pego	90909276151fa845689be769
+corpus/0/testdata/typed/fields.pego	9e67c625cd787fcef3eba2ca
+corpus/0/testdata/typed/mix.pego	4d8bdcf710485d7e2b9c6f59
+corpus/0/testdata/typed/mixf.pego	e704660fc4b3349f1cf2d86f
+corpus/0/testdata/typed/operators_rule1.pego	32687331aadeebf37b9d126f
+corpus/0/testdata/typed/operators_rule1f.pego	65e5d026ac7bbc399c753bfe
 corpus/0/testdata/typed/order.pego	ff6ff4cdb9f9761b2bc97482
-corpus/0/testdata/typed/proj1.pego	20809e7d4fa69be2e3dea341
+corpus/0/testdata/typed/proj1.pego	fe53226149b6165d3ea45367
 corpus/0/testdata/typed/proj2.pego	61d96879eb9f796be657802b
 corpus/0/testdata/typed/proj3.pego	ba5f358b77812edfbdf80c58
 corpus/0/testdata/typed/proj4.pego	a10171e14ea1719f4db963dd
-corpus/0/testdata/typed/proj5.pego	0d3d419f11970272d8a914ac
-corpus/0/testdata/typed/proj6.pego	ca4dee3d58bb81234388bdca
-corpus/0/testdata/typed/proj7.pego	40ef272a79de80541032faf5
+corpus/0/testdata/typed/proj5.pego	c70ce5b941aae6f9768038b6
+corpus/0/testdata/typed/proj6.pego	84af9f2a91b82223c2b90fda
+corpus/0/testdata/typed/proj7.pego	f19bc829bcdca5402db0f499
 corpus/0/testdata/typed/spanname.pego	2d62fcf3e204b3e396209915
 corpus/0/testdata/typed/splice_recursive_capture.pego	e5f4a62da61d75bb4e0bdcc1
 corpus/0/testdata/typed/splice_recursive_capture_action.pego	63c71ad39ee9032ec8bcb3ca
@@ -224,36 +225,36 @@ corpus/0/testdata/typed/splice_recursive_choice.pego	04f5a8e829552675882846f7
 corpus/0/testdata/typed/splice_recursive_choice_in_seq.pego	3cdf39a28b92035392a0381f
 corpus/0/testdata/typed/splice_recursive_optional.pego	bc0744f6fd79cc1872e3a7f9
 corpus/0/testdata/typed/splice_recursive_repeat.pego	4b64934260caf5d27828f3d4
-corpus/0/testdata/typed/unif.pego	c8edecd1f7dcc40b0ff3d010
+corpus/0/testdata/typed/unif.pego	0bf8ee73e95a53b3f0dc1494
 corpus/0/top-level cut in a called rule	41d6729d452298cf97ad710e
-corpus/0/transitive action variables	344d4805dd0177e402478730
+corpus/0/transitive action variables	7497f7be265d1335ac8545f2
 corpus/0/tuple literal in struct fields	01302f23dee95a2fbd026128
 corpus/0/tuple literal of declared tuple type	4c24d4911d9b0de15bbd6636
-corpus/0/tuple literal values	57a3a1dfab5b64354b561ab2
+corpus/0/tuple literal values	d375dbde97109e7dc70d2b46
 corpus/0/two cuts in a repetition inside a choice	ffeb3963400b7e9346fad462
 corpus/0/typed list root	13d3a2612fa6555d9e713502
 corpus/0/typed node constructors	b74d0ae9bfd20753bea27f56
 corpus/0/typed nullable union list	f4414087efc708a8f35239a6
-corpus/0/typed/LR_dead_capture_order	e2022ff66ee5d1d53397e4cd
-corpus/0/typed/LR_direct	4dc7a654e5032ad24d8de237
-corpus/0/typed/LR_element_frames	9105cc9a3633c678f5273a2e
-corpus/0/typed/LR_framed_cuts	7ef4537bdb2a6a013d0612a8
-corpus/0/typed/LR_hidden	057dfbe9c0297ed595d248f9
-corpus/0/typed/LR_indirect	cd35fd082c1389aefce0b891
+corpus/0/typed/LR_dead_capture_order	8b937697562ba40adb1fadcf
+corpus/0/typed/LR_direct	5f3e3ce97994ff74ff7de4b3
+corpus/0/typed/LR_element_frames	05577f60c5ff3f3ebd96bf68
+corpus/0/typed/LR_framed_cuts	aea1edb9fc980986aa34ba1a
+corpus/0/typed/LR_hidden	215615fd8ab1f6295d17f5b7
+corpus/0/typed/LR_indirect	63d8504034320f42db59fbae
 corpus/0/typed/LR_lookahead_memo	18c1c0c6a21d06f804a08bf3
 corpus/0/typed/LR_no_improvement	ae88869fac8ecdccb37ab0f3
-corpus/0/typed/LR_nullable_seed	fb36edac6a7aa51fa01a92d5
-corpus/0/typed/LR_positional_action	6558ec306f052fe914571a62
-corpus/0/typed/LR_projected_repeat	2b4f17b9dc73df63c68d4526
-corpus/0/typed/LR_recovery	568d3d66360513a23af58148
-corpus/0/typed/LR_rollback_environment	520452740a6df3248b21ad1e
-corpus/0/typed/LR_unreachable_capture	f6f14a03db73ac3302205006
-corpus/0/typed/OperatorsRule_associativity	31536263cf274732e5c7cd99
+corpus/0/typed/LR_nullable_seed	2b1aa226003a7360cc7a0aad
+corpus/0/typed/LR_positional_action	1c827e8bc921fb3f55efd951
+corpus/0/typed/LR_projected_repeat	31cce55e6bc5cea8aec5bd30
+corpus/0/typed/LR_recovery	54144889386e2e5f8a128d98
+corpus/0/typed/LR_rollback_environment	2686126fd5e46612751a855d
+corpus/0/typed/LR_unreachable_capture	f7767a266d5b2c5d79f59e9a
+corpus/0/typed/OperatorsRule_associativity	2fbdd3a53332fc784a9b2f3b
 corpus/0/typed/OperatorsRule_dead_capture_order	a24f73c1aee67acf83e269dd
-corpus/0/typed/OperatorsRule_dead_element_predicate	8d8295ce2153a8636a1637e6
+corpus/0/typed/OperatorsRule_dead_element_predicate	3994537cdb37af0e7324e339
 corpus/0/typed/OperatorsRule_dead_lookahead_capture	bc33d1c9b3f7d150c8bf131b
 corpus/0/typed/OperatorsRule_dead_projection	15cc0a2617c86e1e5fbbc073
-corpus/0/typed/OperatorsRule_element_captures	9ca51b8f3092db5677e6e326
+corpus/0/typed/OperatorsRule_element_captures	e4610b6d0c553d118e7439e2
 corpus/0/typed/OperatorsRule_environment_rollback	931722a92df6e4e1e996937f
 corpus/0/typed/OperatorsRule_error_isolation	1d33b6c44c65643361fd2e95
 corpus/0/typed/OperatorsRule_framed_cuts	3d697ae1939e849bf7201e7b
@@ -261,9 +262,9 @@ corpus/0/typed/OperatorsRule_infallible_alternative	d4944436ddf51b7a07ebfa79
 corpus/0/typed/OperatorsRule_longest_ties	dc4b5cc20b635029a7de2127
 corpus/0/typed/OperatorsRule_lookahead_memo	6c725f679520af3df5a9a76f
 corpus/0/typed/OperatorsRule_mixed_routes	084352b773b339def8a4f2a2
-corpus/0/typed/OperatorsRule_nullable_parts	e44106a564673421aa7128d0
-corpus/0/typed/OperatorsRule_positional_actions	01c62b3be8f24d42228982d1
-corpus/0/typed/OperatorsRule_recovery	b2eff4d70c5c35b86e9a7a47
+corpus/0/typed/OperatorsRule_nullable_parts	d89586c756f35d2a5e342220
+corpus/0/typed/OperatorsRule_positional_actions	6efa169b7b10511d1ad5b922
+corpus/0/typed/OperatorsRule_recovery	df37a7b11c80c92a0604f34a
 corpus/0/typed/OperatorsRule_unreachable_capture	9fc22f14de65f22cbfde2f0f
 corpus/0/typed/direct_cut_callee	c8e7735011e9c21fc0384cb0
 corpus/0/typed/direct_cut_captured_lookahead	19ca3429c31ffed08e07ff73
@@ -273,11 +274,11 @@ corpus/0/typed/direct_cut_lookahead	89e15b782df251563c7f3c25
 corpus/0/typed/direct_cut_memo_capture	8999c8dcd4fb03d451e69646
 corpus/0/typed/direct_cut_nested_choice	d3f4ff4fc954ee4219f40a0a
 corpus/0/typed/direct_cut_optional	d479630c55154717cf8b66bf
-corpus/0/typed/direct_cut_outer_rollback	5536abc68e8ade23f51a37be
+corpus/0/typed/direct_cut_outer_rollback	e876701952ccedc51555dcc0
 corpus/0/typed/direct_cut_projection	c395f206d08a94c986ce4d1c
 corpus/0/typed/direct_cut_repeat	21f1e9c26f850d4d0c170ad2
-corpus/0/typed/direct_cut_repeat_rollback	2b8482a01e9efae53756f0ba
-corpus/0/typed/framed_cut_LR_elements	30437755ad510ce208c9cda2
+corpus/0/typed/direct_cut_repeat_rollback	84d3d66176c164c7566de945
+corpus/0/typed/framed_cut_LR_elements	2673eeada6b4d5dc8bbe91d3
 corpus/0/typed/framed_cut_OperatorsRule_longest	8cbab5bed67ad9189b7ee183
 corpus/0/typed/framed_cut_captured_lookahead	19ca3429c31ffed08e07ff73
 corpus/0/typed/framed_cut_choice	5da4a6db7d532995669d762f
@@ -285,104 +286,104 @@ corpus/0/typed/framed_cut_error	ca8d2de5895f7ef4dfca0fe6
 corpus/0/typed/framed_cut_lookahead	89e15b782df251563c7f3c25
 corpus/0/typed/framed_cut_nested_choice	d3f4ff4fc954ee4219f40a0a
 corpus/0/typed/framed_cut_optional	d479630c55154717cf8b66bf
-corpus/0/typed/framed_cut_outer_rollback	5536abc68e8ade23f51a37be
+corpus/0/typed/framed_cut_outer_rollback	e876701952ccedc51555dcc0
 corpus/0/typed/framed_cut_projection	c395f206d08a94c986ce4d1c
 corpus/0/typed/framed_cut_repeat	21f1e9c26f850d4d0c170ad2
-corpus/0/typed/framed_cut_repeat_rollback	2b8482a01e9efae53756f0ba
+corpus/0/typed/framed_cut_repeat_rollback	84d3d66176c164c7566de945
 corpus/0/typed/local_choice_cut	08bd97de7634ecbd85943dbd
 corpus/0/typed/local_dead_after_live	e15f6edcce8320180aad25ea
 corpus/0/typed/local_dead_before_live	e15f6edcce8320180aad25ea
 corpus/0/typed/local_dead_predicate	8f1374b4c38ff7eaba020d35
-corpus/0/typed/local_element_dead_predicate	5e14e8776979dee988e23abf
-corpus/0/typed/local_element_predicates	2af48b2ba8913135aec41652
-corpus/0/typed/local_element_unused_projection	b5a2df7a93dad4d3ef50039d
+corpus/0/typed/local_element_dead_predicate	86855ca1ea10dae9eb696e5d
+corpus/0/typed/local_element_predicates	61c185279e039b4686dbe2ab
+corpus/0/typed/local_element_unused_projection	231a268eabaec2621fdb727d
 corpus/0/typed/local_error	1d4da16a01826e7dff0d0f32
 corpus/0/typed/local_infallible	3d26840623da5ea81019ea65
 corpus/0/typed/local_lookahead	bc33d1c9b3f7d150c8bf131b
 corpus/0/typed/local_optional_cut	8dfb2934574693402c7ea160
-corpus/0/typed/local_owned_element_reset	300b5ea32a01fa6d3898a4f0
+corpus/0/typed/local_owned_element_reset	acc44ea79e37652183c1be7b
 corpus/0/typed/recovery_capture_environment	f3679648bdce32c76afbff2a
 corpus/0/typed/recovery_cut_scope	201e1a084f5a96774c55388d
 corpus/0/typed/recovery_dead_skip	2a563b5841ff14d6548cc366
 corpus/0/typed/recovery_error_inside	59053c7b99513363d1344e18
 corpus/0/typed/recovery_error_outside	1061af36a7cbaedaaff9de58
 corpus/0/typed/recovery_failed_skip_rollback	4ccf75d8d4ff1f5a0edc56e0
-corpus/0/typed/recovery_list_errors	04c75a6bca916820779abb41
+corpus/0/typed/recovery_list_errors	bf1d74a6a07d9add48303461
 corpus/0/typed/recovery_lookahead	1bd05d6f72e465233bdd0c8e
-corpus/0/typed/recovery_lr	d61514428a21400b26d429f6
+corpus/0/typed/recovery_lr	8f897589ecee3116229c4c04
 corpus/0/typed/recovery_negative_lookahead	133cec3ed5de2a31b0bf0cb0
 corpus/0/typed/recovery_nested	e5b2f0ce0dc843ea4969d75c
-corpus/0/typed/recovery_operatorsRule	9f345ab88a75136557120880
-corpus/0/typed/recovery_optional_repetition	08b39d0b3454c502ceb179f0
-corpus/0/typed/recovery_typed_corpus	4f7592d9dcded17c6afad3ab
+corpus/0/typed/recovery_operatorsRule	b1f3ab235a15a4e7d0a67b67
+corpus/0/typed/recovery_optional_repetition	c9e07018f5dd2f920f79b118
+corpus/0/typed/recovery_typed_corpus	4e4339dfdfc34134120da331
 corpus/0/typed/recovery_zero_progress	921614c50e315fbed218d87f
 corpus/0/unicode scalar boundaries	cd79416fb57950b60f1b2120
-corpus/0/unreachable LR alias tail	f1e834f323d69b4585287a62
-corpus/0/unreachable LR tail	7d9b304d662ad6acdc5f56ff
+corpus/0/unreachable LR alias tail	6a71b5a02e2f670a592973b2
+corpus/0/unreachable LR tail	00d9ce4e50558460655b3824
 corpus/0/unreachable recovery chain	32b026194e44c9f29e6ab471
-corpus/0/whole Operators Rule action	f496d111ac6c66664162bd54
-corpus/0/whole Operators Rule action error	30b50f0ce899e74dacc83cd0
-corpus/0/whole Operators Rule action on level-restricted calls	be8d19c8f80f33650b42b0f2
-corpus/0/whole Operators Rule action on scalar operands	23f688310015e3d77b5fb1c9
-corpus/0/whole Operators Rule action passing a scalar fold	878edc647f87b03a926d982d
-corpus/0/whole Operators Rule action passing the folded value	dbd1089b99d818e36475c7f3
-corpus/0/whole Operators Rule action with a named node type	ca7a23e5bba20a58ad23508a
-corpus/0/whole Operators Rule action with a recovered operand	7b52e28a789fcdbc9a7743ff
+corpus/0/whole Operators Rule action	4ed62233e4912afe49d629cb
+corpus/0/whole Operators Rule action error	4b5d2c38ad5bea29155e09a2
+corpus/0/whole Operators Rule action on level-restricted calls	6654ed64354698806fc01b79
+corpus/0/whole Operators Rule action on scalar operands	6da730a9878503c76f4273eb
+corpus/0/whole Operators Rule action passing a scalar fold	1b8dfd109417bea779d8268d
+corpus/0/whole Operators Rule action passing the folded value	0b407041a2e2bc0e05432fb3
+corpus/0/whole Operators Rule action with a named node type	58d44072535c44bcc6d65868
+corpus/0/whole Operators Rule action with a recovered operand	ec84b2aa52e5e7fc15b41e70
 corpus/0/wide any scan 2147483648	077c21701c498af47039b56a
 corpus/0/wide any scan 4294967296	077c21701c498af47039b56a
 corpus/0/wide any scan 9223372036854775807	077c21701c498af47039b56a
-corpus/0/wide class scan 2147483648	a0812328548a6ca45b1a24f3
-corpus/0/wide class scan 4294967296	a0812328548a6ca45b1a24f3
-corpus/0/wide class scan 9223372036854775807	a0812328548a6ca45b1a24f3
-corpus/0/wide expectation scopes	e60e8c5a11e96cf8dae8d336
-corpus/0/wide maximum 2147483648	24ab7a3126d891d30e7c49d1
-corpus/0/wide maximum 4294967296	24ab7a3126d891d30e7c49d1
-corpus/0/wide maximum 9223372036854775807	24ab7a3126d891d30e7c49d1
+corpus/0/wide class scan 2147483648	ff32d016c7b29c1a1a6875e8
+corpus/0/wide class scan 4294967296	ff32d016c7b29c1a1a6875e8
+corpus/0/wide class scan 9223372036854775807	ff32d016c7b29c1a1a6875e8
+corpus/0/wide expectation scopes	d05fa153eddc2bef4dab2bfd
+corpus/0/wide maximum 2147483648	40e270322323c25381b515ad
+corpus/0/wide maximum 4294967296	40e270322323c25381b515ad
+corpus/0/wide maximum 9223372036854775807	40e270322323c25381b515ad
 corpus/0/wide minimum 2147483648	feeed285683bf93fbf9c653c
 corpus/0/wide minimum 4294967296	feeed285683bf93fbf9c653c
 corpus/0/wide minimum 9223372036854775807	feeed285683bf93fbf9c653c
-corpus/0/wide projection 2147483648	f6fc9556bac447d305ebb56a
-corpus/0/wide projection 4294967296	f6fc9556bac447d305ebb56a
-corpus/0/wide projection 9223372036854775807	f6fc9556bac447d305ebb56a
+corpus/0/wide projection 2147483648	6662368ba5fbe70b587066c8
+corpus/0/wide projection 4294967296	6662368ba5fbe70b587066c8
+corpus/0/wide projection 9223372036854775807	6662368ba5fbe70b587066c8
 corpus/0/wide scan minimum 2147483648	93d97c435689485b194e515f
 corpus/0/wide scan minimum 4294967296	93d97c435689485b194e515f
 corpus/0/wide scan minimum 9223372036854775807	93d97c435689485b194e515f
 corpus/0/wide unbounded minimum 2147483648	feeed285683bf93fbf9c653c
 corpus/0/wide unbounded minimum 4294967296	feeed285683bf93fbf9c653c
 corpus/0/wide unbounded minimum 9223372036854775807	feeed285683bf93fbf9c653c
-corpus/1/../../examples/calculator/calc.pego	b8923a3c62110889f0d4b38b
-corpus/1/../../examples/calculator/calc_lr.pego	247d34f774291d3314097440
-corpus/1/../../examples/minilang/minilang.pego	e42130959236dbb5047f79fd
+corpus/1/../../examples/calculator/calc.pego	373875d40f5d9bea0f55c6a5
+corpus/1/../../examples/calculator/calc_lr.pego	21df5c7296b8b2d69d428682
+corpus/1/../../examples/minilang/minilang.pego	eeaf537de038ab657bc67b8e
 corpus/1/../../examples/outline/outline.pego	238e019d3a48c5eaa7b3ebf3
-corpus/1/LR cut inside optional	9344f20792681d828e175147
-corpus/1/Operators Rule explicit default action	6ab06394db14f9615cb7c7a1
-corpus/1/Operators Rule operand with a cut in the recovered body	ae8a48b66d66a8bdd8945120
-corpus/1/Operators Rule operand with recovery	0562fbc0ad22fb704eed5fa9
-corpus/1/Operators Rule operator action on scalar operands	019e3da4b5fdb61e58b395ab
-corpus/1/OperatorsRule prefix-part cuts	0bc6d2dac72422f0f84e94ea
-corpus/1/a cast binding in an Operators Rule operand	7d8a56048c1b6080746a11da
+corpus/1/LR cut inside optional	349ce2f0fb8eda1be5c47182
+corpus/1/Operators Rule explicit default action	4c868d821c064cc8b11e5dd8
+corpus/1/Operators Rule operand with a cut in the recovered body	0b7e63e06560d3449b03a9dc
+corpus/1/Operators Rule operand with recovery	c029c32cf8b3fb5b872aedf9
+corpus/1/Operators Rule operator action on scalar operands	fa4541fa5988b5040de7e77c
+corpus/1/OperatorsRule prefix-part cuts	890a5fc3188577c235a311a9
+corpus/1/a cast binding in an Operators Rule operand	f598d16bafb3117f6c572a9f
 corpus/1/a failed cast in a binding backtracks	ca871e28eb3f3cc27be3166d
-corpus/1/action environments	c59147dc8dd9c8aba318c014
-corpus/1/alias constructors	473e28e850b9edde32a46351
-corpus/1/alias singleton unions	9f55938bc422ae9ad1d2b759
-corpus/1/alias terminal	61662f4873c86fa9063ac4ac
-corpus/1/alias terminal action	b4eb6dbbfd3a8d966480a5ca
-corpus/1/alias terminals in structs	2a63adf9c84eb9f14d698b18
-corpus/1/anchors and classes	1aaf4c2c46caed0696361065
-corpus/1/any-character lookahead	2444aa4c7eb36f8e4070bcf8
-corpus/1/arith	bc2a41a777a9111cf36f04f0
-corpus/1/ast	a4396996397b70408be462b9
+corpus/1/action environments	fab257b37bd47b13f87f4792
+corpus/1/alias constructors	9df19ce7ceefc8949610de56
+corpus/1/alias singleton unions	b9f911fb4e72e02711cebb57
+corpus/1/alias terminal	f86d613ed3dc201c4d405726
+corpus/1/alias terminal action	e20eeae1a5e0dab1dbf45734
+corpus/1/alias terminals in structs	195490b51304cea43cedf34d
+corpus/1/anchors and classes	a3be26cb2f0769908a2ba31e
+corpus/1/any-character lookahead	1243b5d3f50b577288fbb241
+corpus/1/arith	90d03338fc98934d9ce1e6d3
+corpus/1/ast	272f48cadd6cafd35378ed1e
 corpus/1/attribute shape/diagnostic in a field	9c17fbca3cff111e0131cbaa
 corpus/1/attribute shape/diagnostic in a repetition	7f89e2e692d082942ffe5026
-corpus/1/attribute shape/diagnostic in an alternative	7c90bac51bd4fd71ae73af45
-corpus/1/attribute shape/diagnostic in an optional	93e3b35fad2cdf3ff6099869
+corpus/1/attribute shape/diagnostic in an alternative	1f81f7c5da4f8ec611a3c49e
+corpus/1/attribute shape/diagnostic in an optional	cbb6702b67f433b23a98155d
 corpus/1/attribute shape/diagnostic over lookahead seq	05fbe6bc1f9ad4540b7e1a04
-corpus/1/attribute shape/diagnostic over seq with predicates	1d3a19ecf51e9a3a6b89c207
+corpus/1/attribute shape/diagnostic over seq with predicates	ead95c7091c0028a4974811e
 corpus/1/attribute shape/diagnostic over splice body	4059252571698f54ca3b2cec
 corpus/1/attribute shape/diagnostic over splice call	4059252571698f54ca3b2cec
 corpus/1/attribute shape/error over seq	42bf907f997fc1d54bfd0c94
 corpus/1/attribute shape/plain over lookahead seq	3739a86bc4104d06e4e784c3
-corpus/1/attribute shape/plain over seq with predicates	9090cda218d09c2c1816fd7e
+corpus/1/attribute shape/plain over seq with predicates	100d6626e51257fade0776b6
 corpus/1/binding absent after rollback	ed27f1af1640dddd4feb4514
 corpus/1/binding choice rollback	1eb6392797b50e91b3313874
 corpus/1/binding negative lookahead rollback	b9f5b3a02fcc0a30ee482c90
@@ -390,56 +391,56 @@ corpus/1/binding positive lookahead effects	0b239b5d13d3c4d766bfffd3
 corpus/1/binding rule scope	c94f15f8d5eb4564f99088e6
 corpus/1/bindings of a cast value	751172423258189b177e7c8d
 corpus/1/case-insensitive literal alternatives	ab3447ed31b8166b98866f80
-corpus/1/class lookahead	e8fe72b699715fc6a669bcf8
+corpus/1/class lookahead	3b69c1f5f045e1cd26cf5a13
 corpus/1/cut and lookahead	830670d870e03c0f5c833acd
-corpus/1/cut before a call of an Operators Rule	1fd82dd37ade655b43561fd2
-corpus/1/cut in a recovered body before later alternatives	ef09a4117e1c90400dec0441
-corpus/1/cut in a rule called from a negative lookahead	7d693bcd5cba095115391785
-corpus/1/cut in an inner alternative of a nested choice	67e0b780ab5bdab56da9933d
-corpus/1/cut in recovery skip	e2db4481c29aefa0f2e2efda
+corpus/1/cut before a call of an Operators Rule	3301ebeea171464ea464e6f1
+corpus/1/cut in a recovered body before later alternatives	85b5c36aa0cefec7faebce13
+corpus/1/cut in a rule called from a negative lookahead	14e7f796d25425f91b873931
+corpus/1/cut in an inner alternative of a nested choice	be5381b5df050afe108a8cb0
+corpus/1/cut in recovery skip	928d9bcb216d52893dbb5be6
 corpus/1/cut in the skip of a recovery	050f3e1a241138ba5d034532
-corpus/1/cut inside a positive lookahead	7852cc8b803857acec209113
+corpus/1/cut inside a positive lookahead	36b3bd571f8d58a447668327
 corpus/1/cut with captures and a projected repetition	d19f9f3a1c8a6f103abddf21
-corpus/1/cuts in every scope	482ed09cea8f3b9f99faedf1
+corpus/1/cuts in every scope	0bc261aeb86ab584934b3e32
 corpus/1/declared variable initial values	1485abb90f8d9b9ee96ae111
 corpus/1/declared variables are part of the memo key	381651ccafe84e1b99ab6b70
-corpus/1/diagnostic attr	15ff5b097377fc5f439b38b7
-corpus/1/direct value-free decoding and anchors	9b639640e99ab094f8bb121f
-corpus/1/direct value-free fallback calls	7a176edd79218dbef4bb17cc
-corpus/1/direct value-free rollback	cd784a021189c6d7ccbd3fb6
-corpus/1/empty operand and infix	d22cb99bf5324c5d94257867
-corpus/1/empty prefix and postfix	da305d83c625c159f441d0e3
+corpus/1/diagnostic attr	d35f94b90c454496fbee0a4e
+corpus/1/direct value-free decoding and anchors	566f0c22db92695b68dbc91d
+corpus/1/direct value-free fallback calls	95980b66e52f23d2f645d9f8
+corpus/1/direct value-free rollback	9a5f052999e4c95714a9cf65
+corpus/1/empty operand and infix	9a28de39b395f43716c9b640
+corpus/1/empty prefix and postfix	249b6c7d97d679c07677b366
 corpus/1/error attr	fc0277e9eba09791012705a5
 corpus/1/error node as a capture value	b670c8493f5feb0e3aaa0c99
-corpus/1/error node in a capture group	78228e85ecea7073911ae0de
-corpus/1/error node in a projected repetition	80d7ee9aef110e0dea3ae3a4
-corpus/1/fold and lists	fd0373282bef327288737183
-corpus/1/framed choice of rules	0388de3a6ed17946347b269e
-corpus/1/guarded repetition of rules	a9d67d7b1ad0c38bd2ce2924
-corpus/1/hidden leader behind an optional prefix	a5f7241182705ca7e9073539
+corpus/1/error node in a capture group	33a03016ddb64aab2cb943b9
+corpus/1/error node in a projected repetition	a0b33620a90fe24743187474
+corpus/1/fold and lists	dd9b7e1ebaf51432ad01ec08
+corpus/1/framed choice of rules	f7849974ca115708ad4faa06
+corpus/1/guarded repetition of rules	f6d85ef63b19a0c28b795e04
+corpus/1/hidden leader behind an optional prefix	c5dd921923fd94add705256c
 corpus/1/hidden rule: captured call	50a8437bef0834a0d4957ce3
 corpus/1/hidden rule: choice	524a19d14fe7ab2ee0e47f94
 corpus/1/hidden rule: cut	702b9c38998bd551707b4a8f
 corpus/1/hidden rule: hidden captures	73561ef1f71055b2a866c15b
 corpus/1/hidden rule: in a choice	394ef6770c64e94bc67e4465
-corpus/1/hidden rule: in a repetition body	f8a8845fd49ab4f402306a68
-corpus/1/hidden rule: left recursion	88a35ef6715a99a9c2e4e0f4
+corpus/1/hidden rule: in a repetition body	2a2a4452846038428e0e783f
+corpus/1/hidden rule: left recursion	bbc0f95caa76ef053ac9d97b
 corpus/1/hidden rule: lookahead in body	a6c7229b9651b2499df4cb6b
 corpus/1/hidden rule: nested	aa46616ff363f3f54c453edc
 corpus/1/hidden rule: no value	3bada20ce83d43dee737c284
 corpus/1/hidden rule: one element	a0f135a29152884ec1549ca0
 corpus/1/hidden rule: optional	ddb98e48b2cbb9652487a072
 corpus/1/hidden rule: optional recursion	c18df675a4cebf91538e8b20
-corpus/1/hidden rule: recovery	615b07f95ccea52095c1bd47
+corpus/1/hidden rule: recovery	1a1486bb3c618e3b30a9ec74
 corpus/1/hidden rule: repetition	781aa328378978f5e6108b45
-corpus/1/hidden rule: right recursion	d6570efcb1d1739f2662dc9f
+corpus/1/hidden rule: right recursion	d75aec785aee4fe2d648316f
 corpus/1/hidden rule: sequence	f3225bdb9c4af86758ab815d
 corpus/1/hidden rule: used twice	1960e232febd1055ac13068b
 corpus/1/hidden rule: whole body	7d1d31b4e748da62919476d5
 corpus/1/ignorecase group	68f2c3c5f7b69f85974fbc6b
-corpus/1/incremental	49e2e839e264bf1704a89201
-corpus/1/indent	086582f2471c45d31f6fd106
-corpus/1/indirect leader cycle	9c001f8215020fb833e2cf33
+corpus/1/incremental	132bcb153fa8a5d0fd5b3b1c
+corpus/1/indent	c174c54f20b55c39dfdd10a3
+corpus/1/indirect leader cycle	0a0e9dff64b58bd788e5dee2
 corpus/1/initial values key the memo like bound ones	f6245cb02d7590fe67f34afa
 corpus/1/inline action: action error	cd67c1ebdd148915a8ab98cb
 corpus/1/inline action: captures of the enclosing rule after	6d0f377b2bfc0b2e662b91b3
@@ -447,123 +448,124 @@ corpus/1/inline action: choice	58f22009f8d8dee2d14b9ea0
 corpus/1/inline action: choice of inline actions	492d56682ad32152186f8328
 corpus/1/inline action: cut	d4e05df604f1375bbbaaa634
 corpus/1/inline action: default action	80c94506fb5a6f95544aacfa
-corpus/1/inline action: left recursion	3f2394eeb564b92d779d58c4
+corpus/1/inline action: left recursion	871d3755cf65e95bd0f7bfac
 corpus/1/inline action: nested	09ba2b4c15419c4ad4de0208
 corpus/1/inline action: nested in a whole rule	100039ea36846e16514de5da
-corpus/1/inline action: operators rule operand	8db1fb0ce194a5b73ab0b62b
+corpus/1/inline action: operators rule operand	f46155bdfbc7c96e705b195b
 corpus/1/inline action: optional	41558ae03840ef2cf8325799
 corpus/1/inline action: outer capture stays	9ec5b10e7299a5297034179f
-corpus/1/inline action: recover argument	f187261e3df5607418dd549d
-corpus/1/inline action: recovery	9acaf9f50dd915026aefa870
-corpus/1/inline action: recovery inside	7a8bea9ccd073470b3e11b6d
+corpus/1/inline action: recover argument	b85aa37645fddb4b9329a129
+corpus/1/inline action: recovery	b0e4bf70899805b173c7d3de
+corpus/1/inline action: recovery inside	bc2b217d7bcbef4b0f105416
 corpus/1/inline action: repetition	e44c6744ddaafed05e090788
 corpus/1/inline action: sequence	32237992fadf8c8a7bd342ea
-corpus/1/inline action: stream	cf562db62b885ba29f1ae9d4
+corpus/1/inline action: stream	dcb83f639dad49dfdb9e0c73
 corpus/1/inline action: whole rule	ef419fcd34570af182c95ea3
-corpus/1/integer boundaries	75203709b0540daae536580d
-corpus/1/leader behind lookahead prefixes	5ca09836612dd05a57866bec
-corpus/1/leader choice with several operators	b3a6a6de2056a66c10f63aff
-corpus/1/leader in a repetition	7744947b256d01f7480fd5e0
+corpus/1/integer boundaries	329e125c1dcbbb309db4850f
+corpus/1/leader behind lookahead prefixes	6ef1f623e8b01a57216fafd1
+corpus/1/leader choice with several operators	ac0ce3b2b7601fcf6d8ba6c3
+corpus/1/leader in a repetition	d9cedc18b8e286d56e442049
 corpus/1/leader in lookaheads	924d42db51bd8e1261f5980c
-corpus/1/leader with a cut	cd41e3ba830a5d00f441dc45
-corpus/1/leader with captures	87dcf847811991215abd44ea
-corpus/1/leader with memoized callers	59fb2e933beaa7779b6820e6
-corpus/1/leader wrapped in a recovery	73a9e9d51064c5696651e923
-corpus/1/left recursion	244240a280a12d04b8d3aee7
+corpus/1/leader with a cut	18967f99df204ffb13a4531c
+corpus/1/leader with captures	4d1c7b07c3dff4cacc2c80f3
+corpus/1/leader with memoized callers	d84722e81714b9e8d20cd3e7
+corpus/1/leader wrapped in a recovery	d2045bd683c7548a1224516e
+corpus/1/left recursion	3c719f6ab4de0f31d7a5bca6
 corpus/1/left recursion in recovery skip	ab02d53ffb3eedd7df504d4d
 corpus/1/len of nodes and strings	80f0fdeb1d67571cd51f92f0
-corpus/1/line choice of rules	b66247574685415fcec6550b
-corpus/1/line choice with captures and skip	41b07121290efbf3f6ab1129
+corpus/1/line choice of rules	fccd6bd02931384f62d1f88f
+corpus/1/line choice with captures and skip	0089529c14881f5df4078538
 corpus/1/literal text different captures control	d3cb6074324c6ae8b8c40c00
-corpus/1/literal text missing capture	d1ec3e293c0577514f4c033f
-corpus/1/literal text mixed control	01be2a5fa807a7df68667667
-corpus/1/literal text negation control	b4fe941e4e1f8f216d63459c
-corpus/1/literal text predicate controls	96d086e38c05ac08d9a54b85
+corpus/1/literal text missing capture	e6a5135c870a18345b380152
+corpus/1/literal text mixed control	39937a8c175a222fc8b60cda
+corpus/1/literal text negation control	d2ea97f34e9a9f522429abec
+corpus/1/literal text predicate controls	5ef67c244515e13cc9f234e5
 corpus/1/literal text predicate dispatch	c714ba3dc69a01630102ca8a
-corpus/1/literal text variable alias control	4ab706347d5cf3b649643703
+corpus/1/literal text variable alias control	8153af6c9cfafeae5e8dbfb5
+corpus/1/long expected lists	c5bbc36746be8cf67f5bd5ee
 corpus/1/long inferred chain	94c279f703f3f3d9abb78ac8
 corpus/1/memo entries are keyed by the variables the rule reads	ad9f9cf2fd79437066ed79ed
 corpus/1/memo keyed by variables	ee09f143ffb61330d000e0ac
 corpus/1/memoized rule with a cut called at one position	9a236a2506f8c8004c652503
-corpus/1/mutual leaders	b3ce315ace18578b3192e257
-corpus/1/named node type run-time conversions	2a098f6ece1e89166f075c17
-corpus/1/named node types	506d8e0ffe9c3f45af95f3c8
-corpus/1/negative lookahead	cc3fdf259886a80f4cf867c1
+corpus/1/mutual leaders	42780a72ddfd62a9dcd3bea0
+corpus/1/named node type run-time conversions	59b3ad469c352a9cd2b9c0c5
+corpus/1/named node types	1d80b382eab5509259afe1be
+corpus/1/negative lookahead	73b0856596a712074e60a605
 corpus/1/nested captured repetitions	77311f70f14139afe0e56e4f
-corpus/1/nested left recursion	abc5a0bede2bdf602dd08b23
-corpus/1/nested recoveries	7d3840acf489750044771c79
-corpus/1/nil OperatorsRule action	d8b8de586997593d5eae787f
-corpus/1/nil allocating action	13c343076a90f66890664141
+corpus/1/nested left recursion	3dca42bc8fd3b2aa7f35e0ac
+corpus/1/nested recoveries	5e1629f0029547b3cd0702cc
+corpus/1/nil OperatorsRule action	4680c805b8eb73e28b308232
+corpus/1/nil allocating action	d6d7a753849a94c8515a8d0c
 corpus/1/node/direct_expectations	efe3d1966fb6bdc602297505
 corpus/1/node/direct_memo_action	78f9633f5f5b9171478ba07f
-corpus/1/node/direct_nested_frames	b38e3a5bac4a6e101c8764d1
-corpus/1/nullable minimum repetitions	68695a67ee0ec7e42f9825e9
-corpus/1/operatorsRule infix action variables	0b1eec06cfaacbb382450a1b
-corpus/1/operatorsRule operand action	1c0027fa50f5f1d4ff78405b
-corpus/1/operatorsRule operand action and captures	acdc00c452ee9926cf4b6a6b
-corpus/1/operatorsRule operand action prefix	f623e9fdd03fa50d2926141e
-corpus/1/operatorsRule operand action variables	a190d62d6e07e104ed69fdd6
-corpus/1/operatorsRule operand reading a capture of a repetition	5ce7a3c6b4f6458cc7b2ff6b
-corpus/1/operatorsRule operand rule call with scalar result	4dedb60d8de09c0c87369ce7
-corpus/1/operatorsRule postfix action variables	1a83a4ee0d8f6616481286d4
-corpus/1/operatorsRule prefix action variables	b13fcf0be782829f22bbeb52
-corpus/1/operatorsRule scalar operand actions and typed results	f1ee2a38b9251625a0a59fca
-corpus/1/operatorsRule scalar results of operators	a25128a1484ae8d1c461faea
+corpus/1/node/direct_nested_frames	26effb9345aa8a7a64375b5b
+corpus/1/nullable minimum repetitions	436a93482022506884954596
+corpus/1/operatorsRule infix action variables	d6d9175830a259b335ce589d
+corpus/1/operatorsRule operand action	bf9c810e90acebdcae9e97f5
+corpus/1/operatorsRule operand action and captures	8063452c5a4d75180a1aa440
+corpus/1/operatorsRule operand action prefix	4c932d63914a1a444996207d
+corpus/1/operatorsRule operand action variables	e9d93648e479472cab07432e
+corpus/1/operatorsRule operand reading a capture of a repetition	0c087c455aa823dc0dc3f581
+corpus/1/operatorsRule operand rule call with scalar result	36f4e8381d0822f1d70f8058
+corpus/1/operatorsRule postfix action variables	bae2d35fc787f967b7ad7097
+corpus/1/operatorsRule prefix action variables	033d40d448c6226cb037a6b7
+corpus/1/operatorsRule scalar operand actions and typed results	7830bddb4d5776508282a16a
+corpus/1/operatorsRule scalar results of operators	b73e4f8ee24948e0f015732c
 corpus/1/optional with a cut followed by input	d84f0d666cee44000d4e5bce
-corpus/1/outlined keywords	1264c8934f8fd831d283ea9f
-corpus/1/positive lookahead	96ec681cb91cfed8bc4a109b
-corpus/1/projected and indexed repetition	1e8416bcff40d170c772ca60
+corpus/1/outlined keywords	cd915b027210f915505273aa
+corpus/1/positive lookahead	59d65b24d828958bffb0700d
+corpus/1/projected and indexed repetition	2fff57fbebf3459e95373f08
 corpus/1/projected repetition clears its frame	6ac6f0622b34fff24c632491
 corpus/1/recognizer action over a projected repetition	c3fbe7ca5fb4c970292a99ef
 corpus/1/records	c041a1a9b5736c51a2d62ddf
-corpus/1/recover	eaaed7ee292085136982a2e1
-corpus/1/recovery after a cut	34668e16fc9c70d40d3f8c83
-corpus/1/recovery in a statement list	dd33d3a7cb89695045bae86c
-corpus/1/recovery inside a leader body	35b595c8c9e25dd693afb1b8
-corpus/1/recovery of a leader	31b7fbb04456394dfb2ca394
-corpus/1/recovery under a lookahead	22b1cfb92cc44a92b891cb99
-corpus/1/recovery under a negative lookahead	ebb8812572daa4682390c681
-corpus/1/recovery whose skip fails after consuming	80e832843a312ad417194675
-corpus/1/recovery with a far failing choice	b2daeba1754ef7593f163847
-corpus/1/recovery with a zero-consumption skip	fd1ff4ec3af14754a6ba4944
-corpus/1/restricted OperatorsRule prefix memo	5f896802992e457461c7d76f
-corpus/1/restricted OperatorsRule prefixes	67348aa3ebcbe417534ddd32
-corpus/1/rule action variables	a190d62d6e07e104ed69fdd6
-corpus/1/runtime error	4e51b601b0d5311426b34e92
-corpus/1/scans	0837db30e9052f75300fcbc3
-corpus/1/sequence lookahead	0fc852446b26e0115aee52cf
-corpus/1/sibling alternatives starting with a leader	5723d0969dae8552e69747a8
-corpus/1/stream capture recognition	484713b32c75e7112c97642b
-corpus/1/stream element recovery	4e766975e6d6573df08a8d12
+corpus/1/recover	31099d4146a75fd0835bfd1a
+corpus/1/recovery after a cut	a22bdeaa085100d581fbdd6d
+corpus/1/recovery in a statement list	0bbbed59e4cc7a5336e8a694
+corpus/1/recovery inside a leader body	456ee82b8d0de0a33c3b0d21
+corpus/1/recovery of a leader	cdf20d6b37dd218ee0f1c27d
+corpus/1/recovery under a lookahead	3b02b0628cb2ef435f783141
+corpus/1/recovery under a negative lookahead	fe9e538874eed839512ed743
+corpus/1/recovery whose skip fails after consuming	dc4d4b4ae2a7f45c9e64025f
+corpus/1/recovery with a far failing choice	733863d68587ffe99ba714e5
+corpus/1/recovery with a zero-consumption skip	e595edac867adda6443304e8
+corpus/1/restricted OperatorsRule prefix memo	75c19155c3fa4a40eff2fc0b
+corpus/1/restricted OperatorsRule prefixes	bab9bb75f59b940688694500
+corpus/1/rule action variables	e9d93648e479472cab07432e
+corpus/1/runtime error	340ba39fbdd39bdee2bcdfb6
+corpus/1/scans	b3b9f074f70cab592ea99a45
+corpus/1/sequence lookahead	8597040e475a1d60e31b6d37
+corpus/1/sibling alternatives starting with a leader	b1f26c56ddf8f99ae9302a22
+corpus/1/stream capture recognition	0ee5c23c64b4a654222f2ac5
+corpus/1/stream element recovery	fad69b33800664081219ef4e
 corpus/1/stream empty capture recognition	abc7de8870c1681b447f81bd
 corpus/1/terminal constructor predicate error	9a2d9df728f531e01c0a9d8f
 corpus/1/terminal constructor root	152d0ff1aee5db6bceffb3ea
 corpus/1/terminal constructor value error	2cfb4b6e104ab69a17a458ef
-corpus/1/terminal singleton union	61662f4873c86fa9063ac4ac
-corpus/1/testdata/typed/calclr.pego	f274b02b57aabc17f553a332
-corpus/1/testdata/typed/direct_backtrack.pego	e40c7f950e1172609e203ac9
-corpus/1/testdata/typed/direct_errors.pego	630838be632ed4cc452c74b0
+corpus/1/terminal singleton union	f86d613ed3dc201c4d405726
+corpus/1/testdata/typed/calclr.pego	248af8484dd25242dece5dd7
+corpus/1/testdata/typed/direct_backtrack.pego	9cc5aeb67077b0c05194c965
+corpus/1/testdata/typed/direct_errors.pego	cd088deca89a8e064ee1bf05
 corpus/1/testdata/typed/direct_lists.pego	469520784fa6795294608cfe
-corpus/1/testdata/typed/direct_literals.pego	f16aff99be99bd2b53e62e4c
+corpus/1/testdata/typed/direct_literals.pego	06b145ace3f4e931aeba4909
 corpus/1/testdata/typed/direct_names.pego	99b59e4eba7b3c83a220a0dd
 corpus/1/testdata/typed/element_scope_optional.pego	fa1a7ef4c9d53cbc4a7998c5
 corpus/1/testdata/typed/element_scope_plain.pego	6380399b3828bb0d8b590451
 corpus/1/testdata/typed/element_scope_recover.pego	a5d7be038d66728a6d57ec9b
 corpus/1/testdata/typed/errlist.pego	ae9f969cdf99b3529106ddb3
-corpus/1/testdata/typed/errlist2.pego	0cff3f87b4491a2cc69cdec1
-corpus/1/testdata/typed/fields.pego	8ddf11f4d3475c5381116024
-corpus/1/testdata/typed/mix.pego	f727467a45dbb14a3a882d06
-corpus/1/testdata/typed/mixf.pego	dd0deef54864d94b954400bd
-corpus/1/testdata/typed/operators_rule1.pego	e406a919da607bb35c550ca9
-corpus/1/testdata/typed/operators_rule1f.pego	f700d0b158adef4f6288406d
+corpus/1/testdata/typed/errlist2.pego	90909276151fa845689be769
+corpus/1/testdata/typed/fields.pego	9e67c625cd787fcef3eba2ca
+corpus/1/testdata/typed/mix.pego	4d8bdcf710485d7e2b9c6f59
+corpus/1/testdata/typed/mixf.pego	e704660fc4b3349f1cf2d86f
+corpus/1/testdata/typed/operators_rule1.pego	32687331aadeebf37b9d126f
+corpus/1/testdata/typed/operators_rule1f.pego	65e5d026ac7bbc399c753bfe
 corpus/1/testdata/typed/order.pego	ff6ff4cdb9f9761b2bc97482
-corpus/1/testdata/typed/proj1.pego	20809e7d4fa69be2e3dea341
+corpus/1/testdata/typed/proj1.pego	fe53226149b6165d3ea45367
 corpus/1/testdata/typed/proj2.pego	61d96879eb9f796be657802b
 corpus/1/testdata/typed/proj3.pego	ba5f358b77812edfbdf80c58
 corpus/1/testdata/typed/proj4.pego	a10171e14ea1719f4db963dd
-corpus/1/testdata/typed/proj5.pego	0d3d419f11970272d8a914ac
-corpus/1/testdata/typed/proj6.pego	ca4dee3d58bb81234388bdca
-corpus/1/testdata/typed/proj7.pego	40ef272a79de80541032faf5
+corpus/1/testdata/typed/proj5.pego	c70ce5b941aae6f9768038b6
+corpus/1/testdata/typed/proj6.pego	84af9f2a91b82223c2b90fda
+corpus/1/testdata/typed/proj7.pego	f19bc829bcdca5402db0f499
 corpus/1/testdata/typed/spanname.pego	2d62fcf3e204b3e396209915
 corpus/1/testdata/typed/splice_recursive_capture.pego	e5f4a62da61d75bb4e0bdcc1
 corpus/1/testdata/typed/splice_recursive_capture_action.pego	63c71ad39ee9032ec8bcb3ca
@@ -571,36 +573,36 @@ corpus/1/testdata/typed/splice_recursive_choice.pego	04f5a8e829552675882846f7
 corpus/1/testdata/typed/splice_recursive_choice_in_seq.pego	3cdf39a28b92035392a0381f
 corpus/1/testdata/typed/splice_recursive_optional.pego	bc0744f6fd79cc1872e3a7f9
 corpus/1/testdata/typed/splice_recursive_repeat.pego	4b64934260caf5d27828f3d4
-corpus/1/testdata/typed/unif.pego	c8edecd1f7dcc40b0ff3d010
+corpus/1/testdata/typed/unif.pego	0bf8ee73e95a53b3f0dc1494
 corpus/1/top-level cut in a called rule	41d6729d452298cf97ad710e
-corpus/1/transitive action variables	344d4805dd0177e402478730
+corpus/1/transitive action variables	7497f7be265d1335ac8545f2
 corpus/1/tuple literal in struct fields	01302f23dee95a2fbd026128
 corpus/1/tuple literal of declared tuple type	4c24d4911d9b0de15bbd6636
-corpus/1/tuple literal values	57a3a1dfab5b64354b561ab2
+corpus/1/tuple literal values	d375dbde97109e7dc70d2b46
 corpus/1/two cuts in a repetition inside a choice	ffeb3963400b7e9346fad462
 corpus/1/typed list root	13d3a2612fa6555d9e713502
 corpus/1/typed node constructors	b74d0ae9bfd20753bea27f56
 corpus/1/typed nullable union list	f4414087efc708a8f35239a6
-corpus/1/typed/LR_dead_capture_order	e2022ff66ee5d1d53397e4cd
-corpus/1/typed/LR_direct	4dc7a654e5032ad24d8de237
-corpus/1/typed/LR_element_frames	9105cc9a3633c678f5273a2e
-corpus/1/typed/LR_framed_cuts	7ef4537bdb2a6a013d0612a8
-corpus/1/typed/LR_hidden	057dfbe9c0297ed595d248f9
-corpus/1/typed/LR_indirect	cd35fd082c1389aefce0b891
+corpus/1/typed/LR_dead_capture_order	8b937697562ba40adb1fadcf
+corpus/1/typed/LR_direct	5f3e3ce97994ff74ff7de4b3
+corpus/1/typed/LR_element_frames	05577f60c5ff3f3ebd96bf68
+corpus/1/typed/LR_framed_cuts	aea1edb9fc980986aa34ba1a
+corpus/1/typed/LR_hidden	215615fd8ab1f6295d17f5b7
+corpus/1/typed/LR_indirect	63d8504034320f42db59fbae
 corpus/1/typed/LR_lookahead_memo	18c1c0c6a21d06f804a08bf3
 corpus/1/typed/LR_no_improvement	ae88869fac8ecdccb37ab0f3
-corpus/1/typed/LR_nullable_seed	fb36edac6a7aa51fa01a92d5
-corpus/1/typed/LR_positional_action	6558ec306f052fe914571a62
-corpus/1/typed/LR_projected_repeat	2b4f17b9dc73df63c68d4526
-corpus/1/typed/LR_recovery	568d3d66360513a23af58148
-corpus/1/typed/LR_rollback_environment	520452740a6df3248b21ad1e
-corpus/1/typed/LR_unreachable_capture	f6f14a03db73ac3302205006
-corpus/1/typed/OperatorsRule_associativity	31536263cf274732e5c7cd99
+corpus/1/typed/LR_nullable_seed	2b1aa226003a7360cc7a0aad
+corpus/1/typed/LR_positional_action	1c827e8bc921fb3f55efd951
+corpus/1/typed/LR_projected_repeat	31cce55e6bc5cea8aec5bd30
+corpus/1/typed/LR_recovery	54144889386e2e5f8a128d98
+corpus/1/typed/LR_rollback_environment	2686126fd5e46612751a855d
+corpus/1/typed/LR_unreachable_capture	f7767a266d5b2c5d79f59e9a
+corpus/1/typed/OperatorsRule_associativity	2fbdd3a53332fc784a9b2f3b
 corpus/1/typed/OperatorsRule_dead_capture_order	a24f73c1aee67acf83e269dd
-corpus/1/typed/OperatorsRule_dead_element_predicate	8d8295ce2153a8636a1637e6
+corpus/1/typed/OperatorsRule_dead_element_predicate	3994537cdb37af0e7324e339
 corpus/1/typed/OperatorsRule_dead_lookahead_capture	bc33d1c9b3f7d150c8bf131b
 corpus/1/typed/OperatorsRule_dead_projection	15cc0a2617c86e1e5fbbc073
-corpus/1/typed/OperatorsRule_element_captures	9ca51b8f3092db5677e6e326
+corpus/1/typed/OperatorsRule_element_captures	e4610b6d0c553d118e7439e2
 corpus/1/typed/OperatorsRule_environment_rollback	931722a92df6e4e1e996937f
 corpus/1/typed/OperatorsRule_error_isolation	1d33b6c44c65643361fd2e95
 corpus/1/typed/OperatorsRule_framed_cuts	3d697ae1939e849bf7201e7b
@@ -608,9 +610,9 @@ corpus/1/typed/OperatorsRule_infallible_alternative	d4944436ddf51b7a07ebfa79
 corpus/1/typed/OperatorsRule_longest_ties	dc4b5cc20b635029a7de2127
 corpus/1/typed/OperatorsRule_lookahead_memo	6c725f679520af3df5a9a76f
 corpus/1/typed/OperatorsRule_mixed_routes	084352b773b339def8a4f2a2
-corpus/1/typed/OperatorsRule_nullable_parts	e44106a564673421aa7128d0
-corpus/1/typed/OperatorsRule_positional_actions	01c62b3be8f24d42228982d1
-corpus/1/typed/OperatorsRule_recovery	b2eff4d70c5c35b86e9a7a47
+corpus/1/typed/OperatorsRule_nullable_parts	d89586c756f35d2a5e342220
+corpus/1/typed/OperatorsRule_positional_actions	6efa169b7b10511d1ad5b922
+corpus/1/typed/OperatorsRule_recovery	df37a7b11c80c92a0604f34a
 corpus/1/typed/OperatorsRule_unreachable_capture	9fc22f14de65f22cbfde2f0f
 corpus/1/typed/direct_cut_callee	c8e7735011e9c21fc0384cb0
 corpus/1/typed/direct_cut_captured_lookahead	19ca3429c31ffed08e07ff73
@@ -620,11 +622,11 @@ corpus/1/typed/direct_cut_lookahead	89e15b782df251563c7f3c25
 corpus/1/typed/direct_cut_memo_capture	8999c8dcd4fb03d451e69646
 corpus/1/typed/direct_cut_nested_choice	d3f4ff4fc954ee4219f40a0a
 corpus/1/typed/direct_cut_optional	d479630c55154717cf8b66bf
-corpus/1/typed/direct_cut_outer_rollback	5536abc68e8ade23f51a37be
+corpus/1/typed/direct_cut_outer_rollback	e876701952ccedc51555dcc0
 corpus/1/typed/direct_cut_projection	c395f206d08a94c986ce4d1c
 corpus/1/typed/direct_cut_repeat	21f1e9c26f850d4d0c170ad2
-corpus/1/typed/direct_cut_repeat_rollback	2b8482a01e9efae53756f0ba
-corpus/1/typed/framed_cut_LR_elements	30437755ad510ce208c9cda2
+corpus/1/typed/direct_cut_repeat_rollback	84d3d66176c164c7566de945
+corpus/1/typed/framed_cut_LR_elements	2673eeada6b4d5dc8bbe91d3
 corpus/1/typed/framed_cut_OperatorsRule_longest	8cbab5bed67ad9189b7ee183
 corpus/1/typed/framed_cut_captured_lookahead	19ca3429c31ffed08e07ff73
 corpus/1/typed/framed_cut_choice	5da4a6db7d532995669d762f
@@ -632,88 +634,88 @@ corpus/1/typed/framed_cut_error	ca8d2de5895f7ef4dfca0fe6
 corpus/1/typed/framed_cut_lookahead	89e15b782df251563c7f3c25
 corpus/1/typed/framed_cut_nested_choice	d3f4ff4fc954ee4219f40a0a
 corpus/1/typed/framed_cut_optional	d479630c55154717cf8b66bf
-corpus/1/typed/framed_cut_outer_rollback	5536abc68e8ade23f51a37be
+corpus/1/typed/framed_cut_outer_rollback	e876701952ccedc51555dcc0
 corpus/1/typed/framed_cut_projection	c395f206d08a94c986ce4d1c
 corpus/1/typed/framed_cut_repeat	21f1e9c26f850d4d0c170ad2
-corpus/1/typed/framed_cut_repeat_rollback	2b8482a01e9efae53756f0ba
+corpus/1/typed/framed_cut_repeat_rollback	84d3d66176c164c7566de945
 corpus/1/typed/local_choice_cut	08bd97de7634ecbd85943dbd
 corpus/1/typed/local_dead_after_live	e15f6edcce8320180aad25ea
 corpus/1/typed/local_dead_before_live	e15f6edcce8320180aad25ea
 corpus/1/typed/local_dead_predicate	8f1374b4c38ff7eaba020d35
-corpus/1/typed/local_element_dead_predicate	5e14e8776979dee988e23abf
-corpus/1/typed/local_element_predicates	2af48b2ba8913135aec41652
-corpus/1/typed/local_element_unused_projection	b5a2df7a93dad4d3ef50039d
+corpus/1/typed/local_element_dead_predicate	86855ca1ea10dae9eb696e5d
+corpus/1/typed/local_element_predicates	61c185279e039b4686dbe2ab
+corpus/1/typed/local_element_unused_projection	231a268eabaec2621fdb727d
 corpus/1/typed/local_error	1d4da16a01826e7dff0d0f32
 corpus/1/typed/local_infallible	3d26840623da5ea81019ea65
 corpus/1/typed/local_lookahead	bc33d1c9b3f7d150c8bf131b
 corpus/1/typed/local_optional_cut	8dfb2934574693402c7ea160
-corpus/1/typed/local_owned_element_reset	300b5ea32a01fa6d3898a4f0
+corpus/1/typed/local_owned_element_reset	acc44ea79e37652183c1be7b
 corpus/1/typed/recovery_capture_environment	f3679648bdce32c76afbff2a
 corpus/1/typed/recovery_cut_scope	201e1a084f5a96774c55388d
 corpus/1/typed/recovery_dead_skip	2a563b5841ff14d6548cc366
 corpus/1/typed/recovery_error_inside	59053c7b99513363d1344e18
 corpus/1/typed/recovery_error_outside	1061af36a7cbaedaaff9de58
 corpus/1/typed/recovery_failed_skip_rollback	4ccf75d8d4ff1f5a0edc56e0
-corpus/1/typed/recovery_list_errors	04c75a6bca916820779abb41
+corpus/1/typed/recovery_list_errors	bf1d74a6a07d9add48303461
 corpus/1/typed/recovery_lookahead	1bd05d6f72e465233bdd0c8e
-corpus/1/typed/recovery_lr	d61514428a21400b26d429f6
+corpus/1/typed/recovery_lr	8f897589ecee3116229c4c04
 corpus/1/typed/recovery_negative_lookahead	133cec3ed5de2a31b0bf0cb0
 corpus/1/typed/recovery_nested	e5b2f0ce0dc843ea4969d75c
-corpus/1/typed/recovery_operatorsRule	9f345ab88a75136557120880
-corpus/1/typed/recovery_optional_repetition	08b39d0b3454c502ceb179f0
-corpus/1/typed/recovery_typed_corpus	4f7592d9dcded17c6afad3ab
+corpus/1/typed/recovery_operatorsRule	b1f3ab235a15a4e7d0a67b67
+corpus/1/typed/recovery_optional_repetition	c9e07018f5dd2f920f79b118
+corpus/1/typed/recovery_typed_corpus	4e4339dfdfc34134120da331
 corpus/1/typed/recovery_zero_progress	921614c50e315fbed218d87f
 corpus/1/unicode scalar boundaries	cd79416fb57950b60f1b2120
-corpus/1/unreachable LR alias tail	f1e834f323d69b4585287a62
-corpus/1/unreachable LR tail	7d9b304d662ad6acdc5f56ff
+corpus/1/unreachable LR alias tail	6a71b5a02e2f670a592973b2
+corpus/1/unreachable LR tail	00d9ce4e50558460655b3824
 corpus/1/unreachable recovery chain	32b026194e44c9f29e6ab471
-corpus/1/whole Operators Rule action	f496d111ac6c66664162bd54
-corpus/1/whole Operators Rule action error	30b50f0ce899e74dacc83cd0
-corpus/1/whole Operators Rule action on level-restricted calls	be8d19c8f80f33650b42b0f2
-corpus/1/whole Operators Rule action on scalar operands	23f688310015e3d77b5fb1c9
-corpus/1/whole Operators Rule action passing a scalar fold	878edc647f87b03a926d982d
-corpus/1/whole Operators Rule action passing the folded value	dbd1089b99d818e36475c7f3
-corpus/1/whole Operators Rule action with a named node type	ca7a23e5bba20a58ad23508a
-corpus/1/whole Operators Rule action with a recovered operand	7b52e28a789fcdbc9a7743ff
+corpus/1/whole Operators Rule action	4ed62233e4912afe49d629cb
+corpus/1/whole Operators Rule action error	4b5d2c38ad5bea29155e09a2
+corpus/1/whole Operators Rule action on level-restricted calls	6654ed64354698806fc01b79
+corpus/1/whole Operators Rule action on scalar operands	6da730a9878503c76f4273eb
+corpus/1/whole Operators Rule action passing a scalar fold	1b8dfd109417bea779d8268d
+corpus/1/whole Operators Rule action passing the folded value	0b407041a2e2bc0e05432fb3
+corpus/1/whole Operators Rule action with a named node type	58d44072535c44bcc6d65868
+corpus/1/whole Operators Rule action with a recovered operand	ec84b2aa52e5e7fc15b41e70
 corpus/1/wide any scan 2147483648	077c21701c498af47039b56a
 corpus/1/wide any scan 4294967296	077c21701c498af47039b56a
 corpus/1/wide any scan 9223372036854775807	077c21701c498af47039b56a
-corpus/1/wide class scan 2147483648	a0812328548a6ca45b1a24f3
-corpus/1/wide class scan 4294967296	a0812328548a6ca45b1a24f3
-corpus/1/wide class scan 9223372036854775807	a0812328548a6ca45b1a24f3
-corpus/1/wide expectation scopes	e60e8c5a11e96cf8dae8d336
-corpus/1/wide maximum 2147483648	24ab7a3126d891d30e7c49d1
-corpus/1/wide maximum 4294967296	24ab7a3126d891d30e7c49d1
-corpus/1/wide maximum 9223372036854775807	24ab7a3126d891d30e7c49d1
+corpus/1/wide class scan 2147483648	ff32d016c7b29c1a1a6875e8
+corpus/1/wide class scan 4294967296	ff32d016c7b29c1a1a6875e8
+corpus/1/wide class scan 9223372036854775807	ff32d016c7b29c1a1a6875e8
+corpus/1/wide expectation scopes	d05fa153eddc2bef4dab2bfd
+corpus/1/wide maximum 2147483648	40e270322323c25381b515ad
+corpus/1/wide maximum 4294967296	40e270322323c25381b515ad
+corpus/1/wide maximum 9223372036854775807	40e270322323c25381b515ad
 corpus/1/wide minimum 2147483648	feeed285683bf93fbf9c653c
 corpus/1/wide minimum 4294967296	feeed285683bf93fbf9c653c
 corpus/1/wide minimum 9223372036854775807	feeed285683bf93fbf9c653c
-corpus/1/wide projection 2147483648	f6fc9556bac447d305ebb56a
-corpus/1/wide projection 4294967296	f6fc9556bac447d305ebb56a
-corpus/1/wide projection 9223372036854775807	f6fc9556bac447d305ebb56a
+corpus/1/wide projection 2147483648	6662368ba5fbe70b587066c8
+corpus/1/wide projection 4294967296	6662368ba5fbe70b587066c8
+corpus/1/wide projection 9223372036854775807	6662368ba5fbe70b587066c8
 corpus/1/wide scan minimum 2147483648	93d97c435689485b194e515f
 corpus/1/wide scan minimum 4294967296	93d97c435689485b194e515f
 corpus/1/wide scan minimum 9223372036854775807	93d97c435689485b194e515f
 corpus/1/wide unbounded minimum 2147483648	feeed285683bf93fbf9c653c
 corpus/1/wide unbounded minimum 4294967296	feeed285683bf93fbf9c653c
 corpus/1/wide unbounded minimum 9223372036854775807	feeed285683bf93fbf9c653c
-grammars/0/cel	420eed251817cd10bf284b06
-grammars/0/csv	6e9f550e52e5d68af2574c67
-grammars/0/cue	0aa57784cd74f9fffd102a2d
-grammars/0/duckdb	81609f135aad321225ef0552
-grammars/0/golang	bf1f427280212b363a5ff835
-grammars/0/json	84ff59a8952a19479cb05d68
-grammars/0/python	c6868f7de4a1cabb4aba9b0b
-grammars/0/typescript	5f56e82109f2de273538e51e
+grammars/0/cel	8d4e8f9d947636c3a6acd091
+grammars/0/csv	9c27aa02d6313b20826fff72
+grammars/0/cue	1b9ccb077964780f18b40ffd
+grammars/0/duckdb	0533cdc6127e2c568e3ea8d5
+grammars/0/golang	44ba924bd75b112157bd12e2
+grammars/0/json	b6090f77c8a9a14ff2342a8d
+grammars/0/python	8c626c10be1162831f388444
+grammars/0/typescript	ca627f090f8599bf55fccdb4
 grammars/0/xml	70e583b310077343cbaea1fe
-grammars/0/yaml	3e6cad99a9065cbe36229f88
-grammars/1/cel	420eed251817cd10bf284b06
-grammars/1/csv	6e9f550e52e5d68af2574c67
-grammars/1/cue	0aa57784cd74f9fffd102a2d
-grammars/1/duckdb	81609f135aad321225ef0552
-grammars/1/golang	bf1f427280212b363a5ff835
-grammars/1/json	84ff59a8952a19479cb05d68
-grammars/1/python	c6868f7de4a1cabb4aba9b0b
-grammars/1/typescript	5f56e82109f2de273538e51e
+grammars/0/yaml	a3b6fb38a99f9d000b8214af
+grammars/1/cel	8d4e8f9d947636c3a6acd091
+grammars/1/csv	9c27aa02d6313b20826fff72
+grammars/1/cue	1b9ccb077964780f18b40ffd
+grammars/1/duckdb	0533cdc6127e2c568e3ea8d5
+grammars/1/golang	44ba924bd75b112157bd12e2
+grammars/1/json	b6090f77c8a9a14ff2342a8d
+grammars/1/python	8c626c10be1162831f388444
+grammars/1/typescript	ca627f090f8599bf55fccdb4
 grammars/1/xml	70e583b310077343cbaea1fe
-grammars/1/yaml	3e6cad99a9065cbe36229f88
+grammars/1/yaml	a3b6fb38a99f9d000b8214af

@@ -120,7 +120,7 @@ go test .
     version_test.go:44: Valid("01757.0.0") = true; the grammar rejects it (insert "0" at 0 of "1757.0.0": 1:2: syntax error: expected ".")
     version_test.go:44: Valid("11.00.1633") = true; the grammar rejects it (insert "0" at 3 of "11.0.1633": 1:5: syntax error: expected ".")
     version_test.go:44: Valid("00.48.9") = true; the grammar rejects it (duplicate "0" at 0 of "0.48.9": 1:2: syntax error: expected ".")
-    version_test.go:44: Valid("0.1.00") = true; the grammar rejects it (duplicate "0" at 4 of "0.1.0": 1:6: syntax error: expected "-", end of input)
+    version_test.go:44: Valid("0.1.00") = true; the grammar rejects it (duplicate "0" at 4 of "0.1.0": 1:6: syntax error: expected end of input, "-")
     ...
 FAIL
 FAIL	example.com/fuzz	0.552s

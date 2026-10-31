@@ -210,7 +210,7 @@ pego parse -g toy.pego -i $'print 1;\n}\n'
 ```
 
 ```text
-pego: 2:1: syntax error: expected "let", "print", "{", [^;{}\n], end of input
+pego: 2:1: syntax error: expected end of input, "let", "print", "{", [^;{}\n]
 ```
 
 The stray `}` stops every recovery in this grammar, because `skip` refuses to eat braces. That is the right trade-off
@@ -312,7 +312,7 @@ recovered from 2 error(s); tree: Program{Body: [error("1:5: expected a name") er
   error value [0,8): 1:5: expected a name
   error value [9,21): 2:11: expected an expression
 --- "print 1;\n}\n"
-failed: 2:1: syntax error: expected "let", "print", "{", [^;{}\n], end of input (node is nil: true)
+failed: 2:1: syntax error: expected end of input, "let", "print", "{", [^;{}\n] (node is nil: true)
   expected=["\"let\"" "\"print\"" "\"{\"" "[^;{}\\n]" "end of input"] messages=[]
 ```
 

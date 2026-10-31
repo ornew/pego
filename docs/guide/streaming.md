@@ -383,7 +383,7 @@ rule num =  [0-9]+ #atomic `)
 syntax error:
   element [0,3)
   element [3,6)
-  3:1: syntax error: expected [a-z0-9], end of input (line 3, column 1, position 6)
+  3:1: syntax error: expected end of input, [a-z0-9] (line 3, column 1, position 6)
 callback error:
   err == errEnough: true, callbacks: 2
 reader error:

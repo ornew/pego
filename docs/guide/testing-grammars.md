@@ -157,7 +157,7 @@ When one of these fails, the output names the input:
 
 ```text
 --- FAIL: TestAccepts (0.00s)
-    pairs_test.go:32: "abc=12; あい=3": unexpected error: 1:9: syntax error: expected [ \t\n], [a-z], end of input
+    pairs_test.go:32: "abc=12; あい=3": unexpected error: 1:9: syntax error: expected end of input, [ \t\n], [a-z]
 ```
 
 (That was after narrowing the grammar's `key` rule to `[a-z]+ #atomic`.)
@@ -234,7 +234,7 @@ A change that matters shows up as a failure, here after narrowing the `key` rule
 --- FAIL: TestGolden (0.00s)
     --- FAIL: TestGolden/basic (0.00s)
         golden_test.go:43: testdata/basic.txt differs from testdata/basic.golden (go test -update rewrites it; review the diff)
-             got: error: 1:9: syntax error: expected [ \t\n], [a-z], end of input
+             got: error: 1:9: syntax error: expected end of input, [ \t\n], [a-z]
             want: [Pair{Key: "abc", Value: "12"} Pair{Key: "あい", Value: "3"}]
 ```
 

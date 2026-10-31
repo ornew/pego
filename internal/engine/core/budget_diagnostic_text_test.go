@@ -7,7 +7,6 @@ import (
 	"errors"
 	"reflect"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -24,13 +23,15 @@ func TestBudgetDiagnosticRecoveryTextMatchesNative(t *testing.T) {
 		{Line: maxInt, Col: -maxInt - 1, Expected: []string{"", "x", "", "é", "\xff"}},
 		{Line: 99, Col: 101, Messages: []string{strings.Repeat("λ\xff", 180)}},
 		{Line: 2, Col: 3, Expected: make([]string, 320)},
+		{Line: 4, Col: 5, Expected: []string{"end of input", `"a"`, `"b"`, `"c"`, `"d"`, `"e"`, `"f"`, `"g"`, "[0-9]", "[x-z]"}},
+		{Line: 4, Col: 5, Expected: []string{"end of input", `"a"`, `"b"`, `"c"`, `"d"`, `"e"`, `"f"`, `"g"`, `"h"`, "[0-9]", "[x-z]"}},
 	}
 	for i, e := range cases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			want := e.Error()
 			parts := e.Messages
 			if len(parts) == 0 {
-				parts = e.Expected
+				parts, _ = expectedShown(e.Expected)
 			}
 			steps := uint64(len(want) + 2*len(parts))
 			p := diagnosticParser(limits.Limits{Budget: steps})
@@ -85,10 +86,10 @@ func TestBudgetDiagnosticSortParityAndMoves(t *testing.T) {
 	for _, n := range []int{0, 1, 2, 3, 7, 8, 9, 127, 128, 129, 511} {
 		values := make([]string, n)
 		for i := range values {
-			values[i] = []string{"", "é", "\xff", "z", "\xc3\xff", "alpha"}[(n-i)%6] + strings.Repeat("p", (n-i)%3)
+			values[i] = []string{"", "é", "\xff", "z", "\xc3\xff", "alpha", `"a"`, "[a]", `"\xff`, "[é"}[(n-i)%10] + strings.Repeat("p", (n-i)%3)
 		}
 		want := append([]string(nil), values...)
-		sort.Strings(want)
+		sortExpectedEntries(want)
 		p := diagnosticParser(limits.Limits{Budget: 1 << 50})
 		p.sortExpected(values)
 		if !slices.Equal(values, want) {

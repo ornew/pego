@@ -137,7 +137,7 @@ The program exits with status 1, because there were errors.
 - **Recovery needs a skip that can match.** `skip` must match at least one character where the unit started. Take
   the file `port = 1;`, `;`, `name = 2;`: the second line is a setting that fails, and `skip=[^;\n]+` cannot match
   at a `;`. There is no recovery, and `Parse` fails as usual with one error and no tree
-  (`2:1: syntax error: expected [^;\n], [a-z_], end of input`). Think of what each `skip` does at every place where the
+  (`2:1: syntax error: expected end of input, [^;\n], [a-z_]`). Think of what each `skip` does at every place where the
   unit can fail, and test it with inputs that are wrong in different ways (see [Test hand-written code against a
   grammar](test-with-samples.md) for generating them).
 - **Unclosed constructs.** Errors recovered inside a block that is never closed are lost when the block fails at the

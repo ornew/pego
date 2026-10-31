@@ -23,7 +23,7 @@ func TestOperatorsRuleCST(t *testing.T) {
 		ok("1==2", `((lhs:("1")@e op:"==" rhs:("2")@e)@e)@main`),
 		ok("1+1==2*1", `((lhs:(lhs:("1")@e op:"+" rhs:("1")@e)@e op:"==" rhs:(lhs:("2")@e op:"*" rhs:("1")@e)@e)@e)@main`),
 		// Non-associative operators do not chain.
-		fails("1==2==3", `1:5: syntax error: expected "!", "*", "+", "-", "/", "^", [0-9], end of input`),
+		fails("1==2==3", `1:5: syntax error: expected end of input, "!", "*", "+", "-", "/", "^", [0-9]`),
 		fails("1+", `1:3: syntax error: expected "(", "-", [0-9]`),
 		fails("", `expected "(", "-", [0-9]`),
 	)

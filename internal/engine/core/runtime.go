@@ -922,7 +922,7 @@ type SyntaxError struct {
 	Pos      int      // position, in the parse's position unit
 	Line     int      // 1-based line
 	Col      int      // 1-based column, in the position unit of the parse
-	Expected []string // what was expected at that position
+	Expected []string // what was expected at that position: names, then literals, then classes, each in byte order
 	Messages []string // messages given by @error
 }
 
@@ -935,10 +935,7 @@ func (e *SyntaxError) Message() string {
 	if len(e.Messages) > 0 {
 		return strings.Join(e.Messages, "; ")
 	}
-	if len(e.Expected) > 0 {
-		return "syntax error: expected " + strings.Join(e.Expected, ", ")
-	}
-	return "syntax error"
+	return expectedMessage(e.Expected)
 }
 
 // SyntaxErrors is a list of syntax errors, including those recovered by error recovery.

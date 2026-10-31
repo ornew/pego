@@ -57,7 +57,7 @@ rule letter Word = t:("z" / "a" / "é") #atomic => Word{Text: text($t)}`)
 const generatedGoDiagnosticConsumer = `package PACKAGE
 
 import pegort "github.com/ornew/pego/runtime"
-import("context";"errors";"fmt";"reflect";"slices";"sort";"strings";"testing")
+import("context";"errors";"fmt";"reflect";"slices";"strings";"testing")
 func diagnosticParser(limits Limits)*pegort.Parser{return &pegort.Parser{Control:pegort.X_newBudgetControl(nil,limits)}}
 func catchFatal(t *testing.T,f func())(err error){t.Helper();defer func(){if v:=recover();v!=nil{fatal,ok:=v.(pegort.X_fatal);if !ok{panic(v)};err=fatal.X_err}}();f();return nil}
 type pollingContext struct{context.Context}
@@ -72,9 +72,11 @@ func TestDiagnosticTextParityAndBudget(t *testing.T){
   {Line:maxInt,Col:-maxInt-1,Expected:[]string{"","x","","é","\xff"}},
   {Line:99,Col:101,Messages:[]string{strings.Repeat("λ\xff",180)}},
   {Line:2,Col:3,Expected:make([]string,320)},
+  {Line:4,Col:5,Expected:[]string{"end of input","\"a\"","\"b\"","\"c\"","\"d\"","\"e\"","\"f\"","\"g\"","[0-9]","[x-z]"}},
+  {Line:4,Col:5,Expected:[]string{"end of input","\"a\"","\"b\"","\"c\"","\"d\"","\"e\"","\"f\"","\"g\"","\"h\"","[0-9]","[x-z]"}},
  }
  for i,e:=range rows{t.Run(fmt.Sprint(i),func(t *testing.T){
-  want:=e.Error();parts:=e.Messages;if len(parts)==0{parts=e.Expected}
+  want:=e.Error();parts:=e.Messages;if len(parts)==0{parts=e.Expected[:min(len(e.Expected),10)]}
   steps:=uint64(len(want)+2*len(parts))
   p:=diagnosticParser(Limits{Budget:steps})
   retained:=p.RecoveryErrorText(e)
@@ -88,13 +90,14 @@ func TestDiagnosticTextParityAndBudget(t *testing.T){
  })}
  p:=&pegort.Parser{Control:pegort.X_newBudgetControl(&pollingContext{Context:context.Background()},Limits{Budget:100000})}
  var partial string
- if err:=catchFatal(t,func(){partial=p.RecoveryErrorText(rows[5])});!errors.Is(err,context.Canceled)||partial!=""{t.Fatal("format cancellation published partial",partial,err)}
+ if err:=catchFatal(t,func(){partial=p.RecoveryErrorText(&SyntaxError{Line:2,Col:3,Messages:make([]string,320)})});!errors.Is(err,context.Canceled)||partial!=""{t.Fatal("format cancellation published partial",partial,err)}
 }
 func TestDiagnosticSortingAndSnapshots(t *testing.T){
  for _,n:=range []int{0,1,2,3,7,8,9,127,128,129,511}{
   values:=make([]string,n)
-  for i:=range values{values[i]=[]string{"","é","\xff","z","\xc3\xff",strings.Repeat("p",300)}[(n-i)%6]+strings.Repeat("p",(n-i)%3)}
-  want:=slices.Clone(values);sort.Strings(want)
+  for i:=range values{values[i]=[]string{"","é","\xff","z","\xc3\xff",strings.Repeat("p",300),"\"a\"","[a]","\"\xff","[é"}[(n-i)%10]+strings.Repeat("p",(n-i)%3)}
+  kind:=func(s string)int{if s!=""{switch s[0]{case '"':return 1;case '[':return 2}};return 0}
+  want:=slices.Clone(values);slices.SortFunc(want,func(a,b string)int{if d:=kind(a)-kind(b);d!=0{return d};return strings.Compare(a,b)})
   p:=diagnosticParser(Limits{Budget:1<<50});p.X_sortExpected(values)
   if !slices.Equal(values,want){t.Fatalf("sort length %d changed",n)}
  }

@@ -778,7 +778,7 @@ export class SyntaxError extends Error {
   /** The line and column (both from 1; the column in the position unit). */
   line: number;
   col: number;
-  /** The descriptions of what was expected, sorted. */
+  /** The descriptions of what was expected: names, then literals, then classes, each in byte order. The message shows at most the first ten. */
   expected: string[];
   /** The messages of @error attributes. */
   messages: string[];
@@ -804,9 +804,37 @@ export function reason(expected: string[], messages: string[]): string {
     return messages.join("; ");
   }
   if (expected.length > 0) {
-    return "syntax error: expected " + expected.join(", ");
+    const shown = Math.min(expected.length, expectedInMessage);
+    let msg = "syntax error: expected " + expected.slice(0, shown).join(", ");
+    if (shown < expected.length) msg += expectedTail(expected.length - shown);
+    return msg;
   }
   return "syntax error";
+}
+
+// expectedInMessage is the number of expected entries that the message of a syntax error lists.
+// A longer list is cut after them and ends with the count of the rest; SyntaxError.expected keeps
+// every entry.
+export const expectedInMessage = 10;
+
+// expectedTail ends a message whose expected list is cut, rest entries before its end.
+export function expectedTail(rest: number): string {
+  return `, ... and ${rest} more`;
+}
+
+// expectedKind ranks an expected entry by its kind: a named entry (such as "end of input" or a
+// rule name) is 0, a literal ("...") is 1 and a class ([...]) is 2.
+export function expectedKind(s: string): number {
+  if (s.length !== 0) {
+    if (s.charCodeAt(0) === 0x22) return 1;
+    if (s.charCodeAt(0) === 0x5b) return 2;
+  }
+  return 0;
+}
+
+// compareExpected orders expected entries: by kind (expectedKind), then by their bytes.
+export function compareExpected(a: string, b: string): number {
+  return expectedKind(a) - expectedKind(b) || compareStrings(a, b);
 }
 
 /**
@@ -2183,7 +2211,7 @@ export class Parser {
         exp.push(this.g.descs[x]!);
       }
     }
-    if (this.control === null) exp.sort(compareStrings);
+    if (this.control === null) exp.sort(compareExpected);
     else sortExpectedSpend(exp, this.control);
     // Look the line up in a table of line starts, built on the first error, instead of scanning
     // from the start of the input for each error.

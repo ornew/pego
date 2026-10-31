@@ -52,8 +52,8 @@ pego: 1:8: syntax error: expected "(", [0-9]
 ```
 
 The input ends after `-`, so position 8 (line 1, column 8, one past the last character) is the farthest point, and a
-`term` needs a digit or a `(` there. Everything that was tried at that position is listed, sorted and without
-duplicates. The items are descriptions of the primitive expressions that failed:
+`term` needs a digit or a `(` there. Everything that was tried at that position is listed without duplicates. The
+items are descriptions of the primitive expressions that failed:
 
 | Expression | Shown as |
 |:--|:--|
@@ -61,6 +61,10 @@ duplicates. The items are descriptions of the primitive expressions that failed:
 | `[0-9]`, `[^;]` | the class as written |
 | `.` | `any character` |
 | `^^`, `$$`, `^`, `$` | `beginning of input`, `end of input`, `beginning of line`, `end of line` |
+
+Names such as `end of input` come first, then literals, then classes, each group in byte order. A message lists at most
+ten items: a longer list is cut after the tenth and ends with `, ... and N more`. `SyntaxError.Expected` keeps every
+item, and [`pego explain`](debugging.md) shows the whole list.
 
 Only the farthest position counts. A failure at an earlier position, however many alternatives were tried there, is
 not reported:
@@ -83,7 +87,7 @@ pego parse -g calc.pego -i '1+2)'
 ```
 
 ```text
-pego: 1:4: syntax error: expected "*", "+", "-", "/", [0-9], end of input
+pego: 1:4: syntax error: expected end of input, "*", "+", "-", "/", [0-9]
 ```
 
 An empty input fails at 1:1 like any other expression that needs something there:
@@ -178,7 +182,7 @@ The last row is not subject to backtracking or recovery: it aborts the parse. A 
 |:--|:--|
 | `Pos` | Offset of the error in the position unit, counted from 0 |
 | `Line`, `Col` | 1-based line and column |
-| `Expected` | The expected items, sorted, as shown in the messages (`"\"x\""` for the literal `"x"`); empty unless [expectations are recorded](#recording-expectations) |
+| `Expected` | All the expected items, in the order of the messages (`"\"x\""` for the literal `"x"`); empty unless [expectations are recorded](#recording-expectations) |
 | `Messages` | The messages of [`@error`](#error-labels), if any; empty unless expectations are recorded |
 
 `Error()` returns `line:col: message`, and `Message()` returns the message without the position.

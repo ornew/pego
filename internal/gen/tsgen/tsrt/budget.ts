@@ -458,7 +458,7 @@ export function sortExpectedSpend(values: string[], control: BudgetControl): voi
       const mid = Math.min(lo + width, n), hi = Math.min(mid + width, n);
       let i = lo, j = mid, k = lo;
       while (i < mid && j < hi) {
-        const order = compareStringsSpend(src[i]!, src[j]!, control);
+        const order = expectedKind(src[i]!) - expectedKind(src[j]!) || compareStringsSpend(src[i]!, src[j]!, control);
         control.charge(1);
         dst[k++] = order <= 0 ? src[i++]! : src[j++]!;
       }
@@ -483,12 +483,14 @@ export function reserveDiagnosticTextSpend(text: string, control: BudgetControl)
 export function reserveSyntaxMessageSpend(line: number, col: number, expected: readonly string[], messages: readonly string[], control: BudgetControl): void {
   reserveDiagnosticTextSpend(`${line}:${col}: `, control);
   const parts = messages.length !== 0 ? messages : expected;
+  const shown = messages.length !== 0 ? parts.length : Math.min(parts.length, expectedInMessage);
   if (messages.length === 0) reserveDiagnosticTextSpend(expected.length !== 0 ? "syntax error: expected " : "syntax error", control);
-  for (let i = 0; i < parts.length; i++) {
+  for (let i = 0; i < shown; i++) {
     control.charge(1);
     if (i !== 0) control.charge(2);
     reserveDiagnosticTextSpend(parts[i]!, control);
   }
+  if (shown < parts.length) reserveDiagnosticTextSpend(expectedTail(parts.length - shown), control);
 }
 
 export function reserveRecoveredMessageSpend(errors: readonly SyntaxError[], control: BudgetControl): void {

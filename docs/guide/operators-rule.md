@@ -226,7 +226,7 @@ pego parse -g lr-order.pego -s bad -f sexpr -i '1+2+3'
 
 ```text
 ((("1" "+" "2") "+" "3"))
-pego: 1:2: syntax error: expected [0-9], end of input
+pego: 1:2: syntax error: expected end of input, [0-9]
 ```
 
 The error ("expected a digit or the end of input at column 2") is accurate but gives no hint about the order of
@@ -331,7 +331,7 @@ pego parse -g chain-cmp.pego -f sexpr -i '1 < 2 < 3'
 
 ```text
 Bin{L: Bin{L: "1", Op: "+", R: "2"}, Op: "<=", R: "3"}
-pego: 1:7: syntax error: expected " ", "+", "-", end of input
+pego: 1:7: syntax error: expected end of input, " ", "+", "-"
 ```
 
 ## Level-Restricted Calls
@@ -824,7 +824,7 @@ pego parse -g munch.pego -f sexpr -i '1 ++'
 
 ```text
 Bin{L: "1", Op: "+", R: Un{Op: "+", X: "2"}}
-pego: 1:5: syntax error: expected "+", "++", end of input
+pego: 1:5: syntax error: expected end of input, "+", "++"
 Post{Op: "++", X: "1"}
 ```
 

@@ -37,6 +37,12 @@ rule main = s:word "," i:ident "," n:num? ";" q:(word ":" word) r:("." word)* $$
 rule word = [^,;:.]* #atomic
 rule ident Ident = [^,]+ #atomic
 rule num = [0-9]+`, []string{"ab,cd,12;x:y", "\u00e9\u00e9,\u65e5\u672c,123;\u00e9:\u65e5.a.\u00e9\u00e9", ",\U0001F600,;:.", "a,b,1;:", "a,b,x;:", ""}},
+		// Syntax errors expecting ten ("t"), eleven ("e", "r") and fifteen ("w") entries of every
+		// kind: their messages list the first ten, and recovered errors carry the same text.
+		{"long expected lists", `rule main = "t" ten $$ / "e" eleven $$ / "w" wide $$ / "r" (eleven ";") #recover(skip=[^;]* ";") $$
+rule ten = "a" / "b" / "c" / "d" / "e" / "f" / "g" / [0-9] / [x-z] / $
+rule eleven = ten / "h"
+rule wide = eleven / ^ "q" / "é" / "😀" / [A-Z]`, []string{"t!", "e!", "w!", "r!;", "ta", "t", "wé", "w😀x", "rh;", ""}},
 		// Case-insensitive literals: a suffix and a pragma. Their first characters are both cases, so a
 		// guard of such an alternative must test both.
 		{"case-insensitive literal alternatives", `rule main = (kw / id)+ !.

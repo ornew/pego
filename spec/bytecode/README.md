@@ -305,7 +305,7 @@ Built-in function indices: 0 `len`, 1 `text`, 2 `foldl`, 3 `foldr`, 4 `map`, 5 `
 
 ## Error Messages
 
-A syntax error (see [Syntax errors](../runtime/parsing.md#syntax-errors)) from a parse that records expectations is formatted as `line:column: syntax error: expected A, B` (expectations sorted lexicographically). If `@error` messages apply, it is formatted as `line:column: message` (multiple messages joined with `; `). `@diagnostic` changes ordinary expected-item descriptions but does not replace explicit messages. A parse that does not record expectations formats it as `line:column: syntax error`.
+A syntax error (see [Syntax errors](../runtime/parsing.md#syntax-errors)) from a parse that records expectations is formatted as `line:column: syntax error: expected A, B`, with the expectations in the order and with the cut after ten that the syntax error contract defines. If `@error` messages apply, it is formatted as `line:column: message` (multiple messages joined with `; `). `@diagnostic` changes ordinary expected-item descriptions but does not replace explicit messages. A parse that does not record expectations formats it as `line:column: syntax error`.
 Expectation strings are those the compiler placed in the string table: literals in quotes, character classes in `[...]` form, `any character`, and so on.
 
 ## File Format

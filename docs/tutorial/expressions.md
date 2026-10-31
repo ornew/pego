@@ -54,7 +54,7 @@ pego parse -g calc.pego -f sexpr -i '1 + 2'
 ```
 
 ```text
-pego: 1:2: syntax error: expected "+", "-", [0-9], end of input
+pego: 1:2: syntax error: expected end of input, "+", "-", [0-9]
 ```
 
 Add a `skip` item, which PEGO inserts before every operand and operator, and fill out the language: more levels,

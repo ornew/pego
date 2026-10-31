@@ -23,7 +23,7 @@ func TestTerminals(t *testing.T) {
 	t.Run("character class", func(t *testing.T) {
 		check(t, `rule main = [a-c0-9_]+`,
 			ok("a0_c9", `["a" "0" "_" "c" "9"]@main`),
-			fails("ad", `1:2: syntax error: expected [a-c0-9_], end of input`),
+			fails("ad", `1:2: syntax error: expected end of input, [a-c0-9_]`),
 		)
 	})
 	t.Run("negated class", func(t *testing.T) {

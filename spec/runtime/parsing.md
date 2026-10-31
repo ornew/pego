@@ -198,7 +198,19 @@ and anchors (`beginning of input`, `end of input`, `beginning of line`,
 
 - The position is given as a 1-based line and column. The column is counted in
   the [position unit](#positions) (code points by default).
-- The expected items are listed in sorted order, without duplicates.
+- The expected items are listed without duplicates: first the names (any item
+  whose text starts with neither `"` nor `[`, such as `end of input` or a name
+  given by [`@diagnostic`](../language/attributes.md#diagnostic)), then the
+  literals (starting with `"`), then the character classes (starting with `[`).
+  Within each group they are in the byte order of their text. `Expected` holds
+  them all in this order.
+- The message lists at most the first ten items. A longer list is cut after the
+  tenth and ends with `, ... and N more`, where `N` is the number of items left
+  out:
+
+  ```text
+  1:1: syntax error: expected end of input, "(", "-", "[", "false", "null", "true", "{", [ \t\r\n], [0-9], ... and 2 more
+  ```
 - Failures inside [lookahead](../language/parser-expressions.md#lookahead) and inside the
   [`skip` of an Operators Rule](../language/operators-rule.md#skip) are not included. Predicates
   and bottom (`_|_`) contribute no expected items.
@@ -239,8 +251,8 @@ Recording is requested as follows.
 ### Errors in Go and on the Command Line
 
 In the Go API, a failed parse returns a `*pego.SyntaxError` with the fields `Pos`
-(the position in the position unit), `Line`, `Col`, `Expected` (the sorted expected
-items) and `Messages` (the messages of `@error` attributes), both empty unless
+(the position in the position unit), `Line`, `Col`, `Expected` (every expected
+item, in the order above) and `Messages` (the messages of `@error` attributes), both empty unless
 expectations are recorded, and the methods
 `Error()`, which returns the text above with its position, and `Message()`, which
 returns it without the position. A parse that recovered errors returns the node and

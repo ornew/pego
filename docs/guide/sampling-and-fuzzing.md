@@ -272,7 +272,7 @@ pego sample -g parsers/json/json.pego -n 3 -invalid -f json
       "input": "\r\n {} r\n",
       "base": "\r\n {} \n",
       "mutation": "insert \"r\" at 6",
-      "error": "2:5: syntax error: expected [ \\t\\r\\n], end of input"
+      "error": "2:5: syntax error: expected end of input, [ \\t\\r\\n]"
     }
   ]
 }
@@ -348,9 +348,9 @@ for _, inv := range invalid {
 ```
 
 ```text
-"h=\"\" " (insert " " at 4): 1:5: syntax error: expected ",", end of input
+"h=\"\" " (insert " " at 4): 1:5: syntax error: expected end of input, ","
 "n" (truncate at 1): 1:2: syntax error: expected "=", [a-z]
-"u=truee" (duplicate "e" at 5): 1:7: syntax error: expected ",", end of input
+"u=truee" (duplicate "e" at 5): 1:7: syntax error: expected end of input, ","
 ```
 
 ## Testing Code That Consumes Parse Results

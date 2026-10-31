@@ -77,7 +77,7 @@ func TestNotWellFormed(t *testing.T) {
 		{``, `1:1: syntax error`},
 		{`<a>`, `1:4: syntax error`},
 		{`<a></b>`, `1:7: mismatched end tag`},
-		{`<a/><b/>`, `1:5: syntax error: expected "<!--", "<?", [ \t\r\n], end of input`},
+		{`<a/><b/>`, `1:5: syntax error: expected end of input, "<!--", "<?", [ \t\r\n]`},
 		{`text<a/>`, `1:1: syntax error`},
 		{` <?xml version="1.0"?><a/>`, `1:7: the processing instruction target xml is reserved`},
 		{`<?xml version="2.0"?><a/>`, `1:16: syntax error`},

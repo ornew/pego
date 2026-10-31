@@ -80,9 +80,9 @@ func ExampleGenerator_GenerateInvalid() {
 		fmt.Printf("%q (%s): %v\n", inv.Input, inv.Mutation, inv.Err)
 	}
 	// Output:
-	// "h=\"\" " (insert " " at 4): 1:5: syntax error: expected ",", end of input
+	// "h=\"\" " (insert " " at 4): 1:5: syntax error: expected end of input, ","
 	// "n" (truncate at 1): 1:2: syntax error: expected "=", [a-z]
-	// "u=truee" (duplicate "e" at 5): 1:7: syntax error: expected ",", end of input
+	// "u=truee" (duplicate "e" at 5): 1:7: syntax error: expected end of input, ","
 }
 
 // FuzzCalculator checks that the calculator of examples/calculator never panics, whatever the input,

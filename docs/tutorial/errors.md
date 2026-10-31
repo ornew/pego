@@ -14,7 +14,7 @@ Complete [Building Typed Trees](typed-trees.md): this lesson uses `config.pego` 
 ## Reading the Messages
 
 When the input does not match, PEGO reports the **farthest position** it reached and **what it expected there**. You have
-already seen the format: `line:column: syntax error: expected a, b, c`, with the expected items sorted. Errors in
+already seen the format: `line:column: syntax error: expected a, b, c`, with names such as `end of input` first, then literals, then classes, and at most ten items. Errors in
 `config.pego`:
 
 ```bash
