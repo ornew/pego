@@ -97,7 +97,10 @@ Speed (medians of 10 interleaved samples against the base; differences within no
 
 The cost on the calculator comes from the bookkeeping of every memoized call and growth: saving and merging the
 least depth read, and the member check on a hit. Allocations are unchanged except +0.3% (7 of 2,291) on one
-iterative cell. The memo entry of the generated runtimes stays at 128 bytes, because one field holds both the depth
+iterative cell. The bytes and allocations per operation of generated `Recognize` on the calculator depend on the
+iteration count: `-benchtime=200ms` runs it 21 to 25 times, so the setup of the run, the same on both revisions,
+divided by that count moves the figure between 820 and 976 KiB and between 21 and 24 allocations. At a fixed count
+(`-benchtime=300x`) both revisions allocate 68,466 bytes in 2 allocations per operation. The memo entry of the generated runtimes stays at 128 bytes, because one field holds both the depth
 of a growing result and the unstable mark of a final one. Generated Go for the calculator differs only in the
 member flags of `add` and `mul` in the rule tables: 24 to 58 bytes more per generated form.
 
