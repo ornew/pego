@@ -12,8 +12,8 @@ rule line = [a-z]+ "\n"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-		d, err := p.NewDocument("ab\ncd\n", zeroparse.WithBackend(backend))
+	for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+		d, err := p.NewDocument("ab\ncd\n", zp.WithBackend(backend))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -36,7 +36,7 @@ rule line = [a-z]+ "\n"`, "main")
 		}
 		version := d.Version()
 		d.ResetHistory()
-		if got := d.CacheStats(); got != (zeroparse.CacheStats{}) {
+		if got := d.CacheStats(); got != (zp.CacheStats{}) {
 			t.Fatalf("%s reset history: %+v", backend, got)
 		}
 		if d.Stats() != last || d.Text() != "ab\nxd\n" || d.Version() != version || version == beforeVersion {

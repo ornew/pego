@@ -54,12 +54,12 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 	}
 	schemas, patterns, recovered := 0, 0, 0
 	for _, c := range cases {
-		g, err := zeroparse.ParseGrammar(c.Src)
+		g, err := zp.ParseGrammar(c.Src)
 		if err != nil {
 			continue
 		}
 		start := g.Rules()[0].Name
-		p, err := zeroparse.Compile(starttest.MarkAll(g), start, zeroparse.WithSourceInfo())
+		p, err := zp.Compile(starttest.MarkAll(g), start, zp.WithSourceInfo())
 		if err != nil {
 			continue
 		}
@@ -74,7 +74,7 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 		}
 		for _, in := range c.Inputs {
 			// Recovered parses report errors with their trees.
-			root, _ := p.Parse(in, zeroparse.WithMissingTokens(3))
+			root, _ := p.Parse(in, zp.WithMissingTokens(3))
 			if root == nil {
 				continue
 			}

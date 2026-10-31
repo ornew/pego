@@ -456,7 +456,7 @@ func TestLinkAllowed(t *testing.T) {
 			t.Errorf("%q: want external and allowed", dest)
 		}
 	}
-	if _, ok := linkTarget("spec/a.md", "HTTPS://GITHUB.COM/ornew/zeroparse/blob/main/zeroparse.go"); !ok {
+	if _, ok := linkTarget("spec/a.md", "HTTPS://GITHUB.COM/ornew/zeroparse/blob/main/zp.go"); !ok {
 		t.Error("an upper-case GitHub URL did not resolve to a repository path")
 	}
 }

@@ -60,8 +60,8 @@ import (
 //go:embed version.zp
 var grammar string
 
-func compile(t testing.TB) *zeroparse.Parser {
-	p, err := zeroparse.CompileSource(grammar, "main")
+func compile(t testing.TB) *zp.Parser {
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

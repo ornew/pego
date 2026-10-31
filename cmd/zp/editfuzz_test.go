@@ -52,7 +52,7 @@ func TestEditFuzzReplay(t *testing.T) {
 	g := filepath.Join(dir, "g.zp")
 	os.WriteFile(g, []byte(editFuzzGrammar), 0o644)
 	seq := &editfuzz.Sequence{GrammarSHA256: editfuzz.GrammarHash([]byte(editFuzzGrammar)), Start: "main",
-		Backend: zeroparse.Bytecode, Unit: zeroparse.Bytes, Initial: []byte("ab"), Operations: []editfuzz.Operation{
+		Backend: zp.Bytecode, Unit: zp.Bytes, Initial: []byte("ab"), Operations: []editfuzz.Operation{
 			{Kind: editfuzz.Edit, Start: 2, End: 2, Text: []byte("\xc3")}, {Kind: editfuzz.Checkpoint},
 			{Kind: editfuzz.Edit, Start: 3, End: 3, Text: []byte("\xa9")}, {Kind: editfuzz.Undo}, {Kind: editfuzz.Checkpoint}}}
 	path, err := editfuzz.Save(dir, seq)

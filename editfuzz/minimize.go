@@ -28,7 +28,7 @@ func Minimize(src []byte, seq *Sequence, maxAttempts int) (*Sequence, *Mismatch,
 }
 
 type minimizer struct {
-	p           *zeroparse.Parser
+	p           *zp.Parser
 	fingerprint string
 	attempts    int
 	max         int
@@ -36,7 +36,7 @@ type minimizer struct {
 	mismatch    *Mismatch
 }
 
-func minimize(p *zeroparse.Parser, seq *Sequence, maxAttempts int) (*Sequence, *Mismatch, int, error) {
+func minimize(p *zp.Parser, seq *Sequence, maxAttempts int) (*Sequence, *Mismatch, int, error) {
 	var m *Mismatch
 	if err := replay(p, seq); !errors.As(err, &m) {
 		if err == nil {

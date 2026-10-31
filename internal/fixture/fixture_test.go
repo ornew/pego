@@ -95,7 +95,7 @@ func TestRunRecordsRuntimeErrorAndContinues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	report, err := Run(suite, RunOptions{Limits: zeroparse.Limits{Budget: 256}})
+	report, err := Run(suite, RunOptions{Limits: zp.Limits{Budget: 256}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -12,7 +12,7 @@
 ## Summary
 
 Store a separate recognition module only in compiled files without the grammar AST, so the existing
-`Parser.Parse(input, zeroparse.RecognizeOnly())` and `zp parse -check` work for bytecode backends without that AST.
+`Parser.Parse(input, zp.RecognizeOnly())` and `zp parse -check` work for bytecode backends without that AST.
 AST-bearing files store no recognition bundle; AST-less files with an available complete recognizer store one.
 Both use container format version 4, which also holds the optional schema section.
 Keep ordinary parsing and recognition caches separate. Recognition builds only values needed by predicates and

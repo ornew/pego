@@ -1,7 +1,7 @@
 # Compiled Grammars (`.zpc`)
 
 Compiling a grammar from source parses it, analyzes it, type-checks it and translates it to bytecode. A **compiled
-grammar** is the result of that work saved to a file: a `.zpc`. Loading one gives you the same `*zeroparse.Parser` without
+grammar** is the result of that work saved to a file: a `.zpc`. Loading one gives you the same `*zp.Parser` without
 repeating the work, so a program can start faster, and a grammar can travel as a data file or a `go:embed` byte slice
 without its source.
 
@@ -69,14 +69,14 @@ zp parse -g pair.zpc -s main -f sexpr -i 'abc=12; x=1'
 [Pair{Key: "abc", Value: "12"} Pair{Key: "x", Value: "1"}]
 ```
 
-In Go, `Parser.MarshalBinary` returns the bytes of a parse-mode file and `zeroparse.LoadParser` restores the parser, with
+In Go, `Parser.MarshalBinary` returns the bytes of a parse-mode file and `zp.LoadParser` restores the parser, with
 the saved start rule:
 
 ```go
-p, err := zeroparse.CompileSource(src, "main")
+p, err := zp.CompileSource(src, "main")
 data, err := p.MarshalBinary() // the bytecode of parse mode and the start rule
 
-q, err := zeroparse.LoadParser(data)
+q, err := zp.LoadParser(data)
 node, err := q.Parse("abc=12")
 fmt.Println(node, err) // [Pair{Key: "abc", Value: "12"}] <nil>
 ```
@@ -85,9 +85,9 @@ A few more facts:
 
 - The same parser always produces the same bytes for a mode, and a parser that was loaded and saved again produces the
   bytes it was loaded from. This is what makes the [up-to-date test](#embedding-with-goembed) possible.
-- `zeroparse.IsCompiled(data)` tells a compiled grammar from other data by its magic number. The commands use it to decide
+- `zp.IsCompiled(data)` tells a compiled grammar from other data by its magic number. The commands use it to decide
   whether `-g` names source, JSON or a compiled grammar.
-- A loaded parser is an ordinary `*zeroparse.Parser`: it is safe for concurrent use, `WithStart` changes its start rule, and
+- A loaded parser is an ordinary `*zp.Parser`: it is safe for concurrent use, `WithStart` changes its start rule, and
   it runs the operations of its mode with the options of the [Running Parsers](running-parsers.md).
 - For those operations, a parser loaded from a file preserves the same tree, positions and errors as one compiled from
   source. Keep a round-trip comparison in your own test suite for the grammars your application depends on.
@@ -97,9 +97,9 @@ A few more facts:
 Choose the mode for what the program does with the parser:
 
 ```go
-parsing, err := p.Marshal(zeroparse.CompiledParse)       // the same as p.MarshalBinary()
-recognizing, err := p.Marshal(zeroparse.CompiledRecognize)
-documents, err := p.Marshal(zeroparse.CompiledDocument)
+parsing, err := p.Marshal(zp.CompiledParse)       // the same as p.MarshalBinary()
+recognizing, err := p.Marshal(zp.CompiledRecognize)
+documents, err := p.Marshal(zp.CompiledDocument)
 ```
 
 ```bash
@@ -110,28 +110,28 @@ zp compile -g pairs.zp -mode document -o pairs-doc.zpc         # for Documents, 
 
 | Mode | Serves |
 |:--|:--|
-| `parse` (`zeroparse.CompiledParse`) | `Parse`, `ParsePrefix`, `ParseStream`, `Iterate`; `zp parse`, `zp parse -stream` |
-| `recognize` (`zeroparse.CompiledRecognize`) | `Parse` and `ParsePrefix` with `RecognizeOnly()`; `zp parse -check` |
-| `document` (`zeroparse.CompiledDocument`) | `NewDocument`, and `Parse`, `ParsePrefix`, `ParseStream`, `Iterate` with `WithTrace` or `WithProfile`; `zp trace`, `zp profile`, `zp explain` |
+| `parse` (`zp.CompiledParse`) | `Parse`, `ParsePrefix`, `ParseStream`, `Iterate`; `zp parse`, `zp parse -stream` |
+| `recognize` (`zp.CompiledRecognize`) | `Parse` and `ParsePrefix` with `RecognizeOnly()`; `zp parse -check` |
+| `document` (`zp.CompiledDocument`) | `NewDocument`, and `Parse`, `ParsePrefix`, `ParseStream`, `Iterate` with `WithTrace` or `WithProfile`; `zp trace`, `zp profile`, `zp explain` |
 
 A file serves its mode only. Anything else returns an error that names the file's mode, the mode the operation needs
 and how to get it, rather than falling back:
 
 ```go
-q, _ := zeroparse.LoadParser(parsing)
+q, _ := zp.LoadParser(parsing)
 _, err := q.NewDocument("abc=12")
 fmt.Println(err)
-// the compiled grammar is in parse mode; documents need document mode: compile it with -mode document (zeroparse.CompiledDocument), or compile the grammar from source
+// the compiled grammar is in parse mode; documents need document mode: compile it with -mode document (zp.CompiledDocument), or compile the grammar from source
 ```
 
 `q.CompiledMode()` returns the mode of a loaded parser and `true`, and `false` for a parser compiled from source, which
-serves every mode. `zeroparse.ParseCompiledMode` turns the name of a mode into the value.
+serves every mode. `zp.ParseCompiledMode` turns the name of a mode into the value.
 
 Some things need the grammar itself, so they work only from source, whatever the mode:
 
 | | Parser loaded from a `.zpc` |
 |:--|:--|
-| Backend | Recursive bytecode by default; `WithBackend(zeroparse.BytecodeIterative)` selects the iterative VM |
+| Backend | Recursive bytecode by default; `WithBackend(zp.BytecodeIterative)` selects the iterative VM |
 | `WithBackend(Closure)` | error: `the closure backend needs the grammar source; a compiled grammar runs on the bytecode backends` |
 | `RecognizeOnly()` with `WithTrace` or `WithProfile` | error: traced or profiled recognition needs the grammar source |
 | `Parser.Grammar()` | `nil` |
@@ -193,7 +193,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	p, err := zeroparse.CompileSource(string(src), "")
+	p, err := zp.CompileSource(string(src), "")
 	if err != nil {
 		panic(err)
 	}
@@ -202,7 +202,7 @@ func main() {
 
 	// Each run makes a parser ready and parses one input, so the setup that
 	// happens on the first parse is included.
-	measure := func(name string, prepare func() *zeroparse.Parser) {
+	measure := func(name string, prepare func() *zp.Parser) {
 		r := testing.Benchmark(func(b *testing.B) {
 			for b.Loop() {
 				if _, err := prepare().Parse(input); err != nil {
@@ -212,12 +212,12 @@ func main() {
 		})
 		fmt.Printf("%-20s %8d ns/op %8d B/op %6d allocs/op\n", name, r.NsPerOp(), r.AllocedBytesPerOp(), r.AllocsPerOp())
 	}
-	measure("compile from source", func() *zeroparse.Parser {
-		p, _ := zeroparse.CompileSource(string(src), "")
+	measure("compile from source", func() *zp.Parser {
+		p, _ := zp.CompileSource(string(src), "")
 		return p
 	})
-	measure("load .zpc", func() *zeroparse.Parser {
-		p, _ := zeroparse.LoadParser(data)
+	measure("load .zpc", func() *zp.Parser {
+		p, _ := zp.LoadParser(data)
 		return p
 	})
 }
@@ -273,8 +273,8 @@ import (
 //go:embed pairs.zpc
 var compiled []byte
 
-var parser = func() *zeroparse.Parser {
-	p, err := zeroparse.LoadParser(compiled)
+var parser = func() *zp.Parser {
+	p, err := zp.LoadParser(compiled)
 	if err != nil {
 		panic(err)
 	}
@@ -324,11 +324,11 @@ func TestCompiledIsUpToDate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := zeroparse.CompileSource(string(src), "main")
+	p, err := zp.CompileSource(string(src), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want, err := p.Marshal(zeroparse.CompiledParse) // the mode of the go:generate line
+	want, err := p.Marshal(zp.CompiledParse) // the mode of the go:generate line
 	if err != nil {
 		t.Fatal(err)
 	}

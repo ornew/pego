@@ -15,7 +15,7 @@ import (
 func TestTraceReusedElementsPresentation(t *testing.T) {
 	for _, format := range []string{"text", "json"} {
 		t.Run(format, func(t *testing.T) {
-			p, err := zeroparse.CompileSource(`@start
+			p, err := zp.CompileSource(`@start
 rule main = lines $$
 rule lines = line*
 rule line = [a-z]+ #atomic "\n"`, "main")
@@ -24,9 +24,9 @@ rule line = [a-z]+ #atomic "\n"`, "main")
 			}
 			var out bytes.Buffer
 			printer := tracePrinter{w: bufio.NewWriter(&out), json: format == "json", rules: []string{"main"}, maxDepth: 1}
-			var profile zeroparse.Profile
+			var profile zp.Profile
 			active := false
-			doc, err := p.NewDocument(strings.Repeat("ab\n", 32), zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
+			doc, err := p.NewDocument(strings.Repeat("ab\n", 32), zp.WithTrace(func(e zp.TraceEvent) {
 				if active {
 					printer.event(e)
 					profile.Trace(e)

@@ -25,8 +25,8 @@ func TestNeovimClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	zp := filepath.Join(t.TempDir(), "zp")
-	build := exec.Command("go", "build", "-o", zp, "../../cmd/zp")
+	zpBin := filepath.Join(t.TempDir(), "zp")
+	build := exec.Command("go", "build", "-o", zpBin, "../../cmd/zp")
 	build.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags(os.Getenv("GOFLAGS")))
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build zp: %v\n%s", err, out)
@@ -34,7 +34,7 @@ func TestNeovimClient(t *testing.T) {
 	for _, responsive := range []string{"0", "1"} {
 		t.Run("responsive="+responsive, func(t *testing.T) {
 			cmd := exec.Command(nvim, "--headless", "--clean", "-l", script, t.TempDir())
-			cmd.Env = append(os.Environ(), "ZP="+zp, "RESPONSIVE="+responsive)
+			cmd.Env = append(os.Environ(), "ZP="+zpBin, "RESPONSIVE="+responsive)
 			out, err := cmd.CombinedOutput()
 			t.Logf("%s", out)
 			if err != nil || !strings.Contains(string(out), "\nPASS\n") {

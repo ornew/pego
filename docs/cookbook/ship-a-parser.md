@@ -114,7 +114,7 @@ var grammar string
 // The files of versionparser are what zp generates from version.zp. The module path and the options must be those
 // of the go:generate line.
 func TestGeneratedIsUpToDate(t *testing.T) {
-	g, err := zeroparse.ParseGrammar(grammar)
+	g, err := zp.ParseGrammar(grammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,13 +170,13 @@ go tool zp compile -g version.zp -o version.zpc
 //go:embed version.zpc
 var compiled []byte
 
-p, err := zeroparse.LoadParser(compiled) // then p.Parse(...) as with CompileSource
+p, err := zp.LoadParser(compiled) // then p.Parse(...) as with CompileSource
 ```
 
 The file serves `Parse` and `ParseStream` on the bytecode backends; compile it with `-mode recognize` for
-`zeroparse.RecognizeOnly()` or `-mode document` for documents and traces. Loading is much faster than compiling: for the
-Python grammar of [parsers/python](../../parsers/python/), on an Apple M3 Max with Go 1.27.1, `zeroparse.CompileSource` took
-about 60 ms and `zeroparse.LoadParser` of the `.zpc` under 1 ms in every mode.
+`zp.RecognizeOnly()` or `-mode document` for documents and traces. Loading is much faster than compiling: for the
+Python grammar of [parsers/python](../../parsers/python/), on an Apple M3 Max with Go 1.27.1, `zp.CompileSource` took
+about 60 ms and `zp.LoadParser` of the `.zpc` under 1 ms in every mode.
 
 A generated parser needs no preparation at all, and is also the fastest at parsing.
 

@@ -48,7 +48,7 @@ func read(p string) string {
 }
 func TestParityCounts(t *testing.T) {
 	for _, s := range samples {
-		a, e := zeroparse.ParseGrammar(s.Src)
+		a, e := zp.ParseGrammar(s.Src)
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -67,7 +67,7 @@ func BenchmarkSource(b *testing.B) {
 			b.Run("Manual", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					n, e := zeroparse.ParseGrammar(s.Src)
+					n, e := zp.ParseGrammar(s.Src)
 					if e != nil {
 						b.Fatal(e)
 					}

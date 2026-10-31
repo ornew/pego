@@ -30,7 +30,7 @@ constructed values or types that the simplified view omits.
 ```zp
 // ZeroParse grammar syntax and typed source tree.
 // Source forms are preserved before semantic validation and compilation.
-package zeroparse
+package zp
 
 // ml reports whether line breaks are allowed between tokens inside the enclosing delimiters.
 var ml bool

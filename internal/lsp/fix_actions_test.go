@@ -227,16 +227,16 @@ func lookaheadSpanFor(text string) func(*lint.Rewrite, *analysis) {
 func resolvingClient(t *testing.T, responsive bool) (*testClient, map[string]any) {
 	t.Helper()
 	c := newServer(t)
-	zp := map[string]any{"lintDiagnostics": true, "showExplanation": true}
+	zpCaps := map[string]any{"lintDiagnostics": true, "showExplanation": true}
 	if responsive {
-		zp["responsiveAnalysis"] = true
+		zpCaps["responsiveAnalysis"] = true
 	}
 	var result struct {
 		Capabilities map[string]any `json:"capabilities"`
 	}
 	c.requestInto("initialize", map[string]any{"capabilities": map[string]any{
 		"workspace":    map[string]any{"workspaceEdit": map[string]any{"documentChanges": true}},
-		"experimental": map[string]any{"zp": zp},
+		"experimental": map[string]any{"zp": zpCaps},
 		"textDocument": map[string]any{"codeAction": map[string]any{
 			"dataSupport": true, "resolveSupport": map[string]any{"properties": []string{"edit"}}}},
 	}}, &result)

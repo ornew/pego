@@ -15,7 +15,7 @@ rule semi = ";" #missing`
 
 func missingSchema(t *testing.T) *schema.Output {
 	t.Helper()
-	return mustSchema(t, mustCompile(t, missingSchemaGrammar), zeroparse.WithAllSchemaRules())
+	return mustSchema(t, mustCompile(t, missingSchemaGrammar), zp.WithAllSchemaRules())
 }
 
 // Patterns of errors apply to the values of the shape missing, and others do not.

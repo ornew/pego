@@ -29,7 +29,7 @@ with implementation changes; regenerate generated files.
 
 ## Development and checks
 
-- Public APIs: `zeroparse.go` (which joins the runtime to the output schema),
+- Public APIs: `zp.go` (which joins the runtime to the output schema),
   `gen/` (code generation), `lint/`, `grammar/`, `sample/`, `editfuzz/`; parser/compiler: `internal/syntax/`,
   `internal/compile/`; runtime: `internal/engine/`; generators:
   `internal/gen/`; generated parsers: `parsers/`.

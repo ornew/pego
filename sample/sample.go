@@ -110,7 +110,7 @@ var ErrNoInvalid = errors.New("sample: no mutation found that the parser rejects
 
 // Generator generates inputs for a parser. It is not safe for concurrent use.
 type Generator struct {
-	p     *zeroparse.Parser
+	p     *zp.Parser
 	cfg   config
 	in    *info
 	g     *gen
@@ -149,7 +149,7 @@ type RuleCuts struct {
 
 // New returns a generator of inputs for p, starting at p's start rule. The parser must be compiled from
 // the grammar source: a parser loaded from a compiled grammar has no grammar AST and cannot be sampled.
-func New(p *zeroparse.Parser, opts ...Option) (*Generator, error) {
+func New(p *zp.Parser, opts ...Option) (*Generator, error) {
 	g := p.Grammar()
 	if g == nil {
 		return nil, errors.New("sample: the parser has no grammar AST")
@@ -291,7 +291,7 @@ func (g *Generator) Stats() Stats {
 }
 
 // Generate returns up to n distinct inputs that p accepts (see Generator.Generate).
-func Generate(p *zeroparse.Parser, n int, opts ...Option) ([]string, error) {
+func Generate(p *zp.Parser, n int, opts ...Option) ([]string, error) {
 	g, err := New(p, opts...)
 	if err != nil {
 		return nil, err

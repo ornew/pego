@@ -13,21 +13,21 @@ import (
 )
 
 func TestBudgetDocumentPublicDefaultsAndOptionsOnce(t *testing.T) {
-	p, err := zeroparse.CompileSource(`@start
+	p, err := zp.CompileSource(`@start
 rule main = inner $$
 
 rule inner = "(" inner ")" / "a"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+	for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
 			constructCalls, parseCalls := 0, 0
 			var order []string
-			d, err := p.NewDocument("((a))", zeroparse.WithBackend(backend), zeroparse.WithMaxDepth(1),
+			d, err := p.NewDocument("((a))", zp.WithBackend(backend), zp.WithMaxDepth(1),
 				func(o *engine.ParseOptions) { constructCalls++ },
-				zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
-					if e.Rule == "main" && e.Kind == zeroparse.TraceEnter {
+				zp.WithTrace(func(e zp.TraceEvent) {
+					if e.Rule == "main" && e.Kind == zp.TraceEnter {
 						order = append(order, "default")
 					}
 				}))
@@ -38,9 +38,9 @@ rule inner = "(" inner ")" / "a"`, "main")
 				t.Fatalf("default depth: node=%v error=%v", n, err)
 			}
 			order = nil
-			n, err := d.Parse(zeroparse.WithMaxDepth(20), func(o *engine.ParseOptions) { parseCalls++ },
-				zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
-					if e.Rule == "main" && e.Kind == zeroparse.TraceEnter {
+			n, err := d.Parse(zp.WithMaxDepth(20), func(o *engine.ParseOptions) { parseCalls++ },
+				zp.WithTrace(func(e zp.TraceEvent) {
+					if e.Rule == "main" && e.Kind == zp.TraceEnter {
 						order = append(order, "invocation")
 					}
 				}))
@@ -63,14 +63,14 @@ rule inner = "(" inner ")" / "a"`, "main")
 }
 
 func TestBudgetDocumentPublicContextOverrideAndTraceOrder(t *testing.T) {
-	p, err := zeroparse.CompileSource(`@start
+	p, err := zp.CompileSource(`@start
 rule main = "a" $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+	for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
 		ctx, cancel := context.WithCancel(context.Background())
-		d, err := p.NewDocument("a", zeroparse.WithBackend(backend), zeroparse.WithContext(ctx), zeroparse.WithLimits(zeroparse.Limits{Budget: 10000}))
+		d, err := p.NewDocument("a", zp.WithBackend(backend), zp.WithContext(ctx), zp.WithLimits(zp.Limits{Budget: 10000}))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -78,7 +78,7 @@ rule main = "a" $$`, "main")
 		if n, err := d.Parse(); n != nil || !errors.Is(err, context.Canceled) {
 			t.Fatalf("%s defaults: node=%v error=%v", backend, n, err)
 		}
-		if n, err := d.Parse(zeroparse.WithContext(nil), zeroparse.WithLimits(zeroparse.Limits{})); n == nil || err != nil {
+		if n, err := d.Parse(zp.WithContext(nil), zp.WithLimits(zp.Limits{})); n == nil || err != nil {
 			t.Fatalf("%s override: node=%v error=%v", backend, n, err)
 		}
 		if n, err := d.Parse(); n != nil || !errors.Is(err, context.Canceled) {
@@ -86,7 +86,7 @@ rule main = "a" $$`, "main")
 		}
 		ctx, cancel = context.WithCancel(context.Background())
 		first, second := 0, 0
-		_, err = d.Parse(zeroparse.WithContext(ctx), zeroparse.WithTrace(func(zeroparse.TraceEvent) { first++; cancel() }), zeroparse.WithTrace(func(zeroparse.TraceEvent) { second++ }))
+		_, err = d.Parse(zp.WithContext(ctx), zp.WithTrace(func(zp.TraceEvent) { first++; cancel() }), zp.WithTrace(func(zp.TraceEvent) { second++ }))
 		cancel()
 		if !errors.Is(err, context.Canceled) || first != 1 || second != 0 {
 			t.Fatalf("%s callbacks: error=%v first=%d second=%d", backend, err, first, second)

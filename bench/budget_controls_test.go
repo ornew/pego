@@ -24,18 +24,18 @@ func BenchmarkControlledParse(b *testing.B) {
 			p := load(b, w.grammar)
 			input := w.input(1)
 			// The largest finite budget: ^uint64(0) is Unlimited, which runs without a control.
-			limits := zeroparse.Limits{Budget: ^uint64(0) - 1}
+			limits := zp.Limits{Budget: ^uint64(0) - 1}
 			for _, backend := range backends {
 				for _, unit := range units {
 					b.Run(backend.name+"/"+unit.name, func(b *testing.B) {
 						// Initialize lazy instrumentation before measuring repeated calls.
-						if err := parseOK(p, w, input, zeroparse.WithBackend(backend.b), zeroparse.WithUnit(unit.u), zeroparse.WithLimits(limits)); err != nil {
+						if err := parseOK(p, w, input, zp.WithBackend(backend.b), zp.WithUnit(unit.u), zp.WithLimits(limits)); err != nil {
 							b.Fatal(err)
 						}
 						b.SetBytes(int64(len(input)))
 						b.ReportAllocs()
 						for b.Loop() {
-							if err := parseOK(p, w, input, zeroparse.WithBackend(backend.b), zeroparse.WithUnit(unit.u), zeroparse.WithLimits(limits)); err != nil {
+							if err := parseOK(p, w, input, zp.WithBackend(backend.b), zp.WithUnit(unit.u), zp.WithLimits(limits)); err != nil {
 								b.Fatal(err)
 							}
 						}
@@ -50,13 +50,13 @@ func BenchmarkControlledParse(b *testing.B) {
 						var err error
 						if w.name == "JSON" {
 							selected := gjson.CodePoints
-							if unit.u == zeroparse.Bytes {
+							if unit.u == zp.Bytes {
 								selected = gjson.Bytes
 							}
 							_, err = gjson.Parse(input, gjson.WithUnit(selected), gjson.WithLimits(gjson.Limits(limits)))
 						} else {
 							selected := gxml.CodePoints
-							if unit.u == zeroparse.Bytes {
+							if unit.u == zp.Bytes {
 								selected = gxml.Bytes
 							}
 							_, err = gxml.Parse(input, gxml.WithUnit(selected), gxml.WithLimits(gxml.Limits(limits)))
@@ -73,13 +73,13 @@ func BenchmarkControlledParse(b *testing.B) {
 						var err error
 						if w.name == "JSON" {
 							selected := gjson.CodePoints
-							if unit.u == zeroparse.Bytes {
+							if unit.u == zp.Bytes {
 								selected = gjson.Bytes
 							}
 							_, err = gjson.ParseAST(input, gjson.WithUnit(selected), gjson.WithLimits(gjson.Limits(limits)))
 						} else {
 							selected := gxml.CodePoints
-							if unit.u == zeroparse.Bytes {
+							if unit.u == zp.Bytes {
 								selected = gxml.Bytes
 							}
 							_, err = gxml.ParseAST(input, gxml.WithUnit(selected), gxml.WithLimits(gxml.Limits(limits)))
@@ -105,7 +105,7 @@ func TestControlledWorkloads(t *testing.T) {
 		t.Run(w.name, func(t *testing.T) {
 			input := w.input(10)
 			p := load(t, w.grammar)
-			limits := zeroparse.Limits{Budget: ^uint64(0) - 1}
+			limits := zp.Limits{Budget: ^uint64(0) - 1}
 			equal := func(plain, controlled any) {
 				t.Helper()
 				a, err := json.Marshal(plain)
@@ -123,12 +123,12 @@ func TestControlledWorkloads(t *testing.T) {
 			for _, backend := range backends {
 				for _, unit := range units {
 					// Unlimited keeps the plain parse uncontrolled: a zero budget selects the default counter.
-					opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend.b), zeroparse.WithUnit(unit.u), zeroparse.WithLimits(zeroparse.Limits{Budget: zeroparse.Unlimited})}
+					opts := []zp.ParseOption{zp.WithBackend(backend.b), zp.WithUnit(unit.u), zp.WithLimits(zp.Limits{Budget: zp.Unlimited})}
 					plain, err := p.Parse(input, opts...)
 					if err != nil {
 						t.Fatal(err)
 					}
-					controlled, err := p.Parse(input, append(opts[:len(opts):len(opts)], zeroparse.WithLimits(limits))...)
+					controlled, err := p.Parse(input, append(opts[:len(opts):len(opts)], zp.WithLimits(limits))...)
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -138,7 +138,7 @@ func TestControlledWorkloads(t *testing.T) {
 			for _, unit := range units {
 				if w.name == "JSON" {
 					selected := gjson.CodePoints
-					if unit.u == zeroparse.Bytes {
+					if unit.u == zp.Bytes {
 						selected = gjson.Bytes
 					}
 					plain, err := gjson.Parse(input, gjson.WithUnit(selected), gjson.WithLimits(gjson.Limits{Budget: gjson.Unlimited}))
@@ -161,7 +161,7 @@ func TestControlledWorkloads(t *testing.T) {
 					equal(plainAST, controlledAST)
 				} else {
 					selected := gxml.CodePoints
-					if unit.u == zeroparse.Bytes {
+					if unit.u == zp.Bytes {
 						selected = gxml.Bytes
 					}
 					plain, err := gxml.Parse(input, gxml.WithUnit(selected), gxml.WithLimits(gxml.Limits{Budget: gxml.Unlimited}))

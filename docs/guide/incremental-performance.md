@@ -81,7 +81,7 @@ func live(build func() any) float64 {
 
 func main() {
 	for _, g := range grammars {
-		p, err := zeroparse.CompileSource(g.grammar, "main")
+		p, err := zp.CompileSource(g.grammar, "main")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -210,7 +210,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	p, err := zeroparse.CompileSource(string(src), "main")
+	p, err := zp.CompileSource(string(src), "main")
 	if err != nil {
 		log.Fatal(err)
 	}

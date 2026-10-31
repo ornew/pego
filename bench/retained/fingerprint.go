@@ -24,7 +24,7 @@ type field struct {
 // fingerprint visits every public node, field and value without recursively
 // marshaling subtrees. Deterministic node IDs preserve sharing and node cycles.
 // The benchmark corpora produce nodes, acyclic collections and scalar values.
-func fingerprint(root *zeroparse.Node) (string, error) {
+func fingerprint(root *zp.Node) (string, error) {
 	h := sha256.New()
 	write := func(data []byte) {
 		var size [binary.MaxVarintLen64]byte
@@ -33,7 +33,7 @@ func fingerprint(root *zeroparse.Node) (string, error) {
 		h.Write(data)
 	}
 	write([]byte(fingerprintFormat))
-	seen := map[*zeroparse.Node]int{}
+	seen := map[*zp.Node]int{}
 	stack := []any{root}
 	for len(stack) != 0 {
 		i := len(stack) - 1
@@ -44,7 +44,7 @@ func fingerprint(root *zeroparse.Node) (string, error) {
 		case frame:
 			write([]byte(x))
 			continue
-		case *zeroparse.Node:
+		case *zp.Node:
 			if x == nil {
 				write([]byte("nil-node"))
 				continue
@@ -82,7 +82,7 @@ func fingerprint(root *zeroparse.Node) (string, error) {
 			for i := x.Len() - 1; i >= 0; i-- {
 				stack = append(stack, x.Elem(i))
 			}
-			if x.Kind() == zeroparse.KindValue {
+			if x.Kind() == zp.KindValue {
 				stack = append(stack, x.Value())
 			}
 			continue

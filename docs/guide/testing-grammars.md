@@ -47,7 +47,7 @@ rule ws = [ \t\n]*
 ```
 
 The tests live in a Go module next to it. Each file below is part of the package `pairs_test`, and the grammar is
-embedded and compiled once, because a `*zeroparse.Parser` is safe for concurrent use:
+embedded and compiled once, because a `*zp.Parser` is safe for concurrent use:
 
 ```text
 example.com/pairs
@@ -86,9 +86,9 @@ import (
 //go:embed pairs.zp
 var grammarSrc string
 
-// parser is shared by every test: a *zeroparse.Parser is safe for concurrent use.
-var parser = func() *zeroparse.Parser {
-	p, err := zeroparse.CompileSource(grammarSrc, "main")
+// parser is shared by every test: a *zp.Parser is safe for concurrent use.
+var parser = func() *zp.Parser {
+	p, err := zp.CompileSource(grammarSrc, "main")
 	if err != nil {
 		panic(err)
 	}
@@ -124,7 +124,7 @@ func TestRejects(t *testing.T) {
 		{"a=1\nb=x", 2, 3, []string{"[0-9]"}},
 	} {
 		_, err := parser.Parse(tc.in)
-		var se *zeroparse.SyntaxError
+		var se *zp.SyntaxError
 		if !errors.As(err, &se) {
 			t.Errorf("%q: got %v, want a syntax error", tc.in, err)
 			continue
@@ -242,9 +242,9 @@ Notes:
 
 - Golden tests are only as good as the review of `-update`. Read the diff: a golden file that is regenerated without
   looking proves nothing.
-- Print what you care about. `node.String()` has no positions; `json.MarshalIndent(node, "", "  ")` has them (and, when the parser is compiled with `zeroparse.WithSourceInfo()`, the
+- Print what you care about. `node.String()` has no positions; `json.MarshalIndent(node, "", "  ")` has them (and, when the parser is compiled with `zp.WithSourceInfo()`, the
   rule of each node), at the price of larger files. A grammar with `#recover` should also print the recovered errors
-  (`var recovered zeroparse.SyntaxErrors; errors.As(err, &recovered)`): a parse can return a tree and an error together.
+  (`var recovered zp.SyntaxErrors; errors.As(err, &recovered)`): a parse can return a tree and an error together.
 - Keep a few inputs that **fail**, with the error in the golden file. Error messages are part of a parser's interface.
 - The same layout is used by [examples/](../../examples/) and by every module of [parsers/](../../parsers/); the zp
   command makes a golden file too: `zp parse -g pairs.zp -f sexpr < testdata/basic.txt`.
@@ -336,24 +336,24 @@ func checkInput(t testing.TB, in string) {
 	t.Helper()
 
 	// Byte positions, so that a node's text is input[Start:End].
-	node, err := parser.Parse(in, zeroparse.WithUnit(zeroparse.Bytes))
+	node, err := parser.Parse(in, zp.WithUnit(zp.Bytes))
 
 	// Every backend returns the same tree and the same error.
-	for _, b := range []zeroparse.Backend{zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-		other, oerr := parser.Parse(in, zeroparse.WithUnit(zeroparse.Bytes), zeroparse.WithBackend(b))
+	for _, b := range []zp.Backend{zp.Bytecode, zp.BytecodeIterative} {
+		other, oerr := parser.Parse(in, zp.WithUnit(zp.Bytes), zp.WithBackend(b))
 		if fmt.Sprint(node, err) != fmt.Sprint(other, oerr) {
 			t.Fatalf("%q: backend %v returned %v, %v; the closure backend %v, %v", in, b, other, oerr, node, err)
 		}
 	}
 
 	// Recognition agrees with parsing.
-	if _, rerr := parser.Parse(in, zeroparse.RecognizeOnly(), zeroparse.WithUnit(zeroparse.Bytes)); fmt.Sprint(rerr) != fmt.Sprint(err) {
+	if _, rerr := parser.Parse(in, zp.RecognizeOnly(), zp.WithUnit(zp.Bytes)); fmt.Sprint(rerr) != fmt.Sprint(err) {
 		t.Fatalf("%q: Parse returned %v, RecognizeOnly %v", in, err, rerr)
 	}
 
 	if err != nil {
 		// A syntax error points into the input.
-		if se, ok := err.(*zeroparse.SyntaxError); ok && (se.Pos < 0 || se.Pos > len(in)) {
+		if se, ok := err.(*zp.SyntaxError); ok && (se.Pos < 0 || se.Pos > len(in)) {
 			t.Fatalf("%q: error position %d is outside the input", in, se.Pos)
 		}
 		return
@@ -362,13 +362,13 @@ func checkInput(t testing.TB, in string) {
 }
 
 // checkNode checks that a node lies within its parent and that a string node's text is the input it covers.
-func checkNode(t testing.TB, in string, n *zeroparse.Node, lo, hi int) {
+func checkNode(t testing.TB, in string, n *zp.Node, lo, hi int) {
 	t.Helper()
 	if n == nil {
 		return
 	}
 	switch n.Kind() {
-	case zeroparse.KindTupleValue, zeroparse.KindListValue, zeroparse.KindValue:
+	case zp.KindTupleValue, zp.KindListValue, zp.KindValue:
 		// Built by an action, without a range of its own: the elements lie in the enclosing range.
 	default:
 		if n.Start() < lo || n.Start() > n.End() || n.End() > hi {
@@ -376,14 +376,14 @@ func checkNode(t testing.TB, in string, n *zeroparse.Node, lo, hi int) {
 		}
 		lo, hi = n.Start(), n.End()
 	}
-	if n.Kind() == zeroparse.KindString && n.Text() != in[n.Start():n.End()] {
+	if n.Kind() == zp.KindString && n.Text() != in[n.Start():n.End()] {
 		t.Fatalf("%q: string node %s has text %q, but [%d,%d) is %q", in, n, n.Text(), n.Start(), n.End(), in[n.Start():n.End()])
 	}
 	for _, c := range n.Elems() {
 		checkNode(t, in, c, lo, hi)
 	}
 	for _, v := range n.Fields() {
-		if c, ok := v.(*zeroparse.Node); ok {
+		if c, ok := v.(*zp.Node); ok {
 			checkNode(t, in, c, lo, hi)
 		}
 	}
@@ -411,7 +411,7 @@ same tree; the elements of a tree come in order of position; every identifier of
 
 `RecognizeOnly` does not run actions. If an action can fail at run time (`division by zero`), `Parse` fails and
 recognition succeeds, and the check above fails for the right reason. For such a grammar, compare only the syntax
-errors, or skip inputs that fail with an error that is not a `*zeroparse.SyntaxError`.
+errors, or skip inputs that fail with an error that is not a `*zp.SyntaxError`.
 
 ## Generated Inputs
 
@@ -621,11 +621,11 @@ import (
 
 // TestLoadedMatchesCompiled checks that a grammar saved and loaded again behaves like the one compiled from source.
 func TestLoadedMatchesCompiled(t *testing.T) {
-	data, err := parser.Marshal(zeroparse.CompiledParse)
+	data, err := parser.Marshal(zp.CompiledParse)
 	if err != nil {
 		t.Fatal(err)
 	}
-	loaded, err := zeroparse.LoadParser(data)
+	loaded, err := zp.LoadParser(data)
 	if err != nil {
 		t.Fatal(err)
 	}

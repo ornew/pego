@@ -83,7 +83,7 @@ The checked-in generated Go source is the bootstrap artifact used during an
 ordinary build. Regeneration must be reproducible and must not invoke the
 parser being regenerated to construct itself at runtime. Keep the generator
 and generated parser in package boundaries that avoid an import cycle through
-`zeroparse.CompileSource` or grammar compilation. A generation check fails when the
+`zp.CompileSource` or grammar compilation. A generation check fails when the
 generated source is stale.
 
 ### Incremental Source Span Construction
@@ -244,7 +244,7 @@ source AST without the public adapter.
 Diagnostic equivalence was not checked, so these timings and byte counts are
 not a fair frontend comparison and do not establish a winner or default. The
 medians below were measured at source revision `90b4cf7`. Each operation parses
-the complete source string: `zeroparse.ParseGrammar` for the manual frontend and
+the complete source string: `zp.ParseGrammar` for the manual frontend and
 generated Go `ParseAST` in CodePoints for the typed frontend. Compilation and
 code generation are outside the timed region. Small uses
 `rule main = [a-z]+ #atomic`; the other inputs are `zeroparse.zp`,

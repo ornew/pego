@@ -22,7 +22,7 @@ rule expr Node = #operators {
  level { infix left "+" => Node{} }
 } => ...
 `
-	g, err := zeroparse.ParseGrammar(src)
+	g, err := zp.ParseGrammar(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ rule expr Node = #operators {
 	if !bytes.Equal(before, after) || grammar.Format(g) != beforeText {
 		t.Fatal("input AST mutated")
 	}
-	projected, err := zeroparse.ParseGrammar(out)
+	projected, err := zp.ParseGrammar(out)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,11 +56,11 @@ rule expr Node = #operators {
 }
 
 func TestFormatSyntaxNormalizedPragmas(t *testing.T) {
-	g, err := zeroparse.ParseGrammar(`rule main = "a"* #stream`)
+	g, err := zp.ParseGrammar(`rule main = "a"* #stream`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := zeroparse.Compile(starttest.MarkAll(g), "main")
+	p, err := zp.Compile(starttest.MarkAll(g), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func TestFormatSyntaxNormalizedPragmas(t *testing.T) {
 }
 
 func TestFormatSyntaxValueDependentPredicate(t *testing.T) {
-	g, err := zeroparse.ParseGrammar(`type T = { N int }
+	g, err := zp.ParseGrammar(`type T = { N int }
 rule main = x:value {$x.N == 1}
 rule value T = "x" => T{N: 1}`)
 	if err != nil {
@@ -89,11 +89,11 @@ rule value T = "x" => T{N: 1}`)
 	if strings.Contains(out, "x:value") {
 		t.Fatalf("capture retained: %s", out)
 	}
-	proj, err := zeroparse.ParseGrammar(out)
+	proj, err := zp.ParseGrammar(out)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := zeroparse.Compile(starttest.MarkAll(proj), "main"); err == nil {
+	if _, err := zp.Compile(starttest.MarkAll(proj), "main"); err == nil {
 		t.Fatal("expected value-dependent projection to require the full grammar")
 	}
 }
@@ -108,7 +108,7 @@ func TestFormatSyntaxGrouping(t *testing.T) {
 		{"rule main = (\n \"a\"\n \"b\"\n)", "rule main = (\n    \"a\"\n    \"b\"\n)"},
 	} {
 		t.Run(tc.source, func(t *testing.T) {
-			g, err := zeroparse.ParseGrammar(tc.source)
+			g, err := zp.ParseGrammar(tc.source)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -116,26 +116,26 @@ func TestFormatSyntaxGrouping(t *testing.T) {
 			if strings.TrimSpace(out) != tc.want {
 				t.Fatalf("got:\n%s\nwant:\n%s", out, tc.want)
 			}
-			projected, err := zeroparse.ParseGrammar(out)
+			projected, err := zp.ParseGrammar(out)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if grammar.FormatSyntax(projected) != out {
 				t.Fatal("projection not idempotent")
 			}
-			p, err := zeroparse.Compile(starttest.MarkAll(projected), "main")
+			p, err := zp.Compile(starttest.MarkAll(projected), "main")
 			if err != nil {
 				t.Fatal(err)
 			}
 			// The corresponding full grammar has identical matching behavior
 			// whenever it does not require an unimplemented inline action.
-			full, err := zeroparse.Compile(starttest.MarkAll(g), "main")
+			full, err := zp.Compile(starttest.MarkAll(g), "main")
 			if err != nil {
 				return
 			}
 			for _, input := range []string{"", "a", "b", "c", "ab", "ac", "bc", "abab"} {
-				_, originalErr := full.Parse(input, zeroparse.RecognizeOnly())
-				_, projectedErr := p.Parse(input, zeroparse.RecognizeOnly())
+				_, originalErr := full.Parse(input, zp.RecognizeOnly())
+				_, projectedErr := p.Parse(input, zp.RecognizeOnly())
 				if (originalErr == nil) != (projectedErr == nil) {
 					t.Fatalf("matching changed for %q: %v / %v", input, originalErr, projectedErr)
 				}
@@ -150,7 +150,7 @@ func TestFormatSyntaxGroupComments(t *testing.T) {
 		"rule main = (\n // keep\n \"a\"\n)",
 		"rule main = (\n \"a\"\n /* keep */\n)",
 	} {
-		g, err := zeroparse.ParseGrammar(source)
+		g, err := zp.ParseGrammar(source)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -158,7 +158,7 @@ func TestFormatSyntaxGroupComments(t *testing.T) {
 		if strings.Count(out, "keep") != 1 {
 			t.Fatalf("group comment lost or duplicated: %s", out)
 		}
-		projected, err := zeroparse.ParseGrammar(out)
+		projected, err := zp.ParseGrammar(out)
 		if err != nil {
 			t.Fatal(err)
 		}

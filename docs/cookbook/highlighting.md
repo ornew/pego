@@ -60,13 +60,13 @@ var class = map[string]string{
 }
 
 // Highlight returns src as HTML, with a <span> around each token that has a class.
-func Highlight(p *zeroparse.Parser, src string) (string, error) {
+func Highlight(p *zp.Parser, src string) (string, error) {
 	tree, err := p.Parse(src)
 	if err != nil {
 		return "", err
 	}
 	var b strings.Builder
-	for _, tok := range tree.Field("Items").(*zeroparse.Node).Elems() {
+	for _, tok := range tree.Field("Items").(*zp.Node).Elems() {
 		text := html.EscapeString(tok.Text())
 		if c, ok := class[tok.Type()]; ok {
 			fmt.Fprintf(&b, `<span class="%s">%s</span>`, c, text)
@@ -78,7 +78,7 @@ func Highlight(p *zeroparse.Parser, src string) (string, error) {
 }
 
 func main() {
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func main() {
 - **Spans are text.** Every token is a string node holding its text, and the tokens, joined, are exactly the input, so
   `strings.Join` of the texts gives the source back. `html.EscapeString` keeps `<` and `&` of the source from becoming
   markup.
-- **Positions.** Each token has `Start()` and `End()`. For an editor, send those (they are code points by default; `zeroparse.WithUnit`
+- **Positions.** Each token has `Start()` and `End()`. For an editor, send those (they are code points by default; `zp.WithUnit`
   changes that) instead of HTML.
 
 ## Variations and Limits

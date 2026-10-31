@@ -93,7 +93,7 @@ func FuzzCalculator(f *testing.F) {
 	if err != nil {
 		f.Fatal(err)
 	}
-	p, err := zeroparse.CompileSource(string(src), "main")
+	p, err := zp.CompileSource(string(src), "main")
 	if err != nil {
 		f.Fatal(err)
 	}
@@ -118,8 +118,8 @@ func FuzzCalculator(f *testing.F) {
 		if valid[in] && err != nil {
 			t.Fatalf("generated input %q does not parse: %v", in, err)
 		}
-		for _, b := range []zeroparse.Backend{zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-			m, err2 := p.Parse(in, zeroparse.WithBackend(b))
+		for _, b := range []zp.Backend{zp.Bytecode, zp.BytecodeIterative} {
+			m, err2 := p.Parse(in, zp.WithBackend(b))
 			if fmt.Sprint(n, err) != fmt.Sprint(m, err2) {
 				t.Fatalf("%q: backend %v returned %v, %v; the closure backend %v, %v", in, b, m, err2, n, err)
 			}

@@ -1,7 +1,7 @@
 # Output Schemas and Structural Queries
 
 `Parser.OutputSchema` describes the possible values of a checked grammar. By default the schema holds the start rule, the
-rules it calls and the types their output references; `zeroparse.WithAllSchemaRules()` also includes unreachable rules and all
+rules it calls and the types their output references; `zp.WithAllSchemaRules()` also includes unreachable rules and all
 declared types. A structural query searches the values of an
 actual parse result. Together they let a tool inspect the shape of a grammar and find values without generating code or
 serializing a result. Structural queries are in package `github.com/ornew/zeroparse/query`. These Go APIs are experimental; the schema JSON format is versioned. The contract is defined in
@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-	p, err := zeroparse.CompileSource("@start\nrule main = name\nrule name = [a-z]+ #atomic", "main")
+	p, err := zp.CompileSource("@start\nrule main = name\nrule name = [a-z]+ #atomic", "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -102,7 +102,7 @@ See [the `zp` command](command-line.md#schema) for the flags.
 Keep in mind:
 
 - The schema comes from the grammar source. A parser restored by `LoadParser` holds no schema in any mode, and its
-  `OutputSchema` returns an error that matches `zeroparse.ErrSchemaUnavailable`; `zp schema` rejects a `.zpc`.
+  `OutputSchema` returns an error that matches `zp.ErrSchemaUnavailable`; `zp schema` rejects a `.zpc`.
 - A query sees only what the tree retains. Actions and discard operators remove punctuation and comments, and a query
   does not recover them or interpret source positions.
 - `Elements` sees through nodes: on a node it matches the elements of the node's value, as `x[i]` does in an action.

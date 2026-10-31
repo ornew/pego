@@ -13,7 +13,7 @@ func TestDuckDBKeywordNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := zeroparse.CompileSource(string(src), "main")
+	p, err := zp.CompileSource(string(src), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,9 +29,9 @@ func TestDuckDBKeywordNames(t *testing.T) {
 		{"SELECT 1 iN", false}, {"SELECT 1 iNt", false},
 		{"SELECT 1 iNtentionally", true},
 	} {
-		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-				_, err := p.Parse(tc.sql, zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
+		for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+			for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+				_, err := p.Parse(tc.sql, zp.WithBackend(backend), zp.WithUnit(unit))
 				if (err == nil) != tc.ok {
 					t.Errorf("Parse(%q, backend=%v, unit=%v): %v", tc.sql, backend, unit, err)
 				}
@@ -45,7 +45,7 @@ func TestDuckDBSetofTypes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := zeroparse.CompileSource(string(src), "main")
+	p, err := zp.CompileSource(string(src), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,9 +64,9 @@ func TestDuckDBSetofTypes(t *testing.T) {
 	} {
 		for _, template := range []string{"SELECT CAST(NULL AS %s)", "SELECT NULL::%s", "CREATE TABLE t (x %s)"} {
 			sql := fmt.Sprintf(template, tc.typ)
-			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-				for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-					_, err := p.Parse(sql, zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
+			for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+				for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+					_, err := p.Parse(sql, zp.WithBackend(backend), zp.WithUnit(unit))
 					if (err == nil) != tc.ok {
 						t.Errorf("Parse(%q, backend=%v, unit=%v): %v", sql, backend, unit, err)
 					}
@@ -81,7 +81,7 @@ func TestDuckDBFrameBounds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := zeroparse.CompileSource(string(src), "main")
+	p, err := zp.CompileSource(string(src), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,9 +126,9 @@ func TestDuckDBFrameBounds(t *testing.T) {
 	} {
 		for _, frameUnit := range []string{"ROWS", "RANGE", "GROUPS"} {
 			sql := fmt.Sprintf(`SELECT sum("é") OVER (ORDER BY i %s %s)`, frameUnit, tc.bound)
-			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-				for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-					_, err := p.Parse(sql, zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
+			for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+				for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+					_, err := p.Parse(sql, zp.WithBackend(backend), zp.WithUnit(unit))
 					if (err == nil) != tc.ok {
 						t.Errorf("Parse(%q, backend=%v, unit=%v): %v", sql, backend, unit, err)
 					}

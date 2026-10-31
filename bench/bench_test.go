@@ -173,35 +173,35 @@ var workloads = []workload{
 
 var backends = []struct {
 	name string
-	b    zeroparse.Backend
+	b    zp.Backend
 }{
-	{"closure", zeroparse.Closure},
-	{"bytecode", zeroparse.Bytecode},
-	{"iterative", zeroparse.BytecodeIterative},
+	{"closure", zp.Closure},
+	{"bytecode", zp.Bytecode},
+	{"iterative", zp.BytecodeIterative},
 }
 
 var units = []struct {
 	name string
-	u    zeroparse.PositionUnit
+	u    zp.PositionUnit
 }{
-	{"codepoints", zeroparse.CodePoints},
-	{"bytes", zeroparse.Bytes},
+	{"codepoints", zp.CodePoints},
+	{"bytes", zp.Bytes},
 }
 
-func load(tb testing.TB, path string) *zeroparse.Parser {
+func load(tb testing.TB, path string) *zp.Parser {
 	tb.Helper()
 	src, err := os.ReadFile(path)
 	if err != nil {
 		tb.Fatal(err)
 	}
-	p, err := zeroparse.CompileSource(string(src), "main")
+	p, err := zp.CompileSource(string(src), "main")
 	if err != nil {
 		tb.Fatal(err)
 	}
 	return p
 }
 
-func parseOK(p *zeroparse.Parser, w *workload, input string, opts ...zeroparse.ParseOption) error {
+func parseOK(p *zp.Parser, w *workload, input string, opts ...zp.ParseOption) error {
 	n, err := p.Parse(input, opts...)
 	if w.partial && n != nil {
 		return nil
@@ -219,11 +219,11 @@ func TestWorkloads(t *testing.T) {
 			var want string
 			for _, be := range backends {
 				for _, u := range units {
-					n, err := p.Parse(input, zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u))
+					n, err := p.Parse(input, zp.WithBackend(be.b), zp.WithUnit(u.u))
 					if err != nil && !(w.partial && n != nil) {
 						t.Fatalf("%s/%s: %v", be.name, u.name, err)
 					}
-					if u.u == zeroparse.Bytes {
+					if u.u == zp.Bytes {
 						continue
 					}
 					got, _ := json.Marshal(n)
@@ -313,7 +313,7 @@ func TestGeneratedDocumentAndStream(t *testing.T) {
 		input := inputs.CSVInput(500)
 		p := load(t, "../parsers/csv/csv.zp")
 		var want, got []string
-		if err := p.ParseStream(strings.NewReader(input), func(n *zeroparse.Node) error {
+		if err := p.ParseStream(strings.NewReader(input), func(n *zp.Node) error {
 			b, err := json.Marshal(n)
 			want = append(want, string(b))
 			return err
@@ -347,7 +347,7 @@ func BenchmarkParse(b *testing.B) {
 						b.SetBytes(int64(len(input)))
 						b.ReportAllocs()
 						for b.Loop() {
-							if err := parseOK(p, w, input, zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u)); err != nil {
+							if err := parseOK(p, w, input, zp.WithBackend(be.b), zp.WithUnit(u.u)); err != nil {
 								b.Fatal(err)
 							}
 						}
@@ -359,7 +359,7 @@ func BenchmarkParse(b *testing.B) {
 					b.SetBytes(int64(len(input)))
 					b.ReportAllocs()
 					for b.Loop() {
-						if err := w.gen(input, u.u == zeroparse.Bytes); err != nil {
+						if err := w.gen(input, u.u == zp.Bytes); err != nil {
 							b.Fatal(err)
 						}
 					}
@@ -404,7 +404,7 @@ func BenchmarkRecognize(b *testing.B) {
 					b.SetBytes(int64(len(input)))
 					b.ReportAllocs()
 					for b.Loop() {
-						if _, err := p.Parse(input, zeroparse.WithBackend(be.b), zeroparse.RecognizeOnly()); err != nil && !w.partial {
+						if _, err := p.Parse(input, zp.WithBackend(be.b), zp.RecognizeOnly()); err != nil && !w.partial {
 							b.Fatal(err)
 						}
 					}
@@ -471,7 +471,7 @@ func BenchmarkIncremental(b *testing.B) {
 	at := utf8.RuneCountInString(input[:strings.Index(input, "fn f150(")+len("fn f150(")])
 	for _, be := range backends {
 		b.Run(be.name+"/document", func(b *testing.B) {
-			doc, err := p.NewDocument(input, zeroparse.WithBackend(be.b))
+			doc, err := p.NewDocument(input, zp.WithBackend(be.b))
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -496,7 +496,7 @@ func BenchmarkIncremental(b *testing.B) {
 		b.Run(be.name+"/fresh", func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := p.Parse(input, zeroparse.WithBackend(be.b)); err != nil {
+				if _, err := p.Parse(input, zp.WithBackend(be.b)); err != nil {
 					b.Fatal(err)
 				}
 			}
@@ -528,7 +528,7 @@ func BenchmarkIncrementalLong(b *testing.B) {
 	at := utf8.RuneCountInString(input[:strings.Index(input, "\n25000,")+len("\n25000,")])
 	for _, be := range backends {
 		b.Run(be.name, func(b *testing.B) {
-			doc, err := p.NewDocument(input, zeroparse.WithBackend(be.b))
+			doc, err := p.NewDocument(input, zp.WithBackend(be.b))
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -570,7 +570,7 @@ func BenchmarkStream(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
 				n := 0
-				err := p.ParseStream(strings.NewReader(input), func(*zeroparse.Node) error { n++; return nil }, zeroparse.WithBackend(be.b))
+				err := p.ParseStream(strings.NewReader(input), func(*zp.Node) error { n++; return nil }, zp.WithBackend(be.b))
 				if err != nil || n != 50001 {
 					b.Fatalf("%d records: %v", n, err)
 				}
@@ -622,28 +622,28 @@ func BenchmarkPrepare(b *testing.B) {
 		b.Run(name+"/source", func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := zeroparse.CompileSource(string(src), "main"); err != nil {
+				if _, err := zp.CompileSource(string(src), "main"); err != nil {
 					b.Fatal(err)
 				}
 			}
 		})
 		for _, c := range []struct {
-			mode zeroparse.CompiledMode
-			opts []zeroparse.ParseOption // a parse the mode serves
+			mode zp.CompiledMode
+			opts []zp.ParseOption // a parse the mode serves
 		}{
-			{zeroparse.CompiledParse, nil},
-			{zeroparse.CompiledRecognize, []zeroparse.ParseOption{zeroparse.RecognizeOnly()}},
-			{zeroparse.CompiledDocument, []zeroparse.ParseOption{zeroparse.WithTrace(func(zeroparse.TraceEvent) {})}},
+			{zp.CompiledParse, nil},
+			{zp.CompiledRecognize, []zp.ParseOption{zp.RecognizeOnly()}},
+			{zp.CompiledDocument, []zp.ParseOption{zp.WithTrace(func(zp.TraceEvent) {})}},
 		} {
 			data, err := p.Marshal(c.mode)
 			if err != nil {
 				b.Fatal(err)
 			}
-			opts := append([]zeroparse.ParseOption{zeroparse.WithBackend(zeroparse.Bytecode)}, c.opts...)
+			opts := append([]zp.ParseOption{zp.WithBackend(zp.Bytecode)}, c.opts...)
 			b.Run(name+"/zpc/"+c.mode.String()+"/bytecode", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					lp, err := zeroparse.LoadParser(data)
+					lp, err := zp.LoadParser(data)
 					if err != nil {
 						b.Fatal(err)
 					}

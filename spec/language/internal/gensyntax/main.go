@@ -23,7 +23,7 @@ func generate() error {
 	if err != nil {
 		return err
 	}
-	g, err := zeroparse.ParseGrammar(string(full))
+	g, err := zp.ParseGrammar(string(full))
 	if err != nil {
 		return err
 	}

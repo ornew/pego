@@ -10,14 +10,14 @@ import (
 )
 
 func TestParseCheckCompiledRecognition(t *testing.T) {
-	p, err := zeroparse.CompileSource(`@start(default)
+	p, err := zp.CompileSource(`@start(default)
 rule main = "a" $$
 @start
 rule other = "é" $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := p.Marshal(zeroparse.CompiledRecognize)
+	data, err := p.Marshal(zp.CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
 	}

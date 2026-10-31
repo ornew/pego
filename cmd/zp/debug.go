@@ -39,7 +39,7 @@ func newDebugFlags(name string) *debugFlags {
 }
 
 // load parses args and returns the parser, the input and the parse options the flags select.
-func (f *debugFlags) load(args []string, stdin io.Reader) (*zeroparse.Parser, string, []zeroparse.ParseOption, error) {
+func (f *debugFlags) load(args []string, stdin io.Reader) (*zp.Parser, string, []zp.ParseOption, error) {
 	if err := f.fs.Parse(args); err != nil {
 		return nil, "", nil, err
 	}
@@ -50,23 +50,23 @@ func (f *debugFlags) load(args []string, stdin io.Reader) (*zeroparse.Parser, st
 		return nil, "", nil, fmt.Errorf("-g is required")
 	}
 	// The commands show what the grammar expected, so the parse records it.
-	opts := []zeroparse.ParseOption{zeroparse.WithExpectations()}
+	opts := []zp.ParseOption{zp.WithExpectations()}
 	switch *f.unit {
 	case "codepoints":
-		opts = append(opts, zeroparse.WithUnit(zeroparse.CodePoints))
+		opts = append(opts, zp.WithUnit(zp.CodePoints))
 	case "bytes":
-		opts = append(opts, zeroparse.WithUnit(zeroparse.Bytes))
+		opts = append(opts, zp.WithUnit(zp.Bytes))
 	default:
 		return nil, "", nil, fmt.Errorf("unknown unit %q", *f.unit)
 	}
 	switch *f.backend {
 	case "":
 	case "closure":
-		opts = append(opts, zeroparse.WithBackend(zeroparse.Closure))
+		opts = append(opts, zp.WithBackend(zp.Closure))
 	case "bytecode":
-		opts = append(opts, zeroparse.WithBackend(zeroparse.Bytecode))
+		opts = append(opts, zp.WithBackend(zp.Bytecode))
 	case "bytecode-iterative":
-		opts = append(opts, zeroparse.WithBackend(zeroparse.BytecodeIterative))
+		opts = append(opts, zp.WithBackend(zp.BytecodeIterative))
 	default:
 		return nil, "", nil, fmt.Errorf("unknown backend %q", *f.backend)
 	}
@@ -76,7 +76,7 @@ func (f *debugFlags) load(args []string, stdin io.Reader) (*zeroparse.Parser, st
 		return nil, "", nil, err
 	}
 	// These commands trace the parse, which a compiled grammar serves in document mode.
-	if mode, loaded := p.CompiledMode(); loaded && mode != zeroparse.CompiledDocument {
+	if mode, loaded := p.CompiledMode(); loaded && mode != zp.CompiledDocument {
 		return nil, "", nil, fmt.Errorf("%s: the compiled grammar is in %s mode; %s traces the parse, which needs document mode: compile it with -mode document, or use the grammar source", *f.grammar, mode, f.fs.Name())
 	}
 	src := *f.input

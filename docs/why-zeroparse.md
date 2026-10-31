@@ -124,7 +124,7 @@ errors, not by the input length ([Streaming](guide/streaming.md)).
 **Typed values from the grammar.** Rule types are inferred and checked when the grammar compiles. The node type is
 `node[T]`. `zp gen -types` emits Go structs, `TNode[T]` values and sealed interfaces for join types, and builds them
 directly during the parse when every value has a Go type. For TypeScript it emits interfaces and a `parseAST`
-conversion ([Generated Typed Values](guide/generated-typed-values.md)). The engine API returns dynamic `*zeroparse.Node`
+conversion ([Generated Typed Values](guide/generated-typed-values.md)). The engine API returns dynamic `*zp.Node`
 values.
 
 **Recovery is declared in the grammar.** `#recover(skip=e)` resumes after a broken construct and leaves an error value

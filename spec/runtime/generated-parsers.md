@@ -11,7 +11,7 @@ position unit.
 
 ## Scope and Terminology
 
-The **engine** is the `zeroparse.Parser` that parses with a compiled grammar. A
+The **engine** is the `zp.Parser` that parses with a compiled grammar. A
 **generated parser** is the source that `gen.Go`, `gen.TypeScript` (package
 `github.com/ornew/zeroparse/gen`) or `zp gen` writes. The **generation options** select optional parts of the
 output. The **generated package** is the Go package named by `-pkg`; the
@@ -106,7 +106,7 @@ const (
   generated package (aliases of the types of its runtime) with the members of their
   engine counterparts, defined in
   [Nodes and Values](nodes.md) and [Parsing](parsing.md#syntax-errors). They are
-  different Go types from those of package `zeroparse`; errors are tested with
+  different Go types from those of package `zp`; errors are tested with
   `errors.As` against the generated types. Node JSON is identical to the engine's.
 - Options apply in order. A negative final `WithMaxDepth` returns a configuration
   error before matching, actions or named-rule lookup; zero restores the generated

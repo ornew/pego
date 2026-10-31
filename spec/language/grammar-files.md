@@ -318,7 +318,7 @@ A trailing comma is not part of the normalized grammar: it is kept in the
 `ListConstructor`, `Call` and `Attribute`, which JSON omits, so a grammar decoded
 from JSON formats every list on one line.
 
-`zeroparse.ParseGrammar` returns this source-preserving AST. Compilation removes
+`zp.ParseGrammar` returns this source-preserving AST. Compilation removes
 source-only type and term groups from the executable grammar; consequently,
 `Parser.Grammar()` exposes the normalized executable form rather than those
 grouping nodes.

@@ -99,10 +99,10 @@ func run(args []string, out io.Writer) error {
 
 	// Allocate the owner slice before the baseline so its backing storage is
 	// excluded. Input and source remain alive across both snapshots.
-	owners := make([]*zeroparse.Parser, o.count)
+	owners := make([]*zp.Parser, o.count)
 	before := liveHeap()
 	for i := range owners {
-		owners[i], err = zeroparse.CompileSource(source, "main")
+		owners[i], err = zp.CompileSource(source, "main")
 		if err != nil {
 			return fmt.Errorf("compilation %d: %w", i, err)
 		}
@@ -147,12 +147,12 @@ func corpus(repo, name string) (source, input string, err error) {
 func warm(source, input string, count int) (string, error) {
 	var result string
 	for i := 0; i < count; i++ {
-		p, err := zeroparse.CompileSource(source, "main")
+		p, err := zp.CompileSource(source, "main")
 		if err != nil {
 			return "", fmt.Errorf("warmup compilation %d: %w", i, err)
 		}
 		if i == 0 {
-			n, err := p.Parse(input, zeroparse.WithBackend(zeroparse.Closure), zeroparse.WithUnit(zeroparse.CodePoints))
+			n, err := p.Parse(input, zp.WithBackend(zp.Closure), zp.WithUnit(zp.CodePoints))
 			if err != nil {
 				return "", fmt.Errorf("full-input validation: %w", err)
 			}

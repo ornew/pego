@@ -3,7 +3,7 @@
 **Problem.** A stream is read from a connection or a pipe, and the producer goes quiet. You want the parse to end when a
 deadline passes or the caller cancels, instead of waiting in `Read` for ever.
 
-`zeroparse.WithContext(ctx)` makes the engine check the context before and after each read and each callback, but the parser
+`zp.WithContext(ctx)` makes the engine check the context before and after each read and each callback, but the parser
 still blocks inside `Read`, and a context cannot make an arbitrary reader return. Combine the context with the reader:
 when the context ends, make the reader fail from outside, and the parse returns that error. The parser never closes your
 reader or starts a goroutine of its own.
@@ -30,14 +30,14 @@ rule line =  [a-z0-9]+ #atomic "\n" `
 // parseContext streams r into emit and gives up when ctx is cancelled. The parser blocks inside r.Read, so
 // cancelling needs the reader to fail: cancelRead must make a blocked Read return the error (closing the
 // connection, or the write end of a pipe, does).
-func parseContext(ctx context.Context, p *zeroparse.Parser, r io.Reader, cancelRead func(error), emit func(*zeroparse.Node) error) error {
+func parseContext(ctx context.Context, p *zp.Parser, r io.Reader, cancelRead func(error), emit func(*zp.Node) error) error {
 	stop := context.AfterFunc(ctx, func() { cancelRead(ctx.Err()) })
 	defer stop()
-	return p.ParseStream(r, emit, zeroparse.WithContext(ctx))
+	return p.ParseStream(r, emit, zp.WithContext(ctx))
 }
 
 func main() {
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func main() {
 	}()
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
-	err = parseContext(ctx, p, pr, func(err error) { pw.CloseWithError(err) }, func(n *zeroparse.Node) error {
+	err = parseContext(ctx, p, pr, func(err error) { pw.CloseWithError(err) }, func(n *zp.Node) error {
 		fmt.Println("line", n.Elem(0).Text())
 		return nil
 	})
@@ -73,6 +73,6 @@ err: context deadline exceeded true
 
 ## Variations and Limits
 
-- To bound the budget instead of the time, use `zeroparse.WithLimits`; exhaustion matches `zeroparse.ErrLimit`. See
+- To bound the budget instead of the time, use `zp.WithLimits`; exhaustion matches `zp.ErrLimit`. See
   [Cancellation and Budget Limits](../guide/cancellation-and-limits.md) and [Streaming](../guide/streaming.md#cancelling-a-stream).
 - Restarting requires replaying the input yourself: the reader offset is not a continuation token.

@@ -72,7 +72,7 @@ func manualOwners(t *testing.T, g *grammar.Grammar) map[string]grammar.SourceInf
 	return owners
 }
 
-func canonicalLead(t *testing.T, n *zeroparse.Node) sourceast.Lead {
+func canonicalLead(t *testing.T, n *zp.Node) sourceast.Lead {
 	t.Helper()
 	if n == nil {
 		return sourceast.Lead{}
@@ -80,7 +80,7 @@ func canonicalLead(t *testing.T, n *zeroparse.Node) sourceast.Lead {
 	var l sourceast.Lead
 	l.Leading, _ = n.Field("Leading").(string)
 	l.HasNext, _ = n.Field("HasNext").(bool)
-	if d, ok := n.Field("Detached").(*zeroparse.Node); ok && d != nil {
+	if d, ok := n.Field("Detached").(*zp.Node); ok && d != nil {
 		for _, c := range elems(d) {
 			l.Detached = append(l.Detached, c.Field("Text").(string))
 		}
@@ -89,7 +89,7 @@ func canonicalLead(t *testing.T, n *zeroparse.Node) sourceast.Lead {
 }
 
 // canonicalOwners converts the ownership records of the canonical tree.
-func canonicalOwners(t *testing.T, src string, root *zeroparse.Node) map[string]grammar.SourceInfo {
+func canonicalOwners(t *testing.T, src string, root *zp.Node) map[string]grammar.SourceInfo {
 	t.Helper()
 	positions := sourceast.NewPositions(src)
 	owners := map[string]grammar.SourceInfo{}
@@ -100,7 +100,7 @@ func canonicalOwners(t *testing.T, src string, root *zeroparse.Node) map[string]
 		"InitField": "InitField", "OperatorsSkip": "OperatorsSkip",
 	}
 	// list converts the statements of one list; an error node owns nothing.
-	list := func(head sourceast.Lead, statements *zeroparse.Node) {
+	list := func(head sourceast.Lead, statements *zp.Node) {
 		if statements == nil {
 			return
 		}
@@ -126,8 +126,8 @@ func canonicalOwners(t *testing.T, src string, root *zeroparse.Node) map[string]
 		}
 		for i, s := range elems(statements) {
 			// A rule with attributes has the position of "rule" for diagnostics.
-			if attrs := s.Field("Attrs"); kind[i] == "RuleDef" && attrs != nil && len(elems(attrs.(*zeroparse.Node))) > 0 {
-				attrs := elems(attrs.(*zeroparse.Node))
+			if attrs := s.Field("Attrs"); kind[i] == "RuleDef" && attrs != nil && len(elems(attrs.(*zp.Node))) > 0 {
+				attrs := elems(attrs.(*zp.Node))
 				off := nextToken([]rune(src), int(attrs[len(attrs)-1].End()))
 				keyword, err := positions.Source(sourceast.Metadata{Start: off, End: off})
 				if err != nil {
@@ -142,19 +142,19 @@ func canonicalOwners(t *testing.T, src string, root *zeroparse.Node) map[string]
 			}
 		}
 	}
-	var walk func(*zeroparse.Node)
-	walk = func(n *zeroparse.Node) {
+	var walk func(*zp.Node)
+	walk = func(n *zp.Node) {
 		if n == nil {
 			return
 		}
 		head := func() sourceast.Lead {
-			h, _ := n.Field("Head").(*zeroparse.Node)
+			h, _ := n.Field("Head").(*zp.Node)
 			return canonicalLead(t, h)
 		}
 		switch n.Type() {
 		case "File":
 			lead := head()
-			if pkg, ok := n.Field("Pkg").(*zeroparse.Node); ok && pkg != nil && pkg.Type() == "Pkg" {
+			if pkg, ok := n.Field("Pkg").(*zp.Node); ok && pkg != nil && pkg.Type() == "Pkg" {
 				meta := sourceField(t, pkg, "Source")
 				span := sourceField(t, meta, "Span")
 				m := sourceast.Metadata{Start: int(span.Start()), End: int(span.End()), Leading: meta.Field("Leading").(string), Trailing: stringList(meta, "Trailing")}
@@ -184,7 +184,7 @@ func canonicalOwners(t *testing.T, src string, root *zeroparse.Node) map[string]
 			if name == "SourceSpan" || name == "Source" {
 				continue
 			}
-			if c, ok := v.(*zeroparse.Node); ok {
+			if c, ok := v.(*zp.Node); ok {
 				walk(c)
 			}
 		}
@@ -206,9 +206,9 @@ func sortedKeys(m map[string]grammar.SourceInfo) []string {
 }
 
 // assertOwnerParity requires identical owners from both frontends for src.
-func assertOwnerParity(t *testing.T, p *zeroparse.Parser, name, src string) {
+func assertOwnerParity(t *testing.T, p *zp.Parser, name, src string) {
 	t.Helper()
-	manual, err := zeroparse.ParseGrammar(src)
+	manual, err := zp.ParseGrammar(src)
 	if err != nil {
 		return // acceptance parity is checked by TestSyntaxSummary
 	}
@@ -343,7 +343,7 @@ func TestCanonicalOwnerParityNegativeControl(t *testing.T) {
 	if b := got["RuleDef@4:1"]; b.LeadingComments != " next\n" {
 		t.Fatalf("unexpected owner %+v", b)
 	}
-	manual, err := zeroparse.ParseGrammar(strings.Replace(src, "// trail", "// other", 1))
+	manual, err := zp.ParseGrammar(strings.Replace(src, "// trail", "// other", 1))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -413,7 +413,7 @@ var emptyStatements = []string{
 func TestEmptyStatementsAreRejected(t *testing.T) {
 	p, _ := sourceGrammar(t)
 	for _, src := range emptyStatements {
-		_, merr := zeroparse.ParseGrammar(src)
+		_, merr := zp.ParseGrammar(src)
 		_, cerr := p.Parse(src)
 		if merr == nil || cerr == nil {
 			t.Errorf("%q: hand-written error %v, canonical error %v; both must reject", src, merr, cerr)

@@ -10,7 +10,7 @@ Add versioned notifications that distinguish source edits, grammar work re-evalu
 
 ## Motivation
 
-The public `zeroparse.Document` applies edits in its configured position unit and incrementally reuses memo results. Reused Nodes can move in place, so retaining a previous `*Node` does not preserve the old output. `Stats` counts evaluation and reuse; it is not a change range. Versioned snapshots are implemented in design 032, and notifications need that ownership boundary before claiming an old/new output comparison.
+The public `zp.Document` applies edits in its configured position unit and incrementally reuses memo results. Reused Nodes can move in place, so retaining a previous `*Node` does not preserve the old output. `Stats` counts evaluation and reuse; it is not a change range. Versioned snapshots are implemented in design 032, and notifications need that ownership boundary before claiming an old/new output comparison.
 
 ## Goals and Non-Goals
 
@@ -70,7 +70,7 @@ Reuse the Document's existing memo invalidation as the evidence source; do not c
 
 ## Compatibility and Backend Support
 
-This API extends the public core `zeroparse.Document`; recognition remains outside
+This API extends the public core `zp.Document`; recognition remains outside
 its current contract. Closure, recursive bytecode, and iterative bytecode must
 agree on observable snapshot equality. Evidence ranges may be
 implementation-specific only when labeled as such. Generated Go parsers expose
@@ -86,7 +86,7 @@ The opt-in path records accepted edits, queues versioned edit/outcome/full-refre
 notifications, and compares immutable snapshots after parsing. Edit events retain
 base-coordinate operations and conservative invalidation evidence; outcome events
 report whole-output comparison only. Minimal changed subtrees/ranges remain out of
-scope. The notification API is limited to the core `zeroparse.Document`; generated Go
+scope. The notification API is limited to the core `zp.Document`; generated Go
 Documents do not emit these events, and TypeScript generation has no Document API.
 
 ## Alternatives Considered

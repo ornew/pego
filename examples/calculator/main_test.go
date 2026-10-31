@@ -7,7 +7,7 @@ import (
 )
 
 func TestEval(t *testing.T) {
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

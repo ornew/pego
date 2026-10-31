@@ -22,9 +22,9 @@ func TestSourceCommentBoundaryGrammar(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parsers := map[string]*zeroparse.Parser{}
+	parsers := map[string]*zp.Parser{}
 	for _, rule := range []string{"start", "after", "owner_example"} {
-		p, err := zeroparse.CompileSource(string(src), rule)
+		p, err := zp.CompileSource(string(src), rule)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -71,9 +71,9 @@ func TestSourceCommentBoundaryGrammar(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-				for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-					n, err := parsers[tc.rule].Parse(tc.input, zeroparse.WithUnit(unit), zeroparse.WithBackend(backend))
+			for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+				for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+					n, err := parsers[tc.rule].Parse(tc.input, zp.WithUnit(unit), zp.WithBackend(backend))
 					if err != nil {
 						t.Fatalf("%v/%v: %v", unit, backend, err)
 					}
@@ -127,7 +127,7 @@ func TestSourceCommentBoundaryGeneratedGo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g, err := zeroparse.ParseGrammar(string(src))
+	g, err := zp.ParseGrammar(string(src))
 	if err != nil {
 		t.Fatal(err)
 	}

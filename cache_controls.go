@@ -1,4 +1,4 @@
-package zeroparse
+package zp
 
 import "github.com/ornew/zeroparse/internal/engine"
 

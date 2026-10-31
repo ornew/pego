@@ -27,7 +27,7 @@ rule name Name = t:([a-z]) #atomic => Name{Text: text($t)}
 
 func queryShapeSchema(t *testing.T) *schema.Output {
 	t.Helper()
-	return mustSchema(t, mustCompile(t, queryShapeGrammar, zeroparse.WithSourceInfo()))
+	return mustSchema(t, mustCompile(t, queryShapeGrammar, zp.WithSourceInfo()))
 }
 
 // TestStructuralQueryNestedShapes checks that a pattern compiles if, and only if, some value of the
@@ -127,7 +127,7 @@ func TestStructuralQueryErrorSize(t *testing.T) {
 		src += "type " + n + " = { X E }\n"
 	}
 	src += "rule main E = e\nrule e E = n:[0-9] => Num{Text: text($n)}\n"
-	s := mustSchema(t, mustCompile(t, src, zeroparse.WithSourceInfo()), zeroparse.WithAllSchemaRules())
+	s := mustSchema(t, mustCompile(t, src, zp.WithSourceInfo()), zp.WithAllSchemaRules())
 	p := query.Pattern{Category: "string"}
 	for range 16 {
 		p = query.Pattern{Fields: []query.FieldPattern{field("X", p)}}

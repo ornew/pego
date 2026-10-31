@@ -14,7 +14,7 @@ Go modules give a v0 version no compatibility guarantee. ZeroParse states its in
 |:--|:--|
 | The grammar language: `.zp` syntax and meaning ([specification](../spec/README.md)) | Stable in intent. A change that breaks a grammar is announced, and `zp fix` rewrites older syntax where it can |
 | The API of generated Go parsers (`Parse`, `ParseAST`, the options and the error types) | Stable in intent. A generated parser carries the runtime of the generator that produced it, so regenerate it after upgrading ZeroParse |
-| The module API, including the `zeroparse` and `grammar` packages | May change in any release; changes are announced |
+| The module API, including the `zp` and `grammar` packages | May change in any release; changes are announced |
 | The `runtime` package, as generated code uses it with `zp gen -runtime import` | Unstable: matches only a generator of the same ZeroParse version, so regenerate the parsers on every upgrade |
 | Compiled grammars (`.zpc`) and the bytecode: container version 7, instruction-set version 29 ([bytecode specification](../spec/bytecode/README.md)) | Unstable: may change in any release. A loader accepts only its own versions and asks for the grammar to be compiled again |
 | The JSON forms of grammars and nodes | Unstable: may change in any release |
@@ -76,9 +76,8 @@ In the commands below, `vX.Y.Z` is the version being released, and the module pa
      remote of each checkout at the new address;
    - serve `go-import` and `go-source` meta tags from the site so that `zeroparse.dev/X` resolves to
      `github.com/zeroparse/X` for every repository of the organization;
-   - rename the root package from `zeroparse` to `zp`, so that it matches the last element of the module path;
    - change the module path to `zeroparse.dev/zp` in every `go.mod` of the repository and in every import
-     path and document that names it;
+     path and document that names it (the root package is already named `zp`, so no qualified use changes);
    - regenerate the generated files with `go generate ./parsers ./bench`;
    - run the full suite, as in step 4;
    - update the site (`repository` in `site/config.json`) and the Workers Builds Git source (the repository that the

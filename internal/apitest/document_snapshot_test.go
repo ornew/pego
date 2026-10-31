@@ -14,8 +14,8 @@ func TestDocumentSnapshotPublicContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-		d, err := p.NewDocument("aa", zeroparse.WithUnit(unit))
+	for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+		d, err := p.NewDocument("aa", zp.WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -35,17 +35,17 @@ func TestDocumentSnapshotPublicContract(t *testing.T) {
 			t.Fatal(err)
 		}
 		failed, err := d.Snapshot()
-		var syntax *zeroparse.SyntaxError
+		var syntax *zp.SyntaxError
 		if failed == nil || !errors.As(err, &syntax) || failed.Text() != "ba" || failed.Version() == s.Version() || failed.Root().Valid() || s.Text() != "aa" {
 			t.Fatal("failed version", err)
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		interrupted, err := d.Snapshot(zeroparse.WithContext(ctx))
+		interrupted, err := d.Snapshot(zp.WithContext(ctx))
 		if interrupted != nil || err == nil {
 			t.Fatal("cancelled snapshot", err)
 		}
-		_, parseErr := d.Parse(zeroparse.WithContext(ctx))
+		_, parseErr := d.Parse(zp.WithContext(ctx))
 		if parseErr == nil || parseErr.Error() != err.Error() {
 			t.Fatalf("snapshot and Parse disagree on budget-control availability: %v / %v", err, parseErr)
 		}

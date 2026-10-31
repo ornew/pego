@@ -10,7 +10,7 @@ The examples use a parser `p` compiled as in [Running Parsers](running-parsers.m
 ## Cancelling a Parse
 
 `Parse` accepts per-invocation `WithContext` and `WithLimits` options. A zero
-limit selects the default described [below](#the-default-budget); `zeroparse.Unlimited` disables the limit. The counter
+limit selects the default described [below](#the-default-budget); `zp.Unlimited` disables the limit. The counter
 resets for the next call. Generated Go parsers offer them only when generated with
 `-budget-controls`; see [the generated Go API](generated-go-api.md#cancellation-and-budget-limits). Generated TypeScript parsers offer
 the `signal`, `budget` and `maxInput` options only with `-budget-controls` too; see [TypeScript](typescript.md#cancellation-and-budget-limits).
@@ -19,14 +19,14 @@ the `signal`, `budget` and `maxInput` options only with `-budget-controls` too; 
 ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 defer cancel()
 node, err := p.Parse(input,
-    zeroparse.WithContext(ctx),
-    zeroparse.WithLimits(zeroparse.Limits{Budget: 5_000_000}),
+    zp.WithContext(ctx),
+    zp.WithLimits(zp.Limits{Budget: 5_000_000}),
 )
 switch {
 case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
     // The invocation was cancelled.
-case errors.Is(err, zeroparse.ErrLimit):
-    // A budget limit was reached; use errors.As for *zeroparse.LimitError details.
+case errors.Is(err, zp.ErrLimit):
+    // A budget limit was reached; use errors.As for *zp.LimitError details.
 case err != nil:
     // Syntax or another parse error.
 case node != nil:
@@ -49,11 +49,11 @@ a callback of yours. The exact rules are in
 A parse with a zero `Budget` is not unbounded. It gets a budget of `max(2^20, 1024 * n)`, where `n` is the length of
 the input in the position unit, so a parse of untrusted input stops without your choosing a limit. Input whose
 cost per element is higher than 1024 on average, such as a grammar that backtracks heavily, fails with a
-`*zeroparse.LimitError`, whose `Limit` is the resolved budget. Pass a larger `Budget` when you expect that cost, or
-`zeroparse.Unlimited` when the input is trusted:
+`*zp.LimitError`, whose `Limit` is the resolved budget. Pass a larger `Budget` when you expect that cost, or
+`zp.Unlimited` when the input is trusted:
 
 ```go
-node, err := p.Parse(input, zeroparse.WithLimits(zeroparse.Limits{Budget: zeroparse.Unlimited}))
+node, err := p.Parse(input, zp.WithLimits(zp.Limits{Budget: zp.Unlimited}))
 ```
 
 A parse with `Unlimited` and no context runs without any control, which is the fastest form. A stream does not know
@@ -65,14 +65,14 @@ with `-budget-controls`; a parser generated without it spends no budget and acce
 
 ## Bounding the Input Length
 
-`Limits.MaxInput` bounds the length of the input in the position unit. Its default is `zeroparse.Unlimited`: the default
+`Limits.MaxInput` bounds the length of the input in the position unit. Its default is `zp.Unlimited`: the default
 budget already grows with the input, so a long input costs in proportion to its length. Set it when you want to
 refuse input above a size before spending any work on it:
 
 ```go
-node, err := p.Parse(input, zeroparse.WithLimits(zeroparse.Limits{MaxInput: 1 << 20}))
-var le *zeroparse.LimitError
-if errors.As(err, &le) && le.Kind == zeroparse.LimitInput {
+node, err := p.Parse(input, zp.WithLimits(zp.Limits{MaxInput: 1 << 20}))
+var le *zp.LimitError
+if errors.As(err, &le) && le.Kind == zp.LimitInput {
     // le.Limit is MaxInput and le.Requested is the length of the input.
 }
 ```
@@ -82,7 +82,7 @@ runs and even before a canceled context is noticed. A `Document` checks the text
 that makes the text too long fails the next `Parse` and a later edit that shortens it makes the `Parse` succeed. A
 stream fails when the parser asks for a unit beyond the limit and the stream has one, however your reader chunks the
 input, and the error reports the number of units the parser asked for. A finite `MaxInput` needs no budget: with
-`Budget: zeroparse.Unlimited` and no context the parse still runs without a control.
+`Budget: zp.Unlimited` and no context the parse still runs without a control.
 
 ## Limits on the Command Line
 
@@ -93,7 +93,7 @@ The `zp` commands that run a parse (`parse`, `test`, `trace`, `profile`, `explai
 zp parse -g grammar.zp -budget unlimited -max-input 1048576 -i "$input"
 ```
 
-A parse that reaches a limit prints the `*zeroparse.LimitError` message and exits with status 1. `zp test` reports it as
+A parse that reaches a limit prints the `*zp.LimitError` message and exits with status 1. `zp test` reports it as
 the runtime error of the case. A saved `edit-fuzz` sequence does not record the limits, so `edit-fuzz -replay` takes
 `-budget` and `-max-input` again. A `Document` reuses earlier work and spends less than a fresh parse, so `edit-fuzz`
 compares nothing at a check where either parse exhausts its budget.

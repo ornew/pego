@@ -18,8 +18,8 @@ import (
 // or the initial text, its result differs from a fresh parse of its text; after an edit, undo or redo,
 // its text is not the edited text; or an operation or a parse panicked.
 type Mismatch struct {
-	Backend zeroparse.Backend
-	Unit    zeroparse.PositionUnit
+	Backend zp.Backend
+	Unit    zp.PositionUnit
 	// Event is the index of the operation, or -1 for the initial text.
 	Event int
 	// Text is the Document's text at a checkpoint, or its text before the operation that changed it
@@ -116,7 +116,7 @@ func Replay(src []byte, seq *Sequence) error {
 	return replay(p, seq)
 }
 
-func compileFor(src []byte, seq *Sequence) (*zeroparse.Parser, error) {
+func compileFor(src []byte, seq *Sequence) (*zp.Parser, error) {
 	if GrammarHash(src) != seq.GrammarSHA256 {
 		return nil, &InvalidError{-1, errors.New("grammar source does not match the recorded hash")}
 	}
@@ -126,7 +126,7 @@ func compileFor(src []byte, seq *Sequence) (*zeroparse.Parser, error) {
 	if _, err := unitName(seq.Unit); err != nil {
 		return nil, &InvalidError{-1, err}
 	}
-	p, err := zeroparse.CompileSource(string(src), seq.Start)
+	p, err := zp.CompileSource(string(src), seq.Start)
 	if err != nil {
 		return nil, &InvalidError{-1, err}
 	}
@@ -140,14 +140,14 @@ type step struct {
 }
 
 type replayer struct {
-	p          *zeroparse.Parser
+	p          *zp.Parser
 	seq        *Sequence
-	opts       []zeroparse.ParseOption
-	doc        *zeroparse.Document
+	opts       []zp.ParseOption
+	doc        *zp.Document
 	undo, redo []step
 }
 
-func replay(p *zeroparse.Parser, seq *Sequence) error {
+func replay(p *zp.Parser, seq *Sequence) error {
 	r, err := start(p, seq)
 	if err != nil {
 		return err
@@ -166,8 +166,8 @@ func replay(p *zeroparse.Parser, seq *Sequence) error {
 }
 
 // start creates the Document of seq's initial text and checks it.
-func start(p *zeroparse.Parser, seq *Sequence) (r *replayer, err error) {
-	r = &replayer{p: p, seq: seq, opts: []zeroparse.ParseOption{zeroparse.WithExpectations(), zeroparse.WithBackend(seq.Backend), zeroparse.WithUnit(seq.Unit), zeroparse.WithLimits(seq.Limits)}}
+func start(p *zp.Parser, seq *Sequence) (r *replayer, err error) {
+	r = &replayer{p: p, seq: seq, opts: []zp.ParseOption{zp.WithExpectations(), zp.WithBackend(seq.Backend), zp.WithUnit(seq.Unit), zp.WithLimits(seq.Limits)}}
 	initial := string(seq.Initial)
 	defer func() {
 		if x := recover(); x != nil {
@@ -193,7 +193,7 @@ func (r *replayer) mismatch(event int, text, path, document, fresh string) *Mism
 // textOf returns the text that a Document holds for s: s itself in Bytes, and s with each invalid byte
 // replaced by U+FFFD in CodePoints, where a Document holds decoded code points.
 func (r *replayer) textOf(s string) string {
-	if r.seq.Unit == zeroparse.Bytes {
+	if r.seq.Unit == zp.Bytes {
 		return s
 	}
 	var b strings.Builder
@@ -290,7 +290,7 @@ func (r *replayer) restore(target string) error {
 // spliced returns the text that the edit op should make of before.
 func (r *replayer) spliced(before string, op Operation) string {
 	start, end := op.Start, op.End
-	if r.seq.Unit != zeroparse.Bytes {
+	if r.seq.Unit != zp.Bytes {
 		b := boundaries(before)
 		start, end = b[start], b[end]
 	}
@@ -314,7 +314,7 @@ func boundaries(s string) []int {
 
 // diff returns the edit, in unit, that changes cur to target: the range of cur between their common
 // prefix and suffix of whole characters, and the replacement from target.
-func diff(cur, target string, unit zeroparse.PositionUnit) (start, end int, text string) {
+func diff(cur, target string, unit zp.PositionUnit) (start, end int, text string) {
 	bc, bt := boundaries(cur), boundaries(target)
 	nc, nt := len(bc)-1, len(bt)-1
 	char := func(s string, b []int, i int) string { return s[b[i]:b[i+1]] }
@@ -327,7 +327,7 @@ func diff(cur, target string, unit zeroparse.PositionUnit) (start, end int, text
 		suf++
 	}
 	text = target[bt[pre]:bt[nt-suf]]
-	if unit == zeroparse.Bytes {
+	if unit == zp.Bytes {
 		return bc[pre], bc[nc-suf], text
 	}
 	return pre, nc - suf, text
@@ -340,9 +340,9 @@ var corruptDocumentResult func(text string, tree map[string]any)
 func (r *replayer) check(event int) *Mismatch {
 	// Encode the Document's result before any other parse can move the nodes it shares.
 	var docErr, freshErr error
-	doc, docPanic := result(func() (n *zeroparse.Node, err error) { n, docErr = r.doc.Parse(); return n, docErr })
+	doc, docPanic := result(func() (n *zp.Node, err error) { n, docErr = r.doc.Parse(); return n, docErr })
 	text := r.doc.Text()
-	fresh, freshPanic := result(func() (*zeroparse.Node, error) { n, err := r.p.Parse(text, r.opts...); freshErr = err; return n, err })
+	fresh, freshPanic := result(func() (*zp.Node, error) { n, err := r.p.Parse(text, r.opts...); freshErr = err; return n, err })
 	if docPanic != "" || freshPanic != "" {
 		// A panic in the Document parse alone points at incremental parsing; in both, at the grammar or
 		// the engine.
@@ -385,7 +385,7 @@ func (r *replayer) check(event int) *Mismatch {
 // result parses and returns the value and error as a JSON-like tree: {"value": ..., "error": ...}, or the
 // panic value if the parse panicked. Strings that are not valid UTF-8, which JSON cannot hold, are also
 // listed quoted under "value_invalid_utf8", in tree order.
-func result(parse func() (*zeroparse.Node, error)) (tree map[string]any, panicked string) {
+func result(parse func() (*zp.Node, error)) (tree map[string]any, panicked string) {
 	defer func() {
 		if x := recover(); x != nil {
 			tree, panicked = nil, fmt.Sprint(x)
@@ -429,7 +429,7 @@ func expand(tree map[string]any) {
 }
 
 // invalidStrings returns the quoted texts and string values of the tree at n that are not valid UTF-8.
-func invalidStrings(n *zeroparse.Node) []any {
+func invalidStrings(n *zp.Node) []any {
 	if n == nil {
 		return nil
 	}
@@ -439,13 +439,13 @@ func invalidStrings(n *zeroparse.Node) []any {
 			l = append(l, strconv.Quote(s))
 		}
 	}
-	err := zeroparse.Walk(n, func(v zeroparse.WalkVisit) (zeroparse.WalkAction, error) {
+	err := zp.Walk(n, func(v zp.WalkVisit) (zp.WalkAction, error) {
 		if v.Node != nil {
 			add(v.Node.Text())
 		} else if s, ok := v.Value.(string); ok {
 			add(s)
 		}
-		return zeroparse.WalkContinue, nil
+		return zp.WalkContinue, nil
 	})
 	if err != nil {
 		l = append(l, "walk: "+err.Error())
@@ -459,10 +459,10 @@ func errorTree(err error) any {
 	if err == nil {
 		return nil
 	}
-	syntax := func(e *zeroparse.SyntaxError) any {
+	syntax := func(e *zp.SyntaxError) any {
 		return map[string]any{"pos": e.Pos, "line": e.Line, "col": e.Col, "expected": anyList(e.Expected), "messages": anyList(e.Messages)}
 	}
-	var all zeroparse.SyntaxErrors
+	var all zp.SyntaxErrors
 	if errors.As(err, &all) {
 		errs := make([]any, len(all))
 		for i, e := range all {
@@ -470,7 +470,7 @@ func errorTree(err error) any {
 		}
 		return map[string]any{"kind": "syntax errors", "errors": errs}
 	}
-	var one *zeroparse.SyntaxError
+	var one *zp.SyntaxError
 	if errors.As(err, &one) {
 		return map[string]any{"kind": "syntax error", "error": syntax(one)}
 	}
@@ -570,6 +570,6 @@ func orRoot(path string) string {
 
 // budgetExhausted reports whether err is an exhausted budget.
 func budgetExhausted(err error) bool {
-	var l *zeroparse.LimitError
-	return errors.As(err, &l) && l.Kind == zeroparse.LimitBudget
+	var l *zp.LimitError
+	return errors.As(err, &l) && l.Kind == zp.LimitBudget
 }

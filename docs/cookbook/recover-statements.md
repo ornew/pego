@@ -69,13 +69,13 @@ set f = 6;
 `
 
 func main() {
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	root, err := p.Parse(source)
-	var errs zeroparse.SyntaxErrors
+	var errs zp.SyntaxErrors
 	if err != nil && !errors.As(err, &errs) {
 		fmt.Fprintln(os.Stderr, err) // not a recovered parse: no tree
 		os.Exit(1)
@@ -85,23 +85,23 @@ func main() {
 	}
 
 	// The outline: how many statements were read at each level, and where the bad ones are.
-	var outline func(n *zeroparse.Node, indent string)
-	outline = func(list *zeroparse.Node, indent string) {
+	var outline func(n *zp.Node, indent string)
+	outline = func(list *zp.Node, indent string) {
 		for _, n := range list.Elems() {
-			if n.Kind() == zeroparse.KindError {
+			if n.Kind() == zp.KindError {
 				fmt.Printf("%sERROR %q\n", indent, strings.TrimSpace(source[n.Start():n.End()]))
 				continue
 			}
 			switch n.Type() {
 			case "Set":
-				fmt.Printf("%sset %s\n", indent, n.Field("Name").(*zeroparse.Node).Text())
+				fmt.Printf("%sset %s\n", indent, n.Field("Name").(*zp.Node).Text())
 			case "Block":
-				fmt.Printf("%sif %s\n", indent, n.Field("Cond").(*zeroparse.Node).Text())
-				outline(n.Field("Body").(*zeroparse.Node), indent+"  ")
+				fmt.Printf("%sif %s\n", indent, n.Field("Cond").(*zp.Node).Text())
+				outline(n.Field("Body").(*zp.Node), indent+"  ")
 			}
 		}
 	}
-	outline(root.Field("Body").(*zeroparse.Node), "")
+	outline(root.Field("Body").(*zp.Node), "")
 }
 ```
 
@@ -132,7 +132,7 @@ the block that holds them, and `if nested` is still a block with its own list.
   its own line only, and the `}` that closes the block stays for the `block` rule.
 - Each `@error` replaces the mechanical list of expected characters with one message at the position where the statement
   went wrong.
-- `Parse` returns the tree and a `zeroparse.SyntaxErrors` together, so the program checks for that type before treating the
+- `Parse` returns the tree and a `zp.SyntaxErrors` together, so the program checks for that type before treating the
   error as a failure.
 
 ## Variations and Limits

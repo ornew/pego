@@ -235,20 +235,20 @@ import (
 )
 
 // errorNodes collects the error values of a tree.
-func errorNodes(n *zeroparse.Node, out *[]*zeroparse.Node) {
+func errorNodes(n *zp.Node, out *[]*zp.Node) {
 	if n == nil {
 		return
 	}
 	switch n.Kind() {
-	case zeroparse.KindError:
+	case zp.KindError:
 		*out = append(*out, n)
-	case zeroparse.KindStruct:
+	case zp.KindStruct:
 		for _, v := range n.Fields() {
-			if child, ok := v.(*zeroparse.Node); ok {
+			if child, ok := v.(*zp.Node); ok {
 				errorNodes(child, out)
 			}
 		}
-	case zeroparse.KindTuple, zeroparse.KindList, zeroparse.KindTupleValue, zeroparse.KindListValue:
+	case zp.KindTuple, zp.KindList, zp.KindTupleValue, zp.KindListValue:
 		for _, child := range n.Elems() {
 			errorNodes(child, out)
 		}
@@ -261,7 +261,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	p, err := zeroparse.CompileSource(string(src), "main")
+	p, err := zp.CompileSource(string(src), "main")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -273,10 +273,10 @@ func main() {
 		"print 1;\n}\n",
 	} {
 		fmt.Printf("--- %q\n", input)
-		node, err := p.Parse(input, zeroparse.WithExpectations())
+		node, err := p.Parse(input, zp.WithExpectations())
 
-		var recovered zeroparse.SyntaxErrors
-		var failed *zeroparse.SyntaxError
+		var recovered zp.SyntaxErrors
+		var failed *zp.SyntaxError
 		switch {
 		case err == nil:
 			fmt.Println("ok:", node)
@@ -286,7 +286,7 @@ func main() {
 			for _, e := range recovered {
 				fmt.Printf("  line %d, column %d (offset %d): %s\n", e.Line, e.Col, e.Pos, e.Message())
 			}
-			var nodes []*zeroparse.Node
+			var nodes []*zp.Node
 			errorNodes(node, &nodes)
 			for _, n := range nodes {
 				fmt.Printf("  error value [%d,%d): %s\n", n.Start(), n.End(), n.Text())
@@ -368,7 +368,7 @@ to match at the delimiter that closes the list the element is in.
 ## Inserting a Missing Literal
 
 Use `#missing` on a nonempty literal when an editor needs a tree even though that
-token is absent. In a Closure whole-input parse, `zeroparse.WithMissingTokens(n)`
+token is absent. In a Closure whole-input parse, `zp.WithMissingTokens(n)`
 enables up to `n` insertion attempts for that call. Without the option, the
 literal remains strict. For example, `rule main = "name" ";" #missing $$`
 parses `name` with a zero-width `missing` value at EOF and returns a recovered
@@ -378,7 +378,7 @@ diagnostic, and its `Text()` returns the diagnostic message. A literal with
 the value is a `missing`, a kind of `error`, and not a string node.
 
 The limit counts abandoned attempts too. Exhaustion returns
-`*zeroparse.MissingTokenLimitError` with no tree. VM backends, generated parsers,
+`*zp.MissingTokenLimitError` with no tree. VM backends, generated parsers,
 Document, streams and compiled grammar serialization do not support this
 initial feature. The budget includes abandoned attempts and left-recursion seed
 replay, so a limit of 16 does not guarantee acceptance of a tree with 16 missing
@@ -580,7 +580,7 @@ zp: 1:6: expected ',' or ']'
 |:--|:--|:--|
 | `#recover` has no effect | `skip` fails at the start of the expression or matches nothing; the expression is not where the failure occurs; or the parse failed in the end so all recovered errors were dropped | Test `skip` on the broken text alone; check that the error is not outside the `#recover`; check for an unclosed construct |
 | Valid input fails after adding `#recover` | `skip` can match the closing token of the enclosing construct | Exclude the closers from `skip` |
-| `err != nil`, yet a tree is wanted | The parse recovered; the error is a `zeroparse.SyntaxErrors` | Check for `SyntaxErrors` with `errors.As` before returning |
+| `err != nil`, yet a tree is wanted | The parse recovered; the error is a `zp.SyntaxErrors` | Check for `SyntaxErrors` with `errors.As` before returning |
 
 ## Related Topics
 

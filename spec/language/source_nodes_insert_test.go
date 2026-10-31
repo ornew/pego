@@ -98,14 +98,14 @@ func TestCanonicalNodeParityNegativeControl(t *testing.T) {
 	if r := got[nodeKey("Ref", sourceInfoAt(4, 5, 4, 6))]; !slices.Equal(r.TrailingComments, []string{" trail\n"}) {
 		t.Fatalf("the operand before a comment owns it: %+v", r)
 	}
-	manual, err := zeroparse.ParseGrammar(strings.Replace(src, "// trail", "// other", 1))
+	manual, err := zp.ParseGrammar(strings.Replace(src, "// trail", "// other", 1))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if reflect.DeepEqual(got, manualNodes(t, manual)) {
 		t.Fatal("changed comment was not detected")
 	}
-	manual, err = zeroparse.ParseGrammar(src)
+	manual, err = zp.ParseGrammar(src)
 	if err != nil {
 		t.Fatal(err)
 	}

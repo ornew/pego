@@ -127,7 +127,7 @@ contract is [Observability](../../spec/runtime/observability.md).
 | Output schemas and structural queries | `schema/` (the types, their validation and `Compare`), `internal/schema/` (the export), `query/` (the queries) |
 | Core and Flow IR and their passes | `internal/ir/core/`, `internal/ir/flow/`; the Core builder in `internal/ir/core/build/` and the Flow lowering in `internal/ir/flow/lower/` |
 | Generated Go and TypeScript | The public entry points in `gen/`, the Go generator in `internal/gen/gogen/`, the TypeScript generator in `internal/gen/tsgen/` and the runtimes in `runtime/` and `internal/gen/tsgen/tsrt/` |
-| The public API | `zeroparse.go`, `grammar/` |
+| The public API | `zp.go`, `grammar/` |
 | Commands, linter, language server | `cmd/zp/`, `lint/`, `internal/lsp/` |
 | Playground and site | `cmd/playground/`, `site/` |
 

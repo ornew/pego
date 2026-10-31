@@ -62,35 +62,35 @@ type Config struct {
 }
 
 // text returns the text of a Key, Int, Str or Bool node.
-func text(v *zeroparse.Node) string { return v.Text() }
+func text(v *zp.Node) string { return v.Text() }
 
-func asString(v *zeroparse.Node) (string, error) {
+func asString(v *zp.Node) (string, error) {
 	if v.Type() != "Str" {
 		return "", fmt.Errorf("want a string, got %s", strings.ToLower(v.Type()))
 	}
 	return strconv.Unquote(text(v))
 }
 
-func asInt(v *zeroparse.Node) (int, error) {
+func asInt(v *zp.Node) (int, error) {
 	if v.Type() != "Int" {
 		return 0, fmt.Errorf("want an integer, got %s", strings.ToLower(v.Type()))
 	}
 	return strconv.Atoi(text(v))
 }
 
-func asBool(v *zeroparse.Node) (bool, error) {
+func asBool(v *zp.Node) (bool, error) {
 	if v.Type() != "Bool" {
 		return false, fmt.Errorf("want true or false, got %s", strings.ToLower(v.Type()))
 	}
 	return text(v) == "true", nil
 }
 
-func asStrings(v *zeroparse.Node) ([]string, error) {
+func asStrings(v *zp.Node) ([]string, error) {
 	if v.Type() != "Array" {
 		return nil, fmt.Errorf("want an array, got %s", strings.ToLower(v.Type()))
 	}
 	var out []string
-	for _, item := range v.Field("Items").(*zeroparse.Node).Elems() {
+	for _, item := range v.Field("Items").(*zp.Node).Elems() {
 		s, err := asString(item)
 		if err != nil {
 			return nil, err
@@ -101,16 +101,16 @@ func asStrings(v *zeroparse.Node) ([]string, error) {
 }
 
 // Load parses src and copies the entries into a Config.
-func Load(p *zeroparse.Parser, src string) (Config, error) {
+func Load(p *zp.Parser, src string) (Config, error) {
 	var c Config
 	// Bytes, so that Start() is an offset into src.
-	tree, err := p.Parse(src, zeroparse.WithUnit(zeroparse.Bytes))
+	tree, err := p.Parse(src, zp.WithUnit(zp.Bytes))
 	if err != nil {
 		return c, err
 	}
-	for _, e := range tree.Field("Entries").(*zeroparse.Node).Elems() {
-		key := text(e.Field("Key").(*zeroparse.Node))
-		v := e.Field("Value").(*zeroparse.Node)
+	for _, e := range tree.Field("Entries").(*zp.Node).Elems() {
+		key := text(e.Field("Key").(*zp.Node))
+		v := e.Field("Value").(*zp.Node)
 		switch key {
 		case "name":
 			c.Name, err = asString(v)
@@ -132,7 +132,7 @@ func Load(p *zeroparse.Parser, src string) (Config, error) {
 }
 
 func main() {
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -169,10 +169,10 @@ error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", [ \t\r\
 - **The tree is what the grammar declares.** `main` returns a `Config` struct whose `Entries` field is a list of `Entry`
   structs. `Field("Entries")` and `Elems` walk it, as described in
   [Shaping Trees](../guide/shaping-trees.md).
-- **`zeroparse.WithUnit(zeroparse.Bytes)`** makes `Start()` and `End()` offsets into the Go string, so `src[:e.Start()]` is the text
+- **`zp.WithUnit(zp.Bytes)`** makes `Start()` and `End()` offsets into the Go string, so `src[:e.Start()]` is the text
   before an entry, and counting its line feeds gives the line. By default positions count code points, which are not
   string indexes when the text has non-ASCII characters.
-- **Two kinds of error.** A file that is not in the format fails in `Parse` with a `*zeroparse.SyntaxError` (the last line of
+- **Two kinds of error.** A file that is not in the format fails in `Parse` with a `*zp.SyntaxError` (the last line of
   the output). A file that has the format but not the meaning your program needs, such as a wrong type or an unknown
   key, fails in your code, which knows the position of the entry.
 

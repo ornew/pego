@@ -11,20 +11,20 @@ import (
 func TestLimitFlagParsing(t *testing.T) {
 	for _, tc := range []struct {
 		args []string
-		want zeroparse.Limits
+		want zp.Limits
 		err  bool
 	}{
-		{nil, zeroparse.Limits{}, false},
-		{[]string{"-budget", "0"}, zeroparse.Limits{}, false},
-		{[]string{"-budget", "5000", "-max-input", "7"}, zeroparse.Limits{Budget: 5000, MaxInput: 7}, false},
-		{[]string{"-budget", "unlimited"}, zeroparse.Limits{Budget: zeroparse.Unlimited}, false},
-		{[]string{"-max-input", "Unlimited"}, zeroparse.Limits{MaxInput: zeroparse.Unlimited}, false},
-		{[]string{"-budget", "UNLIMITED", "-max-input", "unlimited"}, zeroparse.Limits{Budget: zeroparse.Unlimited, MaxInput: zeroparse.Unlimited}, false},
-		{[]string{"-budget", "18446744073709551615"}, zeroparse.Limits{Budget: zeroparse.Unlimited}, false},
-		{[]string{"-budget", "-1"}, zeroparse.Limits{}, true},
-		{[]string{"-budget", "1.5"}, zeroparse.Limits{}, true},
-		{[]string{"-max-input", "many"}, zeroparse.Limits{}, true},
-		{[]string{"-budget", "18446744073709551616"}, zeroparse.Limits{}, true},
+		{nil, zp.Limits{}, false},
+		{[]string{"-budget", "0"}, zp.Limits{}, false},
+		{[]string{"-budget", "5000", "-max-input", "7"}, zp.Limits{Budget: 5000, MaxInput: 7}, false},
+		{[]string{"-budget", "unlimited"}, zp.Limits{Budget: zp.Unlimited}, false},
+		{[]string{"-max-input", "Unlimited"}, zp.Limits{MaxInput: zp.Unlimited}, false},
+		{[]string{"-budget", "UNLIMITED", "-max-input", "unlimited"}, zp.Limits{Budget: zp.Unlimited, MaxInput: zp.Unlimited}, false},
+		{[]string{"-budget", "18446744073709551615"}, zp.Limits{Budget: zp.Unlimited}, false},
+		{[]string{"-budget", "-1"}, zp.Limits{}, true},
+		{[]string{"-budget", "1.5"}, zp.Limits{}, true},
+		{[]string{"-max-input", "many"}, zp.Limits{}, true},
+		{[]string{"-budget", "18446744073709551616"}, zp.Limits{}, true},
 	} {
 		fs := flag.NewFlagSet("t", flag.ContinueOnError)
 		fs.SetOutput(io.Discard)
@@ -43,7 +43,7 @@ func TestLimitFlagParsing(t *testing.T) {
 	if v.String() != "0" {
 		t.Errorf("zero prints %q", v.String())
 	}
-	v = limitValue(zeroparse.Unlimited)
+	v = limitValue(zp.Unlimited)
 	if v.String() != "unlimited" {
 		t.Errorf("Unlimited prints %q", v.String())
 	}

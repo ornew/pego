@@ -225,7 +225,7 @@ Lists made by `list`, `map` and `concat` cover their elements. This is what make
 exactly their operands, which the Go program below prints.
 
 Positions are counted in **code points** by default, or in UTF-8 **bytes** with `-unit bytes`
-(`zeroparse.WithUnit(zeroparse.Bytes)` in Go). Matching is always by code point; the unit only changes how positions and `len`
+(`zp.WithUnit(zp.Bytes)` in Go). Matching is always by code point; the unit only changes how positions and `len`
 are measured. The value `v` below starts at position 3 in code points and at 7 in bytes:
 
 ```zp

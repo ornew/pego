@@ -78,7 +78,7 @@ func manifestOutputs(t *testing.T) ([]string, map[string]string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		gr, err := zeroparse.ParseGrammar(string(src))
+		gr, err := zp.ParseGrammar(string(src))
 		if err != nil {
 			t.Fatalf("%s: %v", g.path, err)
 		}

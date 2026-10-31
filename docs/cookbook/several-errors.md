@@ -60,7 +60,7 @@ import (
 var grammar string
 
 func main() {
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,25 +70,25 @@ func main() {
 	}
 
 	// Bytes positions index src directly.
-	tree, err := p.Parse(string(src), zeroparse.WithUnit(zeroparse.Bytes))
+	tree, err := p.Parse(string(src), zp.WithUnit(zp.Bytes))
 
 	// With recovery, err is not nil even though there is a tree: SyntaxErrors holds every error that was recovered
 	// from. Any other error means that there is no tree.
-	var errs zeroparse.SyntaxErrors
+	var errs zp.SyntaxErrors
 	if err != nil && !errors.As(err, &errs) {
-		log.Fatal(err) // a *zeroparse.SyntaxError: nothing could be recovered
+		log.Fatal(err) // a *zp.SyntaxError: nothing could be recovered
 	}
 	for _, e := range errs {
 		fmt.Printf("app.conf:%d:%d: %s\n", e.Line, e.Col, e.Message())
 	}
 
 	// The tree has the settings that parsed, and an error value where one did not.
-	for _, s := range tree.Field("Settings").(*zeroparse.Node).Elems() {
-		if s.Kind() == zeroparse.KindError {
+	for _, s := range tree.Field("Settings").(*zp.Node).Elems() {
+		if s.Kind() == zp.KindError {
 			fmt.Printf("skipped %q\n", src[s.Start():s.End()])
 			continue
 		}
-		fmt.Printf("%s = %s\n", s.Field("Key").(*zeroparse.Node).Text(), s.Field("Value").(*zeroparse.Node).Text())
+		fmt.Printf("%s = %s\n", s.Field("Key").(*zp.Node).Text(), s.Field("Value").(*zp.Node).Text())
 	}
 	if len(errs) > 0 {
 		os.Exit(1)
@@ -123,10 +123,10 @@ The program exits with status 1, because there were errors.
   `port = 1;`, `name = 5`, `host = 1;`.)
 - **Types.** `error` is a built-in type that only recovery produces, and `a #recover(...)` has the type `A | error`.
   That is why `setting` is declared `Item`, the join `Setting | error`, and the `Settings` field is a list of `Item`.
-  Go sees `s.Kind() == zeroparse.KindError`, with the skipped range in `s.Start()` and `s.End()` and the message, with its
+  Go sees `s.Kind() == zp.KindError`, with the skipped range in `s.Start()` and `s.End()` and the message, with its
   position (`2:8: expected ...`), in `s.Text()`.
-- **`zeroparse.SyntaxErrors` is the second kind of result.** `Parse` returns the tree and an error that is a
-  `zeroparse.SyntaxErrors` (a slice of `*zeroparse.SyntaxError`, each with `Line`, `Col` and `Message()`). Do not write
+- **`zp.SyntaxErrors` is the second kind of result.** `Parse` returns the tree and an error that is a
+  `zp.SyntaxErrors` (a slice of `*zp.SyntaxError`, each with `Line`, `Col` and `Message()`). Do not write
   `if err != nil { return err }` first: that throws the tree away. `errors.As` needs a variable of the slice type, not a
   pointer.
 - **The order of the attributes matters**: `@error(...) #recover(...)`, in that order, so that the recorded error carries

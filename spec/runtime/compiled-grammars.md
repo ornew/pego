@@ -17,9 +17,9 @@ schema. The mode is chosen when the grammar is saved and recorded in the file.
 
 | Mode | Go | Serves |
 |:--|:--|:--|
-| `parse` (default) | `zeroparse.CompiledParse` | `Parse`, `ParsePrefix`, `ParseStream` and `Iterate` without `RecognizeOnly`, `WithTrace` or `WithProfile`; `zp parse` and `zp parse -stream` |
-| `recognize` | `zeroparse.CompiledRecognize` | `Parse` and `ParsePrefix` with `RecognizeOnly` and without `WithTrace` or `WithProfile`; `zp parse -check` |
-| `document` | `zeroparse.CompiledDocument` | `NewDocument`; `Parse`, `ParsePrefix`, `ParseStream` and `Iterate` with `WithTrace` or `WithProfile` and without `RecognizeOnly`; `zp trace`, `zp profile` and `zp explain` |
+| `parse` (default) | `zp.CompiledParse` | `Parse`, `ParsePrefix`, `ParseStream` and `Iterate` without `RecognizeOnly`, `WithTrace` or `WithProfile`; `zp parse` and `zp parse -stream` |
+| `recognize` | `zp.CompiledRecognize` | `Parse` and `ParsePrefix` with `RecognizeOnly` and without `WithTrace` or `WithProfile`; `zp parse -check` |
+| `document` | `zp.CompiledDocument` | `NewDocument`; `Parse`, `ParsePrefix`, `ParseStream` and `Iterate` with `WithTrace` or `WithProfile` and without `RecognizeOnly`; `zp trace`, `zp profile` and `zp explain` |
 
 A parse-mode and a document-mode file of the same grammar MAY hold the same
 module; a recognize-mode file holds the module of the grammar's recognizer.
@@ -30,12 +30,12 @@ module; a recognize-mode file holds the module of the grammar's recognizer.
 
 | Operation | Go | Command line |
 |:--|:--|:--|
-| Save in parse mode | `Parser.MarshalBinary()` or `Parser.Marshal(zeroparse.CompiledParse)` | `zp compile -g g.zp -o g.zpc` |
-| Save in another mode | `Parser.Marshal(zeroparse.CompiledRecognize)`, `Parser.Marshal(zeroparse.CompiledDocument)` | `zp compile -g g.zp -mode recognize\|document -o g.zpc` |
-| Name a mode | `zeroparse.ParseCompiledMode("document")`, `CompiledMode.String()` | The value of `-mode` |
-| Load | `zeroparse.LoadParser(data)` | `-g file.zpc` on `parse`, `trace`, `profile`, `explain` and `compile` |
+| Save in parse mode | `Parser.MarshalBinary()` or `Parser.Marshal(zp.CompiledParse)` | `zp compile -g g.zp -o g.zpc` |
+| Save in another mode | `Parser.Marshal(zp.CompiledRecognize)`, `Parser.Marshal(zp.CompiledDocument)` | `zp compile -g g.zp -mode recognize\|document -o g.zpc` |
+| Name a mode | `zp.ParseCompiledMode("document")`, `CompiledMode.String()` | The value of `-mode` |
+| Load | `zp.LoadParser(data)` | `-g file.zpc` on `parse`, `trace`, `profile`, `explain` and `compile` |
 | Mode of a loaded parser | `Parser.CompiledMode()` returns the mode and `true`; `false` for a parser compiled from a grammar | |
-| Recognize a compiled grammar | `zeroparse.IsCompiled(data)` | Used to tell source, JSON and a compiled grammar apart |
+| Recognize a compiled grammar | `zp.IsCompiled(data)` | Used to tell source, JSON and a compiled grammar apart |
 
 - The start rule is saved with the module. `zp parse`, `zp compile` and the
   debugging commands use the saved start rule when `-s` is not given, and `-s`
@@ -43,9 +43,9 @@ module; a recognize-mode file holds the module of the grammar's recognizer.
 - The same parser always produces the same bytes for a mode. A parser that was
   loaded and saved again produces the bytes it was loaded from (see
   [Re-saving](#re-saving)).
-- `zeroparse.IsCompiled` distinguishes a compiled grammar from other data by its magic
+- `zp.IsCompiled` distinguishes a compiled grammar from other data by its magic
   number.
-- A loaded parser is an ordinary `*zeroparse.Parser`: it is safe for concurrent use,
+- A loaded parser is an ordinary `*zp.Parser`: it is safe for concurrent use,
   `WithStart`, `Starts` and `DefaultStart` work on it, and it runs the operations
   of its mode. For those operations, a parser loaded from a file returns the same
   tree, positions and errors as the parser compiled from the same source.
@@ -62,7 +62,7 @@ file's mode, the mode the operation needs and the remedy; the parser does not
 fall back to another mode:
 
 ```text
-the compiled grammar is in parse mode; documents need document mode: compile it with -mode document (zeroparse.CompiledDocument), or compile the grammar from source
+the compiled grammar is in parse mode; documents need document mode: compile it with -mode document (zp.CompiledDocument), or compile the grammar from source
 ```
 
 The operations that need the grammar itself work only on a parser compiled from

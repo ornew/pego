@@ -20,12 +20,12 @@ rule recoveryThenFailure = ("a" #recover(skip="x")) "!"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-		for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+	for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+		for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
 			for _, recognize := range []bool{false, true} {
-				opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend), zeroparse.WithUnit(unit)}
+				opts := []zp.ParseOption{zp.WithBackend(backend), zp.WithUnit(unit)}
 				if recognize {
-					opts = append(opts, zeroparse.RecognizeOnly())
+					opts = append(opts, zp.RecognizeOnly())
 				}
 				r, err := p.ParsePrefix("expr", "a+a+asuffix", opts...)
 				if err != nil || r.Consumed != 5 || r.ConsumedBytes != 5 {
@@ -43,7 +43,7 @@ rule recoveryThenFailure = ("a" #recover(skip="x")) "!"`, "main")
 					t.Fatalf("left-recursive prefix/reference: %v / %v", r.Node, node)
 				}
 				r, err = p.ParsePrefix("cut", "actail", opts...)
-				if err == nil || r != (zeroparse.PrefixResult{}) {
+				if err == nil || r != (zp.PrefixResult{}) {
 					t.Fatalf("cut failure: %+v %v", r, err)
 				}
 				r, err = p.ParsePrefix("nilaction", "atail", opts...)
@@ -51,9 +51,9 @@ rule recoveryThenFailure = ("a" #recover(skip="x")) "!"`, "main")
 					t.Fatalf("nil action: %+v %v", r, err)
 				}
 				r, err = p.ParsePrefix("recoveryThenFailure", "x?tail", opts...)
-				var syntax *zeroparse.SyntaxError
-				var recovered zeroparse.SyntaxErrors
-				if !errors.As(err, &syntax) || errors.As(err, &recovered) || r != (zeroparse.PrefixResult{}) {
+				var syntax *zp.SyntaxError
+				var recovered zp.SyntaxErrors
+				if !errors.As(err, &syntax) || errors.As(err, &recovered) || r != (zp.PrefixResult{}) {
 					t.Fatalf("unrecovered failure after recovery: %+v %v", r, err)
 				}
 			}
@@ -67,23 +67,23 @@ rule value = x:"é😀" "!" => $x`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, mode := range []zeroparse.CompiledMode{zeroparse.CompiledParse, zeroparse.CompiledRecognize} {
+	for _, mode := range []zp.CompiledMode{zp.CompiledParse, zp.CompiledRecognize} {
 		data, err := p.Marshal(mode)
 		if err != nil {
 			t.Fatal(err)
 		}
-		loaded, err := zeroparse.LoadParser(data)
+		loaded, err := zp.LoadParser(data)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, backend := range []zeroparse.Backend{zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+		for _, backend := range []zp.Backend{zp.Bytecode, zp.BytecodeIterative} {
 			for _, recognize := range []bool{false, true} {
-				opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend)}
+				opts := []zp.ParseOption{zp.WithBackend(backend)}
 				if recognize {
-					opts = append(opts, zeroparse.RecognizeOnly())
+					opts = append(opts, zp.RecognizeOnly())
 				}
 				r, err := loaded.ParsePrefix("value", "é😀!tail", opts...)
-				if recognize != (mode == zeroparse.CompiledRecognize) {
+				if recognize != (mode == zp.CompiledRecognize) {
 					// Each mode refuses the operations of the other.
 					if err == nil || !strings.Contains(err.Error(), "the compiled grammar is in "+mode.String()+" mode") {
 						t.Fatalf("compiled %s mode %v/recognize=%v: %+v %v", mode, backend, recognize, r, err)
@@ -110,15 +110,15 @@ rule item = "é😀"`, "main")
 	}
 	var wg sync.WaitGroup
 	failures := make(chan error, 192)
-	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+	for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
 		for range 4 {
 			wg.Add(1)
-			go func(b zeroparse.Backend) {
+			go func(b zp.Backend) {
 				defer wg.Done()
 				for range 8 {
-					r, err := p.ParsePrefix("item", "é😀tail", zeroparse.WithBackend(b), zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
-						if e.Kind == zeroparse.TraceEnter && e.Rule == "item" {
-							inner, innerErr := p.ParsePrefix("item", "é😀other", zeroparse.WithBackend(b), zeroparse.WithUnit(zeroparse.Bytes))
+					r, err := p.ParsePrefix("item", "é😀tail", zp.WithBackend(b), zp.WithTrace(func(e zp.TraceEvent) {
+						if e.Kind == zp.TraceEnter && e.Rule == "item" {
+							inner, innerErr := p.ParsePrefix("item", "é😀other", zp.WithBackend(b), zp.WithUnit(zp.Bytes))
 							if innerErr != nil || inner.Consumed != 6 || inner.ConsumedBytes != 6 {
 								failures <- fmt.Errorf("nested: %+v %v", inner, innerErr)
 							}
@@ -149,22 +149,22 @@ func TestParsePrefixRejectsDiagnosticCallback(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+	for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
 		for _, recognize := range []bool{false, true} {
 			for _, start := range []string{"main", "undefined"} {
 				diagnosticCalls, traceCalls := 0, 0
-				opts := []zeroparse.ParseOption{
-					zeroparse.WithBackend(backend),
-					zeroparse.WithContext(ctx),
-					zeroparse.WithTrace(func(zeroparse.TraceEvent) { traceCalls++ }),
-					zeroparse.WithDiagnosticCallback(func(*zeroparse.SyntaxError) error { diagnosticCalls++; return nil }),
+				opts := []zp.ParseOption{
+					zp.WithBackend(backend),
+					zp.WithContext(ctx),
+					zp.WithTrace(func(zp.TraceEvent) { traceCalls++ }),
+					zp.WithDiagnosticCallback(func(*zp.SyntaxError) error { diagnosticCalls++; return nil }),
 				}
 				if recognize {
-					opts = append(opts, zeroparse.RecognizeOnly())
+					opts = append(opts, zp.RecognizeOnly())
 				}
 				_, referenceErr := parser.Parse("x;", opts...)
 				result, prefixErr := parser.ParsePrefix(start, "x;tail", opts...)
-				if referenceErr == nil || prefixErr == nil || prefixErr.Error() != referenceErr.Error() || errors.Is(prefixErr, context.Canceled) || result != (zeroparse.PrefixResult{}) {
+				if referenceErr == nil || prefixErr == nil || prefixErr.Error() != referenceErr.Error() || errors.Is(prefixErr, context.Canceled) || result != (zp.PrefixResult{}) {
 					t.Fatalf("%v/recognize=%v/start=%s: result=%+v error=%v; Parse error=%v", backend, recognize, start, result, prefixErr, referenceErr)
 				}
 				if diagnosticCalls != 0 || traceCalls != 0 {
@@ -172,12 +172,12 @@ func TestParsePrefixRejectsDiagnosticCallback(t *testing.T) {
 				}
 			}
 			// Disabling callback delivery preserves the recovered result/error API.
-			opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend), zeroparse.WithDiagnosticCallback(nil)}
+			opts := []zp.ParseOption{zp.WithBackend(backend), zp.WithDiagnosticCallback(nil)}
 			if recognize {
-				opts = append(opts, zeroparse.RecognizeOnly())
+				opts = append(opts, zp.RecognizeOnly())
 			}
 			result, prefixErr := parser.ParsePrefix("main", "x;tail", opts...)
-			var recovered zeroparse.SyntaxErrors
+			var recovered zp.SyntaxErrors
 			if !errors.As(prefixErr, &recovered) || len(recovered) != 1 || result.Consumed != 2 || result.ConsumedBytes != 2 {
 				t.Fatalf("nil callback: result=%+v error=%v", result, prefixErr)
 			}

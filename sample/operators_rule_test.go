@@ -94,9 +94,9 @@ func TestSampleOperatorsRulePrefixBindings(t *testing.T) {
 					t.Fatalf("coverage=%t: Next = %q, %v; want %q", coverage, got, err, c.input)
 				}
 			}
-			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-				for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-					if _, err := p.Parse(c.input, zeroparse.WithUnit(unit), zeroparse.WithBackend(backend)); err != nil {
+			for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+				for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+					if _, err := p.Parse(c.input, zp.WithUnit(unit), zp.WithBackend(backend)); err != nil {
 						t.Errorf("unit=%v backend=%v: %v", unit, backend, err)
 					}
 				}
@@ -299,9 +299,9 @@ func TestSampleOperatorsRuleNoneCallerStops(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			p := compile(t, "rule main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
-			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-				for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-					if _, err := p.Parse(c.input, zeroparse.WithUnit(unit), zeroparse.WithBackend(backend)); err != nil {
+			for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+				for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+					if _, err := p.Parse(c.input, zp.WithUnit(unit), zp.WithBackend(backend)); err != nil {
 						t.Fatalf("fresh unit=%v backend=%v: %v", unit, backend, err)
 					}
 				}
@@ -341,9 +341,9 @@ func TestSampleOperatorsRuleNoneCallerStops(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			p := compile(t, "rule main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
-			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-				for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-					if _, err := p.Parse(c.input, zeroparse.WithUnit(unit), zeroparse.WithBackend(backend)); err == nil {
+			for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+				for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+					if _, err := p.Parse(c.input, zp.WithUnit(unit), zp.WithBackend(backend)); err == nil {
 						t.Fatalf("invalid caller accepted: unit=%v backend=%v", unit, backend)
 					}
 				}

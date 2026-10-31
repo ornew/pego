@@ -8,7 +8,7 @@ parsers.
 
 ## Engine Tracing
 
-`zeroparse.WithTrace(f)` calls `f` at the start and at the end of every rule call of
+`zp.WithTrace(f)` calls `f` at the start and at the end of every rule call of
 the parse, in order, so that the events nest like the calls. With several
 `WithTrace` options each function is called in order; a nil `f` is ignored.
 Tracing works with every backend, with `Parse`, `ParsePrefix`, recognition,
@@ -53,7 +53,7 @@ does not change the result.
 
 ## Engine Profiling
 
-`zeroparse.WithProfile(prof)` adds the cost of a parse to a `zeroparse.Profile`, which
+`zp.WithProfile(prof)` adds the cost of a parse to a `zp.Profile`, which
 accumulates any number of parses. It traces the parse, so it composes with
 `WithTrace`; a nil `prof` is ignored. A `Profile` is not safe for concurrent use.
 Times include the cost of measuring them and are comparable with each other

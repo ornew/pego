@@ -84,7 +84,7 @@ func TestAnalysisDependencyChains(t *testing.T) {
 	for _, n := range []int{128, 2048} {
 		for _, reverse := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%d/leaf-first=%t", n, reverse), func(t *testing.T) {
-				g, err := zeroparse.ParseGrammar(analysisChain(n, reverse))
+				g, err := zp.ParseGrammar(analysisChain(n, reverse))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -99,7 +99,7 @@ func TestAnalysisDependencyChains(t *testing.T) {
 					}
 				}
 				if n == 128 {
-					p, err := zeroparse.Compile(starttest.MarkAll(g), "main")
+					p, err := zp.Compile(starttest.MarkAll(g), "main")
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -143,7 +143,7 @@ rule expr = #operators {
 }`
 
 func TestAnalysisDependencyCyclesAndCoverage(t *testing.T) {
-	g, err := zeroparse.ParseGrammar(analysisMixed)
+	g, err := zp.ParseGrammar(analysisMixed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +174,7 @@ func BenchmarkSampleAnalysis(b *testing.B) {
 	for _, n := range []int{128, 512, 1024, 2048} {
 		for _, reverse := range []bool{false, true} {
 			b.Run(fmt.Sprintf("chain/%d/leaf-first=%t", n, reverse), func(b *testing.B) {
-				g, err := zeroparse.ParseGrammar(analysisChain(n, reverse))
+				g, err := zp.ParseGrammar(analysisChain(n, reverse))
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -188,7 +188,7 @@ func BenchmarkSampleAnalysis(b *testing.B) {
 	}
 	for name, src := range map[string]string{"mixed": analysisMixed, "small": `rule main = ("a" / "b")* $$`} {
 		b.Run(name, func(b *testing.B) {
-			g, err := zeroparse.ParseGrammar(src)
+			g, err := zp.ParseGrammar(src)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -209,7 +209,7 @@ func BenchmarkSampleAnalysis(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			g, err := zeroparse.ParseGrammar(string(src))
+			g, err := zp.ParseGrammar(string(src))
 			if err != nil {
 				b.Fatal(err)
 			}

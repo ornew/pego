@@ -503,9 +503,9 @@ func TestCompile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p, err := zeroparse.LoadParser(data); err != nil {
+	if p, err := zp.LoadParser(data); err != nil {
 		t.Fatal(err)
-	} else if mode, ok := p.CompiledMode(); !ok || mode != zeroparse.CompiledParse {
+	} else if mode, ok := p.CompiledMode(); !ok || mode != zp.CompiledParse {
 		t.Errorf("default mode %v %v, want parse", mode, ok)
 	}
 	// A compiled grammar holds no grammar: it does not convert, with or without -to.

@@ -135,7 +135,7 @@ method takes a context, a grammar AST and the start rule. It returns an error, a
 does not compile or the context ends:
 
 ```go
-g, err := zeroparse.ParseGrammar(src)
+g, err := zp.ParseGrammar(src)
 if err != nil {
 	log.Fatal(err)
 }
@@ -155,7 +155,7 @@ A test can keep a grammar free of mistakes:
 
 ```go
 func TestGrammarLint(t *testing.T) {
-	g, err := zeroparse.ParseGrammar(grammarSource)
+	g, err := zp.ParseGrammar(grammarSource)
 	if err != nil {
 		t.Fatal(err)
 	}

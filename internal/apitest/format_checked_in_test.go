@@ -35,7 +35,7 @@ func TestCheckedInGrammarsAreFormatted(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		g, err := zeroparse.ParseGrammar(string(src))
+		g, err := zp.ParseGrammar(string(src))
 		if err != nil {
 			t.Errorf("%s: %v", path, err)
 			continue

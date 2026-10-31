@@ -66,7 +66,7 @@ var funcs = map[string]struct {
 }
 
 // eval evaluates a tree of the grammar with the given values of the variables.
-func eval(n *zeroparse.Node, vars map[string]float64) (float64, error) {
+func eval(n *zp.Node, vars map[string]float64) (float64, error) {
 	switch n.Type() {
 	case "Num":
 		return strconv.ParseFloat(n.Text(), 64)
@@ -78,18 +78,18 @@ func eval(n *zeroparse.Node, vars map[string]float64) (float64, error) {
 		}
 		return v, nil
 	case "Neg":
-		x, err := eval(n.Field("X").(*zeroparse.Node), vars)
+		x, err := eval(n.Field("X").(*zp.Node), vars)
 		return -x, err
 	case "Bin":
-		l, err := eval(n.Field("Left").(*zeroparse.Node), vars)
+		l, err := eval(n.Field("Left").(*zp.Node), vars)
 		if err != nil {
 			return 0, err
 		}
-		r, err := eval(n.Field("Right").(*zeroparse.Node), vars)
+		r, err := eval(n.Field("Right").(*zp.Node), vars)
 		if err != nil {
 			return 0, err
 		}
-		switch op := n.Field("Op").(*zeroparse.Node).Text(); op {
+		switch op := n.Field("Op").(*zp.Node).Text(); op {
 		case "+":
 			return l + r, nil
 		case "-":
@@ -107,12 +107,12 @@ func eval(n *zeroparse.Node, vars map[string]float64) (float64, error) {
 			return math.Pow(l, r), nil
 		}
 	case "Call":
-		name := n.Field("Fn").(*zeroparse.Node).Text()
+		name := n.Field("Fn").(*zp.Node).Text()
 		fn, ok := funcs[name]
 		if !ok {
 			return 0, fmt.Errorf("undefined function %q", name)
 		}
-		argNodes := n.Field("Args").(*zeroparse.Node)
+		argNodes := n.Field("Args").(*zp.Node)
 		if argNodes.Len() != fn.arity {
 			return 0, fmt.Errorf("%s takes %d arguments, got %d", name, fn.arity, argNodes.Len())
 		}
@@ -130,7 +130,7 @@ func eval(n *zeroparse.Node, vars map[string]float64) (float64, error) {
 }
 
 func main() {
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -183,7 +183,7 @@ z * 2            0 undefined variable "z"
 - **Parse once.** The cost of parsing is paid once for `tree`; each evaluation only walks it. If you compile the
   formula into closures instead, as [Compile a filter language into a Go predicate](filter-language.md) does, each
   evaluation does not even dispatch on the node type.
-- **Errors.** A formula that does not parse is a `*zeroparse.SyntaxError` with its position. Errors that depend on the
+- **Errors.** A formula that does not parse is a `*zp.SyntaxError` with its position. Errors that depend on the
   values (undefined variable, division by zero) are found while evaluating; wrong arity and undefined functions could
   also be found in a pass over the tree before any evaluation.
 

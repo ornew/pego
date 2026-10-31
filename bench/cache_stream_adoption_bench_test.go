@@ -13,8 +13,8 @@ import (
 const streamAdoptionElements = 50001 // inputs.CSVInput(50000) includes the header.
 
 var (
-	cacheAdoptionStats zeroparse.CacheStats
-	cacheAdoptionNode  *zeroparse.Node
+	cacheAdoptionStats zp.CacheStats
+	cacheAdoptionNode  *zp.Node
 )
 
 // BenchmarkStreamDeliveryAdoption compares the two public delivery interfaces
@@ -27,14 +27,14 @@ func BenchmarkStreamDeliveryAdoption(b *testing.B) {
 		for _, u := range units {
 			for _, mode := range []string{"callback", "iterator"} {
 				b.Run(be.name+"/"+u.name+"/"+mode, func(b *testing.B) {
-					opts := []zeroparse.ParseOption{zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u)}
+					opts := []zp.ParseOption{zp.WithBackend(be.b), zp.WithUnit(u.u)}
 					b.SetBytes(int64(len(input)))
 					b.ReportAllocs()
 					for b.Loop() {
 						count := 0
 						reader := strings.NewReader(input)
 						if mode == "callback" {
-							err := p.ParseStream(reader, func(*zeroparse.Node) error {
+							err := p.ParseStream(reader, func(*zp.Node) error {
 								count++
 								return nil
 							}, opts...)
@@ -79,14 +79,14 @@ func BenchmarkStreamFirstElementAdoption(b *testing.B) {
 		for _, u := range units {
 			for _, mode := range []string{"callback", "iterator"} {
 				b.Run(be.name+"/"+u.name+"/"+mode, func(b *testing.B) {
-					opts := []zeroparse.ParseOption{zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u)}
+					opts := []zp.ParseOption{zp.WithBackend(be.b), zp.WithUnit(u.u)}
 					var firstTotal time.Duration
 					for b.Loop() {
 						count := 0
 						reader := strings.NewReader(input)
 						start := time.Now()
 						if mode == "callback" {
-							err := p.ParseStream(reader, func(*zeroparse.Node) error {
+							err := p.ParseStream(reader, func(*zp.Node) error {
 								count++
 								if count == 1 {
 									firstTotal += time.Since(start)
@@ -137,7 +137,7 @@ func BenchmarkDocumentCacheAdoption(b *testing.B) {
 		for _, u := range units {
 			for _, mode := range []string{"CacheStats", "ResetAndParse", "FreshDocument"} {
 				b.Run(be.name+"/"+u.name+"/"+mode, func(b *testing.B) {
-					opts := []zeroparse.ParseOption{zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u)}
+					opts := []zp.ParseOption{zp.WithBackend(be.b), zp.WithUnit(u.u)}
 					if mode == "FreshDocument" {
 						b.ReportAllocs()
 						for b.Loop() {
@@ -185,7 +185,7 @@ func BenchmarkDocumentCacheAdoption(b *testing.B) {
 					}
 					if mode == "ResetAndParse" {
 						d.ResetHistory()
-						if after := d.CacheStats(); after != (zeroparse.CacheStats{}) {
+						if after := d.CacheStats(); after != (zp.CacheStats{}) {
 							b.Fatalf("reset retained cache state: %+v", after)
 						}
 					}

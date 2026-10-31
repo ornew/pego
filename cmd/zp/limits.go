@@ -19,7 +19,7 @@ func (v *limitValue) String() string {
 	if v == nil {
 		return "0"
 	}
-	if uint64(*v) == zeroparse.Unlimited {
+	if uint64(*v) == zp.Unlimited {
 		return "unlimited"
 	}
 	return strconv.FormatUint(uint64(*v), 10)
@@ -27,7 +27,7 @@ func (v *limitValue) String() string {
 
 func (v *limitValue) Set(s string) error {
 	if strings.EqualFold(s, "unlimited") {
-		*v = limitValue(zeroparse.Unlimited)
+		*v = limitValue(zp.Unlimited)
 		return nil
 	}
 	n, err := strconv.ParseUint(s, 10, 64)
@@ -50,9 +50,9 @@ func (l *limitFlags) register(fs *flag.FlagSet) {
 }
 
 // limits returns the limits the flags select.
-func (l *limitFlags) limits() zeroparse.Limits {
-	return zeroparse.Limits{Budget: uint64(l.budget), MaxInput: uint64(l.maxInput)}
+func (l *limitFlags) limits() zp.Limits {
+	return zp.Limits{Budget: uint64(l.budget), MaxInput: uint64(l.maxInput)}
 }
 
 // option returns the parse option that applies the limits.
-func (l *limitFlags) option() zeroparse.ParseOption { return zeroparse.WithLimits(l.limits()) }
+func (l *limitFlags) option() zp.ParseOption { return zp.WithLimits(l.limits()) }

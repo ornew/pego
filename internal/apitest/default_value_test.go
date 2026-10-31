@@ -77,16 +77,16 @@ func TestDefaultValueCorpus(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			g, err := zeroparse.ParseGrammar(string(src))
+			g, err := zp.ParseGrammar(string(src))
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := zeroparse.Compile(g, "main", zeroparse.WithDefaultValue(), zeroparse.WithSourceInfo())
+			got, err := zp.Compile(g, "main", zp.WithDefaultValue(), zp.WithSourceInfo())
 			if err != nil {
 				t.Fatalf("default values: %v", err)
 			}
 			exact := strings.HasPrefix(path, "examples/")
-			want, err := zeroparse.Compile(stripActions(t, g), "main", zeroparse.WithSourceInfo())
+			want, err := zp.Compile(stripActions(t, g), "main", zp.WithSourceInfo())
 			if err != nil {
 				if exact {
 					t.Fatalf("stripped: %v", err)
@@ -103,16 +103,16 @@ func TestDefaultValueCorpus(t *testing.T) {
 				if err != nil || len(data) > 200_000 {
 					continue
 				}
-				ref := render(got.Parse(string(data), zeroparse.WithBackend(zeroparse.Closure)))
-				for _, b := range []zeroparse.Backend{zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-					if gotTree := render(got.Parse(string(data), zeroparse.WithBackend(b))); gotTree != ref {
+				ref := render(got.Parse(string(data), zp.WithBackend(zp.Closure)))
+				for _, b := range []zp.Backend{zp.Bytecode, zp.BytecodeIterative} {
+					if gotTree := render(got.Parse(string(data), zp.WithBackend(b))); gotTree != ref {
 						t.Errorf("%s (%v): differs from the closure backend\n got  %.300s\n want %.300s", in, b, gotTree, ref)
 					}
 				}
 				if want == nil {
 					continue
 				}
-				wantTree := render(want.Parse(string(data), zeroparse.WithBackend(zeroparse.Closure)))
+				wantTree := render(want.Parse(string(data), zp.WithBackend(zp.Closure)))
 				if !exact {
 					_, e1 := got.Parse(string(data))
 					_, e2 := want.Parse(string(data))
@@ -126,7 +126,7 @@ func TestDefaultValueCorpus(t *testing.T) {
 	}
 }
 
-func render(n *zeroparse.Node, err error) string {
+func render(n *zp.Node, err error) string {
 	s := ""
 	if n != nil {
 		s = n.String()

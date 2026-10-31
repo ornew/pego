@@ -5,7 +5,7 @@ You want the grammar in its own file, compiled once, with a test that fails if t
 that every part of the program shares.
 
 Keep the grammar in a `.zp` file and embed it with `go:embed`, so that `zp fmt`, `zp lint` and the editor support
-work on a real file. Compile it once, at package initialization, and give each format its own start rule. A `*zeroparse.Parser`
+work on a real file. Compile it once, at package initialization, and give each format its own start rule. A `*zp.Parser`
 is safe for concurrent use, and `WithStart` returns a parser for another start rule that shares the compiled grammar.
 
 ```zp
@@ -46,11 +46,11 @@ var (
 	sizeParser     = must(durationParser.WithStart("size"))
 )
 
-func mustCompile(start string) *zeroparse.Parser {
-	return must(zeroparse.CompileSource(grammar, start))
+func mustCompile(start string) *zp.Parser {
+	return must(zp.CompileSource(grammar, start))
 }
 
-func must(p *zeroparse.Parser, err error) *zeroparse.Parser {
+func must(p *zp.Parser, err error) *zp.Parser {
 	if err != nil {
 		panic(err) // a grammar error is a bug in the program, found by the test below
 	}
@@ -136,7 +136,7 @@ duration "90"     error: 1:3: syntax error: expected "GiB", "KiB", "MiB", "h", "
   file that tools can read.
 - `CompileSource(grammar, start)` parses, checks and compiles the grammar, which costs far more than a parse. Doing it in a
   package-level variable means it happens once, before `main`.
-- A compiled `*zeroparse.Parser` may be used by any number of goroutines at once, as `main` does, and so may the parser that
+- A compiled `*zp.Parser` may be used by any number of goroutines at once, as `main` does, and so may the parser that
   `WithStart` derives from it.
 - The test runs `go test` on every change, so a broken grammar fails the build, not the first request.
 

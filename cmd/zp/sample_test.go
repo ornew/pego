@@ -41,7 +41,7 @@ func quotedLines(t *testing.T, out string) []string {
 
 func TestSample(t *testing.T) {
 	g := writeFile(t, "kv.zp", kvList)
-	p, err := zeroparse.CompileSource(kvList, "main")
+	p, err := zp.CompileSource(kvList, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +175,7 @@ rule item = "a" / "b"`)
 
 func TestSampleInvalid(t *testing.T) {
 	g := writeFile(t, "kv.zp", kvList)
-	p, err := zeroparse.CompileSource(kvList, "main")
+	p, err := zp.CompileSource(kvList, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +200,7 @@ func TestSampleInvalid(t *testing.T) {
 		t.Fatalf("got %s", out)
 	}
 	for _, inv := range doc.Invalid {
-		_, err := p.Parse(inv.Input, zeroparse.WithExpectations())
+		_, err := p.Parse(inv.Input, zp.WithExpectations())
 		if err == nil || err.Error() != inv.Error || inv.Mutation == "" {
 			t.Errorf("got %+v", inv)
 		}

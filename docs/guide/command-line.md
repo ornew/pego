@@ -66,7 +66,7 @@ zp parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-check
 
 `zp parse`, like `explain`, `trace`, `profile`, `test` and `editfuzz`, records [expectations](error-messages.md#recording-expectations), so a syntax error lists what was expected.
 
-A parse that reaches a limit prints the message of the `*zeroparse.LimitError` (for example `parse budget limit exceeded: limit 1048576, used 1048576, requested 1`) to standard error and exits with status 1, like any other failed parse. See [cancellation-and-limits.md](cancellation-and-limits.md).
+A parse that reaches a limit prints the message of the `*zp.LimitError` (for example `parse budget limit exceeded: limit 1048576, used 1048576, requested 1`) to standard error and exits with status 1, like any other failed parse. See [cancellation-and-limits.md](cancellation-and-limits.md).
 
 ```bash
 zp parse -g pairs.zp -f sexpr -i 'abc=12; あい=3'
@@ -331,7 +331,7 @@ zp schema diff [-s <rule>] [-all-rules] [-f text|json] <before> <after>
 `schema` prints the [output schema](output-schemas-and-queries.md) of a grammar as JSON, without parsing an input. `-s`
 selects the start rule as it does for the other commands, and an empty name selects the default. By default the schema
 holds the start rule and the rules it calls, as `Parser.OutputSchema()` does; `-all-rules` adds the unreachable rules
-and every declared type, as `zeroparse.WithAllSchemaRules()` does. `-o` writes the file.
+and every declared type, as `zp.WithAllSchemaRules()` does. `-o` writes the file.
 
 `schema diff` compares two schemas and prints one line per added, removed or changed type and rule with its
 compatibility class and the rules behind it, for example `changed type declared/Pair: breaking (field-removed at
@@ -362,7 +362,7 @@ zp profile -g <grammar> [-s <rule>] [-i <input>] [-sort <column>] [-n <rows>] [-
 Debugging tools; all three also take `-unit`, `-backend`, `-budget` and `-max-input` (as in `parse`), and read the input from standard input without `-i`.
 `explain` shows which rule calls recorded what a syntax error says was expected, `trace` prints every rule call of a
 parse as an indented tree, and `profile` prints the cost of each rule with hints. In Go, the same information comes
-from `zeroparse.WithTrace` and `zeroparse.WithProfile`. A parse that reaches a limit ends the trace or profile at that point; `profile` prints the limit error as its `result`. See [debugging.md](debugging.md).
+from `zp.WithTrace` and `zp.WithProfile`. A parse that reaches a limit ends the trace or profile at that point; `profile` prints the limit error as its `result`. See [debugging.md](debugging.md).
 
 ## `sample`
 

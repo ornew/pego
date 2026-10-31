@@ -12,11 +12,11 @@ import (
 
 func wantInputLimit(t *testing.T, what string, err error, limit, length uint64) {
 	t.Helper()
-	var le *zeroparse.LimitError
-	if !errors.As(err, &le) || !errors.Is(err, zeroparse.ErrLimit) {
+	var le *zp.LimitError
+	if !errors.As(err, &le) || !errors.Is(err, zp.ErrLimit) {
 		t.Fatalf("%s: error %v, want a LimitError", what, err)
 	}
-	if le.Kind != zeroparse.LimitInput || le.Limit != limit || le.Requested != length {
+	if le.Kind != zp.LimitInput || le.Limit != limit || le.Requested != length {
 		t.Errorf("%s: %+v, want kind LimitInput, limit %d, length %d", what, *le, limit, length)
 	}
 }
@@ -24,12 +24,12 @@ func wantInputLimit(t *testing.T, what string, err error, limit, length uint64) 
 // Limits.MaxInput bounds the input of every public entry point in the position unit: zero and
 // Unlimited set no bound, and an input over it fails with LimitInput and its length.
 func TestMaxInputPublic(t *testing.T) {
-	p, err := zeroparse.CompileSource(`@start
+	p, err := zp.CompileSource(`@start
 rule main = [a-zé]* $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	stream, err := zeroparse.CompileSource(`@start
+	stream, err := zp.CompileSource(`@start
 rule main = line* #stream $$
 rule line = [a-z]+ "\n"`, "main")
 	if err != nil {
@@ -37,13 +37,13 @@ rule line = [a-z]+ "\n"`, "main")
 	}
 	text := "ééé" // 3 code points, 6 bytes
 	for _, c := range []struct {
-		unit zeroparse.PositionUnit
+		unit zp.PositionUnit
 		n    uint64
-	}{{zeroparse.CodePoints, 3}, {zeroparse.Bytes, 6}} {
-		with := func(max uint64) []zeroparse.ParseOption {
-			return []zeroparse.ParseOption{zeroparse.WithUnit(c.unit), zeroparse.WithLimits(zeroparse.Limits{MaxInput: max})}
+	}{{zp.CodePoints, 3}, {zp.Bytes, 6}} {
+		with := func(max uint64) []zp.ParseOption {
+			return []zp.ParseOption{zp.WithUnit(c.unit), zp.WithLimits(zp.Limits{MaxInput: max})}
 		}
-		for _, max := range []uint64{0, zeroparse.Unlimited, c.n} {
+		for _, max := range []uint64{0, zp.Unlimited, c.n} {
 			if _, err := p.Parse(text, with(max)...); err != nil {
 				t.Errorf("unit %d, MaxInput %d: %v", c.unit, max, err)
 			}

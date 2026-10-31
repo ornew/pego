@@ -193,25 +193,25 @@ func TestControlledFullWorkloads(t *testing.T) {
 				for _, u := range units {
 					t.Run(be.name+"/"+u.name, func(t *testing.T) {
 						// Unlimited keeps the plain parse uncontrolled: a zero budget selects the default counter.
-						opts := []zeroparse.ParseOption{zeroparse.WithBackend(be.b), zeroparse.WithUnit(u.u), zeroparse.WithLimits(zeroparse.Limits{Budget: zeroparse.Unlimited})}
+						opts := []zp.ParseOption{zp.WithBackend(be.b), zp.WithUnit(u.u), zp.WithLimits(zp.Limits{Budget: zp.Unlimited})}
 						plain, plainErr := p.Parse(input, opts...)
 						want := check(plain, plainErr)
 						for _, mode := range []string{"budget", "context", "combined"} {
-							active := append([]zeroparse.ParseOption{}, opts...)
+							active := append([]zp.ParseOption{}, opts...)
 							if mode != "context" {
-								active = append(active, zeroparse.WithLimits(zeroparse.Limits{Budget: ^uint64(0) - 1}))
+								active = append(active, zp.WithLimits(zp.Limits{Budget: ^uint64(0) - 1}))
 							}
 							if mode != "budget" {
 								ctx, cancel := context.WithCancel(context.Background())
 								defer cancel()
-								active = append(active, zeroparse.WithContext(ctx))
+								active = append(active, zp.WithContext(ctx))
 							}
 							n, err := p.Parse(input, active...)
 							if got := check(n, err); got != want {
 								t.Fatalf("%s full fingerprint differs", mode)
 							}
-							recNode, recErr := p.Parse(input, append(active, zeroparse.RecognizeOnly())...)
-							plainRecNode, plainRecErr := p.Parse(input, append(opts, zeroparse.RecognizeOnly())...)
+							recNode, recErr := p.Parse(input, append(active, zp.RecognizeOnly())...)
+							plainRecNode, plainRecErr := p.Parse(input, append(opts, zp.RecognizeOnly())...)
 							if recNode != nil || plainRecNode != nil {
 								t.Fatal("recognition returned a tree")
 							}
@@ -221,8 +221,8 @@ func TestControlledFullWorkloads(t *testing.T) {
 								t.Fatalf("%s recognition diagnostics differ", mode)
 							}
 						}
-						n, err := p.Parse(input, append(opts, zeroparse.WithLimits(zeroparse.Limits{Budget: 1}))...)
-						if n != nil || !errors.Is(err, zeroparse.ErrLimit) {
+						n, err := p.Parse(input, append(opts, zp.WithLimits(zp.Limits{Budget: 1}))...)
+						if n != nil || !errors.Is(err, zp.ErrLimit) {
 							t.Fatalf("full-input interruption: %v", err)
 						}
 						retry, retryErr := p.Parse(input, opts...)
@@ -275,7 +275,7 @@ func TestControlledFullWorkloads(t *testing.T) {
 }
 
 func TestFullFingerprintDetectsObservableGraphChanges(t *testing.T) {
-	hash := func(n *zeroparse.Node) string {
+	hash := func(n *zp.Node) string {
 		t.Helper()
 		s, e := fullFingerprint(n)
 		if e != nil {
@@ -283,13 +283,13 @@ func TestFullFingerprintDetectsObservableGraphChanges(t *testing.T) {
 		}
 		return s
 	}
-	str := func(start, end int, text string) *zeroparse.Node {
+	str := func(start, end int, text string) *zp.Node {
 		return value.NewNode(value.KindString, start, end, text, nil, "", nil, nil)
 	}
-	tuple := func(elems ...*zeroparse.Node) *zeroparse.Node {
+	tuple := func(elems ...*zp.Node) *zp.Node {
 		return value.NewNode(value.KindTuple, 0, 0, "", elems, "", nil, nil)
 	}
-	object := func(fields ...value.NodeField) *zeroparse.Node {
+	object := func(fields ...value.NodeField) *zp.Node {
 		return value.NewNode(value.KindStruct, 0, 0, "", nil, "T", value.Fields(fields), nil)
 	}
 	if hash(str(0, 0, "\xff")) == hash(str(0, 0, "\xfe")) {
@@ -324,9 +324,9 @@ func TestFullFingerprintDetectsObservableGraphChanges(t *testing.T) {
 		t.Fatal("carried values were discarded")
 	}
 	cycle := tuple()
-	value.SetNodeElems(cycle, []*zeroparse.Node{cycle})
+	value.SetNodeElems(cycle, []*zp.Node{cycle})
 	other := tuple()
-	value.SetNodeElems(other, []*zeroparse.Node{other})
+	value.SetNodeElems(other, []*zp.Node{other})
 	if hash(cycle) != hash(other) {
 		t.Fatal("equivalent cycles differ")
 	}

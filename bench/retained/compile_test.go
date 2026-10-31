@@ -17,14 +17,14 @@ func BenchmarkCompileCorpus(b *testing.B) {
 				b.Fatal(err)
 			}
 			for range 4 {
-				if _, err := zeroparse.CompileSource(source, "main"); err != nil {
+				if _, err := zp.CompileSource(source, "main"); err != nil {
 					b.Fatal(err)
 				}
 			}
 			runtime.GC()
 			b.ReportAllocs()
 			for b.Loop() {
-				p, err := zeroparse.CompileSource(source, "main")
+				p, err := zp.CompileSource(source, "main")
 				if err != nil {
 					b.Fatal(err)
 				}

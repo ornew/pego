@@ -13,8 +13,8 @@ func TestDocumentVersionAndBatchAfterInterruption(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-		d, err := p.NewDocument("éabcd", zeroparse.WithUnit(unit))
+	for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+		d, err := p.NewDocument("éabcd", zp.WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -23,20 +23,20 @@ func TestDocumentVersionAndBatchAfterInterruption(t *testing.T) {
 		if core.BudgetControlsEnabled {
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
-			if n, err := d.Parse(zeroparse.WithContext(ctx)); n != nil || !errors.Is(err, context.Canceled) {
+			if n, err := d.Parse(zp.WithContext(ctx)); n != nil || !errors.Is(err, context.Canceled) {
 				t.Fatal("cancellation", n, err)
 			}
 			if d.Version() != base {
 				t.Fatal("cancellation advanced text version")
 			}
-			if n, err := d.Parse(zeroparse.WithLimits(zeroparse.Limits{Budget: 1})); n != nil || !errors.Is(err, zeroparse.ErrLimit) {
+			if n, err := d.Parse(zp.WithLimits(zp.Limits{Budget: 1})); n != nil || !errors.Is(err, zp.ErrLimit) {
 				t.Fatal("budget limit", n, err)
 			}
 			if d.Version() != base {
 				t.Fatal("execution interruption advanced text version")
 			}
 		}
-		if err := d.EditBatch(base, zeroparse.TextEdit{Start: 0, End: 0, Text: "x"}); err != nil {
+		if err := d.EditBatch(base, zp.TextEdit{Start: 0, End: 0, Text: "x"}); err != nil {
 			t.Fatal(err)
 		}
 		if d.Version().Sequence() != base.Sequence()+1 || d.Text() != "xéabcd" {
@@ -53,13 +53,13 @@ func TestDocumentEditBatchPublicContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-		doc, err := parser.NewDocument("éabcd", zeroparse.WithUnit(unit))
+	for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+		doc, err := parser.NewDocument("éabcd", zp.WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)
 		}
 		base := doc.Version()
-		seen := map[zeroparse.DocumentVersion]string{base: "initial"}
+		seen := map[zp.DocumentVersion]string{base: "initial"}
 		if doc.Unit() != unit || base.Sequence() != 1 {
 			t.Fatal("initial version/unit")
 		}
@@ -69,10 +69,10 @@ func TestDocumentEditBatchPublicContract(t *testing.T) {
 		}
 		before := old.String()
 		offset := 1
-		if unit == zeroparse.Bytes {
+		if unit == zp.Bytes {
 			offset = 2
 		}
-		changes := []zeroparse.TextEdit{{Start: offset, End: offset + 1, Text: "XYZ"}, {Start: offset + 3, End: offset + 4, Text: "!"}}
+		changes := []zp.TextEdit{{Start: offset, End: offset + 1, Text: "XYZ"}, {Start: offset + 3, End: offset + 4, Text: "!"}}
 		if err := doc.EditBatch(base, changes...); err != nil {
 			t.Fatal(err)
 		}
@@ -89,7 +89,7 @@ func TestDocumentEditBatchPublicContract(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		fresh, err := parser.Parse(doc.Text(), zeroparse.WithUnit(unit))
+		fresh, err := parser.Parse(doc.Text(), zp.WithUnit(unit))
 		if err != nil || actual.String() != fresh.String() {
 			t.Fatal("fresh parity", err)
 		}

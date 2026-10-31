@@ -2,7 +2,7 @@
 
 A parse that succeeds returns a value. The value of a rule that has no action is
 a **node**: a value together with the range of input that it covers. This
-chapter defines the node model, the Go type `zeroparse.Node` and its accessors, the
+chapter defines the node model, the Go type `zp.Node` and its accessors, the
 traversal of a node graph, and the text and JSON renderings of values. The text
 and JSON renderings are specified in their own sections.
 
@@ -20,7 +20,7 @@ An **error value** is what [error recovery](../language/pragmas.md#recover) and 
 [missing token](../language/pragmas.md#missing) produce. An action can also build a **struct**
 (`T{...}`), a tuple or list without a range, and an `int`, `string` or `bool`.
 A **value** is any of these or `nil`; Go code reads it through the accessors of
-`zeroparse.Node`, which stands for every one of them except `nil`. A **node graph** is the set
+`zp.Node`, which stands for every one of them except `nil`. A **node graph** is the set
 of nodes reachable from a root through elements and fields. A graph is usually a
 tree, but a node MAY be reachable by several edges (shared), and a graph MAY
 contain a cycle when a caller builds one.
@@ -52,7 +52,7 @@ that rule when the parser records [source information](#source-information).
 
 ### Source Information
 
-A parser compiled with **source information** (`zeroparse.WithSourceInfo()`,
+A parser compiled with **source information** (`zp.WithSourceInfo()`,
 `zp parse -source-info`, or the option of `zp compile` and `zp gen`) records
 two things that are otherwise not part of a result: the rule that produced each node
 that a rule without an action created in its own body, and where the captures of that
@@ -64,7 +64,7 @@ or the ranges.
 
 ### The Go Type
 
-`zeroparse.Node` is an opaque type: no field is exported, and no method commits to
+`zp.Node` is an opaque type: no field is exported, and no method commits to
 a layout in memory. A `*Node` is nil where a value is `nil`. `Text`, `Len`,
 `Elems`, `Value`, `Field`, `Fields` and `IsTerminal` accept a nil receiver; the
 other methods do not.
@@ -88,7 +88,7 @@ func (n *Node) String() string
 func (n *Node) WriteJSON(w io.Writer) error
 ```
 
-`NodeKind` is `zeroparse.NodeKind`, with the constants below.
+`NodeKind` is `zp.NodeKind`, with the constants below.
 
 | `Kind()` | The node is | Methods that apply |
 |:--|:--|:--|
@@ -122,7 +122,7 @@ slicing the input with its range or with `text(...)` in an action.
 
 ### Traversal
 
-`zeroparse.Walk(root, visit)` visits a node graph in a defined order. `visit`
+`zp.Walk(root, visit)` visits a node graph in a defined order. `visit`
 receives a `WalkVisit` and returns a `WalkAction` and an error.
 
 | `WalkVisit` member | Meaning |
@@ -142,7 +142,7 @@ receives a `WalkVisit` and returns a `WalkAction` and an error.
   them again would make a walk exponential in the nesting of operators.
   Scalar and nil values are visited. Other containers are leaves.
 - A shared node or list is visited once for each incoming edge. Only a cycle on
-  the active traversal path is an error: `Walk` returns `*zeroparse.CycleError`, which
+  the active traversal path is an error: `Walk` returns `*zp.CycleError`, which
   holds the path of the back edge.
 - `WalkSkip` omits the descendants of the visit; `WalkStop` ends the walk
   successfully. An error returned by `visit` stops the walk and is returned
@@ -150,7 +150,7 @@ receives a `WalkVisit` and returns a `WalkAction` and an error.
 - `Walk` does not mutate or retain the graph. The graph MUST NOT be mutated while
   the walk or its callback runs.
 
-`zeroparse.Cursor{Root, Unit}` selects nodes by position, using `Walk` order. `Unit`
+`zp.Cursor{Root, Unit}` selects nodes by position, using `Walk` order. `Unit`
 MUST be the unit of the parse that produced the positions; it is not inferred or
 converted, and an invalid unit is an error. A parent's range does not prune
 traversal, so a matching descendant is visited even if its parent does not match.
@@ -233,7 +233,7 @@ mutated concurrently.
 | Condition | Result |
 |:--|:--|
 | `Walk` with a nil callback | Error |
-| A cycle on the active path of `Walk` or `WriteJSON` | `*zeroparse.CycleError` (`Walk`) or an error (`WriteJSON`) |
+| A cycle on the active path of `Walk` or `WriteJSON` | `*zp.CycleError` (`Walk`) or an error (`WriteJSON`) |
 | `Cursor` with an invalid unit or range | Error |
 | `Field` on a nil node, on a node without source information, or for an absent field | `nil` |
 | `Elem` with an index outside the elements | Panic |
@@ -248,7 +248,7 @@ JSON and text renderings. See [Generated Parsers](generated-parsers.md).
 
 ## Conformance
 
-The tests of `internal/apitest` (`zeroparse_test.go`, `traversal_test.go`) and the
+The tests of `internal/apitest` (`zp_test.go`, `traversal_test.go`) and the
 node JSON tests of the repository establish the model, the order of traversal
 and the JSON form, and the backend equivalence tests require every backend to
 return identical nodes.

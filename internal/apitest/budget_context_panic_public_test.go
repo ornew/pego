@@ -47,11 +47,11 @@ func TestContextErrRuntimePanicIdentityThroughPublicOptions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-		for _, unit := range []zeroparse.PositionUnit{zeroparse.Bytes, zeroparse.CodePoints} {
+	for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+		for _, unit := range []zp.PositionUnit{zp.Bytes, zp.CodePoints} {
 			for _, recognize := range []bool{false, true} {
 				t.Run(backend.String()+"/"+unit.String()+"/recognize="+strconv.FormatBool(recognize), func(t *testing.T) {
-					retained, err := p.Parse(literal, zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
+					retained, err := p.Parse(literal, zp.WithBackend(backend), zp.WithUnit(unit))
 					if retained == nil || err != nil {
 						t.Fatalf("baseline node=%v error=%v", retained, err)
 					}
@@ -59,22 +59,22 @@ func TestContextErrRuntimePanicIdentityThroughPublicOptions(t *testing.T) {
 					token := &publicContextPanicToken{label: "public context panic"}
 					ctx := &publicContextErrPanic{Context: context.Background(), done: make(chan struct{}), token: token}
 					traceEntries := 0
-					opts := []zeroparse.ParseOption{
-						zeroparse.WithBackend(backend),
-						zeroparse.WithUnit(unit),
-						zeroparse.WithContext(ctx),
-						zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
-							if e.Kind == zeroparse.TraceEnter && e.Rule == "main" {
+					opts := []zp.ParseOption{
+						zp.WithBackend(backend),
+						zp.WithUnit(unit),
+						zp.WithContext(ctx),
+						zp.WithTrace(func(e zp.TraceEvent) {
+							if e.Kind == zp.TraceEnter && e.Rule == "main" {
 								traceEntries++
 								ctx.armed = true
 							}
 						}),
 					}
 					if recognize {
-						opts = append(opts, zeroparse.RecognizeOnly())
+						opts = append(opts, zp.RecognizeOnly())
 					}
 
-					var node *zeroparse.Node
+					var node *zp.Node
 					var returnedErr error
 					var got any
 					func() {
@@ -85,9 +85,9 @@ func TestContextErrRuntimePanicIdentityThroughPublicOptions(t *testing.T) {
 						t.Fatalf("panic=%#v node=%v error=%v Err calls=%d trace entries=%d", got, node, returnedErr, ctx.calls, traceEntries)
 					}
 
-					retryOpts := []zeroparse.ParseOption{zeroparse.WithBackend(backend), zeroparse.WithUnit(unit)}
+					retryOpts := []zp.ParseOption{zp.WithBackend(backend), zp.WithUnit(unit)}
 					if recognize {
-						retryOpts = append(retryOpts, zeroparse.RecognizeOnly())
+						retryOpts = append(retryOpts, zp.RecognizeOnly())
 					}
 					retry, retryErr := p.Parse(literal, retryOpts...)
 					if retained.String() != snapshot {

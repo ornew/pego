@@ -9,7 +9,7 @@ import (
 
 func rhsCheck(t *testing.T, rules string) (*info, *operatorsRuleCheck) {
 	t.Helper()
-	ast, err := zeroparse.ParseGrammar("rule main = e $$\n" + rules)
+	ast, err := zp.ParseGrammar("rule main = e $$\n" + rules)
 	if err != nil {
 		t.Fatal(err)
 	}

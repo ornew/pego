@@ -465,11 +465,11 @@ func fixAnyTypes(src string) string {
 
 // typeChecks reports whether src parses and compiles.
 func typeChecks(src string) bool {
-	g, err := zeroparse.ParseGrammar(src)
+	g, err := zp.ParseGrammar(src)
 	if err != nil {
 		return false
 	}
-	_, err = zeroparse.Compile(g, "")
+	_, err = zp.Compile(g, "")
 	return err == nil
 }
 
@@ -496,13 +496,13 @@ func formatSource(name string, src []byte, write, list bool, stdout io.Writer) e
 }
 
 func formatSourceMode(name string, src []byte, write, list, syntaxOnly bool, stdout io.Writer) error {
-	if zeroparse.IsCompiled(src) {
+	if zp.IsCompiled(src) {
 		return fmt.Errorf("%s: a compiled grammar is not ZeroParse source and holds none; format the grammar source it was compiled from", name)
 	}
 	if t := bytes.TrimSpace(src); len(t) > 0 && t[0] == '{' {
 		return fmt.Errorf("%s: JSON is not ZeroParse source; use zp convert to convert it", name)
 	}
-	g, err := zeroparse.ParseGrammar(string(src))
+	g, err := zp.ParseGrammar(string(src))
 	if err != nil {
 		return fileError(name, err)
 	}
@@ -595,7 +595,7 @@ func convertCmd(args []string, stdout io.Writer) error {
 	target := *to
 	if target == "" {
 		switch {
-		case zeroparse.IsCompiled(data):
+		case zp.IsCompiled(data):
 			return compiledNeedsSource(path, "convert")
 		case filepath.Ext(path) == ".json":
 			target = "zp"
@@ -660,14 +660,14 @@ func loadGrammar(path, command string) (*grammar.Grammar, error) {
 	if err != nil {
 		return nil, err
 	}
-	if zeroparse.IsCompiled(data) {
+	if zp.IsCompiled(data) {
 		return nil, compiledNeedsSource(path, command)
 	}
 	var g *grammar.Grammar
 	if strings.HasSuffix(path, ".json") {
 		g, err = grammar.UnmarshalJSON(data)
 	} else {
-		g, err = zeroparse.ParseGrammar(string(data))
+		g, err = zp.ParseGrammar(string(data))
 	}
 	if err != nil {
 		return nil, fileError(path, err)
@@ -677,12 +677,12 @@ func loadGrammar(path, command string) (*grammar.Grammar, error) {
 
 // loadSourceParser compiles the grammar source at path for command, starting at the rule start
 // (the grammar's default start rule if empty); see loadGrammar.
-func loadSourceParser(path, start, command string) (*zeroparse.Parser, error) {
+func loadSourceParser(path, start, command string) (*zp.Parser, error) {
 	g, err := loadGrammar(path, command)
 	if err != nil {
 		return nil, err
 	}
-	p, err := zeroparse.Compile(g, start)
+	p, err := zp.Compile(g, start)
 	if err != nil {
 		return nil, fileError(path, err)
 	}
@@ -719,25 +719,25 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 	if *format != "json" && *format != "sexpr" {
 		return fmt.Errorf("unknown format %q", *format)
 	}
-	var unit zeroparse.ParseOption
+	var unit zp.ParseOption
 	switch *unitName {
 	case "codepoints":
-		unit = zeroparse.WithUnit(zeroparse.CodePoints)
+		unit = zp.WithUnit(zp.CodePoints)
 	case "bytes":
-		unit = zeroparse.WithUnit(zeroparse.Bytes)
+		unit = zp.WithUnit(zp.Bytes)
 	default:
 		return fmt.Errorf("unknown unit %q", *unitName)
 	}
-	var backend zeroparse.ParseOption
+	var backend zp.ParseOption
 	switch *backendName {
 	case "":
-		backend = zeroparse.WithBackend(zeroparse.DefaultBackend)
+		backend = zp.WithBackend(zp.DefaultBackend)
 	case "closure":
-		backend = zeroparse.WithBackend(zeroparse.Closure)
+		backend = zp.WithBackend(zp.Closure)
 	case "bytecode":
-		backend = zeroparse.WithBackend(zeroparse.Bytecode)
+		backend = zp.WithBackend(zp.Bytecode)
 	case "bytecode-iterative":
-		backend = zeroparse.WithBackend(zeroparse.BytecodeIterative)
+		backend = zp.WithBackend(zp.BytecodeIterative)
 	default:
 		return fmt.Errorf("unknown backend %q", *backendName)
 	}
@@ -746,13 +746,13 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 		if isFlagSet(fs, "i") {
 			r = strings.NewReader(*input)
 		}
-		return p.ParseStream(r, func(n *zeroparse.Node) error {
+		return p.ParseStream(r, func(n *zp.Node) error {
 			if *format == "sexpr" {
 				_, err := fmt.Fprintln(stdout, n)
 				return err
 			}
 			return json.NewEncoder(stdout).Encode(n)
-		}, unit, backend, lim.option(), zeroparse.WithExpectations())
+		}, unit, backend, lim.option(), zp.WithExpectations())
 	}
 	src := *input
 	if !isFlagSet(fs, "i") {
@@ -763,13 +763,13 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 		src = string(b)
 	}
 	if *check {
-		if _, err := p.Parse(src, unit, backend, lim.option(), zeroparse.WithExpectations(), zeroparse.RecognizeOnly()); err != nil {
+		if _, err := p.Parse(src, unit, backend, lim.option(), zp.WithExpectations(), zp.RecognizeOnly()); err != nil {
 			return err
 		}
 		fmt.Fprintln(stdout, "ok")
 		return nil
 	}
-	node, perr := p.Parse(src, unit, backend, lim.option(), zeroparse.WithExpectations())
+	node, perr := p.Parse(src, unit, backend, lim.option(), zp.WithExpectations())
 	if node == nil {
 		return perr
 	}
@@ -797,13 +797,13 @@ type compileFlags struct {
 }
 
 // options returns the compile options of the flags.
-func (f compileFlags) options() []zeroparse.CompileOption {
-	var opts []zeroparse.CompileOption
+func (f compileFlags) options() []zp.CompileOption {
+	var opts []zp.CompileOption
 	if f.sourceInfo {
-		opts = append(opts, zeroparse.WithSourceInfo())
+		opts = append(opts, zp.WithSourceInfo())
 	}
 	if f.defaultValue {
-		opts = append(opts, zeroparse.WithDefaultValue())
+		opts = append(opts, zp.WithDefaultValue())
 	}
 	return opts
 }
@@ -1108,13 +1108,13 @@ func writeGenerated(dir string, files []gen.File, mode genRuntime, ts bool) erro
 // the rule start. A compiled grammar is loaded as is, without being
 // compiled again; if start is empty, it keeps the start rule saved in it,
 // and other grammars start at main.
-func loadParser(path, start string, flags compileFlags) (*zeroparse.Parser, error) {
+func loadParser(path, start string, flags compileFlags) (*zp.Parser, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	if zeroparse.IsCompiled(data) {
-		p, err := zeroparse.LoadParser(data)
+	if zp.IsCompiled(data) {
+		p, err := zp.LoadParser(data)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", path, err)
 		}
@@ -1133,7 +1133,7 @@ func loadParser(path, start string, flags compileFlags) (*zeroparse.Parser, erro
 	if err != nil {
 		return nil, err
 	}
-	p, err := zeroparse.Compile(g, start, flags.options()...)
+	p, err := zp.Compile(g, start, flags.options()...)
 	if err != nil {
 		return nil, fileError(path, err)
 	}
@@ -1154,7 +1154,7 @@ func compileCmd(args []string) error {
 	if *grammarPath == "" || *output == "" {
 		return fmt.Errorf("-g and -o are required")
 	}
-	mode, err := zeroparse.ParseCompiledMode(*modeName)
+	mode, err := zp.ParseCompiledMode(*modeName)
 	if err != nil {
 		return fmt.Errorf("compile: %w", err)
 	}

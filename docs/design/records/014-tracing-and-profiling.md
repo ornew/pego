@@ -6,10 +6,10 @@
 
 ## Summary
 
-A parse can report every rule call to a function (`zeroparse.WithTrace`): the rule, its position and binding level, the
+A parse can report every rule call to a function (`zp.WithTrace`): the rule, its position and binding level, the
 nesting depth, and at the end of the call its outcome, end position, whether the memo answered it, how many times it
 evaluated the body, how far it examined the input, and the farthest failure it recorded. A per-rule profile
-(`zeroparse.Profile`, `zeroparse.WithProfile`) is built on the same events. The `zp` command gains `trace`, `profile` and
+(`zp.Profile`, `zp.WithProfile`) is built on the same events. The `zp` command gains `trace`, `profile` and
 `explain`. Tracing works on the closure backend and both bytecode VMs, in recognition mode, in stream parses and in
 `Document`; the engine tracing API does not instrument standalone generated Go parsers (see [Generated Parser Tracing and Profiling](043-generated-parser-observability.md)). When tracing is off, an ordinary parse pays one nil check per call
 that goes through the general call path, and nothing on the plain call path. The user guide is

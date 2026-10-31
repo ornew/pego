@@ -35,7 +35,7 @@ type corpusEntry struct {
 	// source says where the inputs come from.
 	source string
 	// syntaxErrors marks inputs that the grammar reports syntax errors for, such as inputs with
-	// recovered errors; the parse finishes with a *zeroparse.SyntaxError or zeroparse.SyntaxErrors.
+	// recovered errors; the parse finishes with a *zp.SyntaxError or zp.SyntaxErrors.
 	syntaxErrors bool
 }
 

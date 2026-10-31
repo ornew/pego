@@ -145,7 +145,7 @@ rule main =  ([a-z_]+ #atomic " = " [0-9]+ #atomic "\n")* $$ `, lines(-1)},
 func main() {
 	fmt.Printf("%-28s %-20s %s\n", "grammar", "first parse", "after editing line 500")
 	for _, v := range variants {
-		p, err := zeroparse.CompileSource(v.grammar, "main")
+		p, err := zp.CompileSource(v.grammar, "main")
 		if err != nil {
 			log.Fatal(err)
 		}

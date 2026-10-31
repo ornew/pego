@@ -20,9 +20,9 @@ With it, `Parse` returns a `nil` node and the same syntax errors as a full parse
 benchmarks measure recognition at 1.3–1.6× faster than a full parse on the closure backend.
 
 ```go
-n, err := p.Parse("abc=12", zeroparse.RecognizeOnly())
+n, err := p.Parse("abc=12", zp.RecognizeOnly())
 fmt.Println(n, err) // nil <nil>
-n, err = p.Parse("abc=", zeroparse.RecognizeOnly(), zeroparse.WithExpectations())
+n, err = p.Parse("abc=", zp.RecognizeOnly(), zp.WithExpectations())
 fmt.Println(n, err) // nil 1:5: syntax error: expected [0-9]
 ```
 
@@ -34,7 +34,7 @@ What it does not do:
   `ok`). Use recognition for syntax checks, and a full parse where action errors matter.
 - Captures that [predicates](../../spec/language/predicates.md) read are still built, since a predicate can depend on them.
 - A compiled grammar recognizes when it is saved in recognize mode (`zp compile -mode recognize`, or
-  `Marshal(zeroparse.CompiledRecognize)`), on the bytecode backends. A file in another mode returns an error that names
+  `Marshal(zp.CompiledRecognize)`), on the bytecode backends. A file in another mode returns an error that names
   the mode it needs, and traced or profiled recognition needs the grammar source. The [compiled grammars
   guide](compiled-grammars.md#modes) explains the modes.
 - It cannot be combined with `ParseStream` or `NewDocument`: both return errors (`recognition is not supported for

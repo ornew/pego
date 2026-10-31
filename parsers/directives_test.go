@@ -12,7 +12,7 @@ func TestYAMLDirectiveBackends(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := zeroparse.CompileSource(string(src), "main")
+	p, err := zp.CompileSource(string(src), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,12 +27,12 @@ func TestYAMLDirectiveBackends(t *testing.T) {
 		{"%YAML 0001.02", true}, {"%TAG !e! notahandle", true},
 	} {
 		t.Run(tc.directive, func(t *testing.T) {
-			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-				for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+			for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+				for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
 					for _, recognize := range []bool{false, true} {
-						opts := []zeroparse.ParseOption{zeroparse.WithBackend(backend), zeroparse.WithUnit(unit)}
+						opts := []zp.ParseOption{zp.WithBackend(backend), zp.WithUnit(unit)}
 						if recognize {
-							opts = append(opts, zeroparse.RecognizeOnly())
+							opts = append(opts, zp.RecognizeOnly())
 						}
 						_, err := p.Parse(tc.directive+"\n--- x\n", opts...)
 						if (err == nil) != tc.valid {

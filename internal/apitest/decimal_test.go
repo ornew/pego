@@ -11,7 +11,7 @@ import (
 func TestInvalidSourceDecimalReferences(t *testing.T) {
 	for _, digits := range []string{"١", "１２", "1١", strconv.FormatUint(uint64(^uint(0)>>1)+1, 10)} {
 		source := `def main="a" -> $` + digits
-		if g, err := zeroparse.ParseGrammar(source); g != nil || err == nil || !strings.Contains(err.Error(), "invalid positional reference") {
+		if g, err := zp.ParseGrammar(source); g != nil || err == nil || !strings.Contains(err.Error(), "invalid positional reference") {
 			t.Fatalf("ParseGrammar accepted %q: %v, %v", source, g, err)
 		}
 		if p, err := compileTestSource(source, "main"); p != nil || err == nil || !strings.Contains(err.Error(), "invalid positional reference") {
@@ -31,9 +31,9 @@ func TestDecimalReferenceValues(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-				n, err := p.Parse("ab", zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
+		for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+			for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+				n, err := p.Parse("ab", zp.WithBackend(backend), zp.WithUnit(unit))
 				if err != nil || n.String() != tc.want {
 					t.Fatalf("%s backend=%v unit=%v: %v, %v", tc.source, backend, unit, n, err)
 				}

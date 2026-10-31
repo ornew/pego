@@ -69,9 +69,9 @@ func schemaImpactText(impacts []schema.Impact) string {
 }
 
 // schemaOptions returns the export options of the -all-rules flag.
-func schemaOptions(allRules bool) []zeroparse.SchemaOption {
+func schemaOptions(allRules bool) []zp.SchemaOption {
 	if allRules {
-		return []zeroparse.SchemaOption{zeroparse.WithAllSchemaRules()}
+		return []zp.SchemaOption{zp.WithAllSchemaRules()}
 	}
 	return nil
 }

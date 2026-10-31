@@ -175,12 +175,12 @@ func linearClaims(t *testing.T, count int, claimsLinear func(*grammar.Grammar) b
 	var failures []string
 	for n := range count {
 		src := randomCostGrammar(rng)
-		g, err := zeroparse.ParseGrammar(src)
+		g, err := zp.ParseGrammar(src)
 		if err != nil {
 			t.Fatalf("generated grammar %d does not parse: %v\n%s", n, err, src)
 		}
 		g = starttest.MarkAll(g)
-		p, err := zeroparse.Compile(g, "main")
+		p, err := zp.Compile(g, "main")
 		if err != nil {
 			continue // left recursion without a base case, a repetition of nothing and the like
 		}
@@ -189,7 +189,7 @@ func linearClaims(t *testing.T, count int, claimsLinear func(*grammar.Grammar) b
 		}
 		checked++
 	measure:
-		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode} {
+		for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode} {
 			for i, build := range differentialInputs {
 				s := Series{Sizes: differentialSizes}
 				for _, size := range differentialSizes {

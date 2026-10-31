@@ -6,7 +6,7 @@ This document describes the repository layout and architecture, how to run tests
 
 | Path | Contents |
 |:--|:--|
-| `zeroparse.go` | Public API of package `zeroparse` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, and others), which joins the engine to the output schema (`Parser.OutputSchema`) |
+| `zp.go` | Public API of package `zp` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, and others), which joins the engine to the output schema (`Parser.OutputSchema`) |
 | `gen/` | Public package of code generation (`gen.Go`, `gen.TypeScript`, `gen.Generator`), which joins the engine to the generators of `internal/gen/`. It embeds the copy of the runtime that generated Go packages carry (`gen/_runtime`, refreshed by `go generate ./gen` and checked against `runtime/` by a test) |
 | `grammar/` | Grammar AST, structural validation (`Validate`), JSON conversion (`MarshalJSON`, `UnmarshalJSON`, strict `DecodeJSON`) and formatting as ZeroParse source (`Format`, which preserves comments). Public package. |
 | `internal/grammaranalysis/` | Conservative success and cut proofs shared by the compiler and linter |
@@ -27,7 +27,7 @@ This document describes the repository layout and architecture, how to run tests
 | `query/` | Structural queries: patterns that match values of parse results, checked against an output schema when they compile (`Compile`, `Prepare`, `Query.Matches`). Public package |
 | `internal/schema/` | The export of a checked program's output schema as a `schema.Output` |
 | `internal/value/` | `Node`, the value that parsing produces: kinds, fields, JSON form, traversal and the representation that the engine packages share |
-| `internal/apitest/` | The behavior tests of package `zeroparse`, from outside it: they call its public API, with internal packages only to build values, to mark start rules and to count how often options apply; the root package keeps its source and its documentation examples |
+| `internal/apitest/` | The behavior tests of package `zp`, from outside it: they call its public API, with internal packages only to build values, to mark start rules and to count how often options apply; the root package keeps its source and its documentation examples |
 | `internal/limits/` | Budget limits of a parse invocation, the error of an exhausted limit and overflow-safe budget arithmetic, shared by the parser, the Document and package `query` |
 | `internal/bytecode/` | The bytecode instruction set and module, its disassembly, the encoding of modules in compiled grammars and the validation of loaded modules |
 | `internal/gen/` | What the Go and TypeScript generators share: generation options, the runtime mode of generated Go parsers, generated files, and the generator state both print with (the program and rule being printed, the expectation table, shared names, the Flow IR state of recognizer rules and the action value resolver) |
@@ -148,7 +148,7 @@ The top-level tests of `internal/engine` call `t.Parallel()`. A test stays seque
 Engine tests write grammars in ZeroParse source and compare results using the S-expression form of nodes (`Node.String`).
 The `check` helper also verifies that the result is the same with memoization disabled, with every backend (closure, recursive bytecode, iterative bytecode), with both position units, in recognition-only mode, and with tracing on.
 
-The behavior of package `zeroparse` is tested from outside it by `internal/apitest`; the root package holds only its documentation examples. Measure its coverage with `go test -coverpkg=github.com/ornew/zeroparse ./internal/apitest`.
+The behavior of package `zp` is tested from outside it by `internal/apitest`; the root package holds only its documentation examples. Measure its coverage with `go test -coverpkg=github.com/ornew/zeroparse ./internal/apitest`.
 
 `internal/gen/gogen/gogen_pool_lifecycle_test.go` checks generated Node and typed parser cleanup after oversized
 inputs, retained results, and error/retry reuse in both position units.

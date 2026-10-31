@@ -34,7 +34,7 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 	}
 
 	_, err = p.Parse("abc=")
-	var se *zeroparse.SyntaxError
+	var se *zp.SyntaxError
 	if !errors.As(err, &se) || se.Line != 1 || se.Col != 5 {
 		t.Errorf("got %v", err)
 	}
@@ -46,7 +46,7 @@ func TestCompileAST(t *testing.T) {
 			&grammar.Literal{Value: "a"}, &grammar.Literal{Value: "b"},
 		}}},
 	}}}
-	p, err := zeroparse.Compile(g, "main", zeroparse.WithSourceInfo())
+	p, err := zp.Compile(g, "main", zp.WithSourceInfo())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestParseStream(t *testing.T) {
 		t.Fatal(err)
 	}
 	var got []string
-	err = p.ParseStream(strings.NewReader("ab\ncd\n"), func(n *zeroparse.Node) error {
+	err = p.ParseStream(strings.NewReader("ab\ncd\n"), func(n *zp.Node) error {
 		got = append(got, n.String())
 		return nil
 	})
@@ -85,7 +85,7 @@ func TestParseStream(t *testing.T) {
 
 func TestDocument(t *testing.T) {
 	p, err := compileTestSource(`rule main = line*
-rule line = [a-z]+ #atomic -"\n"`, "main", zeroparse.WithSourceInfo())
+rule line = [a-z]+ #atomic -"\n"`, "main", zp.WithSourceInfo())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,7 +111,7 @@ rule line = [a-z]+ #atomic -"\n"`, "main", zeroparse.WithSourceInfo())
 func TestMarshalAndLoadParser(t *testing.T) {
 	p, err := compileTestSource(`type Pair = { Key node[string]; Value node[string] }
 rule main = k:key "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
-rule key = [a-z]+ #atomic`, "main", zeroparse.WithSourceInfo())
+rule key = [a-z]+ #atomic`, "main", zp.WithSourceInfo())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,10 +119,10 @@ rule key = [a-z]+ #atomic`, "main", zeroparse.WithSourceInfo())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !zeroparse.IsCompiled(data) || zeroparse.IsCompiled([]byte("rule main = x")) {
+	if !zp.IsCompiled(data) || zp.IsCompiled([]byte("rule main = x")) {
 		t.Error("IsCompiled")
 	}
-	loaded, err := zeroparse.LoadParser(data)
+	loaded, err := zp.LoadParser(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,13 +147,13 @@ rule key = [a-z]+ #atomic`, "main", zeroparse.WithSourceInfo())
 	if got := grammar.Format(p.Grammar()); !strings.Contains(got, "rule key = [a-z]+ #atomic") {
 		t.Errorf("grammar %s", got)
 	}
-	if mode, ok := loaded.CompiledMode(); !ok || mode != zeroparse.CompiledParse {
+	if mode, ok := loaded.CompiledMode(); !ok || mode != zp.CompiledParse {
 		t.Errorf("mode of MarshalBinary: %v %v", mode, ok)
 	}
 	if _, ok := p.CompiledMode(); ok {
 		t.Error("mode of a parser compiled from source")
 	}
-	if _, err := zeroparse.LoadParser([]byte("garbage")); err == nil {
+	if _, err := zp.LoadParser([]byte("garbage")); err == nil {
 		t.Error("expected an error")
 	}
 }
@@ -167,22 +167,22 @@ rule pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => list($k, $v)`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	modes := []zeroparse.CompiledMode{zeroparse.CompiledParse, zeroparse.CompiledRecognize, zeroparse.CompiledDocument}
+	modes := []zp.CompiledMode{zp.CompiledParse, zp.CompiledRecognize, zp.CompiledDocument}
 	for _, mode := range modes {
-		if got, err := zeroparse.ParseCompiledMode(mode.String()); err != nil || got != mode {
+		if got, err := zp.ParseCompiledMode(mode.String()); err != nil || got != mode {
 			t.Errorf("ParseCompiledMode(%q) = %v, %v", mode.String(), got, err)
 		}
 	}
-	if _, err := zeroparse.ParseCompiledMode("ast"); err == nil {
+	if _, err := zp.ParseCompiledMode("ast"); err == nil {
 		t.Error("ParseCompiledMode accepted an unknown mode")
 	}
-	parse := func(q *zeroparse.Parser) error { _, err := q.Parse("a=1"); return err }
-	stream := func(q *zeroparse.Parser) error {
-		return q.ParseStream(strings.NewReader("a=1"), func(*zeroparse.Node) error { return nil })
+	parse := func(q *zp.Parser) error { _, err := q.Parse("a=1"); return err }
+	stream := func(q *zp.Parser) error {
+		return q.ParseStream(strings.NewReader("a=1"), func(*zp.Node) error { return nil })
 	}
-	prefix := func(q *zeroparse.Parser) error { _, err := q.ParsePrefix("main", "a=1"); return err }
-	iterate := func(opts ...zeroparse.ParseOption) func(q *zeroparse.Parser) error {
-		return func(q *zeroparse.Parser) error {
+	prefix := func(q *zp.Parser) error { _, err := q.ParsePrefix("main", "a=1"); return err }
+	iterate := func(opts ...zp.ParseOption) func(q *zp.Parser) error {
+		return func(q *zp.Parser) error {
 			it, err := q.Iterate(strings.NewReader("a=1b=2"), opts...)
 			if err != nil {
 				return err
@@ -205,16 +205,16 @@ rule pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => list($k, $v)`, "main")
 			return nil
 		}
 	}
-	recognize := func(q *zeroparse.Parser) error { _, err := q.Parse("a=1", zeroparse.RecognizeOnly()); return err }
-	trace := func(q *zeroparse.Parser) error {
-		_, err := q.Parse("a=1", zeroparse.WithTrace(func(zeroparse.TraceEvent) {}))
+	recognize := func(q *zp.Parser) error { _, err := q.Parse("a=1", zp.RecognizeOnly()); return err }
+	trace := func(q *zp.Parser) error {
+		_, err := q.Parse("a=1", zp.WithTrace(func(zp.TraceEvent) {}))
 		return err
 	}
-	profile := func(q *zeroparse.Parser) error {
-		_, err := q.Parse("a=1", zeroparse.WithProfile(&zeroparse.Profile{}))
+	profile := func(q *zp.Parser) error {
+		_, err := q.Parse("a=1", zp.WithProfile(&zp.Profile{}))
 		return err
 	}
-	document := func(q *zeroparse.Parser) error {
+	document := func(q *zp.Parser) error {
 		doc, err := q.NewDocument("a=1")
 		if err == nil {
 			_, err = doc.Parse()
@@ -223,25 +223,25 @@ rule pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => list($k, $v)`, "main")
 	}
 	ops := []struct {
 		name string
-		run  func(*zeroparse.Parser) error
-		need zeroparse.CompiledMode
+		run  func(*zp.Parser) error
+		need zp.CompiledMode
 	}{
-		{"parse", parse, zeroparse.CompiledParse},
-		{"stream", stream, zeroparse.CompiledParse},
-		{"prefix", prefix, zeroparse.CompiledParse},
-		{"iterate", iterate(), zeroparse.CompiledParse},
-		{"traced iterate", iterate(zeroparse.WithTrace(func(zeroparse.TraceEvent) {})), zeroparse.CompiledDocument},
-		{"recognize", recognize, zeroparse.CompiledRecognize},
-		{"trace", trace, zeroparse.CompiledDocument},
-		{"profile", profile, zeroparse.CompiledDocument},
-		{"document", document, zeroparse.CompiledDocument},
+		{"parse", parse, zp.CompiledParse},
+		{"stream", stream, zp.CompiledParse},
+		{"prefix", prefix, zp.CompiledParse},
+		{"iterate", iterate(), zp.CompiledParse},
+		{"traced iterate", iterate(zp.WithTrace(func(zp.TraceEvent) {})), zp.CompiledDocument},
+		{"recognize", recognize, zp.CompiledRecognize},
+		{"trace", trace, zp.CompiledDocument},
+		{"profile", profile, zp.CompiledDocument},
+		{"document", document, zp.CompiledDocument},
 	}
 	for _, mode := range modes {
 		data, err := p.Marshal(mode)
 		if err != nil {
 			t.Fatal(err)
 		}
-		loaded, err := zeroparse.LoadParser(data)
+		loaded, err := zp.LoadParser(data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -273,36 +273,36 @@ rule pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => list($k, $v)`, "main")
 			}
 		}
 		// Traced or profiled recognition needs the grammar source in every mode.
-		for _, opt := range []zeroparse.ParseOption{zeroparse.WithTrace(func(zeroparse.TraceEvent) {}), zeroparse.WithProfile(&zeroparse.Profile{})} {
-			if _, err := loaded.Parse("a=1", zeroparse.RecognizeOnly(), opt); err == nil || !strings.Contains(err.Error(), "needs the grammar source") {
+		for _, opt := range []zp.ParseOption{zp.WithTrace(func(zp.TraceEvent) {}), zp.WithProfile(&zp.Profile{})} {
+			if _, err := loaded.Parse("a=1", zp.RecognizeOnly(), opt); err == nil || !strings.Contains(err.Error(), "needs the grammar source") {
 				t.Errorf("%s file, traced recognition: %v", mode, err)
 			}
 		}
 	}
-	if _, err := p.Marshal(zeroparse.CompiledMode(9)); err == nil {
+	if _, err := p.Marshal(zp.CompiledMode(9)); err == nil {
 		t.Error("saved in an unknown mode")
 	}
 }
 
 func TestUnits(t *testing.T) {
-	p, err := compileTestSource(`rule main = "é" x:.`, "main", zeroparse.WithSourceInfo())
+	p, err := compileTestSource(`rule main = "é" x:.`, "main", zp.WithSourceInfo())
 	if err != nil {
 		t.Fatal(err)
 	}
-	for unit, want := range map[zeroparse.PositionUnit]int{zeroparse.CodePoints: 1, zeroparse.Bytes: 2} {
-		n, err := p.Parse("éa", zeroparse.WithUnit(unit))
-		if err != nil || n.Field("x").(*zeroparse.Node).Start() != want {
+	for unit, want := range map[zp.PositionUnit]int{zp.CodePoints: 1, zp.Bytes: 2} {
+		n, err := p.Parse("éa", zp.WithUnit(unit))
+		if err != nil || n.Field("x").(*zp.Node).Start() != want {
 			t.Errorf("%v: %v %v", unit, n, err)
 		}
 	}
-	doc, err := p.NewDocument("éa", zeroparse.WithUnit(zeroparse.Bytes))
+	doc, err := p.NewDocument("éa", zp.WithUnit(zp.Bytes))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := doc.Edit(2, 3, "b"); err != nil {
 		t.Fatal(err)
 	}
-	if n, err := doc.Parse(); err != nil || n.Field("x").(*zeroparse.Node).Text() != "b" {
+	if n, err := doc.Parse(); err != nil || n.Field("x").(*zp.Node).Text() != "b" {
 		t.Errorf("%v %v", n, err)
 	}
 }
@@ -313,20 +313,20 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, b := range []zeroparse.Backend{zeroparse.DefaultBackend, zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-		n, err := p.Parse("abc=12", zeroparse.WithBackend(b))
+	for _, b := range []zp.Backend{zp.DefaultBackend, zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+		n, err := p.Parse("abc=12", zp.WithBackend(b))
 		if err != nil || n.String() != `Pair{Key: "abc", Value: "12"}` {
 			t.Errorf("%v: %v %v", b, n, err)
 		}
 	}
 	// A compiled grammar runs on the bytecode backends, each mode serving its own operations.
-	load := func(mode zeroparse.CompiledMode) *zeroparse.Parser {
+	load := func(mode zp.CompiledMode) *zp.Parser {
 		t.Helper()
 		data, err := p.Marshal(mode)
 		if err != nil {
 			t.Fatal(err)
 		}
-		loaded, err := zeroparse.LoadParser(data)
+		loaded, err := zp.LoadParser(data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -335,21 +335,21 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 		}
 		return loaded
 	}
-	parsing := load(zeroparse.CompiledParse)
+	parsing := load(zp.CompiledParse)
 	if n, err := parsing.Parse("abc=12"); err != nil || n.String() != `Pair{Key: "abc", Value: "12"}` {
 		t.Errorf("parse mode: %v %v", n, err)
 	}
-	if _, err := parsing.Parse("abc=12", zeroparse.WithBackend(zeroparse.Closure)); err == nil || !strings.Contains(err.Error(), "closure backend needs the grammar source") {
+	if _, err := parsing.Parse("abc=12", zp.WithBackend(zp.Closure)); err == nil || !strings.Contains(err.Error(), "closure backend needs the grammar source") {
 		t.Errorf("closure backend on a compiled grammar: %v", err)
 	}
-	recognizing := load(zeroparse.CompiledRecognize)
-	for _, backend := range []zeroparse.Backend{zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-		if n, err := recognizing.Parse("abc=12", zeroparse.WithBackend(backend), zeroparse.RecognizeOnly()); n != nil || err != nil {
+	recognizing := load(zp.CompiledRecognize)
+	for _, backend := range []zp.Backend{zp.Bytecode, zp.BytecodeIterative} {
+		if n, err := recognizing.Parse("abc=12", zp.WithBackend(backend), zp.RecognizeOnly()); n != nil || err != nil {
 			t.Errorf("recognition on %v: %v %v", backend, n, err)
 		}
 	}
-	documents := load(zeroparse.CompiledDocument)
-	if _, err := documents.NewDocument("a=1", zeroparse.WithBackend(zeroparse.Closure)); err == nil || !strings.Contains(err.Error(), "closure backend needs the grammar source") {
+	documents := load(zp.CompiledDocument)
+	if _, err := documents.NewDocument("a=1", zp.WithBackend(zp.Closure)); err == nil || !strings.Contains(err.Error(), "closure backend needs the grammar source") {
 		t.Errorf("document with the closure backend on a compiled grammar: %v", err)
 	}
 	doc, err := documents.NewDocument("a=1")
@@ -367,16 +367,16 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, b := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-		if n, err := p.Parse("abc=12", zeroparse.RecognizeOnly(), zeroparse.WithBackend(b)); n != nil || err != nil {
+	for _, b := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+		if n, err := p.Parse("abc=12", zp.RecognizeOnly(), zp.WithBackend(b)); n != nil || err != nil {
 			t.Errorf("%v: %v %v", b, n, err)
 		}
 		_, want := p.Parse("abc=x")
-		if n, err := p.Parse("abc=x", zeroparse.RecognizeOnly(), zeroparse.WithBackend(b)); n != nil || err == nil || err.Error() != want.Error() {
+		if n, err := p.Parse("abc=x", zp.RecognizeOnly(), zp.WithBackend(b)); n != nil || err == nil || err.Error() != want.Error() {
 			t.Errorf("%v: %v %v, want %v", b, n, err, want)
 		}
 	}
-	if _, err := p.NewDocument("a=1", zeroparse.RecognizeOnly()); err == nil {
+	if _, err := p.NewDocument("a=1", zp.RecognizeOnly()); err == nil {
 		t.Error("document with RecognizeOnly")
 	}
 }

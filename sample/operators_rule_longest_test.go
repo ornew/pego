@@ -81,9 +81,9 @@ func TestSampleOperatorsRuleLongestCallerStops(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			p := compile(t, "rule main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
-			for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-				for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-					if _, err := p.Parse(c.input, zeroparse.WithUnit(unit), zeroparse.WithBackend(backend)); err != nil {
+			for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+				for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+					if _, err := p.Parse(c.input, zp.WithUnit(unit), zp.WithBackend(backend)); err != nil {
 						t.Fatal(err)
 					}
 				}

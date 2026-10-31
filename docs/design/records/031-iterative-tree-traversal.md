@@ -114,12 +114,12 @@ Generated Go parsers embed `runtime/runtime.go`, so the core and generated runti
 
 ### Compatibility and Backend Support
 
-The Go traversal/cursor APIs use `Walk` in the core, in the public `zeroparse` package
+The Go traversal/cursor APIs use `Walk` in the core, in the public `zp` package
 and in standalone generated Go parsers; all visit records, actions and edge
 semantics are the same. The grammar's types of a typed parser live in their own
 package, so a grammar type may be named like any traversal type or constant.
 
-The Go traversal/cursor APIs are available in `internal/engine`, the public `zeroparse` package, and generated Go runtimes. Core and generated Go JSON writers preserve successful acyclic output bytes. TypeScript keeps the existing `marshal` and `toJSON` contracts; general traversal remains deferred. No grammar syntax, parser execution, parse positions, or mutable ownership changes are required.
+The Go traversal/cursor APIs are available in `internal/engine`, the public `zp` package, and generated Go runtimes. Core and generated Go JSON writers preserve successful acyclic output bytes. TypeScript keeps the existing `marshal` and `toJSON` contracts; general traversal remains deferred. No grammar syntax, parser execution, parse positions, or mutable ownership changes are required.
 
 ### Implementation Sequence
 

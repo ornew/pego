@@ -1,7 +1,7 @@
 # Building Grammars as ASTs and JSON
 
 Use package `grammar` when a tool builds a grammar in Go or loads its JSON
-representation. `zeroparse.Compile` checks it and returns a parser; Go and
+representation. `zp.Compile` checks it and returns a parser; Go and
 TypeScript generation use the same compiler.
 
 ## Validate a Hand-Built Grammar
@@ -221,7 +221,7 @@ Shared AST subtrees remain shared within the clone, and AST pointer cycles are
 preserved for `grammar.Validate` to report. Arbitrary application objects or
 cyclic attribute maps and slices are outside the clone contract.
 
-`zeroparse.ParseGrammar` returns the source AST with its source metadata. By
+`zp.ParseGrammar` returns the source AST with its source metadata. By
 contrast, `Parser.Grammar()` exposes the normalized grammar retained by the
 compiled parser. Normalization can lower groups and pragmas, so that grammar is
 not a complete record of source documentation ownership. It may be the same AST
@@ -265,7 +265,7 @@ AST. An `InlineAction` node is formatted and serialized as written; compilation
 lowers it to a hidden rule called at its position. The grammar of a parser
 (`Parser.Grammar`) and the formatter keep the inline action as written.
 
-After loading, use `zeroparse.Compile(g, "main")` to perform semantic checking.
+After loading, use `zp.Compile(g, "main")` to perform semantic checking.
 Compile and the generators also run structural validation themselves. A
 compiled file holds no AST; its trust and bytecode validation rules are in
 [compiled grammars](compiled-grammars.md).

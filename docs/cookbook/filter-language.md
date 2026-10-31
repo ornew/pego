@@ -69,10 +69,10 @@ type Record map[string]any
 type value func(Record) any
 
 // text returns the text of a Num, Str, Bool or Field node.
-func text(n *zeroparse.Node) string { return n.Text() }
+func text(n *zp.Node) string { return n.Text() }
 
 // compile turns a tree into closures, so that the tree is walked once, not once per record.
-func compile(n *zeroparse.Node) value {
+func compile(n *zp.Node) value {
 	switch n.Type() {
 	case "Num":
 		v, _ := strconv.ParseFloat(text(n), 64)
@@ -87,13 +87,13 @@ func compile(n *zeroparse.Node) value {
 		name := text(n)
 		return func(r Record) any { return r[name] }
 	case "Not":
-		x := compile(n.Field("X").(*zeroparse.Node))
+		x := compile(n.Field("X").(*zp.Node))
 		return func(r Record) any { return x(r) != true }
 	}
 	// Binary
-	op := n.Field("Op").(*zeroparse.Node).Text()
-	l := compile(n.Field("Left").(*zeroparse.Node))
-	r := compile(n.Field("Right").(*zeroparse.Node))
+	op := n.Field("Op").(*zp.Node).Text()
+	l := compile(n.Field("Left").(*zp.Node))
+	r := compile(n.Field("Right").(*zp.Node))
 	switch op {
 	case "and":
 		return func(rec Record) any { return l(rec) == true && r(rec) == true }
@@ -148,7 +148,7 @@ func compare(op string, a, b any) bool {
 }
 
 // Compile parses a filter and returns a predicate.
-func Compile(p *zeroparse.Parser, src string) (func(Record) bool, error) {
+func Compile(p *zp.Parser, src string) (func(Record) bool, error) {
 	tree, err := p.Parse(src)
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func Compile(p *zeroparse.Parser, src string) (func(Record) bool, error) {
 }
 
 func main() {
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}

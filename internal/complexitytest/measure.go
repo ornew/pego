@@ -20,16 +20,16 @@ import (
 )
 
 // Backends are the backends whose cost is measured.
-var Backends = []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative}
+var Backends = []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative}
 
 // BackendName names b for test output.
-func BackendName(b zeroparse.Backend) string {
+func BackendName(b zp.Backend) string {
 	switch b {
-	case zeroparse.Closure:
+	case zp.Closure:
 		return "closure"
-	case zeroparse.Bytecode:
+	case zp.Bytecode:
 		return "bytecode"
-	case zeroparse.BytecodeIterative:
+	case zp.BytecodeIterative:
 		return "iterative"
 	}
 	return fmt.Sprint(int(b))
@@ -37,12 +37,12 @@ func BackendName(b zeroparse.Backend) string {
 
 // Compile compiles the ZeroParse source with every rule a start rule and main as the default start
 // rule.
-func Compile(src string) (*zeroparse.Parser, error) {
-	g, err := zeroparse.ParseGrammar(src)
+func Compile(src string) (*zp.Parser, error) {
+	g, err := zp.ParseGrammar(src)
 	if err != nil {
 		return nil, err
 	}
-	return zeroparse.Compile(starttest.MarkAll(g), "")
+	return zp.Compile(starttest.MarkAll(g), "")
 }
 
 // Cost is the measured cost of one parse.
@@ -58,10 +58,10 @@ type Cost struct {
 
 // parses reports whether the parse of input finishes within budget, with or without a syntax
 // error. It returns the error of a parse that finished; an exhausted budget is not one.
-func parses(p *zeroparse.Parser, input string, b zeroparse.Backend, budget uint64) (bool, error) {
-	_, err := p.Parse(input, zeroparse.WithBackend(b), zeroparse.WithLimits(zeroparse.Limits{Budget: budget}))
-	var le *zeroparse.LimitError
-	if errors.As(err, &le) && le.Kind == zeroparse.LimitBudget {
+func parses(p *zp.Parser, input string, b zp.Backend, budget uint64) (bool, error) {
+	_, err := p.Parse(input, zp.WithBackend(b), zp.WithLimits(zp.Limits{Budget: budget}))
+	var le *zp.LimitError
+	if errors.As(err, &le) && le.Kind == zp.LimitBudget {
 		return false, nil
 	}
 	return true, err
@@ -73,28 +73,28 @@ func parses(p *zeroparse.Parser, input string, b zeroparse.Backend, budget uint6
 //
 // The search stops when the interval is within 0.4% of the result, which moves a slope by less
 // than 0.01. ExactSteps searches to the unit.
-func Steps(p *zeroparse.Parser, input string, b zeroparse.Backend, cap uint64) (Cost, error) {
+func Steps(p *zp.Parser, input string, b zp.Backend, cap uint64) (Cost, error) {
 	return strict(steps(p, input, b, cap, 256))
 }
 
 // ExactSteps is Steps with a search to the unit.
-func ExactSteps(p *zeroparse.Parser, input string, b zeroparse.Backend, cap uint64) (Cost, error) {
+func ExactSteps(p *zp.Parser, input string, b zp.Backend, cap uint64) (Cost, error) {
 	return strict(steps(p, input, b, cap, 0))
 }
 
 // StepsLenient is Steps for an input that the grammar reports syntax errors for, such as one
 // that exercises error recovery: the cost of a parse that finishes with a syntax error carries
-// the error in Cost.ParseErr instead of failing. Only a *zeroparse.SyntaxError or zeroparse.SyntaxErrors
+// the error in Cost.ParseErr instead of failing. Only a *zp.SyntaxError or zp.SyntaxErrors
 // is accepted; any other error is returned.
-func StepsLenient(p *zeroparse.Parser, input string, b zeroparse.Backend, cap uint64) (Cost, error) {
+func StepsLenient(p *zp.Parser, input string, b zp.Backend, cap uint64) (Cost, error) {
 	return steps(p, input, b, cap, 256)
 }
 
 // isSyntaxError reports whether err is a syntax error of the input or the list of errors that a
 // parse recovered from. Any other error is a failure of the measurement.
 func isSyntaxError(err error) bool {
-	var one *zeroparse.SyntaxError
-	var many zeroparse.SyntaxErrors
+	var one *zp.SyntaxError
+	var many zp.SyntaxErrors
 	return errors.As(err, &one) || errors.As(err, &many)
 }
 
@@ -105,7 +105,7 @@ func strict(c Cost, err error) (Cost, error) {
 	return c, err
 }
 
-func steps(p *zeroparse.Parser, input string, b zeroparse.Backend, cap, tolDiv uint64) (Cost, error) {
+func steps(p *zp.Parser, input string, b zp.Backend, cap, tolDiv uint64) (Cost, error) {
 	ok, parseErr := parses(p, input, b, cap)
 	if !ok {
 		return Cost{Steps: cap, Capped: true}, nil
@@ -134,17 +134,17 @@ func steps(p *zeroparse.Parser, input string, b zeroparse.Backend, cap, tolDiv u
 
 // StepsTraced returns the spend of a traced parse, read from the counter at the last event. It
 // stops at cap like Steps. A traced parse spends more than an untraced one; see the tests.
-func StepsTraced(p *zeroparse.Parser, input string, b zeroparse.Backend, cap uint64) (Cost, error) {
+func StepsTraced(p *zp.Parser, input string, b zp.Backend, cap uint64) (Cost, error) {
 	var used uint64
 	seen := false
-	_, err := p.Parse(input, zeroparse.WithBackend(b), zeroparse.WithLimits(zeroparse.Limits{Budget: cap}),
-		zeroparse.WithTrace(func(e zeroparse.TraceEvent) {
+	_, err := p.Parse(input, zp.WithBackend(b), zp.WithLimits(zp.Limits{Budget: cap}),
+		zp.WithTrace(func(e zp.TraceEvent) {
 			if c := core.TraceParser(e).Control; c != nil {
 				used, seen = c.Used, true
 			}
 		}))
-	var le *zeroparse.LimitError
-	if errors.As(err, &le) && le.Kind == zeroparse.LimitBudget {
+	var le *zp.LimitError
+	if errors.As(err, &le) && le.Kind == zp.LimitBudget {
 		return Cost{Steps: cap, Capped: true}, nil
 	}
 	if err != nil {
@@ -165,7 +165,7 @@ type Series struct {
 // Measure builds the input of every size with build, checks that it parses, and measures the
 // cost with the untraced Steps. The sizes are n, 2n and 4n for the three-point series of the
 // suite; any number of doubling sizes is accepted.
-func Measure(p *zeroparse.Parser, build func(n int) string, sizes []int, b zeroparse.Backend, cap uint64) (Series, error) {
+func Measure(p *zp.Parser, build func(n int) string, sizes []int, b zp.Backend, cap uint64) (Series, error) {
 	s := Series{Sizes: sizes}
 	for _, n := range sizes {
 		c, err := Steps(p, build(n), b, cap)

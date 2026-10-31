@@ -178,7 +178,7 @@ built lists directly had taken 4.5 ms.
   slot metadata.
 - **Converting through JSON.** No generated code, but slower than the parse itself and lossy for joins (the
   member type would have to be decoded from `type`).
-- **Exposing typed values from the engine (`zeroparse.Parser`).** Go types cannot be created at run time, so the engine
+- **Exposing typed values from the engine (`zp.Parser`).** Go types cannot be created at run time, so the engine
   can only return `*Node`; typed values are a property of generated code.
 - **Sizing every type's first chunk from input length.** Input length does not predict how many values of each
   type will escape. Bounded geometric growth keeps unused types unallocated and limits the first-use cost of rare

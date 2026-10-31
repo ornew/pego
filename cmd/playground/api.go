@@ -84,7 +84,7 @@ type parseRequest struct {
 	// DefaultValue drops value actions and declared rule types, so the tree is the default node
 	// tree, as zp parse -default-value does. Predicates still run.
 	DefaultValue bool `json:"defaultValue,omitempty"`
-	// MaxDepth limits the nesting of recursive rule calls (zeroparse.WithMaxDepth); 0 selects the
+	// MaxDepth limits the nesting of recursive rule calls (zp.WithMaxDepth); 0 selects the
 	// playground's limit, maxDepth, for the backends that nest rule calls on the stack.
 	MaxDepth int `json:"maxDepth,omitempty"`
 	// Runs is the number of times the parse is timed (Micros is then the median); 0 or 1 parses once.
@@ -92,7 +92,7 @@ type parseRequest struct {
 	Runs int `json:"runs,omitempty"`
 }
 
-// syntaxError mirrors zeroparse.SyntaxError. Pos is in the unit of the parse; Message is the description
+// syntaxError mirrors zp.SyntaxError. Pos is in the unit of the parse; Message is the description
 // without the position, as printed by the zp command.
 type syntaxError struct {
 	Pos      int      `json:"pos"`
@@ -228,7 +228,7 @@ func errorResponse(err error) []byte {
 // of the engine apply, and trees are limited by encoding/json, which refuses to nest more than 10,000
 // levels (two per node level). main_js.go lowers both for WebAssembly.
 var (
-	maxDepth     = 0    // nesting of recursive rule calls (zeroparse.WithMaxDepth); 0 is the engine's default
+	maxDepth     = 0    // nesting of recursive rule calls (zp.WithMaxDepth); 0 is the engine's default
 	maxTreeDepth = 4000 // nesting of nodes in a tree that is encoded and displayed
 )
 
@@ -238,32 +238,32 @@ type compiled struct {
 	src    string
 	g      *grammar.Grammar
 	info   compileResult
-	parser *zeroparse.Parser // nil if the grammar has errors
+	parser *zp.Parser // nil if the grammar has errors
 	// variants are the parsers compiled with options, compiled when first requested.
-	variants map[compileVariant]*zeroparse.Parser
+	variants map[compileVariant]*zp.Parser
 }
 
 // compileVariant is the set of compile options a parse request can ask for.
 type compileVariant struct{ sourceInfo, defaultValue bool }
 
 // variantParser returns the parser of c compiled with the options of v.
-func (c *compiled) variantParser(v compileVariant) (*zeroparse.Parser, error) {
+func (c *compiled) variantParser(v compileVariant) (*zp.Parser, error) {
 	if p := c.variants[v]; p != nil {
 		return p, nil
 	}
-	var opts []zeroparse.CompileOption
+	var opts []zp.CompileOption
 	if v.sourceInfo {
-		opts = append(opts, zeroparse.WithSourceInfo())
+		opts = append(opts, zp.WithSourceInfo())
 	}
 	if v.defaultValue {
-		opts = append(opts, zeroparse.WithDefaultValue())
+		opts = append(opts, zp.WithDefaultValue())
 	}
-	p, err := zeroparse.Compile(c.g, c.info.Start, opts...)
+	p, err := zp.Compile(c.g, c.info.Start, opts...)
 	if err != nil {
 		return nil, err
 	}
 	if c.variants == nil {
-		c.variants = map[compileVariant]*zeroparse.Parser{}
+		c.variants = map[compileVariant]*zp.Parser{}
 	}
 	c.variants[v] = p
 	return p, nil
@@ -277,7 +277,7 @@ func compileSource(src string) *compiled {
 	}
 	c := &compiled{src: src}
 	c.info.Rules, c.info.Types, c.info.Diagnostics = []ruleInfo{}, []typeInfo{}, []diagnostic{}
-	g, err := zeroparse.ParseGrammar(src)
+	g, err := zp.ParseGrammar(src)
 	if err != nil {
 		c.info.Diagnostics = diagnostics(err)
 		last = c
@@ -296,7 +296,7 @@ func compileSource(src string) *compiled {
 	for _, t := range g.Types() {
 		c.info.Types = append(c.info.Types, describeType(t))
 	}
-	p, err := zeroparse.Compile(g, "")
+	p, err := zp.Compile(g, "")
 	if err != nil {
 		c.info.Diagnostics = diagnostics(err)
 	} else {
@@ -345,7 +345,7 @@ func describeType(t grammar.TypeDecl) typeInfo {
 // posPrefix matches the position that grammar and compile errors start with.
 var posPrefix = regexp.MustCompile(`^(\d+):(\d+): `)
 
-// diagnostics splits a grammar or compile error into one diagnostic per line. The zeroparse package reports
+// diagnostics splits a grammar or compile error into one diagnostic per line. The zp package reports
 // several errors as lines of the form "line:col: message" (or "message" without a position).
 func diagnostics(err error) []diagnostic {
 	var ds []diagnostic
@@ -371,11 +371,11 @@ func parse(req parseRequest) parseResult {
 		return res
 	}
 	// The playground shows what a syntax error expected.
-	opts := []zeroparse.ParseOption{zeroparse.WithExpectations()}
+	opts := []zp.ParseOption{zp.WithExpectations()}
 	switch req.Unit {
 	case "", "codepoints":
 	case "bytes":
-		opts = append(opts, zeroparse.WithUnit(zeroparse.Bytes))
+		opts = append(opts, zp.WithUnit(zp.Bytes))
 	default:
 		res.Error = fmt.Sprintf("unknown unit %q", req.Unit)
 		return res
@@ -383,23 +383,23 @@ func parse(req parseRequest) parseResult {
 	switch req.Backend {
 	case "":
 	case "closure":
-		opts = append(opts, zeroparse.WithBackend(zeroparse.Closure))
+		opts = append(opts, zp.WithBackend(zp.Closure))
 	case "bytecode":
-		opts = append(opts, zeroparse.WithBackend(zeroparse.Bytecode))
+		opts = append(opts, zp.WithBackend(zp.Bytecode))
 	case "bytecode-iterative":
-		opts = append(opts, zeroparse.WithBackend(zeroparse.BytecodeIterative))
+		opts = append(opts, zp.WithBackend(zp.BytecodeIterative))
 	default:
 		res.Error = fmt.Sprintf("unknown backend %q", req.Backend)
 		return res
 	}
 	if req.Recognize {
-		opts = append(opts, zeroparse.RecognizeOnly())
+		opts = append(opts, zp.RecognizeOnly())
 	}
 	// The iterative backend keeps rule calls on its own stack, so only the others need maxDepth.
 	if d := req.MaxDepth; d > 0 {
-		opts = append(opts, zeroparse.WithMaxDepth(d))
+		opts = append(opts, zp.WithMaxDepth(d))
 	} else if maxDepth > 0 && req.Backend != "bytecode-iterative" {
-		opts = append(opts, zeroparse.WithMaxDepth(maxDepth))
+		opts = append(opts, zp.WithMaxDepth(maxDepth))
 	}
 	p := c.parser
 	if req.SourceInfo || req.DefaultValue {
@@ -455,8 +455,8 @@ func parse(req parseRequest) parseResult {
 		res.SExpr = node.String()
 	}
 	if err != nil {
-		var list zeroparse.SyntaxErrors
-		var one *zeroparse.SyntaxError
+		var list zp.SyntaxErrors
+		var one *zp.SyntaxError
 		switch {
 		case errors.As(err, &list):
 			for _, e := range list {
@@ -486,11 +486,11 @@ func isFailure(err error) bool {
 	if err == nil {
 		return false
 	}
-	var list zeroparse.SyntaxErrors
+	var list zp.SyntaxErrors
 	return !errors.As(err, &list)
 }
 
-func convertError(e *zeroparse.SyntaxError) syntaxError {
+func convertError(e *zp.SyntaxError) syntaxError {
 	return syntaxError{
 		Pos: e.Pos, Line: e.Line, Col: e.Col,
 		Expected: e.Expected, Messages: e.Messages, Message: e.Message(),
@@ -499,9 +499,9 @@ func convertError(e *zeroparse.SyntaxError) syntaxError {
 
 // measureTree returns the number of nodes of the tree n and how deeply they are nested (1 for a
 // single node). It does not recurse, so that it works on trees of any depth.
-func measureTree(n *zeroparse.Node) (count, depth int) {
+func measureTree(n *zp.Node) (count, depth int) {
 	type item struct {
-		n     *zeroparse.Node
+		n     *zp.Node
 		depth int
 	}
 	stack := []item{{n, 1}}
@@ -516,7 +516,7 @@ func measureTree(n *zeroparse.Node) (count, depth int) {
 			}
 		}
 		for _, v := range it.n.Fields() {
-			if c, ok := v.(*zeroparse.Node); ok && c != nil {
+			if c, ok := v.(*zp.Node); ok && c != nil {
 				stack = append(stack, item{c, it.depth + 1})
 			}
 		}
@@ -526,7 +526,7 @@ func measureTree(n *zeroparse.Node) (count, depth int) {
 
 func format(src string) formatResult {
 	res := formatResult{Diagnostics: []diagnostic{}}
-	g, err := zeroparse.ParseGrammar(src)
+	g, err := zp.ParseGrammar(src)
 	if err != nil {
 		res.Diagnostics = diagnostics(err)
 		return res

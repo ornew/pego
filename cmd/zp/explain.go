@@ -27,19 +27,19 @@ func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	first := opts
 	if _, loaded := p.CompiledMode(); loaded {
 		// A compiled grammar here is in document mode, which serves only traced parses.
-		first = append(slices.Clip(opts), zeroparse.WithTrace(func(zeroparse.TraceEvent) {}))
+		first = append(slices.Clip(opts), zp.WithTrace(func(zp.TraceEvent) {}))
 	}
 	_, perr := p.Parse(src, first...)
-	var errs []*zeroparse.SyntaxError
-	var se *zeroparse.SyntaxError
-	var list zeroparse.SyntaxErrors
+	var errs []*zp.SyntaxError
+	var se *zp.SyntaxError
+	var list zp.SyntaxErrors
 	recovered := false // the parse recovered from every error (Parse returned SyntaxErrors)
 	switch {
 	case perr == nil:
 		fmt.Fprintln(stdout, "ok: the input matches")
 		return nil
 	case errors.As(perr, &se):
-		errs = []*zeroparse.SyntaxError{se}
+		errs = []*zp.SyntaxError{se}
 	case errors.As(perr, &list):
 		errs, recovered = list, true
 	default:
@@ -59,7 +59,7 @@ func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 			ex.items["#"+s] = true
 		}
 	}
-	p.Parse(src, append(opts, zeroparse.WithTrace(x.event))...)
+	p.Parse(src, append(opts, zp.WithTrace(x.event))...)
 	for i, e := range errs {
 		if i > 0 {
 			fmt.Fprintln(stdout)
@@ -78,7 +78,7 @@ type explainer struct {
 	stack []explainFrame
 	at    map[int]*explained // per error position
 	// placed holds the recovered errors already attributed to a call.
-	placed map[*zeroparse.SyntaxError]bool
+	placed map[*zp.SyntaxError]bool
 }
 
 type explainFrame struct {
@@ -108,8 +108,8 @@ type explainedCall struct {
 	recovered bool
 }
 
-func (x *explainer) event(e zeroparse.TraceEvent) {
-	if e.Kind == zeroparse.TraceEnter {
+func (x *explainer) event(e zp.TraceEvent) {
+	if e.Kind == zp.TraceEnter {
 		x.stack = append(x.stack, explainFrame{rule: e.Rule, pos: e.Pos})
 		return
 	}
@@ -123,7 +123,7 @@ func (x *explainer) event(e zeroparse.TraceEvent) {
 	for _, r := range e.Recovered() {
 		if !x.placed[r] {
 			if x.placed == nil {
-				x.placed = map[*zeroparse.SyntaxError]bool{}
+				x.placed = map[*zp.SyntaxError]bool{}
 			}
 			x.placed[r] = true
 			x.record(e, top, r, true)
@@ -133,7 +133,7 @@ func (x *explainer) event(e zeroparse.TraceEvent) {
 
 // record lists, for the call top that e ends, the expectations of f (its failure or an error it
 // recovered from) that it recorded itself, and passes all of them on to its caller.
-func (x *explainer) record(e zeroparse.TraceEvent, top explainFrame, f *zeroparse.SyntaxError, recovered bool) {
+func (x *explainer) record(e zp.TraceEvent, top explainFrame, f *zp.SyntaxError, recovered bool) {
 	if x.at[f.Pos] == nil {
 		return
 	}
@@ -174,7 +174,7 @@ func (x *explainer) record(e zeroparse.TraceEvent, top explainFrame, f *zeropars
 	}
 }
 
-func (x *explainer) print(w io.Writer, e *zeroparse.SyntaxError, limit int) {
+func (x *explainer) print(w io.Writer, e *zp.SyntaxError, limit int) {
 	ex := x.at[e.Pos]
 	if len(ex.calls) > 0 {
 		fmt.Fprintf(w, "\nCalls that recorded what was expected at %d:%d (innermost first):\n", e.Line, e.Col)

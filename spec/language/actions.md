@@ -463,7 +463,7 @@ checker combines the element types of all list arguments.
 
 ## Default Values
 
-A parser compiled with **default values** (`zeroparse.WithDefaultValue()`, `zp parse -default-value`,
+A parser compiled with **default values** (`zp.WithDefaultValue()`, `zp parse -default-value`,
 `zp compile -default-value`, or `zp gen -default-value` for a generated parser) ignores the value
 actions of the grammar. Before compilation, every value action (`=>` on a rule, and the actions of the
 operands and operators of an [Operators Rule](operators-rule.md)) and the declared type of each rule

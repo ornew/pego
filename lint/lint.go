@@ -177,7 +177,7 @@ func (c Config) Run(ctx context.Context, g *grammar.Grammar, start string) ([]Fi
 // RunUnchecked lints g from start as Run does, without compiling g: it is for a caller that has
 // already compiled g, such as an editor that lints after each change. Its precondition is that g
 // compiles and that start is a start rule of g (the default start rule of a compiled grammar is
-// zeroparse.Parser.DefaultStart); Run checks this, RunUnchecked does not, and the findings for any
+// zp.Parser.DefaultStart); Run checks this, RunUnchecked does not, and the findings for any
 // other g or start are unspecified. It returns an error only if c.Disable names an unknown check
 // or ctx ends; cancellation discards all findings.
 func (c Config) RunUnchecked(ctx context.Context, g *grammar.Grammar, start string) ([]Finding, error) {

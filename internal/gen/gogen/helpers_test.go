@@ -18,7 +18,7 @@ import (
 )
 
 // The tests of this package compile the grammars that they generate parsers for with the engine,
-// as package zeroparse does.
+// as package zp does.
 func init() {
 	gentest.Compile = compileForGenerator
 	gentest.Reference = referenceProgram

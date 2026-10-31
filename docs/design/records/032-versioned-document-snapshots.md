@@ -29,7 +29,7 @@ versions, and batch rollback.
 Source inspection at `d16f33e04d9f71605682166a4dccddbc072e4c51` establishes these
 facts, rather than current performance estimates:
 
-- [`Document`](../../../zeroparse.go) is single-owner mutable state. Several edits may
+- [`Document`](../../../zp.go) is single-owner mutable state. Several edits may
   precede one parse; construction does not parse the input.
 - [`Document.Parse`](../../../internal/engine/document/document.go) reuses memo results and
   repetition records. [`moveResult` and `moveTree`](../../../internal/engine/core/runtime.go)

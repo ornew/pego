@@ -99,8 +99,8 @@ Use `EditBatch` when one editor transaction contains several replacements. All r
 ```go
 base := doc.Version()
 err := doc.EditBatch(base,
-    zeroparse.TextEdit{Start: 0, End: 2, Text: "xy"},
-    zeroparse.TextEdit{Start: 3, End: 3, Text: "z"},
+    zp.TextEdit{Start: 0, End: 2, Text: "xy"},
+    zp.TextEdit{Start: 3, End: 3, Text: "z"},
 )
 if err != nil {
     return err
@@ -108,7 +108,7 @@ if err != nil {
 node, err := doc.Parse()
 ```
 
-The example assumes `doc` and the `zeroparse` import are already in scope. The insertion at 3 is interpreted against the original text, even though the earlier replacement is also in the batch.
+The example assumes `doc` and the `zp` import are already in scope. The insertion at 3 is interpreted against the original text, even though the earlier replacement is also in the batch.
 
 Piece-backed storage is internal to `Document`; batch parsing and streaming keep
 their contiguous input paths. `Document.Text()` and `Node.Text()` keep their
@@ -142,7 +142,7 @@ must keep the exact tree, text, diagnostics, and revision visible while the
 Document advances, capture them together:
 
 ```go
-snapshot, err := doc.Snapshot(zeroparse.WithContext(ctx), zeroparse.WithLimits(limits))
+snapshot, err := doc.Snapshot(zp.WithContext(ctx), zp.WithLimits(limits))
 if snapshot == nil {
     return err // cancellation or a budget limit publishes no partial snapshot
 }
@@ -171,8 +171,8 @@ nil `*Node` field becomes a zero handle, while an untyped nil remains nil.
 be read concurrently while the single-owner Document is edited or parsed.
 
 The snapshot graph preserves shared nodes and cycles. It freezes only field
-values of dynamic type nil, `int`, `string`, `bool`, or `*zeroparse.Node`; an
-unsupported custom value returns `*zeroparse.SnapshotCaptureError` and no Snapshot.
+values of dynamic type nil, `int`, `string`, `bool`, or `*zp.Node`; an
+unsupported custom value returns `*zp.SnapshotCaptureError` and no Snapshot.
 `Materialize` makes an independently mutable graph, preserving identities,
 cycles, nil slots, and nil versus allocated-empty collections. Use it when an
 existing API requires `*Node`; each call creates a separate graph.
@@ -219,11 +219,11 @@ rule main =  line* $$
 rule line =  [a-z]+ "\n" `
 
 func main() {
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
-	doc, err := p.NewDocument("ab\ncd\nef\n", zeroparse.WithExpectations())
+	doc, err := p.NewDocument("ab\ncd\nef\n", zp.WithExpectations())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -292,13 +292,13 @@ import (
 	"github.com/ornew/zeroparse"
 )
 
-func js(n *zeroparse.Node) string {
+func js(n *zp.Node) string {
 	b, _ := json.Marshal(n)
 	return string(b)
 }
 
 func main() {
-	p, _ := zeroparse.CompileSource(`@start
+	p, _ := zp.CompileSource(`@start
 rule main =  line* $$
 rule line =  [a-z]+ "\n" `, "main")
 	d, _ := p.NewDocument(strings.Repeat("ab\n", 100))

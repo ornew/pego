@@ -79,18 +79,18 @@ func main() {
 	whole := flag.Bool("whole", false, "read everything and call Parse instead of ParseStream")
 	flag.Parse()
 
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var lines, errors, totalMs int
-	count := func(e *zeroparse.Node) error {
+	count := func(e *zp.Node) error {
 		lines++
-		if e.Field("Level").(*zeroparse.Node).Text() == "ERROR" {
+		if e.Field("Level").(*zp.Node).Text() == "ERROR" {
 			errors++
 		}
-		ms, _ := strconv.Atoi(e.Field("Millis").(*zeroparse.Node).Text())
+		ms, _ := strconv.Atoi(e.Field("Millis").(*zp.Node).Text())
 		totalMs += ms
 		return nil
 	}
@@ -147,7 +147,7 @@ memory figures vary by a few MiB from run to run.)
 - **`ParseStream` returns an error, not a tree.** The records are only seen by your function. What comes before and
   after the repetition is parsed and checked, but not returned; if there is a header, make it an element of the
   repetition and tell the kinds apart by `Type()`.
-- **Errors stop the stream.** At the first line that does not match, `ParseStream` returns a `*zeroparse.SyntaxError` with the
+- **Errors stop the stream.** At the first line that does not match, `ParseStream` returns a `*zp.SyntaxError` with the
   line and column in the whole input, after the records before it were delivered. Return an error from your function to
   stop early; `ParseStream` returns it unchanged.
 - **The trailing `$$`** turns input that is not a sequence of entries into an error. Without it, the stream would end
@@ -160,7 +160,7 @@ memory figures vary by a few MiB from run to run.)
 - **Cancel on a quiet connection.** `ParseStream` blocks in `Read`. To stop it from outside, make `Read` fail (close the
   connection or the write end of a pipe); see [Stop a stream when the caller gives up](cancel-a-stream.md).
 - **Skip bad records.** Add [`#recover`](several-errors.md) inside the record rule. The bad record becomes an `error`
-  value (`Kind()` is `zeroparse.KindError`) that your function receives, and `ParseStream` returns the recorded errors at the end.
+  value (`Kind()` is `zp.KindError`) that your function receives, and `ParseStream` returns the recorded errors at the end.
 - **Do not hold on to nodes.** The record is reachable only through your function; if you keep it (in a slice, say),
   memory grows again.
 - **CSV.** [Sum a column of a big CSV file](sum-a-csv-column.md) streams the grammar of [parsers/csv](../../parsers/csv/).

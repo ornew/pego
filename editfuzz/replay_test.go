@@ -9,8 +9,8 @@ import (
 	"github.com/ornew/zeroparse"
 )
 
-var backends = []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative}
-var units = []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes}
+var backends = []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative}
+var units = []zp.PositionUnit{zp.CodePoints, zp.Bytes}
 
 // Grammars exercising success and failure, recovered errors, left recursion, lookahead and long
 // repetitions.
@@ -37,12 +37,12 @@ var (
 	checkpoint = Operation{Kind: Checkpoint}
 )
 
-func sequence(src string, b zeroparse.Backend, u zeroparse.PositionUnit, initial string, ops ...Operation) *Sequence {
+func sequence(src string, b zp.Backend, u zp.PositionUnit, initial string, ops ...Operation) *Sequence {
 	return &Sequence{GrammarSHA256: GrammarHash([]byte(src)), Start: "main", Backend: b, Unit: u, Initial: []byte(initial), Operations: ops}
 }
 
 func TestSequenceJSON(t *testing.T) {
-	seq := sequence("g", zeroparse.BytecodeIterative, zeroparse.Bytes, "a\xc3\xa9\xff",
+	seq := sequence("g", zp.BytecodeIterative, zp.Bytes, "a\xc3\xa9\xff",
 		edit(1, 3, "x\x80"), edit(0, 0, ""), undo, redo, checkpoint)
 	seq.Seed = 41
 	data, err := json.Marshal(seq)
@@ -109,26 +109,26 @@ func TestSequenceJSONErrors(t *testing.T) {
 			t.Errorf("%s: got %v, want an error containing %q", tc.new, err, tc.want)
 		}
 	}
-	if _, err := json.Marshal(sequence("g", zeroparse.DefaultBackend, zeroparse.Bytes, "")); err == nil {
+	if _, err := json.Marshal(sequence("g", zp.DefaultBackend, zp.Bytes, "")); err == nil {
 		t.Error("a sequence with the default backend was written")
 	}
 	for _, bad := range []*Sequence{
-		{GrammarSHA256: "nothex", Start: "main", Backend: zeroparse.Closure},
-		{GrammarSHA256: GrammarHash(nil), Backend: zeroparse.Closure},
-		sequence("g", zeroparse.Closure, zeroparse.Bytes, "", edit(2, 1, "")),
+		{GrammarSHA256: "nothex", Start: "main", Backend: zp.Closure},
+		{GrammarSHA256: GrammarHash(nil), Backend: zp.Closure},
+		sequence("g", zp.Closure, zp.Bytes, "", edit(2, 1, "")),
 	} {
 		if data, err := json.Marshal(bad); err == nil {
 			t.Errorf("wrote %s", data)
 		}
 	}
-	if _, err := json.Marshal(sequence("g", zeroparse.Closure, zeroparse.PositionUnit(7), "")); err == nil {
+	if _, err := json.Marshal(sequence("g", zp.Closure, zp.PositionUnit(7), "")); err == nil {
 		t.Error("a sequence with an unknown unit was written")
 	}
-	if _, err := json.Marshal(sequence("g", zeroparse.Closure, zeroparse.Bytes, "", Operation{Kind: "bogus"})); err == nil {
+	if _, err := json.Marshal(sequence("g", zp.Closure, zp.Bytes, "", Operation{Kind: "bogus"})); err == nil {
 		t.Error("an unknown operation was written")
 	}
 	// A Sequence value is written in the same format as a pointer.
-	ptr := sequence("g", zeroparse.Closure, zeroparse.Bytes, "x", checkpoint)
+	ptr := sequence("g", zp.Closure, zp.Bytes, "x", checkpoint)
 	a, err := json.Marshal(ptr)
 	b, err2 := json.Marshal(*ptr)
 	if err != nil || err2 != nil || string(a) != string(b) {
@@ -171,22 +171,22 @@ func TestReplay(t *testing.T) {
 // replace each invalid byte with U+FFFD, so their bytes are never joined.
 func TestUndoRestoresText(t *testing.T) {
 	src := testGrammars[0]
-	p, err := zeroparse.CompileSource(src, "main")
+	p, err := zp.CompileSource(src, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
 	const r = "\uFFFD"
 	for _, tc := range []struct {
-		unit  zeroparse.PositionUnit
+		unit  zp.PositionUnit
 		steps []Operation
 		want  []string
 	}{
-		{zeroparse.Bytes, []Operation{edit(2, 3, "\xa9"), edit(0, 0, "\xff"), undo, undo, redo, redo, undo, edit(1, 3, "b"), undo, undo},
+		{zp.Bytes, []Operation{edit(2, 3, "\xa9"), edit(0, 0, "\xff"), undo, undo, redo, redo, undo, edit(1, 3, "b"), undo, undo},
 			[]string{"aé", "\xffaé", "aé", "a\xc3x", "aé", "\xffaé", "aé", "ab", "aé", "a\xc3x"}},
-		{zeroparse.CodePoints, []Operation{edit(2, 3, "\xa9"), edit(0, 0, "\xff"), undo, undo, redo, redo, undo, edit(1, 2, "b"), undo, undo},
+		{zp.CodePoints, []Operation{edit(2, 3, "\xa9"), edit(0, 0, "\xff"), undo, undo, redo, redo, undo, edit(1, 2, "b"), undo, undo},
 			[]string{"a" + r + r, r + "a" + r + r, "a" + r + r, "a" + r + "x", "a" + r + r, r + "a" + r + r, "a" + r + r, "ab" + r, "a" + r + r, "a" + r + "x"}},
 	} {
-		seq := sequence(src, zeroparse.Closure, tc.unit, "a\xc3x")
+		seq := sequence(src, zp.Closure, tc.unit, "a\xc3x")
 		rp, err := start(p, seq)
 		if err != nil {
 			t.Fatal(err)
@@ -218,17 +218,17 @@ func TestUndoRestoresText(t *testing.T) {
 func TestDiff(t *testing.T) {
 	for _, tc := range []struct {
 		cur, target string
-		unit        zeroparse.PositionUnit
+		unit        zp.PositionUnit
 		start, end  int
 		text        string
 	}{
-		{"abc", "abc", zeroparse.CodePoints, 3, 3, ""},
-		{"aé", "a\xc3x", zeroparse.CodePoints, 1, 2, "\xc3x"},
-		{"aé", "a\xc3x", zeroparse.Bytes, 1, 3, "\xc3x"},
-		{"日本語", "日語", zeroparse.CodePoints, 1, 2, ""},
-		{"日本語", "日語", zeroparse.Bytes, 3, 6, ""},
-		{"aaa", "aa", zeroparse.CodePoints, 2, 3, ""},
-		{"", "\x80", zeroparse.Bytes, 0, 0, "\x80"},
+		{"abc", "abc", zp.CodePoints, 3, 3, ""},
+		{"aé", "a\xc3x", zp.CodePoints, 1, 2, "\xc3x"},
+		{"aé", "a\xc3x", zp.Bytes, 1, 3, "\xc3x"},
+		{"日本語", "日語", zp.CodePoints, 1, 2, ""},
+		{"日本語", "日語", zp.Bytes, 3, 6, ""},
+		{"aaa", "aa", zp.CodePoints, 2, 3, ""},
+		{"", "\x80", zp.Bytes, 0, 0, "\x80"},
 	} {
 		start, end, text := diff(tc.cur, tc.target, tc.unit)
 		if start != tc.start || end != tc.end || text != tc.text {
@@ -245,14 +245,14 @@ func TestReplayInvalid(t *testing.T) {
 		event int
 		want  string
 	}{
-		{sequence(src, zeroparse.Closure, zeroparse.CodePoints, "a"), "rule main = .", -1, "hash"},
-		{sequence("rule main = ", zeroparse.Closure, zeroparse.CodePoints, "a"), "rule main = ", -1, ""},
-		{&Sequence{GrammarSHA256: GrammarHash([]byte(src)), Start: "other", Backend: zeroparse.Closure}, src, -1, "rule other is not defined"},
-		{&Sequence{GrammarSHA256: GrammarHash([]byte(src)), Start: "item", Backend: zeroparse.Closure}, src, -1, "rule item is not a start rule"},
-		{sequence(src, zeroparse.Closure, zeroparse.CodePoints, "a", checkpoint, undo), src, 1, "nothing to undo"},
-		{sequence(src, zeroparse.Closure, zeroparse.CodePoints, "a", edit(0, 1, "b"), redo), src, 1, "nothing to redo"},
-		{sequence(src, zeroparse.Closure, zeroparse.CodePoints, "a", edit(0, 2, "b")), src, 0, "invalid range"},
-		{sequence(src, zeroparse.Bytecode, zeroparse.Bytes, "é", edit(1, 1, "b")), src, 0, "boundary"},
+		{sequence(src, zp.Closure, zp.CodePoints, "a"), "rule main = .", -1, "hash"},
+		{sequence("rule main = ", zp.Closure, zp.CodePoints, "a"), "rule main = ", -1, ""},
+		{&Sequence{GrammarSHA256: GrammarHash([]byte(src)), Start: "other", Backend: zp.Closure}, src, -1, "rule other is not defined"},
+		{&Sequence{GrammarSHA256: GrammarHash([]byte(src)), Start: "item", Backend: zp.Closure}, src, -1, "rule item is not a start rule"},
+		{sequence(src, zp.Closure, zp.CodePoints, "a", checkpoint, undo), src, 1, "nothing to undo"},
+		{sequence(src, zp.Closure, zp.CodePoints, "a", edit(0, 1, "b"), redo), src, 1, "nothing to redo"},
+		{sequence(src, zp.Closure, zp.CodePoints, "a", edit(0, 2, "b")), src, 0, "invalid range"},
+		{sequence(src, zp.Bytecode, zp.Bytes, "é", edit(1, 1, "b")), src, 0, "boundary"},
 	} {
 		err := Replay([]byte(tc.src), tc.seq)
 		var invalid *InvalidError
@@ -283,7 +283,7 @@ func TestMismatch(t *testing.T) {
 				tc.corrupt(tree)
 			}
 		}
-		seq := sequence(src, zeroparse.Bytecode, zeroparse.Bytes, "ab", checkpoint, edit(2, 2, "c"), checkpoint, checkpoint)
+		seq := sequence(src, zp.Bytecode, zp.Bytes, "ab", checkpoint, edit(2, 2, "c"), checkpoint, checkpoint)
 		err := Replay([]byte(src), seq)
 		var m *Mismatch
 		if !errors.As(err, &m) || m.Event != 2 || m.Text != "abc" || m.Path != tc.path || m.Fingerprint() != tc.print {
@@ -298,10 +298,10 @@ func TestMismatch(t *testing.T) {
 // TestPanicIsAResult checks that a panicking parse returns its panic value and that a panicking edit is
 // a mismatch.
 func TestPanicIsAResult(t *testing.T) {
-	if tree, x := result(func() (*zeroparse.Node, error) { panic("boom") }); tree != nil || x != "boom" {
+	if tree, x := result(func() (*zp.Node, error) { panic("boom") }); tree != nil || x != "boom" {
 		t.Fatalf("got %v, %q", tree, x)
 	}
-	if _, x := result(func() (*zeroparse.Node, error) { return nil, nil }); x != "" {
+	if _, x := result(func() (*zp.Node, error) { return nil, nil }); x != "" {
 		t.Fatalf("got %q", x)
 	}
 	src := testGrammars[0]
@@ -311,7 +311,7 @@ func TestPanicIsAResult(t *testing.T) {
 			panic("edit boom")
 		}
 	}
-	err := Replay([]byte(src), sequence(src, zeroparse.Closure, zeroparse.Bytes, "ab", edit(0, 0, "x"), checkpoint, edit(1, 1, "!"), checkpoint))
+	err := Replay([]byte(src), sequence(src, zp.Closure, zp.Bytes, "ab", edit(0, 0, "x"), checkpoint, edit(1, 1, "!"), checkpoint))
 	var m *Mismatch
 	if !errors.As(err, &m) || m.Event != 2 || m.Path != "panic.edit" || m.Category() != "panic" || m.Text != "xab" ||
 		m.Document != "edit boom" || !strings.Contains(err.Error(), "panicked at operation 2") {
@@ -322,12 +322,12 @@ func TestPanicIsAResult(t *testing.T) {
 // TestInvalidUTF8Compares checks that results differing only in invalid bytes, which JSON replaces with
 // U+FFFD, differ.
 func TestInvalidUTF8Compares(t *testing.T) {
-	p, err := zeroparse.CompileSource(testGrammars[0], "main")
+	p, err := zp.CompileSource(testGrammars[0], "main")
 	if err != nil {
 		t.Fatal(err)
 	}
 	parse := func(s string) map[string]any {
-		tree, _ := result(func() (*zeroparse.Node, error) { return p.Parse(s, zeroparse.WithUnit(zeroparse.Bytes)) })
+		tree, _ := result(func() (*zp.Node, error) { return p.Parse(s, zp.WithUnit(zp.Bytes)) })
 		expand(tree)
 		return tree
 	}
@@ -346,13 +346,13 @@ func TestInvalidUTF8Compares(t *testing.T) {
 // TestErrorsCompareByFields checks that results with recovered and unrecovered syntax errors are
 // compared field by field.
 func TestErrorsCompareByFields(t *testing.T) {
-	p, err := zeroparse.CompileSource(testGrammars[1], "main")
+	p, err := zp.CompileSource(testGrammars[1], "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, _ := result(func() (*zeroparse.Node, error) { return p.Parse("let a=1;let =2;let c=x;") })
+	a, _ := result(func() (*zp.Node, error) { return p.Parse("let a=1;let =2;let c=x;") })
 	// The recovered errors are the same; a name beside them differs.
-	b, _ := result(func() (*zeroparse.Node, error) { return p.Parse("let b=1;let =2;let c=x;") })
+	b, _ := result(func() (*zp.Node, error) { return p.Parse("let b=1;let =2;let c=x;") })
 	expand(a)
 	expand(b)
 	errs := a["error"].(map[string]any)
@@ -362,7 +362,7 @@ func TestErrorsCompareByFields(t *testing.T) {
 	if path, _, _ := firstDifference("", a, b); !strings.HasPrefix(path, "value.") || !strings.HasSuffix(path, ".value") {
 		t.Fatalf("difference at %q", path)
 	}
-	c, _ := result(func() (*zeroparse.Node, error) { return p.Parse("let") })
+	c, _ := result(func() (*zp.Node, error) { return p.Parse("let") })
 	expand(c)
 	if path, _, _ := firstDifference("", a, c); c["error"].(map[string]any)["kind"] == "" || path == "" {
 		t.Fatalf("unrecovered error: %v", c)
@@ -376,8 +376,8 @@ func TestExhaustedBudgetComparesNothing(t *testing.T) {
 	initial := strings.Repeat("let a=1+2;", 20)
 	for _, b := range backends {
 		for budget := uint64(1); budget <= 4096; budget += 7 {
-			seq := sequence(src, b, zeroparse.CodePoints, initial, edit(0, 0, "let b=3;"), checkpoint)
-			seq.Limits = zeroparse.Limits{Budget: budget}
+			seq := sequence(src, b, zp.CodePoints, initial, edit(0, 0, "let b=3;"), checkpoint)
+			seq.Limits = zp.Limits{Budget: budget}
 			var m *Mismatch
 			if err := Replay([]byte(src), seq); errors.As(err, &m) {
 				t.Fatalf("%v budget %d: %v", b, budget, err)

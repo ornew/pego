@@ -4,7 +4,7 @@
 call like any other package. By default the generated Go package depends only on the standard library: it carries a
 copy of the ZeroParse runtime in its `internal/runtime` directory, and it does not load or compile the grammar at run time.
 
-This guide shows how to generate a parser, what the generator supports compared with the engine (the `zeroparse.Parser` of
+This guide shows how to generate a parser, what the generator supports compared with the engine (the `zp.Parser` of
 [Running Parsers](running-parsers.md)), how to keep generated code up to date, and when it is the right choice. The API
 of the generated Go package is in [The Generated Go API](generated-go-api.md), and the options that add typed values,
 documents and streams have guides of their own, linked below. `zp gen -lang ts` generates
@@ -20,7 +20,7 @@ TypeScript modules with the same behavior instead; it has a guide of its own, [T
 
 ## Why Generate
 
-| | Engine (`zeroparse.CompileSource`) | Generated parser |
+| | Engine (`zp.CompileSource`) | Generated parser |
 |:--|:--|:--|
 | Speed | Closure backend by default | Generated Go takes 0.44–0.61× closure time in CodePoints and 0.50–0.66× in Bytes; direct typed values take 0.69–0.98× generated `Parse` time ([benchmarks](../benchmarks.md), [analysis](../performance.md#where-zeroparse-stands)) |
 | Dependencies | `github.com/ornew/zeroparse` | Standard library only (the runtime is copied into the package; `-runtime import` imports it from `github.com/ornew/zeroparse/runtime` instead) |
@@ -254,7 +254,7 @@ Details:
 The same generator is available from Go, in package `github.com/ornew/zeroparse/gen`, for build tools that produce parsers programmatically:
 
 ```go
-g, err := zeroparse.ParseGrammar(src)
+g, err := zp.ParseGrammar(src)
 if err != nil {
 	log.Fatal(err)
 }
@@ -351,7 +351,7 @@ var grammarSrc string
 
 // The files of pairsparser are up to date with pairs.zp.
 func TestGeneratedIsUpToDate(t *testing.T) {
-	g, err := zeroparse.ParseGrammar(grammarSrc)
+	g, err := zp.ParseGrammar(grammarSrc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,7 +386,7 @@ protects you from the two diverging (for example after an upgrade):
 
 ```go
 func TestGeneratedMatchesEngine(t *testing.T) {
-	p, err := zeroparse.CompileSource(grammarSrc, "main")
+	p, err := zp.CompileSource(grammarSrc, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

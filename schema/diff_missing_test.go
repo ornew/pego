@@ -11,7 +11,7 @@ import (
 func TestCompareMissingAndError(t *testing.T) {
 	compile := func(typ string) *schema.Output {
 		t.Helper()
-		p, err := zeroparse.CompileSource("type P = { S "+typ+" }\n@start\nrule main = \"(\" semi \")\" $$ => P{}\nrule semi = \";\" #missing", "main")
+		p, err := zp.CompileSource("type P = { S "+typ+" }\n@start\nrule main = \"(\" semi \")\" $$ => P{}\nrule semi = \";\" #missing", "main")
 		if err != nil {
 			t.Fatal(err)
 		}

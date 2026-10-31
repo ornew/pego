@@ -13,7 +13,7 @@ const startAPISource = "@start(default)\nrule main = item item\n@start\nrule ite
 // An empty start rule name selects the grammar's default start rule on every
 // surface of the API, also on a parser that starts at another rule.
 func TestEmptyStartSelectsDefault(t *testing.T) {
-	p, err := zeroparse.CompileSource(startAPISource, "item")
+	p, err := zp.CompileSource(startAPISource, "item")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestEmptyStartSelectsDefault(t *testing.T) {
 	if r, err := p.ParsePrefix("item", "aab"); err != nil || r.ConsumedBytes != 1 {
 		t.Errorf("ParsePrefix(item): consumed %d, %v", r.ConsumedBytes, err)
 	}
-	d, err := zeroparse.CompileSource(startAPISource, "")
+	d, err := zp.CompileSource(startAPISource, "")
 	if err != nil {
 		t.Fatal(err)
 	}

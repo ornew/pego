@@ -12,7 +12,7 @@ import (
 func TestFmtSyntax(t *testing.T) {
 	const src = `type T = {}
 rule main T = "x" #atomic @error(message="x") => T{}`
-	g, err := zeroparse.ParseGrammar(src)
+	g, err := zp.ParseGrammar(src)
 	if err != nil {
 		t.Fatal(err)
 	}

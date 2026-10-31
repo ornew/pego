@@ -60,10 +60,10 @@ rule main = "x" => Holder{Values: [][]Token{[]Token{Token{Text: "one"}}}}`, "x",
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-				for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+			for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+				for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
 					t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
-						n, err := p.Parse(tc.input, zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
+						n, err := p.Parse(tc.input, zp.WithBackend(backend), zp.WithUnit(unit))
 						if err != nil {
 							t.Fatal(err)
 						}

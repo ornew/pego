@@ -18,25 +18,25 @@ import (
 	"github.com/ornew/zeroparse/internal/ir/exec/core"
 )
 
-func sourceGrammar(t *testing.T) (*zeroparse.Parser, string) {
+func sourceGrammar(t *testing.T) (*zp.Parser, string) {
 	t.Helper()
 	src, err := os.ReadFile("../../zeroparse.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := zeroparse.CompileSource(string(src), "main")
+	p, err := zp.CompileSource(string(src), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
 	return p, string(src)
 }
 
-func sourceField(t *testing.T, n *zeroparse.Node, name string) *zeroparse.Node {
+func sourceField(t *testing.T, n *zp.Node, name string) *zp.Node {
 	t.Helper()
 	if n == nil {
 		t.Fatalf("nil node for field %s", name)
 	}
-	child, ok := n.Field(name).(*zeroparse.Node)
+	child, ok := n.Field(name).(*zp.Node)
 	if !ok || child == nil {
 		t.Fatalf("%s.%s is %T, want node", n.Type(), name, n.Field(name))
 	}
@@ -44,26 +44,26 @@ func sourceField(t *testing.T, n *zeroparse.Node, name string) *zeroparse.Node {
 }
 
 // sourceText returns the text held by field name of n, a named string node.
-func sourceText(t *testing.T, n *zeroparse.Node, name string) string {
+func sourceText(t *testing.T, n *zp.Node, name string) string {
 	t.Helper()
 	field := sourceField(t, n, name)
 	text := field.Text()
-	if field.Kind() != zeroparse.KindString {
+	if field.Kind() != zp.KindString {
 		t.Fatalf("%s.%s has no text", n.Type(), name)
 	}
 	return text
 }
 
 // elems returns the elements of the tuple or list n.
-func elems(n *zeroparse.Node) []*zeroparse.Node {
-	var out []*zeroparse.Node
+func elems(n *zp.Node) []*zp.Node {
+	var out []*zp.Node
 	for _, e := range n.Elems() {
 		out = append(out, e)
 	}
 	return out
 }
 
-func sourceDecls(t *testing.T, n *zeroparse.Node) []*zeroparse.Node {
+func sourceDecls(t *testing.T, n *zp.Node) []*zp.Node {
 	t.Helper()
 	if n == nil || n.Type() != "File" {
 		t.Fatalf("source root: %v", n)
@@ -81,7 +81,7 @@ func TestSourceGrammarMatchesDocumentation(t *testing.T) {
 	if len(blocks) != 1 || !strings.Contains(string(doc), "`zeroparse.zp`") || strings.Contains(string(doc), "](http") || strings.Contains(string(doc), "## Full Grammar") {
 		t.Fatal("expected one simple grammar and a reference to the full source and no external link")
 	}
-	g, err := zeroparse.ParseGrammar(src)
+	g, err := zp.ParseGrammar(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,19 +119,19 @@ type Num = node[string]
 rule num = x:"1" => Num{$x,}
 rule tuples = "x" => ((), (Foo{},), ( 1 , "a" , ), (2), (1, (2,)))
 `
-	if _, err := zeroparse.ParseGrammar(src); err != nil {
+	if _, err := zp.ParseGrammar(src); err != nil {
 		t.Fatal(err)
 	}
 	// A constructor takes named fields or positional values, not both.
 	const mixed = "type Num = node[string]\nrule num = x:\"x\" => Num{$x, Text: \"0\"}"
-	if _, err := zeroparse.ParseGrammar(mixed); err == nil {
+	if _, err := zp.ParseGrammar(mixed); err == nil {
 		t.Fatal("the reader accepts a mixed constructor")
 	}
-	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-		if _, err := p.Parse(mixed, zeroparse.WithBackend(backend)); err == nil {
+	for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+		if _, err := p.Parse(mixed, zp.WithBackend(backend)); err == nil {
 			t.Fatalf("%v: the source grammar accepts a mixed constructor", backend)
 		}
-		n, err := p.Parse(src, zeroparse.WithBackend(backend))
+		n, err := p.Parse(src, zp.WithBackend(backend))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -171,13 +171,13 @@ rule tuples = "x" => ((), (Foo{},), ( 1 , "a" , ), (2), (1, (2,)))
 			t.Fatal("meet structure lost")
 		}
 		// One type without a comma is a group, and type arguments follow the name directly.
-		var alts []*zeroparse.Node
+		var alts []*zp.Node
 		for u := sourceField(t, defs[10], "Type"); ; u = sourceField(t, u, "L") {
 			if u.Type() != "JoinType" {
-				alts = append([]*zeroparse.Node{u}, alts...)
+				alts = append([]*zp.Node{u}, alts...)
 				break
 			}
-			alts = append([]*zeroparse.Node{sourceField(t, u, "R")}, alts...)
+			alts = append([]*zp.Node{sourceField(t, u, "R")}, alts...)
 		}
 		want := []struct {
 			typ   string
@@ -253,9 +253,9 @@ func TestSourceGrammarTree(t *testing.T) {
 	p, _ := sourceGrammar(t)
 	src := sourceTreeFixture
 	var want string
-	for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-			n, err := p.Parse(src, zeroparse.WithUnit(unit), zeroparse.WithBackend(backend))
+	for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+		for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+			n, err := p.Parse(src, zp.WithUnit(unit), zp.WithBackend(backend))
 			if err != nil {
 				t.Fatalf("%v/%v: %v", unit, backend, err)
 			}
@@ -343,9 +343,9 @@ func TestSourceGrammarRecovery(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var want string
-			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-				n, err := p.Parse(tc.src, zeroparse.WithBackend(backend), zeroparse.WithExpectations())
-				var syntaxErrors zeroparse.SyntaxErrors
+			for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+				n, err := p.Parse(tc.src, zp.WithBackend(backend), zp.WithExpectations())
+				var syntaxErrors zp.SyntaxErrors
 				wantErrors := 1
 				if tc.name == "broken multiline group" {
 					wantErrors = 2
@@ -386,7 +386,7 @@ func TestSourceGrammarGeneratedGo(t *testing.T) {
 		t.Skip("builds the generated source-parser consumer")
 	}
 	p, src := sourceGrammar(t)
-	g, err := zeroparse.ParseGrammar(src)
+	g, err := zp.ParseGrammar(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -500,7 +500,7 @@ func TestSourceGrammarTrivia(t *testing.T) {
 		"rule a = \"x\" ; /* x */ // after\nrule b = \"y\"",
 		"rule a = \"x\" ; /* x */\n// lead\nrule b = \"y\"",
 	} {
-		if _, err := zeroparse.ParseGrammar(src); err != nil {
+		if _, err := zp.ParseGrammar(src); err != nil {
 			t.Fatalf("reference rejects %q: %v", src, err)
 		}
 		n, err := p.Parse(src)
@@ -525,7 +525,7 @@ func TestSourceGrammarTrivia(t *testing.T) {
 		// A group's multiline mode ends at its closing parenthesis.
 		"type A ~ (B)\n  | C", "rule a = x:\"a\" => $x.(Match)\n  == $x",
 	} {
-		if _, err := zeroparse.ParseGrammar(src); err == nil {
+		if _, err := zp.ParseGrammar(src); err == nil {
 			t.Fatalf("reference accepted %q", src)
 		}
 		if _, err := p.Parse(src); err == nil {
@@ -537,9 +537,9 @@ func TestSourceGrammarTrivia(t *testing.T) {
 func TestSourceGrammarPackageRecovery(t *testing.T) {
 	p, _ := sourceGrammar(t)
 	for _, src := range []string{"package\nrule after = \"ok\"", "// leading\npackage ; rule after = \"ok\""} {
-		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-			n, err := p.Parse(src, zeroparse.WithBackend(backend), zeroparse.WithExpectations())
-			var syntaxErrors zeroparse.SyntaxErrors
+		for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+			n, err := p.Parse(src, zp.WithBackend(backend), zp.WithExpectations())
+			var syntaxErrors zp.SyntaxErrors
 			if !errors.As(err, &syntaxErrors) || len(syntaxErrors) != 1 || !strings.Contains(err.Error(), "expected package name") {
 				t.Fatalf("%v: %v", backend, err)
 			}
@@ -573,8 +573,8 @@ func TestSourceGrammarOperatorsPlacement(t *testing.T) {
 		{"reference and predicate", `rule operators = "x"` + "\n" + `rule a = operators {1 == 1}`, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, refErr := zeroparse.ParseGrammar(tc.src)
-			_, err := p.Parse(tc.src, zeroparse.RecognizeOnly())
+			_, refErr := zp.ParseGrammar(tc.src)
+			_, err := p.Parse(tc.src, zp.RecognizeOnly())
 			if (refErr == nil) != tc.valid {
 				t.Errorf("reference parser: valid %v, want %v (%v)", refErr == nil, tc.valid, refErr)
 			}

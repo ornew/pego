@@ -19,7 +19,7 @@ rule name = [a-z]+
 ```
 
 ```go
-node, err := parser.Parse("name", zeroparse.WithMissingTokens(16))
+node, err := parser.Parse("name", zp.WithMissingTokens(16))
 ```
 
 Here the missing semicolon is represented at the actual EOF position and accompanies a recovered diagnostic.

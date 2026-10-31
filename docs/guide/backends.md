@@ -25,18 +25,18 @@ closure backend serves as the reference. They differ in speed, memory, how they 
 
 | Backend | Option | How it runs | Needs the grammar AST |
 |:--|:--|:--|:--|
-| Closure | `zeroparse.Closure` | Compiles Rule Expressions into Go closures | Yes |
-| Bytecode (recursive) | `zeroparse.Bytecode` | A VM running [portable bytecode](../../spec/bytecode/README.md); rule calls use Go recursion | No |
-| Bytecode (iterative) | `zeroparse.BytecodeIterative` | The same bytecode on a VM with its own call stack | No |
+| Closure | `zp.Closure` | Compiles Rule Expressions into Go closures | Yes |
+| Bytecode (recursive) | `zp.Bytecode` | A VM running [portable bytecode](../../spec/bytecode/README.md); rule calls use Go recursion | No |
+| Bytecode (iterative) | `zp.BytecodeIterative` | The same bytecode on a VM with its own call stack | No |
 | Generated Go | (not an option) | A Go parser generated ahead of time by `zp gen` | At generation time |
 
 The first three are selected per parse:
 
 ```go
-n, err := p.Parse("abc=12", zeroparse.WithBackend(zeroparse.BytecodeIterative))
+n, err := p.Parse("abc=12", zp.WithBackend(zp.BytecodeIterative))
 ```
 
-`zeroparse.DefaultBackend`, used when you give no option, is the **closure backend for a parser compiled from a grammar and
+`zp.DefaultBackend`, used when you give no option, is the **closure backend for a parser compiled from a grammar and
 recursive bytecode for a parser loaded from a `.zpc` file**, which runs on the bytecode backends only. On the command
 line, `-backend closure|bytecode|bytecode-iterative` does the same.
 
@@ -78,7 +78,7 @@ of parentheses, plus the innermost one):
 | 1,000,000 deep | same error | same error | ok |
 
 ```go
-n, err := p.Parse(input, zeroparse.WithBackend(zeroparse.BytecodeIterative), zeroparse.WithMaxDepth(100))
+n, err := p.Parse(input, zp.WithBackend(zp.BytecodeIterative), zp.WithMaxDepth(100))
 // nesting too deep: more than 100 nested recursive rule calls
 ```
 

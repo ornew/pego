@@ -21,7 +21,7 @@ type F interface {
 //			p.Parse(in) // must not panic
 //		})
 //	}
-func Seed(f F, p *zeroparse.Parser, n int, opts ...Option) []string {
+func Seed(f F, p *zp.Parser, n int, opts ...Option) []string {
 	f.Helper()
 	inputs, err := Generate(p, n, opts...)
 	if err != nil {

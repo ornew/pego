@@ -58,13 +58,13 @@ import (
 var grammar string
 
 // toMap turns entries into nested maps: an entry with children becomes a map, any other a string.
-func toMap(entries *zeroparse.Node) map[string]any {
+func toMap(entries *zp.Node) map[string]any {
 	m := map[string]any{}
 	for _, e := range entries.Elems() {
-		key := e.Field("Key").(*zeroparse.Node).Text()
-		if kids := e.Field("Children").(*zeroparse.Node); kids.Len() > 0 {
+		key := e.Field("Key").(*zp.Node).Text()
+		if kids := e.Field("Children").(*zp.Node); kids.Len() > 0 {
 			m[key] = toMap(kids)
-		} else if v, ok := e.Field("Value").(*zeroparse.Node); ok {
+		} else if v, ok := e.Field("Value").(*zp.Node); ok {
 			m[key] = v.Text()
 		} else {
 			m[key] = ""
@@ -75,7 +75,7 @@ func toMap(entries *zeroparse.Node) map[string]any {
 
 func main() {
 	log.SetFlags(0) // no time stamps in front of the errors
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -156,7 +156,7 @@ go run . bad.yml
 - **`@error` on the predicate.** A predicate that fails records no expected token, so without the label the message for
   the third line above is `syntax error: expected " ", "\n", [ \t]`, which is true and unhelpful.
 - **`*node[string]` for the optional value.** `v:value?` is a `node[string]` or nothing, which the struct field must say with `*node[string]`;
-  in Go, `Field("Value")` is then a `*zeroparse.Node` or `nil`, which `v, ok := ....(*zeroparse.Node)` tells apart.
+  in Go, `Field("Value")` is then a `*zp.Node` or `nil`, which `v, ok := ....(*zp.Node)` tells apart.
 
 ## Variations and Limits
 

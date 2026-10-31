@@ -117,7 +117,7 @@ refactoring preserves its observed compatibility behavior: unknown fields
 remain ignored and duplicate keys retain last-value-wins behavior. Both
 functions continue rejecting trailing JSON values/data and integer values
 outside destination types. Neither function resolves names or performs type,
-attribute or Operators Rule checks; callers still use `zeroparse.Compile` for those checks.
+attribute or Operators Rule checks; callers still use `zp.Compile` for those checks.
 
 ### CLI and Tooling Integration
 

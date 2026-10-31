@@ -74,7 +74,7 @@ func editFuzzCmd(args []string, stdout io.Writer) error {
 			return err
 		}
 	}
-	var bs []zeroparse.Backend
+	var bs []zp.Backend
 	for _, name := range strings.Split(*backends, ",") {
 		b, err := editfuzz.ParseBackend(name)
 		if err != nil {
@@ -82,7 +82,7 @@ func editFuzzCmd(args []string, stdout io.Writer) error {
 		}
 		bs = append(bs, b)
 	}
-	var us []zeroparse.PositionUnit
+	var us []zp.PositionUnit
 	for _, name := range strings.Split(*units, ",") {
 		u, err := editfuzz.ParseUnit(name)
 		if err != nil {
@@ -103,7 +103,7 @@ func editFuzzCmd(args []string, stdout io.Writer) error {
 	return nil
 }
 
-func editFuzzReplay(src []byte, path, save string, minimize bool, maxAttempts int, limits zeroparse.Limits, stdout io.Writer) error {
+func editFuzzReplay(src []byte, path, save string, minimize bool, maxAttempts int, limits zp.Limits, stdout io.Writer) error {
 	seq, err := editfuzz.Load(path)
 	if err != nil {
 		return err

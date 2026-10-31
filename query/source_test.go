@@ -15,9 +15,9 @@ func TestStructuralQueryRuleNeedsSourceInfo(t *testing.T) {
 rule item = [a-z]`
 	pattern := query.Pattern{Rule: "item", Capture: "item"}
 	for _, sourceInfo := range []bool{false, true} {
-		var opts []zeroparse.CompileOption
+		var opts []zp.CompileOption
 		if sourceInfo {
-			opts = append(opts, zeroparse.WithSourceInfo())
+			opts = append(opts, zp.WithSourceInfo())
 		}
 		p := mustCompile(t, src, opts...)
 		s := mustSchema(t, p)
@@ -32,8 +32,8 @@ rule item = [a-z]`
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-			root, err := p.Parse("a,b,c", zeroparse.WithBackend(backend))
+		for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+			root, err := p.Parse("a,b,c", zp.WithBackend(backend))
 			if err != nil {
 				t.Fatal(err)
 			}

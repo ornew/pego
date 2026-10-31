@@ -35,16 +35,16 @@ rule key Key =  ([a-z_]+) #atomic
 rule value Value =  ([0-9]+) #atomic `
 
 func main() {
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		panic(err)
 	}
-	err = p.ParseStream(strings.NewReader("#version 2\na=1\nb=2\n"), func(n *zeroparse.Node) error {
+	err = p.ParseStream(strings.NewReader("#version 2\na=1\nb=2\n"), func(n *zp.Node) error {
 		switch n.Type() {
 		case "Header":
-			fmt.Println("header, version", n.Field("Version").(*zeroparse.Node).Text())
+			fmt.Println("header, version", n.Field("Version").(*zp.Node).Text())
 		case "Pair":
-			fmt.Println("pair", n.Field("Key").(*zeroparse.Node).Text(), "=", n.Field("Value").(*zeroparse.Node).Text())
+			fmt.Println("pair", n.Field("Key").(*zp.Node).Text(), "=", n.Field("Value").(*zp.Node).Text())
 		}
 		return nil
 	})

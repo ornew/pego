@@ -86,21 +86,21 @@ Go 1.27.1 or later. No dependencies outside the standard library.
 **From Go**
 
 ```go
-p, err := zeroparse.CompileSource(grammarSource, "main") // grammar errors come with positions
+p, err := zp.CompileSource(grammarSource, "main") // grammar errors come with positions
 
 node, err := p.Parse(input)                       // positions in code points by default
-p.Parse(input, zeroparse.WithUnit(zeroparse.Bytes))         // ... or in UTF-8 bytes
-p.Parse(input, zeroparse.WithBackend(zeroparse.Bytecode))   // pick a backend
-p.Parse(input, zeroparse.RecognizeOnly())              // validate without building a tree
+p.Parse(input, zp.WithUnit(zp.Bytes))         // ... or in UTF-8 bytes
+p.Parse(input, zp.WithBackend(zp.Bytecode))   // pick a backend
+p.Parse(input, zp.RecognizeOnly())              // validate without building a tree
 json.Marshal(node)                                // nodes encode with types and positions
 
-err = p.ParseStream(r, func(n *zeroparse.Node) error { return nil }) // one #stream element at a time
+err = p.ParseStream(r, func(n *zp.Node) error { return nil }) // one #stream element at a time
 
 doc, _ := p.NewDocument(text)
 doc.Edit(10, 12, "new text") // replace [10, 12)
 node, err = doc.Parse()      // reuses rule results the edit did not reach
 
-data, _ := p.MarshalBinary() // save; zeroparse.LoadParser(data) skips parsing and checking
+data, _ := p.MarshalBinary() // save; zp.LoadParser(data) skips parsing and checking
 ```
 
 **From the command line**

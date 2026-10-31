@@ -147,7 +147,7 @@ func lintCmd(args []string, stdout io.Writer) error {
 		return err
 	}
 	if *start == "" {
-		p, err := zeroparse.Compile(g, "")
+		p, err := zp.Compile(g, "")
 		if err != nil {
 			return fileError(*grammarPath, err)
 		}

@@ -15,12 +15,12 @@ import (
 // The generated parser has only the typed entry point, so the check that it agrees with the grammar does not
 // rest on other entry points of the same generated code: the oracle is the engine's interpreter, which runs
 // cel.zp itself.
-var interpreter = sync.OnceValue(func() *zeroparse.Parser {
+var interpreter = sync.OnceValue(func() *zp.Parser {
 	src, err := os.ReadFile("cel.zp")
 	if err != nil {
 		panic(err)
 	}
-	p, err := zeroparse.CompileSource(string(src), "main")
+	p, err := zp.CompileSource(string(src), "main")
 	if err != nil {
 		panic(err)
 	}
@@ -51,14 +51,14 @@ func spanOf(v any) (start, end int, ok bool) {
 // interpreterDiff compares ParseAST with the interpreter p, in both position units: they must accept the same input
 // with the same error (message, line, column and offset), and the value must cover the range of p's node. It
 // returns what differs, or "".
-func interpreterDiff(src string, p *zeroparse.Parser) string {
+func interpreterDiff(src string, p *zp.Parser) string {
 	for _, unit := range []struct {
 		name string
 		g    cel.PositionUnit
-		i    zeroparse.PositionUnit
-	}{{"code points", cel.CodePoints, zeroparse.CodePoints}, {"bytes", cel.Bytes, zeroparse.Bytes}} {
+		i    zp.PositionUnit
+	}{{"code points", cel.CodePoints, zp.CodePoints}, {"bytes", cel.Bytes, zp.Bytes}} {
 		v, gerr := cel.ParseAST(src, cel.WithUnit(unit.g))
-		n, ierr := p.Parse(src, zeroparse.WithUnit(unit.i))
+		n, ierr := p.Parse(src, zp.WithUnit(unit.i))
 		if (gerr == nil) != (ierr == nil) || (gerr != nil && gerr.Error() != ierr.Error()) {
 			return fmt.Sprintf("%q (%s): ParseAST: %v; interpreter: %v", src, unit.name, gerr, ierr)
 		}
@@ -90,7 +90,7 @@ func TestInterpreterOracle(t *testing.T) {
 	if mutated == string(src) {
 		t.Fatal("the mutation did not apply")
 	}
-	other, err := zeroparse.CompileSource(mutated, "main")
+	other, err := zp.CompileSource(mutated, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -63,7 +63,7 @@ func TestRecognizerHelpersReferenced(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		gr, err := zeroparse.ParseGrammar(string(src))
+		gr, err := zp.ParseGrammar(string(src))
 		if err != nil {
 			t.Fatalf("%s: %v", g.path, err)
 		}

@@ -26,7 +26,7 @@ Source inspection at `6fac14632cbf933d91fee7f8e5df9e82fb134c56` establishes the
 existing boundary:
 
 - [`ParseOptions`](../../../internal/engine/core/input.go) carries unit, backend,
-  recognition, depth, and tracing; [`public APIs`](../../../zeroparse.go) use functional
+  recognition, depth, and tracing; [`public APIs`](../../../zp.go) use functional
   ParseOption arguments. Document stores its construction settings; Parse has
   no per-call arguments today.
 - [`run`/`recoverParse`](../../../internal/engine/program_parse.go) distinguish completed

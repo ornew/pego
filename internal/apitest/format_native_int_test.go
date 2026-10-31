@@ -24,7 +24,7 @@ func TestFormatNativeMinimumRoundTrip(t *testing.T) {
 		{"right multiplication", &grammar.Binary{Op: "*", L: &grammar.IntLit{Value: 2}, R: minimum}, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			g, err := zeroparse.ParseGrammar("type N = { V int }\n@start\nrule main = \"é\" $$ => N{V: 0}")
+			g, err := zp.ParseGrammar("type N = { V int }\n@start\nrule main = \"é\" $$ => N{V: 0}")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -38,7 +38,7 @@ func TestFormatNativeMinimumRoundTrip(t *testing.T) {
 				t.Fatal(err)
 			}
 			source := grammar.Format(jsonAST)
-			sourceAST, err := zeroparse.ParseGrammar(source)
+			sourceAST, err := zp.ParseGrammar(source)
 			if err != nil {
 				t.Fatalf("formatted source cannot be parsed: %v\n%s", err, source)
 			}
@@ -46,7 +46,7 @@ func TestFormatNativeMinimumRoundTrip(t *testing.T) {
 				t.Fatalf("format is not idempotent:\n%s\n%s", source, again)
 			}
 			for _, ast := range []*grammar.Grammar{g, jsonAST, sourceAST} {
-				p, err := zeroparse.Compile(ast, "main")
+				p, err := zp.Compile(ast, "main")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -54,15 +54,15 @@ func TestFormatNativeMinimumRoundTrip(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				loaded, err := zeroparse.LoadParser(encoded)
+				loaded, err := zp.LoadParser(encoded)
 				if err != nil {
 					t.Fatal(err)
 				}
-				for _, parser := range []*zeroparse.Parser{p, loaded} {
-					for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-						for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
-							n, err := parser.Parse("é", zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
-							if parser == loaded && backend == zeroparse.Closure {
+				for _, parser := range []*zp.Parser{p, loaded} {
+					for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+						for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
+							n, err := parser.Parse("é", zp.WithBackend(backend), zp.WithUnit(unit))
+							if parser == loaded && backend == zp.Closure {
 								// A compiled grammar runs on the bytecode backends only.
 								if err == nil {
 									t.Fatalf("closure backend on a compiled grammar: %v", n)

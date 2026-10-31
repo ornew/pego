@@ -1,5 +1,5 @@
 // Package editfuzz checks incremental parsing with a grammar against fresh parses by applying sequences of
-// edits to a zeroparse.Document, and saves a failing sequence as a file that replays it exactly.
+// edits to a zp.Document, and saves a failing sequence as a file that replays it exactly.
 //
 // A Sequence is a versioned event log: the initial text, then edit, undo, redo and checkpoint operations.
 // At the start and at each checkpoint, the Document's parse result is compared with a fresh parse of the
@@ -122,12 +122,12 @@ type Sequence struct {
 	// sources.
 	GrammarSHA256 string
 	Start         string
-	Backend       zeroparse.Backend
-	Unit          zeroparse.PositionUnit
+	Backend       zp.Backend
+	Unit          zp.PositionUnit
 	// Limits bound the Documents and the fresh parses of a replay. A Document that reuses earlier work
 	// spends less than a fresh parse, so a check in which either parse exhausts its budget compares
 	// nothing. The saved format does not record the limits, so a replay supplies them again.
-	Limits zeroparse.Limits
+	Limits zp.Limits
 	// Seed is the seed that generated the sequence, kept only as provenance: replay does not use it.
 	Seed       uint64
 	Initial    []byte
@@ -246,8 +246,8 @@ var sequenceFields = []string{"version", "grammar_sha256", "grammar_normalizatio
 	"text_encoding", "initial_base64", "operations"}
 
 // ParseBackend returns the backend named closure, bytecode or bytecode-iterative.
-func ParseBackend(name string) (zeroparse.Backend, error) {
-	for _, b := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+func ParseBackend(name string) (zp.Backend, error) {
+	for _, b := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
 		if b.String() == name {
 			return b, nil
 		}
@@ -256,8 +256,8 @@ func ParseBackend(name string) (zeroparse.Backend, error) {
 }
 
 // ParseUnit returns the unit named codepoints or bytes.
-func ParseUnit(name string) (zeroparse.PositionUnit, error) {
-	for _, u := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+func ParseUnit(name string) (zp.PositionUnit, error) {
+	for _, u := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
 		if u.String() == name {
 			return u, nil
 		}
@@ -265,8 +265,8 @@ func ParseUnit(name string) (zeroparse.PositionUnit, error) {
 	return 0, fmt.Errorf("unknown unit %q", name)
 }
 
-func backendName(b zeroparse.Backend) (string, error) {
-	if b == zeroparse.DefaultBackend {
+func backendName(b zp.Backend) (string, error) {
+	if b == zp.DefaultBackend {
 		return "", errors.New("a sequence needs an explicit backend")
 	}
 	if _, err := ParseBackend(b.String()); err != nil {
@@ -282,8 +282,8 @@ func checkHash(h string) error {
 	return nil
 }
 
-func unitName(u zeroparse.PositionUnit) (string, error) {
-	if u != zeroparse.CodePoints && u != zeroparse.Bytes {
+func unitName(u zp.PositionUnit) (string, error) {
+	if u != zp.CodePoints && u != zp.Bytes {
 		return "", fmt.Errorf("unknown unit %d", u)
 	}
 	return u.String(), nil

@@ -10,7 +10,7 @@ app.conf:2:8: expected a number or a string
 ```
 
 Two things make this: a grammar whose errors have readable messages (`@error`), and a few lines of Go that print the
-position of the `*zeroparse.SyntaxError`.
+position of the `*zp.SyntaxError`.
 
 ```zp
 // settings.zp
@@ -51,7 +51,7 @@ var grammar string
 
 // report formats a syntax error with the line it is on and a caret under the column.
 func report(file, src string, err error) string {
-	var se *zeroparse.SyntaxError
+	var se *zp.SyntaxError
 	if !errors.As(err, &se) {
 		return file + ": " + err.Error()
 	}
@@ -76,7 +76,7 @@ func report(file, src string, err error) string {
 }
 
 func main() {
-	p, err := zeroparse.CompileSource(grammar, "main")
+	p, err := zp.CompileSource(grammar, "main")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -121,7 +121,7 @@ app.conf:1:11: expected ';'
 
 ## How It Works
 
-- **`*zeroparse.SyntaxError` has the position.** `Line` and `Col` are 1-based. `Message()` is the text without the
+- **`*zp.SyntaxError` has the position.** `Line` and `Col` are 1-based. `Message()` is the text without the
   position, and `Error()` is `line:col: message`. Other errors, such as a failed action, are not syntax errors and have
   no position, which is why `report` falls back to `err.Error()`.
 - **`@error` makes the message.** Without it the message would be `syntax error: expected "=", ...`: the list of every
@@ -135,7 +135,7 @@ app.conf:1:11: expected ';'
 - **Whitespace is quiet.** `ws` consumes spaces inside a lookahead, which records no failures. With `[ \t\r\n]*` every
   list of expected tokens would contain a space, a tab and a line break.
 - **Columns count code points** by default, so a caret under non-ASCII text lines up with the characters, not the
-  bytes, but not with their display width (a wide character or a combining mark). With `zeroparse.WithUnit(zeroparse.Bytes)`,
+  bytes, but not with their display width (a wide character or a combining mark). With `zp.WithUnit(zp.Bytes)`,
   `Col` counts bytes instead. A tab is one column, so `report` copies the tabs of the source line into the caret line.
 - **The end of the input.** An error after the last line break has a line number one past the last line, so `report`
   shows an empty line instead of indexing past the end.

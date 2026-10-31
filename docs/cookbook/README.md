@@ -52,7 +52,7 @@ times differ from machine to machine.
 
 | Recipe | What it shows |
 |:--|:--|
-| [Report an error with its source line and a caret](error-carets.md) | `@error` messages and the position of a `*zeroparse.SyntaxError`, printed like a compiler |
+| [Report an error with its source line and a caret](error-carets.md) | `@error` messages and the position of a `*zp.SyntaxError`, printed like a compiler |
 | [Report several errors in one run](several-errors.md) | `#recover`: a tree of what could be read, the errors, and what to watch for in the `skip` |
 | [Keep going after a bad statement in nested blocks](recover-statements.md) | Recovery at the statement rule shared by every block: errors from all levels and the statements that were fine |
 | [Find out why a grammar is slow](slow-grammar.md) | `zp profile` on a 20,000-line input: which rule wastes input, the change that fixes it, and the profile that proves it |

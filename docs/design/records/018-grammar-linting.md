@@ -263,7 +263,7 @@ projects that do not want a kind of finding at all.
 
 - **Reporting from `Compile`**: compile errors stop compilation; most findings should not, and hints need not be seen
   every time. A separate entry point keeps compilation fast and quiet.
-- **One function next to `Compile` in package `zeroparse`**: linting is one call for most users, but the language server
+- **One function next to `Compile` in package `zp`**: linting is one call for most users, but the language server
   lints a grammar it has already compiled (`Config.RunUnchecked`) and offers the proven rewrites (`Rewrites`), and
   the checks, severities and findings are a vocabulary of their own. Package `lint` holds them all, so the editor
   uses the same API as other programs.

@@ -19,7 +19,7 @@ a result panel. Every edit re-parses after a short pause; the grammar is compile
 |:--|:--|
 | **Example** | Loads one of the grammars of [`examples/`](../../examples/README.md) or [`parsers/`](../../parsers/README.md) with a sample input: the calculator (Operators Rule and left-recursive), JSON, CSV, XML (and an XML error), the indentation outline, and minilang (and a minilang input that `#recover` recovers from) |
 | **Start** | The start rule (`zp parse -s`), one of the rules marked `@start`. The default is the grammar's default start rule. A selected rule that is not a start rule, as in a shared link or after an edit of the grammar, stays selected and is reported as an error |
-| **Options** | The position unit (code points or bytes, `-unit`), the backend (`-backend`) and recognition mode (`zeroparse.RecognizeOnly`, which builds no tree), **Default value** (`-default-value`: drops value actions and declared rule types, so the tree is the default node tree; predicates still run), and **Source info** (`-source-info`: the rule of each node and the names of its captures, which `zp parse` leaves out by default). Like `zp parse -check`, recognition reports the same syntax errors as a full parse; where the command prints `ok` only for an input without errors, the playground also shows an input that `#recover` recovered from as a match, with its errors |
+| **Options** | The position unit (code points or bytes, `-unit`), the backend (`-backend`) and recognition mode (`zp.RecognizeOnly`, which builds no tree), **Default value** (`-default-value`: drops value actions and declared rule types, so the tree is the default node tree; predicates still run), and **Source info** (`-source-info`: the rule of each node and the names of its captures, which `zp parse` leaves out by default). Like `zp parse -check`, recognition reports the same syntax errors as a full parse; where the command prints `ok` only for an input without errors, the playground also shows an input that `#recover` recovered from as a match, with its errors |
 | **WASM compiler** | Go is the default. Sites built in dual mode also offer TinyGo. The selection stays in the shared URL's `compiler` query parameter; a TinyGo link on a Go-only site shows an unavailable message |
 | **Format** | Formats the grammar like `zp fmt`, keeping comments. The change can be undone |
 | **Share** | Copies a link that holds the grammar, the input and the options (see [shared links](#shared-links)) |
@@ -76,7 +76,7 @@ In the browser, the Go code runs on the JavaScript engine's stack, which is far 
 program. The playground therefore limits nesting more than the engine does:
 
 - With the closure and bytecode backends (and the default), recursive rule calls may nest at most **600** deep, instead of
-  100,000 (`zeroparse.WithMaxDepth`). Deeper input ends with the engine's error `nesting too deep: more than 600 nested recursive rule calls`.
+  100,000 (`zp.WithMaxDepth`). Deeper input ends with the engine's error `nesting too deep: more than 600 nested recursive rule calls`.
   A JSON array nests three recursive rule calls per level, so this allows about 200 nested arrays, where `zp parse` handles
   thousands. The bytecode-iterative backend keeps rule calls on its own stack and has no such limit.
 - Trees nested more than **400** levels deep are not shown: the input matches, and the status says how deep the tree

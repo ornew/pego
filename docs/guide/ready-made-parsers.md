@@ -415,7 +415,7 @@ Do not mix units: if you parse with `Bytes` and report to an editor that counts 
 
 ## Errors
 
-A parse that fails returns a `*SyntaxError` of the parser's own package (not `zeroparse.SyntaxError`: the parsers do not
+A parse that fails returns a `*SyntaxError` of the parser's own package (not `zp.SyntaxError`: the parsers do not
 import ZeroParse). Use `errors.As`:
 
 ```go
@@ -476,7 +476,7 @@ in its module, so you can use it with the engine without copying it. Find it in 
 go list -m -f '{{.Dir}}' github.com/ornew/zeroparse/parsers/csv    # the directory of the module, with csv.zp in it
 ```
 
-and give it to `zp parse`, or read it in Go and compile it with `zeroparse.CompileSource`. The CSV grammar marks its
+and give it to `zp parse`, or read it in Go and compile it with `zp.CompileSource`. The CSV grammar marks its
 records with `#stream`, so a file larger than memory can be read one record at a time:
 
 ```bash

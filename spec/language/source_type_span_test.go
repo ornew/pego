@@ -25,7 +25,7 @@ func TestCanonicalTypeDeclarationSpans(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assertCanonicalTypeSpans(t, p, tc.source, tc.spans)
-			manual, err := zeroparse.ParseGrammar(tc.source)
+			manual, err := zp.ParseGrammar(tc.source)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -36,14 +36,14 @@ func TestCanonicalTypeDeclarationSpans(t *testing.T) {
 	}
 }
 
-func assertCanonicalTypeSpans(t *testing.T, p *zeroparse.Parser, source string, expected []string) {
+func assertCanonicalTypeSpans(t *testing.T, p *zp.Parser, source string, expected []string) {
 	t.Helper()
-	manual, err := zeroparse.ParseGrammar(source)
+	manual, err := zp.ParseGrammar(source)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-		n, err := p.Parse(source, zeroparse.WithBackend(backend))
+	for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+		n, err := p.Parse(source, zp.WithBackend(backend))
 		if err != nil {
 			t.Fatalf("%v: %v", backend, err)
 		}

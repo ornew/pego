@@ -15,17 +15,17 @@ import (
 
 // profileKeys are the columns profile can sort by, with how to compare two rules (descending,
 // except for the name).
-var profileKeys = map[string]func(a, b *zeroparse.RuleProfile) int{
-	"self":     func(a, b *zeroparse.RuleProfile) int { return cmp.Compare(b.SelfTime, a.SelfTime) },
-	"time":     func(a, b *zeroparse.RuleProfile) int { return cmp.Compare(b.Time, a.Time) },
-	"calls":    func(a, b *zeroparse.RuleProfile) int { return cmp.Compare(b.Calls, a.Calls) },
-	"evals":    func(a, b *zeroparse.RuleProfile) int { return cmp.Compare(b.Evals, a.Evals) },
-	"memo":     func(a, b *zeroparse.RuleProfile) int { return cmp.Compare(b.MemoHits, a.MemoHits) },
-	"failed":   func(a, b *zeroparse.RuleProfile) int { return cmp.Compare(b.Failed, a.Failed) },
-	"repeats":  func(a, b *zeroparse.RuleProfile) int { return cmp.Compare(b.Repeats, a.Repeats) },
-	"consumed": func(a, b *zeroparse.RuleProfile) int { return cmp.Compare(b.Consumed, a.Consumed) },
-	"wasted":   func(a, b *zeroparse.RuleProfile) int { return cmp.Compare(b.Wasted, a.Wasted) },
-	"name":     func(a, b *zeroparse.RuleProfile) int { return cmp.Compare(a.Rule, b.Rule) },
+var profileKeys = map[string]func(a, b *zp.RuleProfile) int{
+	"self":     func(a, b *zp.RuleProfile) int { return cmp.Compare(b.SelfTime, a.SelfTime) },
+	"time":     func(a, b *zp.RuleProfile) int { return cmp.Compare(b.Time, a.Time) },
+	"calls":    func(a, b *zp.RuleProfile) int { return cmp.Compare(b.Calls, a.Calls) },
+	"evals":    func(a, b *zp.RuleProfile) int { return cmp.Compare(b.Evals, a.Evals) },
+	"memo":     func(a, b *zp.RuleProfile) int { return cmp.Compare(b.MemoHits, a.MemoHits) },
+	"failed":   func(a, b *zp.RuleProfile) int { return cmp.Compare(b.Failed, a.Failed) },
+	"repeats":  func(a, b *zp.RuleProfile) int { return cmp.Compare(b.Repeats, a.Repeats) },
+	"consumed": func(a, b *zp.RuleProfile) int { return cmp.Compare(b.Consumed, a.Consumed) },
+	"wasted":   func(a, b *zp.RuleProfile) int { return cmp.Compare(b.Wasted, a.Wasted) },
+	"name":     func(a, b *zp.RuleProfile) int { return cmp.Compare(a.Rule, b.Rule) },
 }
 
 // profileCmd parses the input once with profiling and prints the cost of each rule.
@@ -45,10 +45,10 @@ func profileCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	if *format != "text" && *format != "json" {
 		return fmt.Errorf("unknown format %q", *format)
 	}
-	var prof zeroparse.Profile
-	_, perr := p.Parse(src, append(opts, zeroparse.WithProfile(&prof))...)
+	var prof zp.Profile
+	_, perr := p.Parse(src, append(opts, zp.WithProfile(&prof))...)
 	rules := slices.Clone(prof.Rules)
-	slices.SortStableFunc(rules, func(a, b *zeroparse.RuleProfile) int {
+	slices.SortStableFunc(rules, func(a, b *zp.RuleProfile) int {
 		return cmp.Or(less(a, b), cmp.Compare(a.Rule, b.Rule))
 	})
 	if *rows > 0 && len(rules) > *rows {
@@ -58,7 +58,7 @@ func profileCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 		// The profile with the rules shown, in their order, and the hints
 		out := struct {
 			Result string `json:"result"`
-			zeroparse.Profile
+			zp.Profile
 			Hints []string `json:"hints"`
 		}{"ok", prof, prof.Hints()}
 		out.Rules = rules
@@ -72,7 +72,7 @@ func profileCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	return printProfile(stdout, &prof, rules, perr, len(prof.Rules))
 }
 
-func printProfile(w io.Writer, prof *zeroparse.Profile, rules []*zeroparse.RuleProfile, perr error, all int) error {
+func printProfile(w io.Writer, prof *zp.Profile, rules []*zp.RuleProfile, perr error, all int) error {
 	result := "ok"
 	if perr != nil {
 		result = strings.ReplaceAll(perr.Error(), "\n", "; ")

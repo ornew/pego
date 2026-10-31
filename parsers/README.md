@@ -66,7 +66,7 @@ Each directory holds:
 
 | File | Contents |
 |:--|:--|
-| `<language>.zp` | The grammar. It can be used with the engine too (`zeroparse.CompileSource`), for streaming, incremental parsing or the `zp` tools. |
+| `<language>.zp` | The grammar. It can be used with the engine too (`zp.CompileSource`), for streaming, incremental parsing or the `zp` tools. |
 | `parser.go`, `api.go`, `types/types.go` | The parser generated from the grammar, the names it re-exports from the runtime, and the Go types of the grammar (the package `types`). The parser imports the runtime package `github.com/ornew/zeroparse/runtime` (generated with `-runtime import`). Do not edit them. |
 | other `.go` files | Code written for the language: documentation, conversions to Go values, helpers. Those in `types/` hold the methods of the types of the grammar (a method can only be declared in the package of its type); what needs the parser or the decoder is a function of the module instead. |
 | `*_test.go` | Tests against the language's specification, conformance suites and reference implementations; examples; benchmarks |

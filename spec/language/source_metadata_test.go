@@ -25,9 +25,9 @@ func TestCanonicalPackageMetadataParity(t *testing.T) {
 		"package p\n\n// unowned\n",
 	} {
 		t.Run(src, func(t *testing.T) {
-			manual, manualErr := zeroparse.ParseGrammar(src)
-			for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-				n, err := p.Parse(src, zeroparse.WithBackend(backend))
+			manual, manualErr := zp.ParseGrammar(src)
+			for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+				n, err := p.Parse(src, zp.WithBackend(backend))
 				if (err == nil) != (manualErr == nil) {
 					t.Fatalf("acceptance differs: manual=%v canonical=%v", manualErr, err)
 				}

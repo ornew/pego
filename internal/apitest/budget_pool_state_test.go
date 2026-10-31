@@ -12,10 +12,10 @@ import (
 
 // leastSteps returns the least Budget limit under which the parse succeeds, and the error text of
 // the parse one step below it.
-func leastSteps(t *testing.T, p *zeroparse.Parser, in string) (uint64, string) {
+func leastSteps(t *testing.T, p *zp.Parser, in string) (uint64, string) {
 	t.Helper()
 	fails := func(n uint64) (bool, string) {
-		_, err := p.Parse(in, zeroparse.WithLimits(zeroparse.Limits{Budget: n}))
+		_, err := p.Parse(in, zp.WithLimits(zp.Limits{Budget: n}))
 		if err == nil {
 			return false, ""
 		}
@@ -44,7 +44,7 @@ func leastSteps(t *testing.T, p *zeroparse.Parser, in string) (uint64, string) {
 // the memo storage that an earlier parse left in a pooled parser, nor on when a collection empties
 // the pool.
 func TestBudgetChargeIndependentOfPoolState(t *testing.T) {
-	p, err := zeroparse.CompileSource(`@start
+	p, err := zp.CompileSource(`@start
 rule main = (pair / item ","?)* $$
 rule pair = item ";"
 rule item = word / num
@@ -80,11 +80,11 @@ rule num = [0-9]+`, "main")
 	want, wantMsg := leastSteps(t, p, input)
 	for _, s := range states {
 		s.prep()
-		if _, err := p.Parse(input, zeroparse.WithLimits(zeroparse.Limits{Budget: want})); err != nil {
+		if _, err := p.Parse(input, zp.WithLimits(zp.Limits{Budget: want})); err != nil {
 			t.Errorf("%s: limit %d fails: %v", s.name, want, err)
 		}
 		s.prep()
-		_, err := p.Parse(input, zeroparse.WithLimits(zeroparse.Limits{Budget: want - 1}))
+		_, err := p.Parse(input, zp.WithLimits(zp.Limits{Budget: want - 1}))
 		if err == nil || err.Error() != wantMsg {
 			t.Errorf("%s: limit %d: error %v, want %q", s.name, want-1, err, wantMsg)
 		}

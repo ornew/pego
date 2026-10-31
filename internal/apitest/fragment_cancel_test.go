@@ -15,14 +15,14 @@ func TestParsePrefixCancellation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, b := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
+	for _, b := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		r, err := p.ParsePrefix("main", "abctail", zeroparse.WithBackend(b), zeroparse.WithContext(ctx))
+		r, err := p.ParsePrefix("main", "abctail", zp.WithBackend(b), zp.WithContext(ctx))
 		if !errors.Is(err, context.Canceled) || r.Node != nil || r.Consumed != 0 || r.ConsumedBytes != 0 {
 			t.Fatalf("cancelled: %+v %v", r, err)
 		}
-		r, err = p.ParsePrefix("main", "abctail", zeroparse.WithBackend(b))
+		r, err = p.ParsePrefix("main", "abctail", zp.WithBackend(b))
 		if err != nil || r.ConsumedBytes != 3 {
 			t.Fatalf("retry: %+v %v", r, err)
 		}

@@ -2,7 +2,7 @@
 //
 // A grammar is written in the ZeroParse grammar language (see ParseGrammar), built as an AST with the grammar
 // package, or decoded from JSON. Compile turns it into a Parser, and Parser.Parse parses input with it.
-package zeroparse
+package zp
 
 import (
 	"context"
@@ -143,7 +143,7 @@ type ParseOption func(*engine.ParseOptions)
 // fails when the parser reaches a unit beyond the limit.
 type Limits = limits.Limits
 
-// Unlimited is the value of a limit that disables it: Limits{Budget: zeroparse.Unlimited}.
+// Unlimited is the value of a limit that disables it: Limits{Budget: zp.Unlimited}.
 const Unlimited = limits.Unlimited
 
 // LimitError describes a reservation that would exceed a limit.

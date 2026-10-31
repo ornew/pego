@@ -25,13 +25,13 @@ type Options struct {
 	// Start is the start rule. Empty selects the grammar's default start rule.
 	Start string
 	// Backend is the backend of the Documents and the fresh parses. The default backend is Closure.
-	Backend zeroparse.Backend
+	Backend zp.Backend
 	// Unit is the position unit of the Documents, the fresh parses and the edits. The zero value is
 	// CodePoints.
-	Unit zeroparse.PositionUnit
+	Unit zp.PositionUnit
 	// Limits bound the Documents and the fresh parses; see Sequence.Limits. The zero value selects
 	// the defaults.
-	Limits zeroparse.Limits
+	Limits zp.Limits
 	// Seed selects the generated sequences. The same seed, options and package version generate the same
 	// sequences with the same Go release, but a saved Sequence, not a seed, is the reproducer.
 	Seed uint64
@@ -93,8 +93,8 @@ func (f *Failure) Unwrap() error { return f.Err }
 // checkpoint matched a fresh parse and a *Failure for the first sequence that did not, after saving it to
 // opts.SaveFailures if set. Other errors report an unusable grammar, options or failure directory.
 func Fuzz(src []byte, opts Options) error {
-	if opts.Backend == zeroparse.DefaultBackend {
-		opts.Backend = zeroparse.Closure
+	if opts.Backend == zp.DefaultBackend {
+		opts.Backend = zp.Closure
 	}
 	if opts.Sequences <= 0 {
 		opts.Sequences = DefaultSequences
@@ -108,7 +108,7 @@ func Fuzz(src []byte, opts Options) error {
 	if _, err := unitName(opts.Unit); err != nil {
 		return err
 	}
-	p, err := zeroparse.CompileSource(string(src), opts.Start)
+	p, err := zp.CompileSource(string(src), opts.Start)
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ var sequenceDone func(*Sequence)
 
 // run applies n generated operations to a Document of seq's initial text, appending them to seq, and
 // stops at the first failure.
-func run(p *zeroparse.Parser, seq *Sequence, g *generator, n int) error {
+func run(p *zp.Parser, seq *Sequence, g *generator, n int) error {
 	r, err := start(p, seq)
 	if err != nil {
 		return err
@@ -232,7 +232,7 @@ func (g *generator) next(r *replayer, last bool) Operation {
 		end += g.rng.IntN(min(n-start, 8) + 1)
 	}
 	op := Operation{Kind: Edit, Start: start, End: end, Text: g.replacement()}
-	if r.seq.Unit == zeroparse.Bytes {
+	if r.seq.Unit == zp.Bytes {
 		op.Start, op.End = b[start], b[end]
 	}
 	return op

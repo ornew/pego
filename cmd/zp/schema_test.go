@@ -30,7 +30,7 @@ func TestSchemaExport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := zeroparse.CompileSource(schemaGrammar, "main")
+	s, err := zp.CompileSource(schemaGrammar, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

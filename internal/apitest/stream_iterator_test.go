@@ -28,16 +28,16 @@ func TestPublicStreamIteratorLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []zeroparse.Backend{zeroparse.Closure, zeroparse.Bytecode, zeroparse.BytecodeIterative} {
-		for _, unit := range []zeroparse.PositionUnit{zeroparse.CodePoints, zeroparse.Bytes} {
+	for _, backend := range []zp.Backend{zp.Closure, zp.Bytecode, zp.BytecodeIterative} {
+		for _, unit := range []zp.PositionUnit{zp.CodePoints, zp.Bytes} {
 			r := &publicIteratorReader{Reader: strings.NewReader("éa")}
-			it, err := p.Iterate(r, zeroparse.WithBackend(backend), zeroparse.WithUnit(unit))
+			it, err := p.Iterate(r, zp.WithBackend(backend), zp.WithUnit(unit))
 			if err != nil || r.reads != 0 {
 				t.Fatalf("%s/%s eager construction: err=%v reads=%d", backend, unit, err, r.reads)
 			}
 			first, ok, err := it.Next()
 			wantEnd := 1
-			if unit == zeroparse.Bytes {
+			if unit == zp.Bytes {
 				wantEnd = 2
 			}
 			if err != nil || !ok || first == nil || first.Start() != 0 || first.End() != wantEnd || r.reads == 0 {
@@ -68,7 +68,7 @@ func TestPublicStreamIteratorLifecycle(t *testing.T) {
 	}
 	early.Close()
 	early.Close()
-	if n, ok, err := early.Next(); n != nil || ok || err != zeroparse.ErrStreamClosed {
+	if n, ok, err := early.Next(); n != nil || ok || err != zp.ErrStreamClosed {
 		t.Fatalf("early close: %v %v %v", n, ok, err)
 	}
 
@@ -102,10 +102,10 @@ func TestPublicStreamIteratorAdmission(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if it, err := stream.Iterate(strings.NewReader("a"), zeroparse.RecognizeOnly()); it != nil || err == nil {
+	if it, err := stream.Iterate(strings.NewReader("a"), zp.RecognizeOnly()); it != nil || err == nil {
 		t.Fatalf("recognition admission: it=%v err=%v", it, err)
 	}
-	if it, err := stream.Iterate(strings.NewReader("a"), zeroparse.WithBackend(zeroparse.Backend(99))); it != nil || err == nil {
+	if it, err := stream.Iterate(strings.NewReader("a"), zp.WithBackend(zp.Backend(99))); it != nil || err == nil {
 		t.Fatalf("unknown backend admission: it=%v err=%v", it, err)
 	}
 }

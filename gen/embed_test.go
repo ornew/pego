@@ -19,7 +19,7 @@ func TestGenerateGoEmbeddedPackageBuilds(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a generated parser")
 	}
-	g, err := zeroparse.ParseGrammar(`type Pair = { Key node[string]; Value node[string] }
+	g, err := zp.ParseGrammar(`type Pair = { Key node[string]; Value node[string] }
 @start
 rule main Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`)
 	if err != nil {

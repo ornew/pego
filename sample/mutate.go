@@ -30,7 +30,7 @@ func (g *Generator) Invalid() (Invalid, error) {
 			if in == base {
 				continue
 			}
-			if _, err := g.p.Parse(in, zeroparse.WithExpectations()); err != nil {
+			if _, err := g.p.Parse(in, zp.WithExpectations()); err != nil {
 				return Invalid{Input: in, Base: base, Mutation: desc, Err: err}, nil
 			}
 		}

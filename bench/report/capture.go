@@ -44,7 +44,7 @@ var tsModes = []struct{ name, entry string }{
 // captureTS generates a TypeScript parser for every workload, measures each entry point in count
 // rounds of fresh Node processes (bench/ts-parse.mjs) and returns the results with a header.
 func captureTS(root, commit, work, node string, count int) ([]byte, error) {
-	zp, err := buildZP(root, work)
+	zpBin, err := buildZP(root, work)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func captureTS(root, commit, work, node string, count int) ([]byte, error) {
 			return nil, err
 		}
 		args := []string{"gen", "-lang", "ts", "-types", "-recognize", "-g", filepath.Join(root, w.grammar), "-o", filepath.Join(work, "ts", w.name)}
-		if _, err := execOut(root, nil, zp, args...); err != nil {
+		if _, err := execOut(root, nil, zpBin, args...); err != nil {
 			return nil, err
 		}
 	}
@@ -138,7 +138,7 @@ func parserGenArgs(root, name string) ([]string, error) {
 // the generated TypeScript parser.ts and of that file compressed with gzip -9. The embedded
 // TypeScript runtime is common to all parsers and is recorded once as parser "runtime".
 func captureSizes(root, commit, work string) ([]byte, error) {
-	zp, err := buildZP(root, work)
+	zpBin, err := buildZP(root, work)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func captureSizes(root, commit, work string) ([]byte, error) {
 			return nil, err
 		}
 		out := filepath.Join(work, "size-ts", name)
-		if _, err := execOut(root, nil, zp, append(append([]string{"gen", "-lang", "ts"}, args...), "-o", out)...); err != nil {
+		if _, err := execOut(root, nil, zpBin, append(append([]string{"gen", "-lang", "ts"}, args...), "-o", out)...); err != nil {
 			return nil, err
 		}
 		raw, gz, err := sizeOfFile(filepath.Join(out, "parser.ts"))

@@ -101,7 +101,7 @@ func TestGeneratedParsersAreUpToDate(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		gr, err := zeroparse.ParseGrammar(string(src))
+		gr, err := zp.ParseGrammar(string(src))
 		if err != nil {
 			t.Fatalf("%s:%v", g.grammar, err)
 		}
@@ -130,15 +130,15 @@ func TestGeneratedParsersAreUpToDate(t *testing.T) {
 func TestBackends(t *testing.T) {
 	backends := []struct {
 		name string
-		b    zeroparse.Backend
-	}{{"closure", zeroparse.Closure}, {"bytecode", zeroparse.Bytecode}, {"iterative", zeroparse.BytecodeIterative}}
+		b    zp.Backend
+	}{{"closure", zp.Closure}, {"bytecode", zp.Bytecode}, {"iterative", zp.BytecodeIterative}}
 	for _, g := range generations(t) {
 		t.Run(filepath.Dir(g.grammar), func(t *testing.T) {
 			src, err := os.ReadFile(g.grammar)
 			if err != nil {
 				t.Fatal(err)
 			}
-			p, err := zeroparse.CompileSource(string(src), "main")
+			p, err := zp.CompileSource(string(src), "main")
 			if err != nil {
 				t.Fatalf("%s:%v", g.grammar, err)
 			}
@@ -155,9 +155,9 @@ func TestBackends(t *testing.T) {
 				for i, b := range backends {
 					// Print the tree and the errors, including those recovered with #recover.
 					var got string
-					opts := []zeroparse.ParseOption{zeroparse.WithBackend(b.b)}
+					opts := []zp.ParseOption{zp.WithBackend(b.b)}
 					if g.config.Expectations {
-						opts = append(opts, zeroparse.WithExpectations())
+						opts = append(opts, zp.WithExpectations())
 					}
 					n, err := p.Parse(string(data), opts...)
 					if n != nil {
