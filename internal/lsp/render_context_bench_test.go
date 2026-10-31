@@ -31,7 +31,7 @@ func renderBenchmarkSource(fields int) string {
 func renderBenchmarkInputs(tb testing.TB) map[string]string {
 	tb.Helper()
 	sources := map[string]string{"fields512": renderBenchmarkSource(512)}
-	for name, path := range map[string]string{"json": "../../parsers/json/json.zp", "source-grammar": "../../zeroparse.zp"} {
+	for name, path := range map[string]string{"json": "../../parsers/json/json.zp", "source-grammar": "../../zp.zp"} {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			tb.Fatal(err)

@@ -15,7 +15,7 @@ This document describes the repository layout and architecture, how to run tests
 | `editors/vscode/` | VS Code extension (Node.js, not part of the Go module): language configuration, TextMate grammar (`syntaxes/zp.tmLanguage.json`) and a client that starts `zp lsp` |
 | `sample/` | Generation of inputs that a grammar accepts, coverage reports, near-miss invalid inputs and a fuzzing helper (`Generate`, `New`, `Seed`). Public package. |
 | `editfuzz/` | Random edit sequences checked against fresh parses, their minimization, saved sequences and their replay (`Fuzz`, `Minimize`, `Replay`, `Load`, `Save`); the library behind `zp edit-fuzz`. Public package. |
-| `zeroparse.zp` | Typed source grammar and recoverable syntax tree; the generated source-parser integration is [proposed](design/records/054-generated-grammar-source-parser.md). |
+| `zp.zp` | Typed source grammar and recoverable syntax tree; the generated source-parser integration is [proposed](design/records/054-generated-grammar-source-parser.md). |
 | `internal/syntax/` | Lexer and parser for ZeroParse source code (source → `grammar.Grammar`) |
 | `internal/compile/` | Compiler and static analysis: type checking, call and dependency analysis, the walk of rule bodies that decides their static facts, and the bytecode compiler |
 | `internal/engine/` | Parser runtime: `Compile`, compiled grammars, streams and budget controls, built on `internal/engine/core/`, the closure backend of `internal/engine/closure/`, the bytecode VMs of `internal/engine/vm/` and the Document of `internal/engine/document/`. It does not import the generators or the output schema: package `gen` joins the generators to it, and the root package the schema export |
@@ -163,7 +163,7 @@ TypeScript is printed from the same Flow IR as Go (`internal/gen/tsgen/flow.go`,
 
 `sample` tests generate inputs for every example grammar and every grammar of the shared test corpus (`internal/engine/sample_test.go`, with the corpus of `internal/gentest`) and parse them on every backend.
 
-`go generate ./spec/language` renders the simple grammar view from `zeroparse.zp` and `spec/language/syntax.md.tmpl`; edit the template rather than the generated page. `spec/language/source_grammar_test.go` verifies the simplified display against the canonical source grammar, checks concrete trees and recovery across backends, and builds a generated typed Go consumer. `spec/language/syntax_test.go` runs the grammar of [Grammar Syntax](../spec/language/syntax.md) on every `.zp` file and every `zp` code block of the repository and requires it to agree with the parser of `internal/syntax`.
+`go generate ./spec/language` renders the simple grammar view from `zp.zp` and `spec/language/syntax.md.tmpl`; edit the template rather than the generated page. `spec/language/source_grammar_test.go` verifies the simplified display against the canonical source grammar, checks concrete trees and recovery across backends, and builds a generated typed Go consumer. `spec/language/syntax_test.go` runs the grammar of [Grammar Syntax](../spec/language/syntax.md) on every `.zp` file and every `zp` code block of the repository and requires it to agree with the parser of `internal/syntax`.
 
 `cd site && go test ./...` builds the site and checks its pages and links; `go test ./cmd/playground` runs the WebAssembly smoke test when Node is installed.
 Production site builds retain the published current WASM/runtime pair alongside the new pair, using a bounded

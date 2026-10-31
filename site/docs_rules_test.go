@@ -493,7 +493,7 @@ func TestDirectoryAndSiteLinkKinds(t *testing.T) {
 			t.Errorf("%s may link to a directory link of the tutorial", from)
 		}
 	}
-	rp, _ := linkTarget("spec/a.md", "https://github.com/ornew/zeroparse/blob/main/zeroparse.zp")
+	rp, _ := linkTarget("spec/a.md", "https://github.com/ornew/zeroparse/blob/main/zp.zp")
 	if linkAllowed(kindSpec, docKind(rp)) {
 		t.Error("the specification may link to a source file on GitHub")
 	}

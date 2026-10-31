@@ -11,7 +11,7 @@ var formatBenchmarkEdits []TextEdit
 
 func BenchmarkFormatEditsCancellation(b *testing.B) {
 	sources := map[string]string{"long-literal-crlf": "rule main = \"" + strings.Repeat("x", 8192) + "\"\r\n"}
-	for name, path := range map[string]string{"json": "../../parsers/json/json.zp", "source-grammar": "../../zeroparse.zp"} {
+	for name, path := range map[string]string{"json": "../../parsers/json/json.zp", "source-grammar": "../../zp.zp"} {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			b.Fatal(err)

@@ -7,7 +7,7 @@ below is written in ZeroParse itself and summarizes token structure and expressi
 forms. The chapters that define each construct remain normative for validation
 and meaning.
 
-The repository holds a full grammar of the language, `zeroparse.zp`, which is the input
+The repository holds a full grammar of the language, `zp.zp`, which is the input
 of the generated parser of grammar files. Its actions produce a typed source tree
 with comments, source forms, and recoverable error nodes. This tree is separate from
 the public `grammar.Grammar` AST.
@@ -23,7 +23,7 @@ This syntax view omits result types, Value Actions, captures, metadata attribute
 and recovery handling. Unnecessary grouping is removed while retaining
 parentheses required by precedence or source layout. Predicate Actions and matching pragmas remain, including
 the state that controls physical newlines. Generate the view with
-`zp fmt -syntax zeroparse.zp` or `grammar.FormatSyntax(g)` in Go. This is a
+`zp fmt -syntax zp.zp` or `grammar.FormatSyntax(g)` in Go. This is a
 readable projection: in other grammars, a predicate may depend on captures,
 constructed values or types that the simplified view omits.
 

@@ -20,7 +20,7 @@ import (
 
 func sourceGrammar(t *testing.T) (*zp.Parser, string) {
 	t.Helper()
-	src, err := os.ReadFile("../../zeroparse.zp")
+	src, err := os.ReadFile("../../zp.zp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestSourceGrammarMatchesDocumentation(t *testing.T) {
 		t.Fatal(err)
 	}
 	blocks := zpCodeBlocks(string(doc))
-	if len(blocks) != 1 || !strings.Contains(string(doc), "`zeroparse.zp`") || strings.Contains(string(doc), "](http") || strings.Contains(string(doc), "## Full Grammar") {
+	if len(blocks) != 1 || !strings.Contains(string(doc), "`zp.zp`") || strings.Contains(string(doc), "](http") || strings.Contains(string(doc), "## Full Grammar") {
 		t.Fatal("expected one simple grammar and a reference to the full source and no external link")
 	}
 	g, err := zp.ParseGrammar(src)

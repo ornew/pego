@@ -118,7 +118,7 @@ comment on a line when a token follows them on that line, those between the
 tokens of a rule expression and those inside the lists whose layout is kept
 apart, such as attribute arguments.
 
-The canonical `zeroparse.zp` grammar and its source adapter assign the same spans
+The canonical `zp.zp` grammar and its source adapter assign the same spans
 and owners as the hand-written frontend to every source-bearing node: the
 package clause, type and rule declarations, struct fields, operators lines and
 constructor field initializers, and the operands, member markers and closing

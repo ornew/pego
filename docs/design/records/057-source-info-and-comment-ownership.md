@@ -225,14 +225,14 @@ layout is stored separately in `OpenBreak`, `BodyBreak`, `CloseBreak` and
 `OneLine`; these fields preserve line placement around delimiters without
 changing normalized source ownership. The compiler and generators lower these
 wrappers transparently before semantic execution, so grouping adds no matching,
-value-frame, type, or bytecode semantics. The canonical `zeroparse.zp` parser must
+value-frame, type, or bytecode semantics. The canonical `zp.zp` parser must
 construct these nodes directly. The first interior-boundary formatter increment
 stores raw comment tokens in `SourceLayout` for selected Action Expression
 operand boundaries and constructor field names. It preserves normalized
 ownership and the JSON contract while keeping comments at their parsed physical
 boundary; its scope and remaining formatter work are described under
 [JSON and Formatting](#json-and-formatting).
-The canonical `zeroparse.zp` parser builds ownership for the package clause, type
+The canonical `zp.zp` parser builds ownership for the package clause, type
 declarations, rule declarations, struct fields, operators skip/operand/level/
 operator lines and constructor field initializers. A statement cannot see the
 boundary before it, so each boundary is recorded once after the item it
@@ -253,7 +253,7 @@ Expression and type operands, member markers, closing delimiters, callee-open
 boundaries and the type-expression header have no boundary of their own in the
 canonical grammar. A comment at a token belongs to the outermost node that starts
 (leading and detached groups) or ends (trailing group) at that token, and
-`zeroparse.zp` cannot say that without a wrapper node per expression. The grammar
+`zp.zp` cannot say that without a wrapper node per expression. The grammar
 instead keeps every comment-bearing gap between two tokens (`File.Gaps`): the
 trailing, leading and detached groups of the gap, whether the trailing group
 exists and whether a token follows. A gap node spans exactly the trivia, so the
@@ -335,7 +335,7 @@ sizes were:
 | Input | Source bytes | Parse ns/op before → after | B/op before → after | Allocs/op before → after | JSON bytes before → after |
 |:--|--:|--:|--:|--:|--:|
 | Small grammar | 26 | 1,290 → 1,401 | 2,488 → 3,080 | 19 → 19 | 423 → 1,408 |
-| Root `zeroparse.zp` | 22,964 | 964,262 → 1,204,372 | 2,919,964 → 3,304,963 | 8,338 → 8,409 | 287,710 → 1,050,989 |
+| Root `zp.zp` | 22,964 | 964,262 → 1,204,372 | 2,919,964 → 3,304,963 | 8,338 → 8,409 | 287,710 → 1,050,989 |
 | Commented grammar (64 rules) | 5,848 | 79,332 → 103,200 | 138,608 → 175,768 | 1,172 → 2,068 | 8,527 → 44,612 |
 
 These descriptive medians quantify source-parser and serialized-size costs for
@@ -357,7 +357,7 @@ validated, including owned boundary comments, strict and permissive JSON,
 structural validation and equivalent generated code and parse results.
 The in-progress raw interior-layout formatter increment is scoped to selected
 unary/lambda value boundaries and constructor field names. Canonical metadata
-construction in `zeroparse.zp` covers statements, list elements and, through the
+construction in `zp.zp` covers statements, list elements and, through the
 comment-bearing gaps between tokens and the claim in the source adapter, every
 node of expressions and types, and matches the hand-written frontend on the
 parity corpus. The public-AST adapter that builds those nodes from the canonical

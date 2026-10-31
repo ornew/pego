@@ -137,8 +137,8 @@ func TestLintFixActions(t *testing.T) {
 	}
 	// The grammar of the language server itself is not edited on a suggestion.
 	for _, resolve := range []bool{false, true} {
-		if got := fixActions(t, "file:///repo/zeroparse.zp", "@start\nrule main = \"a\"\nrule x = \"b\"\n", resolve)["unreachable-rule"]; got != nil {
-			t.Errorf("fixes for zeroparse.zp (resolve %v) = %q", resolve, got)
+		if got := fixActions(t, "file:///repo/zp.zp", "@start\nrule main = \"a\"\nrule x = \"b\"\n", resolve)["unreachable-rule"]; got != nil {
+			t.Errorf("fixes for zp.zp (resolve %v) = %q", resolve, got)
 		}
 	}
 }

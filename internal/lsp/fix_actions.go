@@ -79,7 +79,7 @@ func (d *document) fixTitle(f lint.Finding) (string, bool) {
 	case lint.CheckUselessLookahead:
 		return "Remove the lookahead that always succeeds", true
 	case lint.CheckUnreachableRule:
-		return "Remove the unused rule " + f.Rule, path.Base(d.uri) != "zeroparse.zp"
+		return "Remove the unused rule " + f.Rule, path.Base(d.uri) != "zp.zp"
 	}
 	return "", false
 }

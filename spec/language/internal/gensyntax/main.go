@@ -19,7 +19,7 @@ func main() {
 }
 
 func generate() error {
-	full, err := os.ReadFile("../../zeroparse.zp")
+	full, err := os.ReadFile("../../zp.zp")
 	if err != nil {
 		return err
 	}

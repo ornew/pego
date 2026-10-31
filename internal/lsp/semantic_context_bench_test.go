@@ -42,7 +42,7 @@ type semanticSourceCase struct{ name, text string }
 func semanticRepresentativeSources(tb testing.TB) []semanticSourceCase {
 	tb.Helper()
 	var sources []semanticSourceCase
-	for _, input := range []struct{ name, path string }{{"json", "../../parsers/json/json.zp"}, {"source-grammar", "../../zeroparse.zp"}} {
+	for _, input := range []struct{ name, path string }{{"json", "../../parsers/json/json.zp"}, {"source-grammar", "../../zp.zp"}} {
 		data, err := os.ReadFile(input.path)
 		if err != nil {
 			tb.Fatal(err)

@@ -212,7 +212,7 @@ A fix is offered for exactly these findings, because for each the proof below sh
 
 - **`char-class`, overlapping or repeated ranges.** The class is replaced by one with merged ranges. The proof is equality of the two code-point sets, checked at the ends of every range, with the negation unchanged. A class that also matches the punctuation between letters, such as `[A-z]`, gets no fix, because only the writer knows which characters were meant.
 - **`useless-lookahead`, a lookahead that always succeeds.** The lookahead is removed. The proof is that it holds only literals, character classes, any-character, groups, sequences, choices, options and repetitions, so it has no capture, cut, call, predicate, recovery or attribute; a lookahead consumes nothing and has no value. Only a lookahead that is itself an item of a sequence of at least three items qualifies. With fewer, what remains is no longer a tuple: in a rule `main = (g:(&"b"* "cc") => len($g.Value)) "d"` the label would capture the string node instead of a one-element tuple, and `len($g.Value)` would go from 1 to 2. Under a discard `-`, deleting it would move the `-` onto the next item (`"a" - &"b"* "c"` would become `"a" - "c"`), and a label, an operator or a repetition would lose its operand, so those get no fix.
-- **`unreachable-rule`, a rule no start rule reaches.** The rule definition, with its attributes and the comment lines that document it, is deleted. The proof is that no start rule reaches it, directly or through an inline action, so nothing calls it and no parse starts at it. A start rule is never deleted, a file-wide `lint:file-ignore` directive stays, and nothing is deleted from `zeroparse.zp`.
+- **`unreachable-rule`, a rule no start rule reaches.** The rule definition, with its attributes and the comment lines that document it, is deleted. The proof is that no start rule reaches it, directly or through an inline action, so nothing calls it and no parse starts at it. A start rule is never deleted, a file-wide `lint:file-ignore` directive stays, and nothing is deleted from `zp.zp`.
 
 These are not offered, because the tree or the values could change: removing a shadowed alternative (including a left-recursive one), changing a redundant optional or a nullable repetition, dropping an unused or duplicate capture (it changes the captured value or the node type), and any rewrite of a rule that is called or a lookahead that contains a call, a capture or a predicate.
 
@@ -1041,7 +1041,7 @@ first check and after the last. The probe covers responsive analysis with lint
 and every analysed request: semantic tokens, document symbols, formatting,
 hover, definition, highlights, completion, prepare-rename, references, rename
 and code actions. Name-based requests use the middle occurrence of the
-most-referenced rule. Inputs are the repository's parser grammars, `zeroparse.zp`,
+most-referenced rule. Inputs are the repository's parser grammars, `zp.zp`,
 the 64 KiB benchmark grammar, and three 256 KiB single-token inputs: a string
 literal, a comment and a character class. Each configuration ran three times
 and kept its run with the shortest longest interval; the probe was run three
@@ -1056,7 +1056,7 @@ This table was measured with a compiler stride of 256; the current stride is 16 
 | `python.zp` | 71,708 | 244–302 | 61–69 |
 | `golang.zp` | 56,593 | 235–336 | 49–53 |
 | 64 KiB benchmark grammar | 65,542 | 115–135 | 233–260 (formatting) |
-| other parser grammars and `zeroparse.zp` | 1,508–34,595 | 47–205 | 13–27 |
+| other parser grammars and `zp.zp` | 1,508–34,595 | 47–205 | 13–27 |
 | 256 KiB literal | 262,159 | 1,125–1,143 | 10–16 |
 | 256 KiB comment | 262,164 | 38–40 | 22–579 (hover) |
 | 256 KiB class | 262,158 | 53–92 | 14–22 |

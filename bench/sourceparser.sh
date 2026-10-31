@@ -14,7 +14,7 @@ export GOMAXPROCS
 export ZP_SOURCE_ROOT="$sourcebench_repo"
 mkdir "$sourcebench_dir/generated"
 cd "$sourcebench_repo"
-go run ./cmd/zp gen -g zeroparse.zp -module sourcebaseline/generated -types -o "$sourcebench_dir/generated"
+go run ./cmd/zp gen -g zp.zp -module sourcebaseline/generated -types -o "$sourcebench_dir/generated"
 cat > "$sourcebench_dir/go.mod" <<'MOD'
 module sourcebaseline
 
@@ -34,7 +34,7 @@ import (
 var sink any
 var samples = []struct{ Name, Src string }{
 	{"Small", `rule main = [a-z]+ #atomic`},
-	{"Self", read("zeroparse.zp")},
+	{"Self", read("zp.zp")},
 	{"Go", read("parsers/golang/golang.zp")},
 	{"Python", read("parsers/python/python.zp")},
 }

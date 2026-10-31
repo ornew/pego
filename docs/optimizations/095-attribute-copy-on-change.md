@@ -117,7 +117,7 @@ Pinned fingerprints (the baseline test binary includes the listed benchmark-only
 | Candidate `normalize_attributes.go` SHA-256 | `68b7f19aaae2bd0f374e78453ee3fcfe45127c856d28b49f9c178f8fdc2640bf` |
 | Candidate `normalize_attributes_test.go` SHA-256 | `5e8bcdfec6f319276ad2396c8f9ba129950fd39a0fc7208904c4d4d9d1480b5e` |
 | Candidate `compile.go` SHA-256 | `9ca60a5f32554ba6e99ab6c4018bdb4836ed9445bf581f7431598c94a9871242` |
-| `zeroparse.zp` grammar SHA-256 | `7567b967bc19ee30b7ebd0b7f09cdef6df0fe5157468b73bad22a543e57e0774` |
+| `zp.zp` grammar SHA-256 | `7567b967bc19ee30b7ebd0b7f09cdef6df0fe5157468b73bad22a543e57e0774` |
 | JSON grammar SHA-256 | `a14e28c3dce151bc42aa1d676ad020059344871af20bb8e3282947a76108db4b` |
 | Minilang grammar SHA-256 | `bf466e1f677b9b8f00c2a4378c141545f648ecb9c22c2c33246bad4cb968f930` |
 

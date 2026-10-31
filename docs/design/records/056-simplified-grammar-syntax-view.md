@@ -93,7 +93,7 @@ It rejects combining the mode with `-w` or `-l`; it is output-only. Ordinary
 
 Use `spec/language/syntax.md.tmpl` as the Markdown template, with one fenced-code
 placeholder for the full grammar and one for the simplified view. Generate
-`spec/language/syntax.md` from the exact root `zeroparse.zp` bytes for the full section and
+`spec/language/syntax.md` from the exact root `zp.zp` bytes for the full section and
 from the parsed grammar plus the same projection used by the Go API for the
 simple section. `go generate ./spec/language` refreshes the page deterministically.
 Keep the result as ordinary Markdown so the current site

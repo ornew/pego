@@ -133,7 +133,7 @@ func TestPollIntervalProbe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files = append(files, "../../zeroparse.zp")
+	files = append(files, "../../zp.zp")
 	// Single large tokens: work proportional to one token runs between per-token checks.
 	const large = 256 << 10
 	sources := map[string]string{

@@ -42,7 +42,7 @@ func TestSyntaxSummary(t *testing.T) {
 	if len(blocks) != 1 {
 		t.Fatalf("syntax.md has %d zp code blocks, want 1", len(blocks))
 	}
-	full, err := os.ReadFile("../../zeroparse.zp")
+	full, err := os.ReadFile("../../zp.zp")
 	if err != nil {
 		t.Fatal(err)
 	}

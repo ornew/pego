@@ -247,7 +247,7 @@ medians below were measured at source revision `90b4cf7`. Each operation parses
 the complete source string: `zp.ParseGrammar` for the manual frontend and
 generated Go `ParseAST` in CodePoints for the typed frontend. Compilation and
 code generation are outside the timed region. Small uses
-`rule main = [a-z]+ #atomic`; the other inputs are `zeroparse.zp`,
+`rule main = [a-z]+ #atomic`; the other inputs are `zp.zp`,
 `parsers/golang/golang.zp` and `parsers/python/python.zp`.
 
 | Grammar | Input bytes | Manual ns/op | Manual B/op | Manual allocs/op | Generated ns/op | Generated B/op | Generated allocs/op |

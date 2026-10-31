@@ -97,7 +97,7 @@ func BenchmarkAttributeNormalization(b *testing.B) {
 		"pragmas":    `rule main = ("a" #repeat(1, 3) #atomic ";") #recover(skip=[^;]+ ";") $$`,
 		"operators":  `rule main = #operators { skip " "*; operand [0-9]+; operand "(" main ")"; level { infix left "+" / "-" }; level product { infix left "*" / "/" } }`,
 	}
-	source, err := os.ReadFile("../../zeroparse.zp")
+	source, err := os.ReadFile("../../zp.zp")
 	if err != nil {
 		b.Fatal(err)
 	}
