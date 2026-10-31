@@ -162,7 +162,7 @@ func readPreviousAssetsWithTinyGo(raw string, tinygoOut **assetBytes) (*assetByt
 		d := json.NewDecoder(bytes.NewReader(b))
 		d.DisallowUnknownFields()
 		if err := d.Decode(&m); err != nil {
-			return nil, fmt.Errorf("published asset manifest: %w", err)
+			return nil, fmt.Errorf("published asset manifest at %s is not a ZeroParse manifest (for a first deployment, pass -previous-site ''): %w", base, err)
 		}
 		if err := d.Decode(new(any)); err != io.EOF {
 			return nil, errors.New("trailing published manifest data")
