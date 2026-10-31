@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/ornew/zeroparse/grammar"
 )
@@ -425,21 +426,25 @@ func at(rule string, p grammar.Pos) string {
 }
 
 func (k *classifier) show(e grammar.Expr) string {
-	s := grammar.FormatExpr(e)
-	s = strings.Join(strings.Fields(s), " ")
-	if len(s) > 40 {
-		s = s[:37] + "..."
-	}
-	return s
+	return abbreviate(grammar.FormatExpr(e))
 }
 
 func (k *classifier) showTerm(t grammar.Term) string {
-	s := grammar.FormatTerm(t)
+	return abbreviate(grammar.FormatTerm(t))
+}
+
+// abbreviate collapses the white space of the source text s and shortens it to at most 40 bytes,
+// cutting at a character boundary.
+func abbreviate(s string) string {
 	s = strings.Join(strings.Fields(s), " ")
-	if len(s) > 40 {
-		s = s[:37] + "..."
+	if len(s) <= 40 {
+		return s
 	}
-	return s
+	n := 37
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
+	}
+	return s[:n] + "..."
 }
 
 func (k *classifier) cause(class ComplexityClass, degree int, rule string, pos grammar.Pos, format string, args ...any) {

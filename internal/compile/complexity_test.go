@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/ornew/zeroparse/internal/starttest"
 	"github.com/ornew/zeroparse/internal/syntax"
@@ -237,5 +238,22 @@ func TestGrowingBindingsAlone(t *testing.T) {
 				t.Errorf("variables: %v, want the binding of s", alone)
 			}
 		})
+	}
+}
+
+// TestAbbreviate checks that a shortened source text stays valid UTF-8.
+func TestAbbreviate(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"a  b\n c", "a b c"},
+		{strings.Repeat("x", 40), strings.Repeat("x", 40)},
+		{strings.Repeat("x", 41), strings.Repeat("x", 37) + "..."},
+		{strings.Repeat("x", 36) + "ééé", strings.Repeat("x", 36) + "..."},
+		{strings.Repeat("x", 35) + "一" + strings.Repeat("y", 10), strings.Repeat("x", 35) + "..."},
+		{strings.Repeat("x", 34) + "一" + strings.Repeat("y", 10), strings.Repeat("x", 34) + "一..."},
+	} {
+		got := abbreviate(tc.in)
+		if got != tc.want || !utf8.ValidString(got) {
+			t.Errorf("abbreviate(%q) = %q, want %q", tc.in, got, tc.want)
+		}
 	}
 }
