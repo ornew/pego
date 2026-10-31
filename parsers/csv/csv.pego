@@ -3,8 +3,9 @@
 // The syntax is the RFC's, with the leniencies of encoding/csv: records end with CRLF or LF; a CR is
 // data unless it ends a line or the input; fields hold any character but the RFC's delimiters. A
 // byte order mark at the start is skipped. An empty line is a record with one empty field, as in the
-// RFC's grammar (Records in csv.go drops such records, as encoding/csv does). Records can be consumed
-// one at a time with the engine thanks to #stream (pego parse -stream); generated parsers ignore it.
+// RFC's grammar (Records in csv.go drops such records, as encoding/csv does). Thanks to #stream,
+// records can be consumed one at a time with the engine (pego parse -stream) and with a parser
+// generated with -stream (ParseStream and Iterate); this package is generated without it.
 package csv
 
 type File = { Records []Record }
