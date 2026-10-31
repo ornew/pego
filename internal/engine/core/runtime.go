@@ -610,11 +610,7 @@ func (p *Parser) CallBegin(r *Rule, min int) (st CallState, v *value.Node, ok, h
 				p.MemoProvisionalUses++
 			}
 		}
-		if e.Growing {
-			p.ReadDepth = Min2(p.ReadDepth, int(e.Depth))
-		} else if e.Unstable {
-			p.ReadDepth = 0
-		}
+		p.readResult(e)
 		if e.shifted {
 			p.moveResult(e)
 		}
@@ -676,6 +672,10 @@ func (p *Parser) CallEnd(r *Rule, st *CallState, v *value.Node, ok bool) (*value
 		}
 	}
 	p.ReadDepth = Min2(st.readDepth, p.ReadDepth)
+	if r.Leader && e != nil {
+		// The caller reads the final result of the leader as on a memo hit.
+		p.readResult(e)
+	}
 	p.MergeExpected(far, inner)
 	p.Hw = max(st.savedHW, p.Hw)
 	p.lw = Min2(st.savedLW, p.lw)
@@ -683,6 +683,17 @@ func (p *Parser) CallEnd(r *Rule, st *CallState, v *value.Node, ok bool) (*value
 		p.Pos = st.start
 	}
 	return v, ok
+}
+
+// readResult records that the current call read the memoized result e (ReadDepth): a growing
+// result, or an unstable one, which a call reads by reusing it or by finishing the growth that
+// produced it.
+func (p *Parser) readResult(e *MemoEntry) {
+	if e.Growing {
+		p.ReadDepth = Min2(p.ReadDepth, int(e.Depth))
+	} else if e.Unstable {
+		p.ReadDepth = 0
+	}
 }
 
 // GrowState is the grow-the-seed state of a left-recursion leader.

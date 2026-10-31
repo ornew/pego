@@ -165,6 +165,8 @@ the rule is called at the position again, or its memoization is no longer deferr
 			b.Do("lr.end", L("prev"))
 			b.Do("memo.settle", best)
 			b.Do("lr.leave", L("read"))
+			// The call that made the growth reads its final result as on a memo hit.
+			b.Do("lr.read", best)
 			b.SetReg(ops.Pos, C("memo.end", best))
 			b.Do("rec.truncate", L("rec"))
 			b.Do("rec.add", C("memo.errs", best))

@@ -2427,10 +2427,11 @@ export class Parser {
     return v;
   }
 
-  // readResult records that the current call reused the memoized result e: a growing one, or an
-  // unstable one. A call that read the seed of a growth that began before it, or an unstable
-  // result, is not memoized: its result can change. The seeds of growths that began and ended
-  // within the call have their final values.
+  // readResult records that the current call read the memoized result e: a growing one, or an
+  // unstable one, which a call reads by reusing it or by finishing the growth that produced it. A
+  // call that read the seed of a growth that began before it, or an unstable result, is not
+  // memoized: its result can change. The seeds of growths that began and ended within the call
+  // have their final values.
   readResult(e: MemoEntry): void {
     if (e.growing) {
       this.readDepth = Math.min(this.readDepth, e.depth);
@@ -2492,6 +2493,8 @@ export class Parser {
     this.seedPos = prevPos;
     best.unstable = this.readDepth <= this.growths && (best.silent || best.errs.length > 0);
     this.leaveCall(read);
+    // The call that made the growth reads its final result as on a memo hit.
+    this.readResult(best);
     this.pos = best.end;
     this.recovered.length = rec;
     for (const x of best.errs) {

@@ -211,3 +211,34 @@ func TestLeftRecursionMemberMemoRandom(t *testing.T) {
 		t.Errorf("%d differences in %d grammars", n, compiled)
 	}
 }
+
+// TestLeftRecursionMemberMemoRandomRecovering compares the results with and without a memo of
+// random grammars whose items recover from errors and call an Operators Rule that is a member of a
+// cycle, so that members read leader results reused in one kind of context only.
+func TestLeftRecursionMemberMemoRandomRecovering(t *testing.T) {
+	t.Parallel()
+	seeds := 3000
+	if testing.Short() {
+		seeds = 300
+	}
+	compiled, n := 0, 0
+	for s := int64(0); s < int64(seeds); s++ {
+		c := gentest.RandomRecoveringCycleGrammar(s)
+		g, err := parseTest(c.Src)
+		if err != nil {
+			continue
+		}
+		if _, err := Compile(g, compile.Options{}); err != nil {
+			continue
+		}
+		compiled++
+		for _, d := range memberMemoDiffers(t, c, false) {
+			if n++; n <= 5 {
+				t.Errorf("%s\n%s", c.Src, d)
+			}
+		}
+	}
+	if n > 0 || compiled < seeds*9/10 {
+		t.Errorf("%d differences in %d grammars", n, compiled)
+	}
+}

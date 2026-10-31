@@ -36,7 +36,8 @@ the result of an evaluation:
   when its result is reused only in one kind of context: it was computed inside a lookahead, or it recovered
   errors. If that growth read the seed of an enclosing growth, the new growth can read other results and have
   another result. Such a leader result is marked unstable, and every call that reads it, at any position, counts as
-  having read a seed of depth 0, so no enclosing call stores its result.
+  having read a seed of depth 0, so no enclosing call stores its result. A call reads the result by a memo hit, or by
+  calling the leader and finishing its growth.
 
 Every other result is a function of the rule, the position and the variables, and is stored. The leaders keep their
 own memoization. The engine, the generated Go runtime (untyped and typed) and the TypeScript runtime implement the
@@ -69,7 +70,7 @@ Base `f52b6bd9`, Go 1.27.1, Apple silicon, benchlock, started with a load below 
 package, one per revision, ran interleaved for 10 rounds with `-benchtime=200ms -benchmem` over `Parse` and
 `Recognize` (left-recursive calculator, JSON, Minilang), `Incremental`, `IncrementalLong` and `Stream`; benchstat
 compared them. Tests: `TestLeftRecursionMemberMemoLinear`, `TestLeftRecursionMemberMemoMatchesNoMemo`,
-`TestLeftRecursionMemberMemoStale`, `TestLeftRecursionMemberMemoRandom`,
+`TestLeftRecursionMemberMemoStale`, `TestLeftRecursionMemberMemoRandom`, `TestLeftRecursionMemberMemoRandomRecovering`,
 `TestGeneratedLeftRecursionMemberMemoLinear`, `TestGeneratedLeftRecursionMemberMemoStale`,
 `TestGeneratedTSLeftRecursionMemberMemoLinear`, `TestGeneratedTSLeftRecursionMemberMemoStale`.
 
@@ -107,6 +108,25 @@ needs no per-growth state, and a stored result never depends on a seed that is s
 member call at the position of a growth is evaluated again at every step of the growth, a number of calls that
 depends only on the grammar.
 
+A call that finishes the growth of a leader reads its final result as one that reuses it does. In
+
+```
+main = r0 $$
+r0 = r0 r0 / r1 (r0 / "b" #recover(skip=[abc])) / "a"
+r1 = (("b" / level(r9, l2))* !r1 / level(r9, l2) level(r9, l2) r0) / !r0 "b" / r0 (r0 / "a") / "c"
+r9 = #operators {
+    operand r1
+    level l2 { postfix "c" }
+}
+```
+
+with the input `bcab`, the member `r9` at offset 2 calls the leader `r1` there, and the growth of `r1` calls `r0`
+there, whose growth reads the seed of `r1` and recovers an error: an unstable result. The growth of `r1` read it and
+recovers an error too, so its result is unstable, and `r9` reads it by finishing the call. Later, `r0` grows at 2
+inside a lookahead and then outside it, and `r1` grows again inside each growth, with a result that ends earlier.
+Had `r9` at 2 been stored, a later call would reuse the result built on the first result of `r1`, where evaluating
+`r9` again reads the last one: the parse would fail where the grammar compiled without a memo recovers.
+
 The unstable rule is conservative: it also applies to a rule outside the cycle that reads an unstable result, and
 to every call that encloses the read. Such results need a leader that grows inside a lookahead, or recovers an
 error, at the position of another growth whose seed it reads; a grammar where this happens can lose memoization at
@@ -116,8 +136,11 @@ the calls that enclose the read, which
 A differential test compares every engine backend (with and without inserted tokens, and in recognition), generated
 Go (untyped and typed, ordinary and budget-controlled) and generated TypeScript with the same grammar compiled
 without a memo. Its inputs are the cases that a stored member result made stale, grammars found by a random search
-over small cycles with lookaheads, optional and repeated items, nested choices and cuts, and an Operators Rule leader
-read at two binding levels. Removing any one of the three rules makes the test fail on some backend.
+over small cycles with lookaheads, optional and repeated items, nested choices, cuts and recoveries, an Operators
+Rule leader read at two binding levels, and the grammar above. Removing any one of the three rules, or the read of
+a leader's result when its growth ends, makes the test fail on some backend. A random search over 3,000 grammars
+whose items recover errors and call an Operators Rule member compares every engine backend with the grammar
+compiled without a memo.
 
 Budget totals of the controlled form change only on the grammars of the corpus that have memoized members. The
 budget-controlled generated parser defers memoization to the second call of a rule at a position, and charges the

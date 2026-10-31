@@ -2708,10 +2708,11 @@ func (p *Parser) callMemo(r *Rule, min int) (*Node, bool) {
 	return v, ok
 }
 
-// readResult records that the current call reused a memoized result of the depth: a growing one,
-// or an unstable one (unstableResult). A call that read the seed of a growth that began before it,
-// or an unstable result, is not memoized: its result can change. The seeds of growths that began
-// and ended within the call have their final values.
+// readResult records that the current call read a memoized result of the depth: a growing one,
+// or an unstable one (unstableResult), which a call reads by reusing it or by finishing the growth
+// that produced it. A call that read the seed of a growth that began before it, or an unstable
+// result, is not memoized: its result can change. The seeds of growths that began and ended within
+// the call have their final values.
 func (p *Parser) readResult(growing bool, depth int32) {
 	if growing {
 		p.readDepth = min(p.readDepth, int(depth))

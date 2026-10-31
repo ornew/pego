@@ -365,7 +365,8 @@ exceptions.
   growth and its result was computed inside a lookahead or recovered errors,
   so that a call in the other kind of context, outside or inside a lookahead,
   does not reuse it. A result that read such a result, directly or through the
-  rules it called, is not memoized either, at any position.
+  rules it called, is not memoized either, at any position; a call of the
+  growing rule reads its result when the growth ends, as when it reuses it.
 - A growing rule evaluates its body once for each step of the growth, and the
   number of steps is at most two more than the length of the input it
   consumes.

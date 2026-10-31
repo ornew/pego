@@ -9,7 +9,8 @@ A member's result is memoized under three rules. A call that read the seed of a 
 started stores nothing: the seed changes with each growth step. While a leader grows at a position, a member result
 there is evaluated again instead of reused, since it may have read an earlier result of the leader. A call that read
 an unstable result, the result of a leader that read an enclosing seed and can grow again at its position because it
-is reused in one kind of context only (inside or outside lookaheads), stores nothing either. The parser counts the
+is reused in one kind of context only (inside or outside lookaheads), stores nothing either; a call reads a
+leader's result by a memo hit or by finishing the leader's growth. The parser counts the
 growing left recursions, stamps each growing result with that depth, and tracks per memoized call the least depth it
 read (0 for an unstable result); the innermost growth's position decides the second rule. Every other result
 depends only on the rule, the position and the variables. Documents keep their provisional results, which an edit

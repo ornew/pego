@@ -113,6 +113,7 @@ func (p *Parser) grow(r *Rule, min int, env []any) (*Node, bool) {
 	p.seedPos = prev
 	best.depth = finalDepth(p.readDepth, p.growths, best.silent || len(best.errs) > 0)
 	p.leaveCall(read)
+	p.readResult(best.growing, best.depth)
 	p.Pos = best.end
 	p.Recovered = p.Recovered[:rec]
 	p.Recovered = p.copyErrors(p.Recovered, best.errs)
@@ -280,6 +281,7 @@ func (p *TParser) grow(r *TRule, min int, env []any) (any, bool) {
 	p.seedPos = prev
 	best.depth = finalDepth(p.readDepth, p.growths, best.silent || len(best.errs) > 0)
 	p.leaveCall(read)
+	p.readResult(best.growing, best.depth)
 	p.Pos = best.end
 	p.Recovered = p.Recovered[:rec]
 	p.Recovered = p.copyErrors(p.Recovered, best.errs)
