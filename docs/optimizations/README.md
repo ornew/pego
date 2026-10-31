@@ -267,6 +267,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [127. The depth limit counts recursion](127-depth-counted-by-recursion.md)
 - [128. Indexed variable environments](128-indexed-variable-environments.md)
 - [129. Expected-token sets are recorded on request](129-opt-in-expectations.md)
+- [131. Length of a node from its range](131-length-of-a-node-from-its-range.md)
 
 ## Experiments That Did Not Pay Off
 
