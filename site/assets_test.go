@@ -122,6 +122,13 @@ func TestPreviousAssetsBootstrap(t *testing.T) {
 	if got, err := readPreviousAssets(empty.URL); err != nil || got != nil {
 		t.Fatalf("first deployment: %v", err)
 	}
+	placeholder := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "Hello world")
+	}))
+	defer placeholder.Close()
+	if got, err := readPreviousAssets(placeholder.URL); err != nil || got != nil {
+		t.Fatalf("placeholder site: %v", err)
+	}
 }
 
 func TestPreviousAssetsFailures(t *testing.T) {
@@ -137,7 +144,7 @@ func TestPreviousAssetsFailures(t *testing.T) {
 						http.Error(w, "unavailable", 503)
 						return
 					case "invalid-json":
-						fmt.Fprint(w, "oops")
+						fmt.Fprint(w, "{oops")
 						return
 					case "large-manifest":
 						fmt.Fprint(w, strings.Repeat(" ", 65537))

@@ -68,7 +68,9 @@ is limited to 64 KiB. WASM also requires its version-one header; truncated-name 
 to conflicting runtimes fail rather than overwrite current content.
 
 A missing manifest triggers a one-time bootstrap: read the published playground HTML's hashed WASM reference and
-its stable runtime, checking the WASM filename hash. A missing playground too means a first deployment. Other HTTP,
+its stable runtime, checking the WASM filename hash. A missing playground too means a first deployment, and so does a manifest
+response that is not JSON at all, which is what a domain serving another site or a placeholder returns; a body that
+starts as a JSON object but fails to decode still fails. Other HTTP,
 JSON, missing-file, hash and size errors fail before clearing local output. Legacy HTML cannot identify an immutable
 deploy or authenticate its runtime pairing; keep publication stable during this bootstrap. Subsequent manifests carry
 the immutable source and both digests. A build failure does not promote any cache state or change the published site.

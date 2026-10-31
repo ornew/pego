@@ -90,6 +90,14 @@ func (a playgroundAsset) validate() error {
 	return nil
 }
 
+// looksLikeJSONObject reports whether b starts, after white space, with the
+// opening brace of a JSON object. A malformed manifest still fails to decode;
+// a body that is not JSON at all is not a manifest.
+func looksLikeJSONObject(b []byte) bool {
+	b = bytes.TrimLeft(b, " \t\r\n")
+	return len(b) > 0 && b[0] == '{'
+}
+
 func fetchAsset(client *http.Client, base *url.URL, path string, limit int64) ([]byte, int, error) {
 	u := base.ResolveReference(&url.URL{Path: path})
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
@@ -140,6 +148,12 @@ func readPreviousAssetsWithTinyGo(raw string, tinygoOut **assetBytes) (*assetByt
 	if err != nil {
 		return nil, err
 	}
+	if status == http.StatusOK && !looksLikeJSONObject(b) {
+		// The domain serves something other than a ZeroParse site, such as the
+		// placeholder of a newly created Worker: there is nothing to retain.
+		fmt.Fprintf(os.Stderr, "site: %s serves no playground asset manifest; building as a first deployment\n", base)
+		return nil, nil
+	}
 	var a playgroundAsset
 	var m assetManifest
 	legacy := status == http.StatusNotFound
@@ -162,7 +176,7 @@ func readPreviousAssetsWithTinyGo(raw string, tinygoOut **assetBytes) (*assetByt
 		d := json.NewDecoder(bytes.NewReader(b))
 		d.DisallowUnknownFields()
 		if err := d.Decode(&m); err != nil {
-			return nil, fmt.Errorf("published asset manifest at %s is not a ZeroParse manifest (for a first deployment, pass -previous-site ''): %w", base, err)
+			return nil, fmt.Errorf("published asset manifest: %w", err)
 		}
 		if err := d.Decode(new(any)); err != io.EOF {
 			return nil, errors.New("trailing published manifest data")

@@ -93,8 +93,9 @@ means pages from those generations must reload. Do not point an older builder
 at a dual manifest without that reset.
 
 The first upgrade from a pre-manifest site reads its playground HTML and stable runtime. Later builds fetch from the
-site root, or from the immutable deploy URL when the manifest records one. Missing or invalid published assets fail the build; a genuinely missing
-playground initializes a first deployment. Keep production publication sequential. Rollbacks and manually promoted
+site root, or from the immutable deploy URL when the manifest records one. Missing or invalid published assets fail the build; a site with no
+playground, or one that answers with something other than a JSON manifest (such as the placeholder of a newly
+created Worker), initializes a first deployment. Keep production publication sequential. Rollbacks and manually promoted
 previews need `-previous-site` set to the deployment being replaced; retention does not coordinate concurrent promotions.
 To deliberately reset retention, pass `-previous-site ''`. See [the asset-retention design](design/records/023-playground-asset-retention.md)
 for the format, bounds and bootstrap limitations.
